@@ -58,8 +58,8 @@ let importTracks = [];
 /** 桌面歌词独立窗口是否处于显示状态（隐藏/关闭后为 false） */
 let desktopLyricsOpen = false;
 let desktopLyricsWindow = null;
-/** 与 settings 对齐：默认 true（锁定穿透，参考 QQ 音乐） */
-let desktopLyricsLocked = true;
+/** 默认解锁，打开后即可拖动；需要穿透时再由用户显式锁定 */
+let desktopLyricsLocked = false;
 /** @type {{ t: number, text: string }[]} */
 let lrcEntries = [];
 /** @type {string | null} */
@@ -957,7 +957,6 @@ async function openDesktopLyricsFromSettingsIfNeeded(s) {
     desktopLyricsWindow = existing;
     const vis = await existing.isVisible();
     if (!vis) await existing.show();
-    await existing.setFocus();
     desktopLyricsOpen = true;
     await setDockLyricsActive(true);
     lrcCacheKey = null;
@@ -983,7 +982,7 @@ async function openDesktopLyricsFromSettingsIfNeeded(s) {
     transparent: true,
     shadow: false,
     skipTaskbar: true,
-    focus: true,
+    focus: false,
   });
   win.once("tauri://error", (e) => {
     console.error(e);
@@ -1020,7 +1019,6 @@ async function toggleDesktopLyrics() {
       return;
     }
     await existing.show();
-    await existing.setFocus();
     desktopLyricsOpen = true;
     await setDockLyricsActive(true);
     await persistDesktopLyricsVisible(true);
@@ -1056,7 +1054,7 @@ async function toggleDesktopLyrics() {
     /** 无边框窗口在 Windows 上默认可能有系统阴影，易看成「白边」 */
     shadow: false,
     skipTaskbar: true,
-    focus: true,
+    focus: false,
   });
 
   win.once("tauri://error", (e) => {

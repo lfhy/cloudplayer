@@ -16,6 +16,7 @@ type Settings struct {
 	DailyDownloadLimit        int64   `json:"daily_download_limit"`
 	DesktopLyricsVisible      bool    `json:"desktop_lyrics_visible"`
 	DesktopLyricsLocked       bool    `json:"desktop_lyrics_locked"`
+	DesktopLyricsLockSet      bool    `json:"desktop_lyrics_lock_set,omitempty"`
 	DesktopLyricsX            *int    `json:"desktop_lyrics_x,omitempty"`
 	DesktopLyricsY            *int    `json:"desktop_lyrics_y,omitempty"`
 	DesktopLyricsWidth        *int    `json:"desktop_lyrics_width,omitempty"`
@@ -35,7 +36,7 @@ func DefaultSettings() Settings {
 	return Settings{
 		Volume:              0.7,
 		DailyDownloadLimit:  50,
-		DesktopLyricsLocked: true,
+		DesktopLyricsLocked: false,
 		DesktopLyricsScale:  1.0,
 		LyricsLRCLibEnabled: true,
 		LyricsProviderOrder: "pjmp3,lrclib,netease",
@@ -73,6 +74,9 @@ func LoadSettings() Settings {
 	result := DefaultSettings()
 	if err := json.Unmarshal(data, &result); err != nil {
 		return DefaultSettings()
+	}
+	if !result.DesktopLyricsLockSet {
+		result.DesktopLyricsLocked = false
 	}
 	return result
 }

@@ -15,3 +15,4 @@ src-tauri/target/
 
 # OS temp files
 Thumbs.db
+src-wails/cloudplayer

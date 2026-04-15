@@ -159,6 +159,7 @@ class CurrentWebviewWindow extends WebviewWindow {
   }
 
   async getRuntimeWindow() {
-    return RuntimeWindow;
+    const label = await this.getResolvedLabel();
+    return RuntimeWindow.Get(label);
   }
 }

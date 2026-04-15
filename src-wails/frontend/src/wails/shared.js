@@ -1,7 +1,6 @@
-import { Events, Window as RuntimeWindow } from "@wailsio/runtime";
+import { Events } from "@wailsio/runtime";
 import { DesktopService } from "../../bindings/cloudplayer";
 
-const currentLabelPromise = RuntimeWindow.Name().catch(() => "main");
 const pseudoListeners = new Map();
 const pseudoSubscribedLabels = new Set();
 
@@ -49,8 +48,20 @@ export function emitPseudo(label, eventName, payload) {
   dispatchPseudo(label, eventName, payload);
 }
 
+function resolveBootstrapWindowLabel() {
+  const injected = globalThis.__CLOUDPLAYER_WINDOW_NAME__;
+  if (typeof injected === "string" && injected.trim()) {
+    return injected.trim();
+  }
+  const path = globalThis.location?.pathname || "/";
+  if (path === "/desktop_lyrics.html") {
+    return "lyrics";
+  }
+  return "main";
+}
+
 export async function currentWindowLabel() {
-  return currentLabelPromise;
+  return resolveBootstrapWindowLabel();
 }
 
 export function normalizeTarget(target) {

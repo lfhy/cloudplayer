@@ -135,6 +135,7 @@ func (s *CloudPlayerService) SaveSettings(patch SettingsPatch) error {
 	}
 	if patch.DesktopLyricsLocked != nil {
 		settings.DesktopLyricsLocked = *patch.DesktopLyricsLocked
+		settings.DesktopLyricsLockSet = true
 	}
 	if patch.DesktopLyricsX != nil {
 		settings.DesktopLyricsX = patch.DesktopLyricsX

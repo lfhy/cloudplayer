@@ -64,6 +64,13 @@ export class Settings {
         if (/** @type {any} */(false)) {
             /**
              * @member
+             * @type {boolean | undefined}
+             */
+            this["desktop_lyrics_lock_set"] = undefined;
+        }
+        if (/** @type {any} */(false)) {
+            /**
+             * @member
              * @type {number | null | undefined}
              */
             this["desktop_lyrics_x"] = undefined;

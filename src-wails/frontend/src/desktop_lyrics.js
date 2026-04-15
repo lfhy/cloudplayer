@@ -7,7 +7,7 @@ const lyricsWin = WebviewWindow.getCurrent();
 const frameEl = document.getElementById("ly-frame");
 
 let scale = 1;
-let lyricsLocked = true;
+let lyricsLocked = false;
 let persistTimer = null;
 
 function schedulePersistBounds() {
@@ -56,7 +56,7 @@ function setLines(a, b) {
   if (e2) e2.textContent = b || "—";
 }
 
-/** 锁定：完全穿透（与下方窗口抢不到鼠标）；未锁定：正常交互。解锁仅主窗口菜单。 */
+/** 锁定：完全穿透；未锁定：正常交互并可拖动。 */
 async function applyCursorPassthrough(locked) {
   try {
     await lyricsWin.setIgnoreCursorEvents(!!locked);
@@ -99,11 +99,11 @@ async function initLyricsWindow() {
       document.documentElement.style.setProperty("--ly-scale", String(scale));
     }
     const locked =
-      s && typeof s.desktop_lyrics_locked === "boolean" ? s.desktop_lyrics_locked : true;
+      s && typeof s.desktop_lyrics_locked === "boolean" ? s.desktop_lyrics_locked : false;
     applyLyricsLockUi(locked);
   } catch (e) {
     console.warn("get_settings fail", e);
-    applyLyricsLockUi(true);
+    applyLyricsLockUi(false);
   }
 
   await lyricsWin.listen("desktop-lyrics-lines", (e) => {
