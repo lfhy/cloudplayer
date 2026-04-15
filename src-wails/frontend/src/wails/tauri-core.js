@@ -11,13 +11,18 @@ const invokeMap = {
   enqueue_download: (args) => CloudPlayerService.EnqueueDownload(args),
   fetch_share_playlist: (args) => CloudPlayerService.FetchSharePlaylist(args.url),
   fetch_song_lrc_enriched: (args) => CloudPlayerService.FetchSongLRCEnriched(args.req),
+  get_preview_url: (args) => CloudPlayerService.GetPreviewURL(args.songId),
   get_settings: () => CloudPlayerService.GetSettings(),
+  hide_main_window: () => CloudPlayerService.HideMainWindow(),
   list_local_songs: () => CloudPlayerService.ListLocalSongs(),
   list_playlist_import_items: (args) =>
     CloudPlayerService.ListPlaylistImportItems(args.playlistId),
   list_playlists: () => CloudPlayerService.ListPlaylists(),
   list_recent_plays: () => CloudPlayerService.ListRecentPlays(),
+  local_path_accessible: (args) => CloudPlayerService.LocalPathAccessible(args.path),
   parse_import_text: (args) => CloudPlayerService.ParseImportText(args.text, args.fmt),
+  cache_preview_for_play: (args) => CloudPlayerService.CachePreviewForPlay(args.songId),
+  quit_app: () => CloudPlayerService.QuitApp(),
   record_recent_play: (args) => CloudPlayerService.RecordRecentPlay(args.row),
   rename_playlist: (args) => CloudPlayerService.RenamePlaylist(args.playlistId, args.name),
   replace_playlist_import_items: (args) =>
@@ -27,6 +32,10 @@ const invokeMap = {
   save_settings: (args) => CloudPlayerService.SaveSettings(args.patch),
   scan_music_folder: (args) => CloudPlayerService.ScanMusicFolder(args.path),
   search_songs: (args) => CloudPlayerService.SearchSongs(args.keyword, args.page),
+  set_desktop_lyrics_click_through: (args) =>
+    CloudPlayerService.SetDesktopLyricsClickThrough(args.ignoreCursorEvents),
+  show_main_window: () => CloudPlayerService.ShowMainWindow(),
+  start_import_enrich: (args) => CloudPlayerService.StartImportEnrich(args.playlistId),
 };
 
 export function convertFileSrc(path) {

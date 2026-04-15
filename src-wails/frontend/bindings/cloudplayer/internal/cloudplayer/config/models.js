@@ -64,13 +64,6 @@ export class Settings {
         if (/** @type {any} */(false)) {
             /**
              * @member
-             * @type {boolean | undefined}
-             */
-            this["desktop_lyrics_lock_set"] = undefined;
-        }
-        if (/** @type {any} */(false)) {
-            /**
-             * @member
              * @type {number | null | undefined}
              */
             this["desktop_lyrics_x"] = undefined;
@@ -144,6 +137,27 @@ export class Settings {
              * @type {string}
              */
             this["lyrics_provider_order"] = "";
+        }
+        if (!("main_window_close_action" in $$source)) {
+            /**
+             * @member
+             * @type {string}
+             */
+            this["main_window_close_action"] = "";
+        }
+        if (!("desktop_lyrics_color_base" in $$source)) {
+            /**
+             * @member
+             * @type {string}
+             */
+            this["desktop_lyrics_color_base"] = "";
+        }
+        if (!("desktop_lyrics_color_highlight" in $$source)) {
+            /**
+             * @member
+             * @type {string}
+             */
+            this["desktop_lyrics_color_highlight"] = "";
         }
         if (!("share_netease_cookie_enabled" in $$source)) {
             /**

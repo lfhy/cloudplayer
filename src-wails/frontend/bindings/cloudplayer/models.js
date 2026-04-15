@@ -537,6 +537,27 @@ export class SettingsPatch {
         if (/** @type {any} */(false)) {
             /**
              * @member
+             * @type {string | null | undefined}
+             */
+            this["main_window_close_action"] = undefined;
+        }
+        if (/** @type {any} */(false)) {
+            /**
+             * @member
+             * @type {string | null | undefined}
+             */
+            this["desktop_lyrics_color_base"] = undefined;
+        }
+        if (/** @type {any} */(false)) {
+            /**
+             * @member
+             * @type {string | null | undefined}
+             */
+            this["desktop_lyrics_color_highlight"] = undefined;
+        }
+        if (/** @type {any} */(false)) {
+            /**
+             * @member
              * @type {boolean | null | undefined}
              */
             this["share_netease_cookie_enabled"] = undefined;

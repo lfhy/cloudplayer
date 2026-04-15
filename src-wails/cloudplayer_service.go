@@ -16,6 +16,7 @@ import (
 	"cloudplayer/internal/cloudplayer/lyrics"
 	"cloudplayer/internal/cloudplayer/pjmp3"
 	"cloudplayer/internal/cloudplayer/sharelink"
+	"github.com/wailsapp/wails/v3/pkg/application"
 )
 
 const recentPlaysMax = 100
@@ -29,22 +30,25 @@ func NewCloudPlayerService(state *AppState) *CloudPlayerService {
 }
 
 type SettingsPatch struct {
-	Volume                    *float64 `json:"volume,omitempty"`
-	LastLibraryFolder         *string  `json:"last_library_folder,omitempty"`
-	DailyDownloadLimit        *int64   `json:"daily_download_limit,omitempty"`
-	DesktopLyricsVisible      *bool    `json:"desktop_lyrics_visible,omitempty"`
-	DesktopLyricsLocked       *bool    `json:"desktop_lyrics_locked,omitempty"`
-	DesktopLyricsX            *int     `json:"desktop_lyrics_x,omitempty"`
-	DesktopLyricsY            *int     `json:"desktop_lyrics_y,omitempty"`
-	DesktopLyricsWidth        *int     `json:"desktop_lyrics_width,omitempty"`
-	DesktopLyricsHeight       *int     `json:"desktop_lyrics_height,omitempty"`
-	DesktopLyricsScale        *float64 `json:"desktop_lyrics_scale,omitempty"`
-	DownloadFolder            *string  `json:"download_folder,omitempty"`
-	LyricsNeteaseAPIBase      *string  `json:"lyrics_netease_api_base,omitempty"`
-	LyricsLRCLibEnabled       *bool    `json:"lyrics_lrclib_enabled,omitempty"`
-	LyricsProviderOrder       *string  `json:"lyrics_provider_order,omitempty"`
-	ShareNeteaseCookieEnabled *bool    `json:"share_netease_cookie_enabled,omitempty"`
-	ShareNeteaseCookie        *string  `json:"share_netease_cookie,omitempty"`
+	Volume                      *float64 `json:"volume,omitempty"`
+	LastLibraryFolder           *string  `json:"last_library_folder,omitempty"`
+	DailyDownloadLimit          *int64   `json:"daily_download_limit,omitempty"`
+	DesktopLyricsVisible        *bool    `json:"desktop_lyrics_visible,omitempty"`
+	DesktopLyricsLocked         *bool    `json:"desktop_lyrics_locked,omitempty"`
+	DesktopLyricsX              *int     `json:"desktop_lyrics_x,omitempty"`
+	DesktopLyricsY              *int     `json:"desktop_lyrics_y,omitempty"`
+	DesktopLyricsWidth          *int     `json:"desktop_lyrics_width,omitempty"`
+	DesktopLyricsHeight         *int     `json:"desktop_lyrics_height,omitempty"`
+	DesktopLyricsScale          *float64 `json:"desktop_lyrics_scale,omitempty"`
+	DownloadFolder              *string  `json:"download_folder,omitempty"`
+	LyricsNeteaseAPIBase        *string  `json:"lyrics_netease_api_base,omitempty"`
+	LyricsLRCLibEnabled         *bool    `json:"lyrics_lrclib_enabled,omitempty"`
+	LyricsProviderOrder         *string  `json:"lyrics_provider_order,omitempty"`
+	MainWindowCloseAction       *string  `json:"main_window_close_action,omitempty"`
+	DesktopLyricsColorBase      *string  `json:"desktop_lyrics_color_base,omitempty"`
+	DesktopLyricsColorHighlight *string  `json:"desktop_lyrics_color_highlight,omitempty"`
+	ShareNeteaseCookieEnabled   *bool    `json:"share_netease_cookie_enabled,omitempty"`
+	ShareNeteaseCookie          *string  `json:"share_netease_cookie,omitempty"`
 }
 
 type SearchResponse struct {
@@ -115,6 +119,43 @@ func (s *CloudPlayerService) GetSettings() config.Settings {
 	return config.LoadSettings()
 }
 
+func (s *CloudPlayerService) SetDesktopLyricsClickThrough(ignoreCursorEvents bool) error {
+	window, ok := application.Get().Window.GetByName("lyrics")
+	if !ok {
+		return nil
+	}
+	window.SetIgnoreMouseEvents(ignoreCursorEvents)
+	return nil
+}
+
+func (s *CloudPlayerService) HideMainWindow() error {
+	window, ok := application.Get().Window.GetByName("main")
+	if !ok {
+		return nil
+	}
+	window.Hide()
+	return nil
+}
+
+func (s *CloudPlayerService) ShowMainWindow() error {
+	window, ok := application.Get().Window.GetByName("main")
+	if !ok {
+		return nil
+	}
+	window.Show()
+	window.Focus()
+	return nil
+}
+
+func (s *CloudPlayerService) QuitApp() {
+	requestAppQuit()
+}
+
+func (s *CloudPlayerService) LocalPathAccessible(path string) bool {
+	info, err := os.Stat(strings.TrimSpace(path))
+	return err == nil && !info.IsDir()
+}
+
 func (s *CloudPlayerService) SaveSettings(patch SettingsPatch) error {
 	settings := config.LoadSettings()
 	if patch.Volume != nil {
@@ -135,7 +176,6 @@ func (s *CloudPlayerService) SaveSettings(patch SettingsPatch) error {
 	}
 	if patch.DesktopLyricsLocked != nil {
 		settings.DesktopLyricsLocked = *patch.DesktopLyricsLocked
-		settings.DesktopLyricsLockSet = true
 	}
 	if patch.DesktopLyricsX != nil {
 		settings.DesktopLyricsX = patch.DesktopLyricsX
@@ -165,6 +205,22 @@ func (s *CloudPlayerService) SaveSettings(patch SettingsPatch) error {
 	}
 	if patch.LyricsProviderOrder != nil {
 		settings.LyricsProviderOrder = *patch.LyricsProviderOrder
+	}
+	if patch.MainWindowCloseAction != nil {
+		switch value := strings.ToLower(strings.TrimSpace(*patch.MainWindowCloseAction)); value {
+		case "ask", "quit", "tray":
+			settings.MainWindowCloseAction = value
+		}
+	}
+	if patch.DesktopLyricsColorBase != nil {
+		if value, ok := normalizeHexColour(*patch.DesktopLyricsColorBase); ok {
+			settings.DesktopLyricsColorBase = value
+		}
+	}
+	if patch.DesktopLyricsColorHighlight != nil {
+		if value, ok := normalizeHexColour(*patch.DesktopLyricsColorHighlight); ok {
+			settings.DesktopLyricsColorHighlight = value
+		}
 	}
 	if patch.ShareNeteaseCookieEnabled != nil {
 		settings.ShareNeteaseCookieEnabled = *patch.ShareNeteaseCookieEnabled
@@ -198,6 +254,31 @@ func (s *CloudPlayerService) SearchSongs(keyword string, page uint32) (SearchRes
 		return SearchResponse{}, err
 	}
 	return SearchResponse{Results: results, HasNext: hasNext}, nil
+}
+
+func (s *CloudPlayerService) GetPreviewURL(songID string) (string, error) {
+	trimmedID := strings.TrimSpace(songID)
+	if trimmedID == "" {
+		return "", fmt.Errorf("无效的歌曲 ID")
+	}
+	s.state.RateLimiter.AcquireSlot()
+	previewURL, err := pjmp3.FetchPreviewURL(s.state.HTTPClient, trimmedID)
+	if err != nil {
+		return "", err
+	}
+	if strings.TrimSpace(previewURL) == "" {
+		return "", fmt.Errorf("未解析到 MP3 试听地址")
+	}
+	return previewURL, nil
+}
+
+func (s *CloudPlayerService) CachePreviewForPlay(songID string) (string, error) {
+	trimmedID := strings.TrimSpace(songID)
+	if trimmedID == "" {
+		return "", fmt.Errorf("无效的歌曲 ID")
+	}
+	s.state.RateLimiter.AcquireSlot()
+	return pjmp3.CachePreviewAudioFile(s.state.HTTPClient, trimmedID)
 }
 
 func (s *CloudPlayerService) ResolveOnlinePlay(songID, title, artist string) (ResolveOnlinePlayOut, error) {
@@ -425,6 +506,14 @@ func (s *CloudPlayerService) AppendPlaylistImportItems(playlistID int64, items [
 	return nil
 }
 
+func (s *CloudPlayerService) StartImportEnrich(playlistID int64) error {
+	if playlistID <= 0 {
+		return fmt.Errorf("无效的歌单 id")
+	}
+	importenrich.SpawnPlaylistEnrich(s.state.DB, s.state.HTTPClient, s.state.RateLimiter, playlistID)
+	return nil
+}
+
 func (s *CloudPlayerService) FetchSongLRCEnriched(req lyrics.FetchRequest) (*string, error) {
 	settings := config.LoadSettings()
 	s.state.RateLimiter.AcquireSlot()
@@ -645,6 +734,19 @@ func maxInt(value, minValue int) int {
 		return minValue
 	}
 	return value
+}
+
+func normalizeHexColour(value string) (string, bool) {
+	trimmed := strings.TrimSpace(value)
+	if len(trimmed) != 7 || trimmed[0] != '#' {
+		return "", false
+	}
+	for _, r := range trimmed[1:] {
+		if (r < '0' || r > '9') && (r < 'a' || r > 'f') && (r < 'A' || r > 'F') {
+			return "", false
+		}
+	}
+	return strings.ToLower(trimmed), true
 }
 
 func maxUint32(value, minValue uint32) uint32 {

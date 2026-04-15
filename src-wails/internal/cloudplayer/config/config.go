@@ -9,37 +9,42 @@ import (
 const BaseURL = "https://pjmp3.com"
 
 type Settings struct {
-	WindowGeometryB64         *string `json:"window_geometry_b64,omitempty"`
-	WindowStateB64            *string `json:"window_state_b64,omitempty"`
-	Volume                    float64 `json:"volume"`
-	LastLibraryFolder         string  `json:"last_library_folder"`
-	DailyDownloadLimit        int64   `json:"daily_download_limit"`
-	DesktopLyricsVisible      bool    `json:"desktop_lyrics_visible"`
-	DesktopLyricsLocked       bool    `json:"desktop_lyrics_locked"`
-	DesktopLyricsLockSet      bool    `json:"desktop_lyrics_lock_set,omitempty"`
-	DesktopLyricsX            *int    `json:"desktop_lyrics_x,omitempty"`
-	DesktopLyricsY            *int    `json:"desktop_lyrics_y,omitempty"`
-	DesktopLyricsWidth        *int    `json:"desktop_lyrics_width,omitempty"`
-	DesktopLyricsHeight       *int    `json:"desktop_lyrics_height,omitempty"`
-	DesktopLyricsScale        float64 `json:"desktop_lyrics_scale"`
-	DownloadFolder            string  `json:"download_folder"`
-	DownloadsTodayDate        string  `json:"downloads_today_date"`
-	DownloadsTodayCount       int64   `json:"downloads_today_count"`
-	LyricsNeteaseAPIBase      string  `json:"lyrics_netease_api_base"`
-	LyricsLRCLibEnabled       bool    `json:"lyrics_lrclib_enabled"`
-	LyricsProviderOrder       string  `json:"lyrics_provider_order"`
-	ShareNeteaseCookieEnabled bool    `json:"share_netease_cookie_enabled"`
-	ShareNeteaseCookie        string  `json:"share_netease_cookie"`
+	WindowGeometryB64           *string `json:"window_geometry_b64,omitempty"`
+	WindowStateB64              *string `json:"window_state_b64,omitempty"`
+	Volume                      float64 `json:"volume"`
+	LastLibraryFolder           string  `json:"last_library_folder"`
+	DailyDownloadLimit          int64   `json:"daily_download_limit"`
+	DesktopLyricsVisible        bool    `json:"desktop_lyrics_visible"`
+	DesktopLyricsLocked         bool    `json:"desktop_lyrics_locked"`
+	DesktopLyricsX              *int    `json:"desktop_lyrics_x,omitempty"`
+	DesktopLyricsY              *int    `json:"desktop_lyrics_y,omitempty"`
+	DesktopLyricsWidth          *int    `json:"desktop_lyrics_width,omitempty"`
+	DesktopLyricsHeight         *int    `json:"desktop_lyrics_height,omitempty"`
+	DesktopLyricsScale          float64 `json:"desktop_lyrics_scale"`
+	DownloadFolder              string  `json:"download_folder"`
+	DownloadsTodayDate          string  `json:"downloads_today_date"`
+	DownloadsTodayCount         int64   `json:"downloads_today_count"`
+	LyricsNeteaseAPIBase        string  `json:"lyrics_netease_api_base"`
+	LyricsLRCLibEnabled         bool    `json:"lyrics_lrclib_enabled"`
+	LyricsProviderOrder         string  `json:"lyrics_provider_order"`
+	MainWindowCloseAction       string  `json:"main_window_close_action"`
+	DesktopLyricsColorBase      string  `json:"desktop_lyrics_color_base"`
+	DesktopLyricsColorHighlight string  `json:"desktop_lyrics_color_highlight"`
+	ShareNeteaseCookieEnabled   bool    `json:"share_netease_cookie_enabled"`
+	ShareNeteaseCookie          string  `json:"share_netease_cookie"`
 }
 
 func DefaultSettings() Settings {
 	return Settings{
-		Volume:              0.7,
-		DailyDownloadLimit:  50,
-		DesktopLyricsLocked: false,
-		DesktopLyricsScale:  1.0,
-		LyricsLRCLibEnabled: true,
-		LyricsProviderOrder: "pjmp3,lrclib,netease",
+		Volume:                      0.7,
+		DailyDownloadLimit:          50,
+		DesktopLyricsLocked:         true,
+		DesktopLyricsScale:          1.0,
+		LyricsLRCLibEnabled:         true,
+		LyricsProviderOrder:         "pjmp3,netease,lrclib",
+		MainWindowCloseAction:       "ask",
+		DesktopLyricsColorBase:      "#ffffff",
+		DesktopLyricsColorHighlight: "#ffb7d4",
 	}
 }
 
@@ -74,9 +79,6 @@ func LoadSettings() Settings {
 	result := DefaultSettings()
 	if err := json.Unmarshal(data, &result); err != nil {
 		return DefaultSettings()
-	}
-	if !result.DesktopLyricsLockSet {
-		result.DesktopLyricsLocked = false
 	}
 	return result
 }

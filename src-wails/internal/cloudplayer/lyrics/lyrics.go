@@ -46,13 +46,21 @@ func FetchSongLRCEnriched(client *http.Client, settings config.Settings, req Fet
 				return text, nil
 			}
 		case providerNetease:
+			var text *string
 			base := strings.TrimSpace(settings.LyricsNeteaseAPIBase)
-			if base == "" {
-				continue
+			if base != "" {
+				var err error
+				text, err = lyricNetease(client, base, req.Title, req.Artist)
+				if err != nil {
+					return nil, err
+				}
 			}
-			text, err := lyricNetease(client, base, req.Title, req.Artist)
-			if err != nil {
-				return nil, err
+			if text == nil {
+				var err error
+				text, err = lyricNeteaseMusic163Portal(client, req.Title, req.Artist)
+				if err != nil {
+					return nil, err
+				}
 			}
 			if text != nil {
 				return text, nil
@@ -71,6 +79,76 @@ func FetchSongLRCEnriched(client *http.Client, settings config.Settings, req Fet
 		}
 	}
 	return nil, nil
+}
+
+func lyricNeteaseMusic163Portal(client *http.Client, title, artist string) (*string, error) {
+	values := url.Values{}
+	values.Set("s", strings.TrimSpace(artist+" "+title))
+	values.Set("type", "1")
+	values.Set("limit", "8")
+	searchReq, err := http.NewRequest(http.MethodGet, "https://music.163.com/api/search/get/web?"+values.Encode(), nil)
+	if err != nil {
+		return nil, err
+	}
+	applyNeteasePortalHeaders(searchReq)
+	searchResp, err := client.Do(searchReq)
+	if err != nil {
+		return nil, err
+	}
+	defer searchResp.Body.Close()
+	if searchResp.StatusCode < 200 || searchResp.StatusCode >= 300 {
+		return nil, nil
+	}
+	var searchJSON map[string]any
+	if err := json.NewDecoder(searchResp.Body).Decode(&searchJSON); err != nil {
+		return nil, err
+	}
+	if code, ok := searchJSON["code"].(float64); ok && int(code) != 200 {
+		return nil, nil
+	}
+	id := firstID(searchJSON["result"], "/songs/0/id")
+	if id == "" {
+		id = firstID(searchJSON["result"], "/songs/0/song/id")
+	}
+	if id == "" {
+		return nil, nil
+	}
+
+	lyricValues := url.Values{}
+	lyricValues.Set("id", id)
+	lyricValues.Set("lv", "-1")
+	lyricValues.Set("kv", "-1")
+	lyricValues.Set("tv", "-1")
+	lyricReq, err := http.NewRequest(http.MethodGet, "https://music.163.com/api/song/lyric?"+lyricValues.Encode(), nil)
+	if err != nil {
+		return nil, err
+	}
+	applyNeteasePortalHeaders(lyricReq)
+	lyricResp, err := client.Do(lyricReq)
+	if err != nil {
+		return nil, err
+	}
+	defer lyricResp.Body.Close()
+	if lyricResp.StatusCode < 200 || lyricResp.StatusCode >= 300 {
+		return nil, nil
+	}
+	var lyricJSON map[string]any
+	if err := json.NewDecoder(lyricResp.Body).Decode(&lyricJSON); err != nil {
+		return nil, err
+	}
+	if value := nestedString(lyricJSON, "lrc", "lyric"); looksLikeLRC(value) {
+		return &value, nil
+	}
+	if value := stringValue(lyricJSON["lrc"]); looksLikeLRC(value) {
+		return &value, nil
+	}
+	return nil, nil
+}
+
+func applyNeteasePortalHeaders(request *http.Request) {
+	request.Header.Set("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36")
+	request.Header.Set("Referer", "https://music.163.com/")
+	request.Header.Set("Accept", "application/json, text/plain, */*")
 }
 
 func parseOrder(value string) []provider {

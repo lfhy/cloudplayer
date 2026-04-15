@@ -33,6 +33,14 @@ export function AppendPlaylistImportItems(playlistID, items) {
 }
 
 /**
+ * @param {string} songID
+ * @returns {$CancellablePromise<string>}
+ */
+export function CachePreviewForPlay(songID) {
+    return $Call.ByID(2779814344, songID);
+}
+
+/**
  * @param {string} name
  * @returns {$CancellablePromise<number>}
  */
@@ -91,12 +99,27 @@ export function FetchSongLRCEnriched(req) {
 }
 
 /**
+ * @param {string} songID
+ * @returns {$CancellablePromise<string>}
+ */
+export function GetPreviewURL(songID) {
+    return $Call.ByID(1951349590, songID);
+}
+
+/**
  * @returns {$CancellablePromise<config$0.Settings>}
  */
 export function GetSettings() {
     return $Call.ByID(107746166).then(/** @type {($result: any) => any} */(($result) => {
         return $$createType1($result);
     }));
+}
+
+/**
+ * @returns {$CancellablePromise<void>}
+ */
+export function HideMainWindow() {
+    return $Call.ByID(3066344696);
 }
 
 /**
@@ -137,6 +160,14 @@ export function ListRecentPlays() {
 }
 
 /**
+ * @param {string} path
+ * @returns {$CancellablePromise<boolean>}
+ */
+export function LocalPathAccessible(path) {
+    return $Call.ByID(1684743721, path);
+}
+
+/**
  * @param {string} text
  * @param {string} format
  * @returns {$CancellablePromise<importplaylist$0.ImportedTrackDTO[]>}
@@ -145,6 +176,13 @@ export function ParseImportText(text, format) {
     return $Call.ByID(604755238, text, format).then(/** @type {($result: any) => any} */(($result) => {
         return $$createType11($result);
     }));
+}
+
+/**
+ * @returns {$CancellablePromise<void>}
+ */
+export function QuitApp() {
+    return $Call.ByID(2326759433);
 }
 
 /**
@@ -212,6 +250,29 @@ export function SearchSongs(keyword, page) {
     return $Call.ByID(1830530133, keyword, page).then(/** @type {($result: any) => any} */(($result) => {
         return $$createType14($result);
     }));
+}
+
+/**
+ * @param {boolean} ignoreCursorEvents
+ * @returns {$CancellablePromise<void>}
+ */
+export function SetDesktopLyricsClickThrough(ignoreCursorEvents) {
+    return $Call.ByID(3757253524, ignoreCursorEvents);
+}
+
+/**
+ * @returns {$CancellablePromise<void>}
+ */
+export function ShowMainWindow() {
+    return $Call.ByID(2970390533);
+}
+
+/**
+ * @param {number} playlistID
+ * @returns {$CancellablePromise<void>}
+ */
+export function StartImportEnrich(playlistID) {
+    return $Call.ByID(16697315, playlistID);
 }
 
 // Private type creation functions

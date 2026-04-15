@@ -4,13 +4,20 @@ import (
 	"embed"
 	"log"
 	"net/http"
+	"sync/atomic"
 
 	"cloudplayer/internal/cloudplayer/db"
 	"github.com/wailsapp/wails/v3/pkg/application"
+	"github.com/wailsapp/wails/v3/pkg/events"
 )
 
 //go:embed all:frontend/dist
 var assets embed.FS
+
+//go:embed build/appicon.png
+var appIcon []byte
+
+var quitRequested atomic.Bool
 
 func main() {
 	conn, err := db.OpenAndInit()
@@ -33,11 +40,17 @@ func main() {
 		Assets: application.AssetOptions{
 			Handler: mediaHandler(baseAssets),
 		},
+		Windows: application.WindowsOptions{
+			DisableQuitOnLastWindowClosed: true,
+		},
+		Linux: application.LinuxOptions{
+			DisableQuitOnLastWindowClosed: true,
+		},
 		Mac: application.MacOptions{
-			ApplicationShouldTerminateAfterLastWindowClosed: true,
+			ApplicationShouldTerminateAfterLastWindowClosed: false,
 		},
 	})
-	app.Window.NewWithOptions(application.WebviewWindowOptions{
+	mainWindow := app.Window.NewWithOptions(application.WebviewWindowOptions{
 		Name:             "main",
 		Title:            "CloudPlayer",
 		Width:            1100,
@@ -45,9 +58,50 @@ func main() {
 		URL:              "/",
 		BackgroundColour: application.NewRGB(245, 245, 247),
 	})
+	mainWindow.RegisterHook(events.Common.WindowClosing, func(event *application.WindowEvent) {
+		if quitRequested.Load() {
+			return
+		}
+		event.Cancel()
+		_ = application.Get().Event.Emit("main-close-requested", map[string]any{
+			"__tauriTarget": "main",
+		})
+	})
+
+	trayMenu := app.NewMenu()
+	trayMenu.Add("显示主窗口").OnClick(func(ctx *application.Context) {
+		showMainWindow()
+	})
+	trayMenu.Add("退出").OnClick(func(ctx *application.Context) {
+		requestAppQuit()
+	})
+	systemTray := app.SystemTray.New()
+	if len(appIcon) > 0 {
+		systemTray.SetIcon(appIcon)
+	}
+	systemTray.SetTooltip("CloudPlayer")
+	systemTray.SetMenu(trayMenu)
+	systemTray.OnClick(func() {
+		showMainWindow()
+	})
+
 	if err := app.Run(); err != nil {
 		log.Fatal(err)
 	}
+}
+
+func requestAppQuit() {
+	quitRequested.Store(true)
+	application.Get().Quit()
+}
+
+func showMainWindow() {
+	window, ok := application.Get().Window.GetByName("main")
+	if !ok {
+		return
+	}
+	window.Show()
+	window.Focus()
 }
 
 func mediaHandler(next http.Handler) http.Handler {
