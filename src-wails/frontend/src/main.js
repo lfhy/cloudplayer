@@ -117,6 +117,20 @@ const downloadTasksBySourceId = new Map();
 let localLibraryRows = [];
 let lastLibraryFolder = "";
 
+function isMacDesktop() {
+  const platform =
+    globalThis.navigator?.userAgentData?.platform || globalThis.navigator?.platform || "";
+  if (typeof platform === "string" && /mac/i.test(platform)) {
+    return true;
+  }
+  const os = globalThis.window?._wails?.environment?.OS;
+  return typeof os === "string" && os.toLowerCase() === "darwin";
+}
+
+function applyPlatformClassNames() {
+  document.documentElement.classList.toggle("platform-macos", isMacDesktop());
+}
+
 function loadLikedSet() {
   try {
     const raw = localStorage.getItem("cp_tauri_liked_ids");
@@ -2554,6 +2568,7 @@ function wireVolume() {
 }
 
 document.addEventListener("DOMContentLoaded", () => {
+  applyPlatformClassNames();
   renderSidebar();
   setPage("discover");
   wireQueueToggle();

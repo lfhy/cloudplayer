@@ -7,6 +7,8 @@
   --text-secondary: #888888;
   --border: #e5e5e5;
   --sidebar-width: 200px;
+  --titlebar-left-gap: 16px;
+  --sidebar-top-gap: 12px;
 }
 
 * {
@@ -21,6 +23,11 @@ body {
   font-size: 13px;
   color: var(--text);
   background: var(--bg-main);
+}
+
+.platform-macos {
+  --titlebar-left-gap: 16px;
+  --sidebar-top-gap: 46px;
 }
 
 .app-root {
@@ -41,11 +48,16 @@ body {
   min-width: var(--sidebar-width);
   background: var(--bg-main);
   border-right: 1px solid var(--border);
-  padding: 12px 8px;
+  padding: var(--sidebar-top-gap) 8px 12px;
   display: flex;
   flex-direction: column;
   gap: 4px;
   min-height: 0;
+}
+
+.platform-macos .sidebar {
+  background:
+    linear-gradient(180deg, #e8eaee 0px, #eff0f3 38px, var(--bg-main) 94px);
 }
 
 .sidebar-playlist-section {
@@ -191,7 +203,26 @@ body {
 
 .top-search-row {
   background: var(--bg-main);
-  padding: 8px 16px 8px 16px;
+  display: flex;
+  align-items: center;
+  min-height: 52px;
+  padding: 8px 16px 8px var(--titlebar-left-gap);
+  --wails-draggable: drag;
+}
+
+.platform-macos .top-search-row {
+  background:
+    linear-gradient(180deg, #eef0f3 0px, var(--bg-main) 52px);
+}
+
+.top-search-row .neon-search-wrap,
+.top-search-row .neon-search-inner,
+.top-search-row .global-search,
+.top-search-row .global-search-btn,
+.top-search-row input,
+.top-search-row button,
+.top-search-row svg {
+  --wails-draggable: no-drag;
 }
 
 /* 对齐 Py 版 NeonSearchBar：白底 + 横向青→品红→金渐变描边（未聚焦略淡，聚焦更亮） */

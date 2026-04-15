@@ -57,6 +57,10 @@ func main() {
 		Height:           700,
 		URL:              "/",
 		BackgroundColour: application.NewRGB(245, 245, 247),
+		Mac: application.MacWindow{
+			TitleBar:                application.MacTitleBarHiddenInset,
+			InvisibleTitleBarHeight: 56,
+		},
 	})
 	mainWindow.RegisterHook(events.Common.WindowClosing, func(event *application.WindowEvent) {
 		if quitRequested.Load() {
