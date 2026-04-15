@@ -20,6 +20,14 @@ export function EnsureWindow(req) {
 
 /**
  * @param {string} label
+ * @returns {$CancellablePromise<void>}
+ */
+export function FocusWindow(label) {
+    return $Call.ByID(410518763, label);
+}
+
+/**
+ * @param {string} label
  * @returns {$CancellablePromise<$models.WindowInfo>}
  */
 export function GetWindowInfo(label) {
@@ -30,11 +38,27 @@ export function GetWindowInfo(label) {
 
 /**
  * @param {string} label
+ * @returns {$CancellablePromise<void>}
+ */
+export function HideWindow(label) {
+    return $Call.ByID(2947540501, label);
+}
+
+/**
+ * @param {string} label
  * @param {boolean} ignore
  * @returns {$CancellablePromise<void>}
  */
 export function SetWindowIgnoreMouseEvents(label, ignore) {
     return $Call.ByID(4277974361, label, ignore);
+}
+
+/**
+ * @param {string} label
+ * @returns {$CancellablePromise<void>}
+ */
+export function ShowWindow(label) {
+    return $Call.ByID(872464160, label);
 }
 
 // Private type creation functions

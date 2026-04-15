@@ -102,6 +102,33 @@ func (s *DesktopService) SetWindowIgnoreMouseEvents(label string, ignore bool) e
 	return nil
 }
 
+func (s *DesktopService) ShowWindow(label string) error {
+	window, ok := application.Get().Window.GetByName(label)
+	if !ok {
+		return fmt.Errorf("window %q not found", label)
+	}
+	window.Show()
+	return nil
+}
+
+func (s *DesktopService) HideWindow(label string) error {
+	window, ok := application.Get().Window.GetByName(label)
+	if !ok {
+		return fmt.Errorf("window %q not found", label)
+	}
+	window.Hide()
+	return nil
+}
+
+func (s *DesktopService) FocusWindow(label string) error {
+	window, ok := application.Get().Window.GetByName(label)
+	if !ok {
+		return fmt.Errorf("window %q not found", label)
+	}
+	window.Focus()
+	return nil
+}
+
 func backgroundType(transparent bool) application.BackgroundType {
 	if transparent {
 		return application.BackgroundTypeTransparent

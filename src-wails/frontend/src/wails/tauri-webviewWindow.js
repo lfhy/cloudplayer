@@ -75,18 +75,15 @@ export class WebviewWindow {
   }
 
   async show() {
-    const windowRef = await this.getRuntimeWindow();
-    await windowRef.Show();
+    await DesktopService.ShowWindow(await this.getResolvedLabel());
   }
 
   async hide() {
-    const windowRef = await this.getRuntimeWindow();
-    await windowRef.Hide();
+    await DesktopService.HideWindow(await this.getResolvedLabel());
   }
 
   async setFocus() {
-    const windowRef = await this.getRuntimeWindow();
-    await windowRef.Focus();
+    await DesktopService.FocusWindow(await this.getResolvedLabel());
   }
 
   async isVisible() {
