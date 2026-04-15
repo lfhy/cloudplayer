@@ -85,78 +85,85 @@
       body:not(.lyrics-locked) .frame:hover .wrap::before {
         opacity: 1;
       }
-      body:not(.lyrics-locked) .ly-toolbar {
+      body:not(.lyrics-locked) .ly-toolbar,
+      body:not(.lyrics-locked) .ly-lock-btn {
         opacity: 0;
         pointer-events: none;
         transition: opacity 0.15s ease;
       }
-      body:not(.lyrics-locked) .frame:hover .ly-toolbar {
+      body:not(.lyrics-locked) .frame:hover .ly-toolbar,
+      body:not(.lyrics-locked) .frame:hover .ly-lock-btn {
         opacity: 1;
         pointer-events: auto;
       }
-      /* 锁定：完全穿透，工具栏隐藏（解锁仅主窗口菜单） */
+      /* 锁定后，歌词主体让开鼠标，顶部改由独立解锁按钮接管 */
       body.lyrics-locked .wrap::before {
         display: none;
       }
       body.lyrics-locked .ly-scale {
         display: none !important;
       }
+      body.lyrics-locked .ly-lock-btn {
+        opacity: 0;
+        pointer-events: none;
+      }
       body.lyrics-locked .ly-toolbar {
         display: none;
       }
-      .ly-toolbar {
+      .ly-lock-btn,
+      .ly-tool {
+        margin: 0;
+        box-sizing: border-box;
+        width: 32px;
+        height: 32px;
+        padding: 0;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        color: rgba(255, 255, 255, 0.94);
+        background: rgba(12, 18, 28, 0.58);
+        border: 1px solid rgba(255, 255, 255, 0.14);
+        border-radius: 999px;
+        cursor: pointer;
+        text-shadow: 0 1px 2px rgba(0, 0, 0, 0.85);
+        box-shadow:
+          0 10px 26px rgba(0, 0, 0, 0.28),
+          inset 0 1px 0 rgba(255, 255, 255, 0.06);
+      }
+      .ly-lock-btn:hover,
+      .ly-tool:hover {
+        background: rgba(24, 34, 50, 0.74);
+      }
+      .ly-lock-btn {
         position: absolute;
-        top: 4px;
+        top: 8px;
         left: 50%;
         transform: translateX(-50%);
+        z-index: 10;
+      }
+      .ly-toolbar {
+        position: absolute;
+        top: 8px;
+        right: 10px;
         z-index: 8;
         display: flex;
         align-items: center;
         gap: 6px;
       }
-      .ly-tool {
-        margin: 0;
-        padding: 2px 8px;
-        font-size: 11px;
-        font-weight: 600;
-        letter-spacing: 0.04em;
-        color: rgba(255, 255, 255, 0.92);
-        background: rgba(12, 18, 28, 0.55);
-        border: 1px solid rgba(255, 255, 255, 0.14);
-        border-radius: 8px;
-        cursor: pointer;
-        text-shadow: 0 1px 2px rgba(0, 0, 0, 0.85);
-        flex-shrink: 0;
-      }
-      .ly-tool:hover {
-        background: rgba(22, 32, 48, 0.72);
-      }
       .ly-scale {
         display: flex;
-        gap: 2px;
+        gap: 6px;
       }
-      .ly-scale button {
-        min-width: 26px;
-        padding: 2px 0;
-        font-size: 13px;
-        line-height: 1.1;
+      .ly-icon {
+        width: 16px;
+        height: 16px;
+        display: block;
+        stroke: currentColor;
+        stroke-width: 1.8;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+        fill: none;
       }
-      .lock-hint {
-        position: absolute;
-        top: 4px;
-        left: 50%;
-        transform: translateX(-50%);
-        z-index: 3;
-        font-size: 11px;
-        font-weight: 600;
-        letter-spacing: 0.06em;
-        color: rgba(255, 255, 255, 0.55);
-        text-shadow:
-          0 1px 3px rgba(0, 0, 0, 0.95),
-          0 0 8px rgba(0, 0, 0, 0.7);
-        pointer-events: none;
-      }
-      /* 锁定时提示 */
       .l1,
       .l2 {
         position: relative;
@@ -193,19 +200,31 @@
   </head>
   <body>
     <div class="frame" id="ly-frame" data-tauri-drag-region>
-      <div class="lock-hint" id="lock-hint" hidden aria-hidden="true">已锁定（穿透）</div>
+      <button type="button" class="ly-lock-btn" id="btn-ly-lock" title="锁定桌面歌词" aria-label="锁定桌面歌词">
+        <svg class="ly-icon" viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M8.5 10V7.8a3.5 3.5 0 0 1 7 0V10"></path>
+          <rect x="6.5" y="10" width="11" height="9.5" rx="2.4"></rect>
+          <path d="M12 13.5v2.2"></path>
+        </svg>
+      </button>
       <div class="ly-toolbar" id="ly-toolbar">
-        <button type="button" class="ly-tool" id="btn-ly-lock" title="锁定（解锁请用主窗口 ⋯ 菜单）">
-          锁定
-        </button>
         <span class="ly-scale">
-          <button type="button" class="ly-tool" id="ly-minus" title="缩小字号">−</button>
-          <button type="button" class="ly-tool" id="ly-plus" title="放大字号">+</button>
+          <button type="button" class="ly-tool" id="ly-minus" title="缩小字号" aria-label="缩小字号">
+            <svg class="ly-icon" viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M7 12h10"></path>
+            </svg>
+          </button>
+          <button type="button" class="ly-tool" id="ly-plus" title="放大字号" aria-label="放大字号">
+            <svg class="ly-icon" viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M12 7v10"></path>
+              <path d="M7 12h10"></path>
+            </svg>
+          </button>
         </span>
       </div>
       <div class="wrap">
         <p class="l1" id="line1">桌面歌词</p>
-        <p class="l2" id="line2">悬停显示按钮；锁定后穿透点击，解锁请用主窗口菜单</p>
+        <p class="l2" id="line2">等待播放</p>
       </div>
     </div>
   </body>

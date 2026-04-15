@@ -10,6 +10,14 @@ let scale = 1;
 let lyricsLocked = false;
 let persistTimer = null;
 
+async function requestMainLyricsSync(reason = "manual") {
+  try {
+    await emitTo(MAIN_WW, "desktop-lyrics-request-sync", { reason });
+  } catch (e) {
+    console.warn("desktop-lyrics-request-sync", e);
+  }
+}
+
 function schedulePersistBounds() {
   if (persistTimer) clearTimeout(persistTimer);
   persistTimer = setTimeout(() => {
@@ -56,7 +64,7 @@ function setLines(a, b) {
   if (e2) e2.textContent = b || "—";
 }
 
-/** 锁定：完全穿透；未锁定：正常交互并可拖动。 */
+/** 锁定后歌词主体让开鼠标；未锁定时可拖动。 */
 async function applyCursorPassthrough(locked) {
   try {
     await lyricsWin.setIgnoreCursorEvents(!!locked);
@@ -68,21 +76,10 @@ async function applyCursorPassthrough(locked) {
 function applyLyricsLockUi(locked) {
   lyricsLocked = !!locked;
   document.body.classList.toggle("lyrics-locked", lyricsLocked);
-  const hint = document.getElementById("lock-hint");
   const lockBtn = document.getElementById("btn-ly-lock");
   if (lockBtn) {
-    lockBtn.textContent = "锁定";
-    lockBtn.title = "锁定（解锁请用主窗口 ⋯ 菜单）";
-  }
-  if (hint) {
-    if (lyricsLocked) {
-      hint.hidden = false;
-      hint.textContent = "已锁定 请在主窗口 ⋯ 菜单解锁";
-      hint.setAttribute("aria-hidden", "false");
-    } else {
-      hint.hidden = true;
-      hint.setAttribute("aria-hidden", "true");
-    }
+    lockBtn.title = "锁定桌面歌词";
+    lockBtn.setAttribute("aria-label", "锁定桌面歌词");
   }
   if (frameEl) {
     if (lyricsLocked) frameEl.removeAttribute("data-tauri-drag-region");
@@ -137,25 +134,38 @@ async function initLyricsWindow() {
       /* ignore */
     }
   });
+
+  void requestMainLyricsSync("init");
+  window.setTimeout(() => {
+    void requestMainLyricsSync("init-delay");
+  }, 180);
+  document.addEventListener("visibilitychange", () => {
+    if (!document.hidden) {
+      void requestMainLyricsSync("visibility");
+      return;
+    }
+  });
+  window.addEventListener("focus", () => {
+    void requestMainLyricsSync("focus");
+  });
 }
 
 void initLyricsWindow();
 
-/** 仅从歌词窗「锁定」；解锁请用主窗口菜单 */
 const lockBtnEl = document.getElementById("btn-ly-lock");
 if (lockBtnEl) {
   lockBtnEl.addEventListener("click", async (ev) => {
     ev.preventDefault();
     ev.stopPropagation();
-    if (lyricsLocked) return;
-    applyLyricsLockUi(true);
     try {
-      await invoke("save_settings", { patch: { desktop_lyrics_locked: true } });
+      const nextLocked = !lyricsLocked;
+      applyLyricsLockUi(nextLocked);
+      await invoke("save_settings", { patch: { desktop_lyrics_locked: nextLocked } });
     } catch (e) {
       console.warn("save_settings fail", e);
     }
     try {
-      await emitTo(MAIN_WW, "desktop-lyrics-lock-sync", { locked: true });
+      await emitTo(MAIN_WW, "desktop-lyrics-lock-sync", { locked: lyricsLocked });
     } catch (e) {
       console.warn("emitTo main fail", e);
     }

@@ -1,6 +1,6 @@
 import { Events, Window as RuntimeWindow } from "@wailsio/runtime";
 import { DesktopService } from "../../bindings/cloudplayer";
-import { currentWindowLabel, emitPseudo, getWindowInfo, makeLogicalRect, onPseudo } from "./shared.js";
+import { currentWindowLabel, emitPseudo, getWindowInfo, onPseudo } from "./shared.js";
 
 function unwrap(event) {
   const payload = event?.data;
@@ -98,13 +98,30 @@ export class WebviewWindow {
   async outerPosition() {
     const windowRef = await this.getRuntimeWindow();
     const pos = await windowRef.Position();
-    return makeLogicalRect(pos);
+    return {
+      ...pos,
+      toLogical(scaleFactor = 1) {
+        const factor = Number(scaleFactor) || 1;
+        return {
+          x: pos.x / factor,
+          y: pos.y / factor,
+        };
+      },
+    };
   }
 
   async outerSize() {
     const windowRef = await this.getRuntimeWindow();
     const size = await windowRef.Size();
-    return makeLogicalRect(size);
+    return {
+      ...size,
+      toLogical() {
+        return {
+          width: size.width,
+          height: size.height,
+        };
+      },
+    };
   }
 
   async setIgnoreCursorEvents(ignore) {

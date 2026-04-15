@@ -58,7 +58,7 @@ let importTracks = [];
 /** 桌面歌词独立窗口是否处于显示状态（隐藏/关闭后为 false） */
 let desktopLyricsOpen = false;
 let desktopLyricsWindow = null;
-/** 默认解锁，打开后即可拖动；需要穿透时再由用户显式锁定 */
+/** 默认解锁，打开后即可拖动；需要锁定时再由用户显式切换 */
 let desktopLyricsLocked = false;
 /** @type {{ t: number, text: string }[]} */
 let lrcEntries = [];
@@ -75,6 +75,25 @@ let playlistDetailRows = [];
 let importShareSuggestedName = "";
 let neteaseCookieEnabled = false;
 let neteaseCookieValue = "";
+
+function dockLyricsLockIcon(unlockAction) {
+  if (unlockAction) {
+    return `
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M16 10V7.8a3.5 3.5 0 0 0-6-2.5"></path>
+        <rect x="6.5" y="10" width="11" height="9.5" rx="2.4"></rect>
+        <path d="M12 13.5v2.2"></path>
+      </svg>
+    `;
+  }
+  return `
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <path d="M8.5 10V7.8a3.5 3.5 0 0 1 7 0V10"></path>
+      <rect x="6.5" y="10" width="11" height="9.5" rx="2.4"></rect>
+      <path d="M12 13.5v2.2"></path>
+    </svg>
+  `;
+}
 
 function syncNeteaseCookieUi() {
   const chk = document.getElementById("opt-netease-cookie-enabled");
@@ -263,9 +282,18 @@ function wireDockBar() {
     removeCurrentFromQueue();
   });
 
-  document.getElementById("btn-more-lyrics-lock")?.addEventListener("click", async (e) => {
+  document.getElementById("btn-dock-lyrics")?.addEventListener("click", async (e) => {
     e.stopPropagation();
-    closeAllDockMenus();
+    try {
+      await toggleDesktopLyrics();
+    } catch (err) {
+      alertRequestFailed(err, "toggleDesktopLyrics");
+    }
+  });
+
+  document.getElementById("btn-dock-lyrics-lock")?.addEventListener("click", async (e) => {
+    e.stopPropagation();
+    if (!desktopLyricsOpen) return;
     desktopLyricsLocked = !desktopLyricsLocked;
     refreshLyricsLockMenuLabel();
     try {
@@ -274,15 +302,6 @@ function wireDockBar() {
       console.warn("save_settings desktop_lyrics_locked", err);
     }
     await broadcastDesktopLyricsLock();
-  });
-
-  document.getElementById("btn-dock-lyrics")?.addEventListener("click", async (e) => {
-    e.stopPropagation();
-    try {
-      await toggleDesktopLyrics();
-    } catch (err) {
-      alertRequestFailed(err, "toggleDesktopLyrics");
-    }
   });
 
   document.getElementById("btn-dock-queue")?.addEventListener("click", (e) => {
@@ -815,10 +834,9 @@ function lyricLinesAtTime(ct) {
 const LYRICS_WW_TARGET = { kind: "WebviewWindow", label: "lyrics" };
 
 async function broadcastDesktopLyricsLock() {
-  /** 同步锁定状态到歌词子窗；歌词窗内 `setIgnoreCursorEvents` 实现完全穿透，解锁仅本菜单 */
+  /** 同步锁定状态到歌词子窗 */
   if (desktopLyricsOpen) {
     try {
-      /** `WebviewWindow.emit` 走全局 broadcast，子 Webview 常收不到；`emitTo(WebviewWindow)` 定向投递 */
       await emitTo(LYRICS_WW_TARGET, "desktop-lyrics-lock", { locked: desktopLyricsLocked });
     } catch (e) {
       console.warn("emit desktop-lyrics-lock", e);
@@ -827,11 +845,18 @@ async function broadcastDesktopLyricsLock() {
 }
 
 function refreshLyricsLockMenuLabel() {
-  const btn = document.getElementById("btn-more-lyrics-lock");
+  const btn = document.getElementById("btn-dock-lyrics-lock");
   if (!btn) return;
-  btn.textContent = desktopLyricsLocked
-    ? "桌面歌词：已锁定（穿透点击）— 点此解锁"
-    : "桌面歌词：未锁定（可拖动）— 点此锁定";
+  btn.disabled = !desktopLyricsOpen;
+  btn.classList.toggle("is-on", desktopLyricsOpen && desktopLyricsLocked);
+  btn.innerHTML = dockLyricsLockIcon(desktopLyricsOpen && desktopLyricsLocked);
+  const title = !desktopLyricsOpen
+    ? "先打开桌面歌词"
+    : desktopLyricsLocked
+      ? "解锁桌面歌词"
+      : "锁定桌面歌词";
+  btn.title = title;
+  btn.setAttribute("aria-label", title);
 }
 
 async function pushDesktopLyricsLines(line1, line2) {
@@ -915,8 +940,25 @@ async function syncDesktopLyrics() {
   await pushDesktopLyricsLines(a, b);
 }
 
+async function syncDesktopLyricsState() {
+  if (!desktopLyricsOpen) return;
+  await syncDesktopLyrics();
+  await broadcastDesktopLyricsLock();
+}
+
+function scheduleDesktopLyricsStateSync(delays = [80, 260]) {
+  if (!desktopLyricsOpen) return;
+  for (const delay of delays) {
+    window.setTimeout(() => {
+      if (!desktopLyricsOpen) return;
+      void syncDesktopLyricsState();
+    }, delay);
+  }
+}
+
 async function setDockLyricsActive(on) {
   document.getElementById("btn-dock-lyrics")?.classList.toggle("is-on", on);
+  refreshLyricsLockMenuLabel();
 }
 
 function defaultDesktopLyricsBounds() {
@@ -959,12 +1001,9 @@ async function openDesktopLyricsFromSettingsIfNeeded(s) {
     if (!vis) await existing.show();
     desktopLyricsOpen = true;
     await setDockLyricsActive(true);
-    lrcCacheKey = null;
     await ensureLrcLoadedForCurrentTrack(playLoadGeneration);
-    await syncDesktopLyrics();
-    queueMicrotask(() => {
-      void broadcastDesktopLyricsLock();
-    });
+    await syncDesktopLyricsState();
+    scheduleDesktopLyricsStateSync();
     return;
   }
   const b = desktopLyricsBoundsFromSettings(s);
@@ -997,12 +1036,9 @@ async function openDesktopLyricsFromSettingsIfNeeded(s) {
     });
     desktopLyricsOpen = true;
     await setDockLyricsActive(true);
-    lrcCacheKey = null;
     await ensureLrcLoadedForCurrentTrack(playLoadGeneration);
-    await syncDesktopLyrics();
-    queueMicrotask(() => {
-      void broadcastDesktopLyricsLock();
-    });
+    await syncDesktopLyricsState();
+    scheduleDesktopLyricsStateSync();
   });
 }
 
@@ -1022,12 +1058,9 @@ async function toggleDesktopLyrics() {
     desktopLyricsOpen = true;
     await setDockLyricsActive(true);
     await persistDesktopLyricsVisible(true);
-    lrcCacheKey = null;
     await ensureLrcLoadedForCurrentTrack(playLoadGeneration);
-    await syncDesktopLyrics();
-    queueMicrotask(() => {
-      void broadcastDesktopLyricsLock();
-    });
+    await syncDesktopLyricsState();
+    scheduleDesktopLyricsStateSync();
     return;
   }
 
@@ -1073,12 +1106,9 @@ async function toggleDesktopLyrics() {
     desktopLyricsOpen = true;
     await setDockLyricsActive(true);
     await persistDesktopLyricsVisible(true);
-    lrcCacheKey = null;
     await ensureLrcLoadedForCurrentTrack(playLoadGeneration);
-    await syncDesktopLyrics();
-    queueMicrotask(() => {
-      void broadcastDesktopLyricsLock();
-    });
+    await syncDesktopLyricsState();
+    scheduleDesktopLyricsStateSync();
   });
 }
 
@@ -2233,6 +2263,7 @@ async function loadSettings() {
     if (s && typeof s.desktop_lyrics_locked === "boolean") {
       desktopLyricsLocked = s.desktop_lyrics_locked;
     }
+    refreshLyricsLockMenuLabel();
     if (s && typeof s.last_library_folder === "string") {
       lastLibraryFolder = s.last_library_folder.trim();
     }
@@ -2331,7 +2362,10 @@ document.addEventListener("DOMContentLoaded", () => {
     desktopLyricsLocked = locked;
     refreshLyricsLockMenuLabel();
   });
-  /** 歌词窗内点「锁定」：与底栏 ⋯ 同源，由主窗写 settings + 广播 + 原生穿透（子页 invoke 易失效） */
+  listen("desktop-lyrics-request-sync", async () => {
+    await ensureLrcLoadedForCurrentTrack(playLoadGeneration);
+    await syncDesktopLyricsState();
+  });
   listen("download-task-changed", (e) => {
     const p = e?.payload;
     const sid = p?.source_id ?? p?.sourceId;

@@ -258,9 +258,6 @@
               <div class="dock-menu-anchor">
                 <button type="button" id="btn-dock-more" class="dock-ic" title="更多">⋯</button>
                 <div id="popover-more" class="dock-menu dock-menu--up" role="menu" hidden>
-                  <button type="button" class="dock-menu__item" id="btn-more-lyrics-lock" data-more="lyrics-lock">
-                    桌面歌词：已锁定（穿透）— 点此解锁
-                  </button>
                   <button type="button" class="dock-menu__item" data-more="add-pl">添加到歌单…</button>
                   <button type="button" class="dock-menu__item" data-more="rm-queue">从播放列表删除</button>
                 </div>
@@ -297,6 +294,7 @@
             </div>
           </div>
           <button type="button" id="btn-dock-lyrics" class="dock-ic dock-ic--accent" title="桌面歌词（独立窗口）">词</button>
+          <button type="button" id="btn-dock-lyrics-lock" class="dock-ic dock-ic--lock" title="桌面歌词锁定" aria-label="桌面歌词锁定" disabled></button>
           <button type="button" id="btn-dock-queue" class="dock-ic" title="播放列表">☰</button>
           <label class="dock-vol" title="音量">
             <span class="dock-vol__icon" aria-hidden="true">◇</span>

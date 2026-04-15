@@ -37,9 +37,17 @@ func (s *DesktopService) EnsureWindow(req WindowCreateRequest) error {
 		return fmt.Errorf("window label is required")
 	}
 	if existing, ok := application.Get().Window.GetByName(req.Label); ok {
+		if req.Title != "" {
+			existing.SetTitle(req.Title)
+		}
 		if req.URL != "" {
 			existing.SetURL(req.URL)
 		}
+		if req.Width > 0 && req.Height > 0 {
+			existing.SetSize(req.Width, req.Height)
+		}
+		existing.SetPosition(req.X, req.Y)
+		existing.SetAlwaysOnTop(req.AlwaysOnTop)
 		existing.Show()
 		if req.Focus {
 			existing.Focus()

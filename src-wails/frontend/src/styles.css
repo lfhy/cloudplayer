@@ -674,12 +674,38 @@ body {
   font-size: 15px;
   line-height: 1;
   cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   transition: color 0.15s, background 0.15s;
+}
+
+.dock-ic svg {
+  width: 15px;
+  height: 15px;
+  display: block;
+  flex-shrink: 0;
+  margin: 0;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  fill: none;
 }
 
 .dock-ic:hover {
   color: var(--dock-fg);
   background: #f3f4f6;
+}
+
+.dock-ic:disabled {
+  opacity: 0.42;
+  cursor: not-allowed;
+}
+
+.dock-ic:disabled:hover {
+  color: var(--dock-muted);
+  background: transparent;
 }
 
 .dock-ic.is-on {
@@ -692,6 +718,11 @@ body {
 }
 
 .dock-ic--accent.is-on {
+  color: #b91c1c;
+  background: rgba(198, 47, 47, 0.1);
+}
+
+.dock-ic--lock.is-on {
   color: #b91c1c;
   background: rgba(198, 47, 47, 0.1);
 }
@@ -1203,4 +1234,3 @@ body {
 .col-src {
   width: 72px;
 }
-
