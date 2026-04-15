@@ -1,0 +1,13 @@
+[Desktop Entry]
+Version=1.0
+Name=CloudPlayer
+Comment=A CloudPlayer application
+# The Exec line includes %u to pass the URL to the application
+Exec=/usr/local/bin/cloudplayer %u
+Terminal=false
+Type=Application
+Icon=cloudplayer
+Categories=Utility;
+StartupWMClass=cloudplayer
+
+ 

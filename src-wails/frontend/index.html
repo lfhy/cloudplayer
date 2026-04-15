@@ -1,0 +1,307 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="icon" href="data:," />
+    <title>CloudPlayer</title>
+    <script type="module" src="/src/main.js"></script>
+    <link rel="stylesheet" href="/src/styles.css" />
+  </head>
+  <body>
+    <div id="app" class="app-root">
+      <div class="body-row">
+        <aside id="sidebar" class="sidebar"></aside>
+        <div class="main-col">
+          <header class="top-search-row">
+            <div class="neon-search-wrap">
+              <input
+                id="global-search"
+                type="search"
+                class="global-search"
+                placeholder="Search for tracks, artists, albums…"
+                autocomplete="off"
+              />
+            </div>
+          </header>
+          <main id="stack" class="stack">
+            <section class="page page-active" data-page="discover">
+              <h1 class="page-title">发现</h1>
+              <div class="discover-scroll">
+                <div class="table-wrap">
+                  <table class="search-table" id="search-table">
+                    <thead>
+                      <tr>
+                        <th class="col-idx">#</th>
+                        <th class="col-cover"></th>
+                        <th>标题</th>
+                        <th>专辑</th>
+                        <th class="col-dur">时长</th>
+                      </tr>
+                    </thead>
+                    <tbody></tbody>
+                  </table>
+                </div>
+              </div>
+              <div class="discover-toolbar discover-toolbar--footer">
+                <button type="button" id="btn-play-all" class="btn-accent" disabled>▶ 播放全部</button>
+                <button type="button" id="btn-prev-page" disabled>上一页</button>
+                <span id="search-page-info" class="search-page-info muted"></span>
+                <button type="button" id="btn-next-page" disabled>下一页</button>
+              </div>
+            </section>
+            <section class="page" data-page="playlist">
+              <div class="playlist-hero">
+                <img
+                  id="playlist-hero-cover"
+                  class="playlist-hero__cover"
+                  alt=""
+                  width="120"
+                  height="120"
+                  src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Crect fill='%23d1d5db' width='120' height='120' rx='12'/%3E%3C/svg%3E"
+                />
+                <div class="playlist-hero__meta">
+                  <h1 class="playlist-hero__title" id="playlist-page-title">歌单</h1>
+                  <div class="playlist-hero__sub" id="playlist-page-hint">CloudPlayer · 导入歌单</div>
+                  <div class="playlist-hero__count" id="playlist-track-count">共 0 首导入曲目</div>
+                  <div class="playlist-hero__actions">
+                    <button type="button" id="btn-playlist-play-all" class="btn-accent" disabled>▶ 播放全部</button>
+                    <button type="button" id="btn-playlist-back">← 返回</button>
+                  </div>
+                </div>
+              </div>
+              <div class="table-wrap playlist-table-wrap">
+                <table class="search-table playlist-table" id="playlist-detail-table">
+                  <thead>
+                    <tr>
+                      <th class="col-cover"></th>
+                      <th>标题</th>
+                      <th>专辑</th>
+                      <th class="col-like">喜欢</th>
+                      <th class="col-dur">时长</th>
+                    </tr>
+                  </thead>
+                  <tbody></tbody>
+                </table>
+              </div>
+            </section>
+            <section class="page" data-page="recent">
+              <h1 class="page-title">最近播放</h1>
+              <div class="table-wrap">
+                <table class="search-table" id="recent-plays-table">
+                  <thead>
+                    <tr>
+                      <th class="col-idx">#</th>
+                      <th>标题</th>
+                      <th>艺术家</th>
+                      <th class="col-src">来源</th>
+                    </tr>
+                  </thead>
+                  <tbody></tbody>
+                </table>
+              </div>
+            </section>
+            <section class="page" data-page="download">
+              <h1 class="page-title">本地和下载</h1>
+              <div class="page-tabs" role="tablist" aria-label="本地和下载">
+                <button type="button" class="page-tab page-tab--active" data-download-tab="dl" role="tab" aria-selected="true">
+                  下载
+                </button>
+                <button type="button" class="page-tab" data-download-tab="local" role="tab" aria-selected="false">本地</button>
+              </div>
+              <div class="page-tab-panels">
+                <div class="page-tab-panel page-tab-panel--active" data-download-panel="dl" role="tabpanel">
+                  <div class="download-toolbar">
+                    <button type="button" id="btn-pick-download-folder" class="btn-accent">下载保存目录…</button>
+                    <span id="download-folder-hint" class="muted"></span>
+                  </div>
+                  <div class="table-wrap">
+                    <table class="search-table" id="download-queue-table">
+                      <thead>
+                        <tr>
+                          <th>状态</th>
+                          <th>标题</th>
+                          <th>音质</th>
+                          <th class="col-dlprog">进度</th>
+                        </tr>
+                      </thead>
+                      <tbody></tbody>
+                    </table>
+                  </div>
+                </div>
+                <div class="page-tab-panel" data-download-panel="local" role="tabpanel">
+                  <h2 class="page-subtitle">本地音乐</h2>
+                  <div class="local-lib-toolbar">
+                    <button type="button" id="btn-scan-library-folder" class="btn-accent">选择文件夹并扫描</button>
+                    <span id="local-library-status" class="muted" aria-live="polite"></span>
+                  </div>
+                  <div class="table-wrap">
+                    <table class="search-table" id="local-library-table">
+                      <thead>
+                        <tr>
+                          <th class="col-idx">#</th>
+                          <th>歌曲</th>
+                          <th>歌手</th>
+                          <th class="col-path">路径</th>
+                        </tr>
+                      </thead>
+                      <tbody></tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
+            </section>
+            <section class="page" data-page="import">
+              <p class="import-section-title">一、分享链接（网易云 / QQ 音乐）</p>
+              <div class="import-share-row">
+                <input
+                  id="import-share-url"
+                  type="url"
+                  class="import-link-input"
+                  placeholder="粘贴歌单分享链接，例如 music.163.com / y.qq.com / c6.y.qq.com …"
+                  autocomplete="off"
+                />
+                <button type="button" id="btn-import-share" class="btn-accent">解析链接</button>
+              </div>
+              <div class="import-share-cookie-row" hidden>
+                <label>
+                  <input type="checkbox" id="opt-netease-cookie-enabled" />
+                  网易云 Cookie 登录态请求（可选）
+                </label>
+                <input
+                  id="opt-netease-cookie"
+                  type="text"
+                  class="import-link-input"
+                  placeholder="MUSIC_U=...; __csrf=...（仅本机保存到 settings.json）"
+                  autocomplete="off"
+                />
+              </div>
+              <p id="import-share-status" class="import-share-status muted" aria-live="polite"></p>
+              <p class="import-section-title">二、粘贴文本</p>
+              <div class="import-toolbar">
+                <label class="import-label">格式</label>
+                <select id="import-fmt" class="import-select">
+                  <option value="auto">自动检测</option>
+                  <option value="text">纯文本</option>
+                  <option value="csv">CSV</option>
+                  <option value="json">JSON</option>
+                </select>
+                <button type="button" id="btn-import-parse" class="btn-accent">解析文本</button>
+              </div>
+              <textarea id="import-text" class="import-textarea" rows="10" placeholder="示例：&#10;晴天 - 周杰伦&#10;七里香 - 周杰伦"></textarea>
+              <div class="import-actions">
+                <button type="button" id="btn-import-export-txt" disabled>导出为 TXT</button>
+                <button type="button" id="btn-import-export-csv" disabled>导出为 CSV</button>
+                <button type="button" id="btn-import-save-new" class="btn-accent" disabled>保存为新歌单</button>
+                <div class="import-merge">
+                  <label for="import-merge-playlist">合并到</label>
+                  <select id="import-merge-playlist" class="import-select import-select--wide"></select>
+                  <button type="button" id="btn-import-merge" disabled>合并</button>
+                </div>
+              </div>
+              <p class="import-merge-hint muted">
+                「合并到」下列表与左侧「我的歌单」同源（<code>library.db</code>）。
+              </p>
+              <div class="table-wrap import-table-wrap">
+                <table class="search-table import-table" id="import-table">
+                  <thead>
+                    <tr>
+                      <th class="col-idx">#</th>
+                      <th>歌名</th>
+                      <th>歌手</th>
+                      <th>专辑</th>
+                    </tr>
+                  </thead>
+                  <tbody></tbody>
+                </table>
+              </div>
+            </section>
+          </main>
+        </div>
+      </div>
+      <div id="queue-panel" class="queue-panel collapsed">
+        <div class="queue-header">
+          <span>播放队列</span>
+          <button type="button" id="queue-toggle" class="queue-toggle">收起</button>
+        </div>
+        <div id="queue-body" class="queue-body">
+          <ul id="queue-list" class="queue-list"></ul>
+        </div>
+      </div>
+      <footer class="dock-player" aria-label="播放控制">
+        <div class="dock-player__left">
+          <div class="dock-player__art">
+            <img
+              id="dock-cover"
+              width="52"
+              height="52"
+              alt=""
+              src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='52' height='52'%3E%3Crect fill='%231a222d' width='52' height='52' rx='10'/%3E%3C/svg%3E"
+            />
+          </div>
+          <div class="dock-player__meta-col">
+            <div id="dock-title" class="dock-player__title">未播放</div>
+            <div id="dock-sub" class="dock-player__sub">选择曲目或搜索后双击列表</div>
+            <div class="dock-player__acts">
+              <button type="button" id="btn-dock-fav" class="dock-ic" title="喜欢">♡</button>
+              <div class="dock-menu-anchor">
+                <button type="button" id="btn-dock-dl" class="dock-ic" title="下载（选择音质）">↓</button>
+                <div id="popover-dl" class="dock-menu dock-menu--up" role="menu" hidden>
+                  <button type="button" class="dock-menu__item" data-dlq="flac">FLAC 无损</button>
+                  <button type="button" class="dock-menu__item" data-dlq="320">HQ 高品质</button>
+                  <button type="button" class="dock-menu__item" data-dlq="128">标准 128K</button>
+                </div>
+              </div>
+              <div class="dock-menu-anchor">
+                <button type="button" id="btn-dock-more" class="dock-ic" title="更多">⋯</button>
+                <div id="popover-more" class="dock-menu dock-menu--up" role="menu" hidden>
+                  <button type="button" class="dock-menu__item" id="btn-more-lyrics-lock" data-more="lyrics-lock">
+                    桌面歌词：已锁定（穿透）— 点此解锁
+                  </button>
+                  <button type="button" class="dock-menu__item" data-more="add-pl">添加到歌单…</button>
+                  <button type="button" class="dock-menu__item" data-more="rm-queue">从播放列表删除</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="dock-player__center">
+          <div class="dock-player__transport">
+            <button type="button" id="btn-play-mode" class="dock-mode" title="顺序播放（点击切换模式）">序</button>
+            <button type="button" id="btn-player-prev" class="dock-tbtn" disabled title="上一首" aria-label="上一首">
+              ⏮
+            </button>
+            <button type="button" id="btn-player-play" class="dock-tbtn dock-tbtn--main" disabled title="播放" aria-label="播放">
+              ▶
+            </button>
+            <button type="button" id="btn-player-next" class="dock-tbtn" disabled title="下一首" aria-label="下一首">
+              ⏭
+            </button>
+          </div>
+          <div class="dock-player__timeline">
+            <span id="time-current" class="dock-time">0:00</span>
+            <input type="range" id="seek" class="dock-seek" min="0" max="1000" value="0" step="1" disabled aria-label="进度" />
+            <span id="time-total" class="dock-time">0:00</span>
+          </div>
+        </div>
+        <div class="dock-player__tools">
+          <div class="dock-menu-anchor">
+            <button type="button" id="dock-quality" class="dock-chip" title="音质偏好（展示；下载以菜单为准）">标准</button>
+            <div id="popover-quality" class="dock-menu dock-menu--up dock-menu--right" role="menu" hidden>
+              <button type="button" class="dock-menu__item" data-quality="flac">无损</button>
+              <button type="button" class="dock-menu__item" data-quality="320">HQ</button>
+              <button type="button" class="dock-menu__item" data-quality="128">标准</button>
+            </div>
+          </div>
+          <button type="button" id="btn-dock-lyrics" class="dock-ic dock-ic--accent" title="桌面歌词（独立窗口）">词</button>
+          <button type="button" id="btn-dock-queue" class="dock-ic" title="播放列表">☰</button>
+          <label class="dock-vol" title="音量">
+            <span class="dock-vol__icon" aria-hidden="true">◇</span>
+            <input id="volume" type="range" min="0" max="100" value="70" class="dock-vol__range" />
+          </label>
+        </div>
+      </footer>
+    </div>
+    <audio id="audio-player" preload="metadata"></audio>
+  </body>
+</html>

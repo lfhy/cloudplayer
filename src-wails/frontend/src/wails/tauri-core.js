@@ -1,0 +1,45 @@
+import { CloudPlayerService } from "../../bindings/cloudplayer";
+
+const invokeMap = {
+  append_playlist_import_items: (args) =>
+    CloudPlayerService.AppendPlaylistImportItems(args.playlistId, args.items),
+  create_playlist: (args) => CloudPlayerService.CreatePlaylist(args.name),
+  db_status: () => CloudPlayerService.DBStatus(),
+  delete_playlist: (args) => CloudPlayerService.DeletePlaylist(args.playlistId),
+  delete_playlist_import_item: (args) =>
+    CloudPlayerService.DeletePlaylistImportItem(args.playlistId, args.itemId),
+  enqueue_download: (args) => CloudPlayerService.EnqueueDownload(args),
+  fetch_share_playlist: (args) => CloudPlayerService.FetchSharePlaylist(args.url),
+  fetch_song_lrc_enriched: (args) => CloudPlayerService.FetchSongLRCEnriched(args.req),
+  get_settings: () => CloudPlayerService.GetSettings(),
+  list_local_songs: () => CloudPlayerService.ListLocalSongs(),
+  list_playlist_import_items: (args) =>
+    CloudPlayerService.ListPlaylistImportItems(args.playlistId),
+  list_playlists: () => CloudPlayerService.ListPlaylists(),
+  list_recent_plays: () => CloudPlayerService.ListRecentPlays(),
+  parse_import_text: (args) => CloudPlayerService.ParseImportText(args.text, args.fmt),
+  record_recent_play: (args) => CloudPlayerService.RecordRecentPlay(args.row),
+  rename_playlist: (args) => CloudPlayerService.RenamePlaylist(args.playlistId, args.name),
+  replace_playlist_import_items: (args) =>
+    CloudPlayerService.ReplacePlaylistImportItems(args.playlistId, args.items),
+  resolve_online_play: (args) =>
+    CloudPlayerService.ResolveOnlinePlay(args.songId, args.title, args.artist),
+  save_settings: (args) => CloudPlayerService.SaveSettings(args.patch),
+  scan_music_folder: (args) => CloudPlayerService.ScanMusicFolder(args.path),
+  search_songs: (args) => CloudPlayerService.SearchSongs(args.keyword, args.page),
+};
+
+export function convertFileSrc(path) {
+  if (!path) {
+    return "";
+  }
+  return `/__media__?path=${encodeURIComponent(path)}`;
+}
+
+export async function invoke(command, args = {}) {
+  const handler = invokeMap[command];
+  if (!handler) {
+    throw new Error(`Unsupported invoke command: ${command}`);
+  }
+  return handler(args);
+}

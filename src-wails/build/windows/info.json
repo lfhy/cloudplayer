@@ -1,0 +1,15 @@
+{
+	"fixed": {
+		"file_version": "1.0.0"
+	},
+	"info": {
+		"0000": {
+			"ProductVersion": "1.0.0",
+			"CompanyName": "My Company",
+			"FileDescription": "A CloudPlayer application",
+			"LegalCopyright": "© 2026, My Company",
+			"ProductName": "CloudPlayer",
+			"Comments": "This is a comment"
+		}
+	}
+}
