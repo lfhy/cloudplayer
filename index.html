@@ -15,13 +15,33 @@
         <div class="main-col">
           <header class="top-search-row">
             <div class="neon-search-wrap">
-              <input
-                id="global-search"
-                type="search"
-                class="global-search"
-                placeholder="Search for tracks, artists, albums…"
-                autocomplete="off"
-              />
+              <div class="neon-search-inner">
+                <input
+                  id="global-search"
+                  type="search"
+                  class="global-search"
+                  placeholder="Search for tracks, artists, albums…"
+                  autocomplete="off"
+                />
+                <button type="button" id="btn-global-search" class="global-search-btn" title="搜索" aria-label="搜索">
+                  <svg
+                    class="global-search-btn__icon"
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="18"
+                    height="18"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    aria-hidden="true"
+                  >
+                    <circle cx="11" cy="11" r="8" />
+                    <path d="m21 21-4.3-4.3" />
+                  </svg>
+                </button>
+              </div>
             </div>
           </header>
           <main id="stack" class="stack">
@@ -163,19 +183,6 @@
                 />
                 <button type="button" id="btn-import-share" class="btn-accent">解析链接</button>
               </div>
-              <div class="import-share-cookie-row" hidden>
-                <label>
-                  <input type="checkbox" id="opt-netease-cookie-enabled" />
-                  网易云 Cookie 登录态请求（可选）
-                </label>
-                <input
-                  id="opt-netease-cookie"
-                  type="text"
-                  class="import-link-input"
-                  placeholder="MUSIC_U=...; __csrf=...（仅本机保存到 settings.json）"
-                  autocomplete="off"
-                />
-              </div>
               <p id="import-share-status" class="import-share-status muted" aria-live="polite"></p>
               <p class="import-section-title">二、粘贴文本</p>
               <div class="import-toolbar">
@@ -214,6 +221,37 @@
                   </thead>
                   <tbody></tbody>
                 </table>
+              </div>
+            </section>
+            <section class="page" data-page="settings" aria-label="偏好设置">
+              <h1 class="page-title">偏好设置</h1>
+              <p class="page-hint muted">关闭主窗口行为与桌面歌词颜色将保存到本地配置。</p>
+              <div class="settings-form">
+                <div class="settings-field">
+                  <label for="setting-close-action" class="settings-field-label">关闭主窗口时</label>
+                  <select id="setting-close-action" class="import-select import-select--wide settings-field-control">
+                    <option value="ask">每次询问</option>
+                    <option value="tray">最小化到系统托盘</option>
+                    <option value="quit">退出应用</option>
+                  </select>
+                </div>
+                <div class="settings-field">
+                  <span class="settings-field-label">桌面歌词字色</span>
+                  <div class="settings-colors-row">
+                    <label class="settings-color-lab"
+                      >未唱 <input type="color" id="setting-ly-base" value="#ffffff" title="未唱字色"
+                    /></label>
+                    <label class="settings-color-lab"
+                      >已唱 <input type="color" id="setting-ly-highlight" value="#ffb7d4" title="已唱字色"
+                    /></label>
+                  </div>
+                </div>
+                <div class="settings-toolbar-actions">
+                  <button type="button" class="settings-back-btn" id="btn-settings-back">← 返回</button>
+                  <button type="button" class="settings-save-btn" id="settings-save" disabled aria-disabled="true">
+                    保存
+                  </button>
+                </div>
               </div>
             </section>
           </main>
@@ -262,6 +300,7 @@
                   <button type="button" class="dock-menu__item" data-more="rm-queue">从播放列表删除</button>
                 </div>
               </div>
+              <button type="button" id="btn-dock-settings" class="dock-ic" title="偏好设置" aria-label="偏好设置">⚙</button>
             </div>
           </div>
         </div>
@@ -301,6 +340,20 @@
           </label>
         </div>
       </footer>
+      <div id="close-confirm-modal" class="modal-overlay" hidden aria-hidden="true">
+        <div class="modal-dialog" role="dialog" aria-modal="true" aria-labelledby="close-modal-title">
+          <h3 id="close-modal-title" class="modal-title">关闭主窗口</h3>
+          <p class="modal-desc">请选择本次操作：</p>
+          <div class="modal-actions">
+            <button type="button" class="btn-accent" id="close-choice-tray">最小化到系统托盘</button>
+            <button type="button" class="btn-outline" id="close-choice-quit">退出 CloudPlayer</button>
+          </div>
+          <label class="modal-remember"
+            ><input type="checkbox" id="close-choice-remember" /> 将此次选择记录为默认</label
+          >
+          <button type="button" class="modal-cancel" id="close-choice-cancel">取消</button>
+        </div>
+      </div>
     </div>
     <audio id="audio-player" preload="metadata"></audio>
   </body>

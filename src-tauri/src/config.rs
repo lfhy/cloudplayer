@@ -59,12 +59,15 @@ pub struct Settings {
     /// 逗号分隔：pjmp3, netease, lrclib
     #[serde(default = "default_lyrics_order")]
     pub lyrics_provider_order: String,
-    /// 导入网易云分享歌单时，是否启用自定义 Cookie 请求（用于需要登录态的公开可见歌单）。
-    #[serde(default)]
-    pub share_netease_cookie_enabled: bool,
-    /// 导入网易云分享歌单时使用的 Cookie 原文（可留空）。
-    #[serde(default)]
-    pub share_netease_cookie: String,
+    /// 主窗口关闭：`ask` 每次询问，`quit` 退出，`tray` 最小化到托盘
+    #[serde(default = "default_main_window_close_action")]
+    pub main_window_close_action: String,
+    /// 桌面歌词未唱字色（#RRGGBB）
+    #[serde(default = "default_desktop_lyrics_color_base")]
+    pub desktop_lyrics_color_base: String,
+    /// 桌面歌词已唱字色（#RRGGBB）
+    #[serde(default = "default_desktop_lyrics_color_highlight")]
+    pub desktop_lyrics_color_highlight: String,
 }
 
 fn default_volume() -> f64 {
@@ -88,7 +91,19 @@ fn default_lyrics_lrclib() -> bool {
 }
 
 fn default_lyrics_order() -> String {
-    "pjmp3,lrclib,netease".to_string()
+    "pjmp3,netease,lrclib".to_string()
+}
+
+fn default_main_window_close_action() -> String {
+    "ask".to_string()
+}
+
+fn default_desktop_lyrics_color_base() -> String {
+    "#ffffff".to_string()
+}
+
+fn default_desktop_lyrics_color_highlight() -> String {
+    "#ffb7d4".to_string()
 }
 
 impl Default for Settings {
@@ -112,8 +127,9 @@ impl Default for Settings {
             lyrics_netease_api_base: String::new(),
             lyrics_lrclib_enabled: default_lyrics_lrclib(),
             lyrics_provider_order: default_lyrics_order(),
-            share_netease_cookie_enabled: false,
-            share_netease_cookie: String::new(),
+            main_window_close_action: default_main_window_close_action(),
+            desktop_lyrics_color_base: default_desktop_lyrics_color_base(),
+            desktop_lyrics_color_highlight: default_desktop_lyrics_color_highlight(),
         }
     }
 }

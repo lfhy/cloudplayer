@@ -13,13 +13,7 @@ use crate::import_playlist::ImportedTrackDto;
 const NETEASE_REFERER: &str = "https://music.163.com/";
 const QQ_REFERER: &str = "https://y.qq.com/";
 
-#[derive(Clone, Debug, Default)]
-pub struct ShareFetchOptions {
-    pub netease_cookie_enabled: bool,
-    pub netease_cookie: String,
-}
-
-fn netease_headers(cookie: Option<&str>) -> reqwest::header::HeaderMap {
+fn netease_headers() -> reqwest::header::HeaderMap {
     let mut h = reqwest::header::HeaderMap::new();
     h.insert(
         reqwest::header::USER_AGENT,
@@ -35,11 +29,6 @@ fn netease_headers(cookie: Option<&str>) -> reqwest::header::HeaderMap {
         reqwest::header::ACCEPT,
         reqwest::header::HeaderValue::from_static("application/json, text/plain, */*"),
     );
-    if let Some(c) = cookie.map(|x| x.trim()).filter(|x| !x.is_empty()) {
-        if let Ok(v) = reqwest::header::HeaderValue::from_str(c) {
-            h.insert(reqwest::header::COOKIE, v);
-        }
-    }
     h
 }
 
@@ -116,7 +105,7 @@ fn extract_netease_playlist_id(raw: &str) -> Option<String> {
     re.captures(raw).map(|c| c[1].to_string())
 }
 
-async fn resolve_netease_share_url(client: &Client, url: &str, cookie: Option<&str>) -> Result<String, String> {
+async fn resolve_netease_share_url(client: &Client, url: &str) -> Result<String, String> {
     let u = url.trim();
     let normalized = if u.starts_with("http://") || u.starts_with("https://") {
         u.to_string()
@@ -129,7 +118,7 @@ async fn resolve_netease_share_url(client: &Client, url: &str, cookie: Option<&s
     let resp = client
         .get(&normalized)
         .timeout(Duration::from_secs(45))
-        .headers(netease_headers(cookie))
+        .headers(netease_headers())
         .send()
         .await
         .map_err(|e| e.to_string())?
@@ -254,7 +243,7 @@ async fn netease_song_detail_batch(client: &Client, ids: &[i64]) -> Result<Vec<I
         let body = client
             .get("https://music.163.com/api/song/detail")
             .timeout(Duration::from_secs(60))
-            .headers(netease_headers(None))
+            .headers(netease_headers())
             .query(&[("ids", ids_str.as_str())])
             .send()
             .await
@@ -293,7 +282,7 @@ async fn netease_song_detail_batch(client: &Client, ids: &[i64]) -> Result<Vec<I
         let body = client
             .post("https://music.163.com/api/v3/song/detail")
             .timeout(Duration::from_secs(60))
-            .headers(netease_headers(None))
+            .headers(netease_headers())
             .form(&[("c", c_payload.as_str())])
             .send()
             .await
@@ -319,17 +308,91 @@ async fn netease_song_detail_batch(client: &Client, ids: &[i64]) -> Result<Vec<I
     Ok(result)
 }
 
-async fn fetch_netease_playlist(
-    client: &Client,
-    url: &str,
-    options: &ShareFetchOptions,
-) -> Result<(String, Vec<ImportedTrackDto>), String> {
-    let cookie = if options.netease_cookie_enabled {
-        Some(options.netease_cookie.as_str())
-    } else {
-        None
-    };
-    let resolved = resolve_netease_share_url(client, url, cookie).await?;
+async fn fetch_netease_playlist_via_unmeta(client: &Client, url: &str) -> Result<(String, Vec<ImportedTrackDto>), String> {
+    let mut h = reqwest::header::HeaderMap::new();
+    h.insert(
+        reqwest::header::USER_AGENT,
+        reqwest::header::HeaderValue::from_static(
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+        ),
+    );
+    h.insert(
+        reqwest::header::REFERER,
+        reqwest::header::HeaderValue::from_static("https://music.unmeta.cn/"),
+    );
+    h.insert(
+        reqwest::header::ORIGIN,
+        reqwest::header::HeaderValue::from_static("https://music.unmeta.cn"),
+    );
+    let body = client
+        .post("https://sss.unmeta.cn/songlist?detailed=false&format=song-singer&order=normal")
+        .timeout(Duration::from_secs(45))
+        .headers(h)
+        .form(&[("url", url)])
+        .send()
+        .await
+        .map_err(|e| e.to_string())?
+        .error_for_status()
+        .map_err(|e| e.to_string())?
+        .text()
+        .await
+        .map_err(|e| e.to_string())?;
+    let data: Value = serde_json::from_str(&body).map_err(|e| format!("unmeta 返回非 JSON：{e}"))?;
+    let code_ok = data.get("code").and_then(|v| v.as_i64()).unwrap_or_default() == 1;
+    if !code_ok {
+        let msg = data.get("msg").and_then(|v| v.as_str()).unwrap_or("unmeta 解析失败");
+        return Err(msg.to_string());
+    }
+    let songs = data
+        .get("data")
+        .and_then(|x| x.get("songs"))
+        .and_then(|x| x.as_array())
+        .cloned()
+        .unwrap_or_default();
+    if songs.is_empty() {
+        return Err("unmeta 未返回曲目".to_string());
+    }
+    let mut out = Vec::with_capacity(songs.len());
+    for item in songs {
+        let line = item.as_str().unwrap_or("").trim();
+        if line.is_empty() {
+            continue;
+        }
+        let (title, artist) = if let Some((a, b)) = line.split_once(" - ") {
+            (a.trim().to_string(), b.trim().to_string())
+        } else if let Some((a, b)) = line.split_once(" -") {
+            (a.trim().to_string(), b.trim().to_string())
+        } else {
+            (line.to_string(), String::new())
+        };
+        if title.is_empty() {
+            continue;
+        }
+        out.push(ImportedTrackDto {
+            title,
+            artist,
+            album: String::new(),
+        });
+    }
+    if out.is_empty() {
+        return Err("unmeta 返回的曲目为空".to_string());
+    }
+    let name = data
+        .get("data")
+        .and_then(|x| x.get("name"))
+        .and_then(|x| x.as_str())
+        .map(|s| s.trim().to_string())
+        .filter(|s| !s.is_empty())
+        .or_else(|| extract_netease_playlist_id(url).map(|id| format!("网易云歌单 {id}")))
+        .unwrap_or_else(|| "网易云歌单".to_string());
+    Ok((name, out))
+}
+
+async fn fetch_netease_playlist(client: &Client, url: &str) -> Result<(String, Vec<ImportedTrackDto>), String> {
+    if let Ok(via_unmeta) = fetch_netease_playlist_via_unmeta(client, url).await {
+        return Ok(via_unmeta);
+    }
+    let resolved = resolve_netease_share_url(client, url).await?;
     let pid = extract_netease_playlist_id(&resolved).ok_or_else(|| {
         "无法从链接中识别网易云歌单 id（请使用 music.163.com 歌单分享链接）。".to_string()
     })?;
@@ -342,7 +405,7 @@ async fn fetch_netease_playlist(
         let body = client
             .get(ep)
             .timeout(Duration::from_secs(60))
-            .headers(netease_headers(cookie))
+            .headers(netease_headers())
             .query(&[("id", pid.as_str()), ("n", "100000"), ("s", "0")])
             .send()
             .await
@@ -396,7 +459,7 @@ async fn fetch_netease_playlist(
         if let Ok(resp) = client
             .get(&page_url)
             .timeout(Duration::from_secs(45))
-            .headers(netease_headers(cookie))
+            .headers(netease_headers())
             .send()
             .await
         {
@@ -669,7 +732,6 @@ async fn fetch_qq_playlist(client: &Client, url: &str) -> Result<(String, Vec<Im
 pub async fn fetch_playlist_from_share_url(
     client: &Client,
     url: &str,
-    options: ShareFetchOptions,
 ) -> Result<(String, Vec<ImportedTrackDto>), String> {
     let raw = url.trim();
     if raw.is_empty() {
@@ -681,7 +743,7 @@ pub async fn fetch_playlist_from_share_url(
         extract_first_url_from_text(raw).unwrap_or_else(|| raw.to_string())
     };
     match detect_platform(&normalized) {
-        Some("netease") => fetch_netease_playlist(client, &normalized, &options).await,
+        Some("netease") => fetch_netease_playlist(client, &normalized).await,
         Some("qq") => fetch_qq_playlist(client, &normalized).await,
         _ => Err("暂只支持网易云音乐、QQ 音乐的分享链接（music.163.com / y.qq.com）。".into()),
     }

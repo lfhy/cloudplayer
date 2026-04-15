@@ -10,15 +10,27 @@ mod pjmp3;
 mod rate_limiter;
 mod share_link;
 
+use std::path::PathBuf;
 use std::sync::Arc;
 use std::time::Duration;
 
-use tauri::Manager;
+use tauri::menu::{MenuBuilder, MenuItem};
+use tauri::tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent};
+use tauri::{Emitter, Manager, WindowEvent};
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_dialog::init())
+        .on_window_event(|window, event| {
+            if window.label() != "main" {
+                return;
+            }
+            if let WindowEvent::CloseRequested { api, .. } = event {
+                api.prevent_close();
+                let _ = window.emit("main-close-requested", ());
+            }
+        })
         .setup(|app| {
             let conn = db::open_and_init().map_err(|e| format!("数据库初始化失败: {e}"))?;
             app.manage(db::DbState {
@@ -51,11 +63,63 @@ pub fn run() {
                 download_tx,
             }));
 
+            // 系统托盘：恢复 / 退出；左键单击显示主窗口
+            let tray_icon = app.default_window_icon().cloned().unwrap_or_else(|| {
+                let p = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("icons/32x32.png");
+                tauri::image::Image::from_path(p).expect("load tray icon from icons/32x32.png")
+            });
+            let tray_menu = MenuBuilder::new(app)
+                .item(&MenuItem::with_id(
+                    app,
+                    "tray_show",
+                    "显示主窗口",
+                    true,
+                    None::<&str>,
+                )?)
+                .item(&MenuItem::with_id(app, "tray_quit", "退出", true, None::<&str>)?)
+                .build()?;
+            let _tray = TrayIconBuilder::new()
+                .icon(tray_icon)
+                .menu(&tray_menu)
+                .tooltip("CloudPlayer")
+                .show_menu_on_left_click(false)
+                .on_menu_event(|app, event| {
+                    if event.id == "tray_show" {
+                        if let Some(w) = app.get_webview_window("main") {
+                            let _ = w.show();
+                            let _ = w.set_focus();
+                        }
+                    } else if event.id == "tray_quit" {
+                        app.exit(0);
+                    }
+                })
+                .on_tray_icon_event(|tray, event| {
+                    if let TrayIconEvent::Click {
+                        button,
+                        button_state,
+                        ..
+                    } = event
+                    {
+                        if button == MouseButton::Left && button_state == MouseButtonState::Up {
+                            let app = tray.app_handle();
+                            if let Some(w) = app.get_webview_window("main") {
+                                let _ = w.show();
+                                let _ = w.set_focus();
+                            }
+                        }
+                    }
+                })
+                .build(app)?;
+
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
             commands::get_settings,
             commands::set_desktop_lyrics_click_through,
+            commands::hide_main_window,
+            commands::show_main_window,
+            commands::quit_app,
+            commands::local_path_accessible,
             commands::save_settings,
             commands::db_status,
             commands::search_songs,

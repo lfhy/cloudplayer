@@ -9,6 +9,7 @@
     "allow-main-app",
     "core:webview:allow-create-webview-window",
     "core:event:allow-emit-to",
+    "core:event:allow-listen",
     "core:window:allow-hide",
     "core:window:allow-show",
     "core:window:allow-is-visible",

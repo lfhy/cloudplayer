@@ -1,11 +1,25 @@
 //! 多源歌词解析：pjmp3 页内 LRC →（可选）网易云 API →（可选）LRCLIB。
 
 use reqwest::Client;
+use reqwest::header::{HeaderMap, HeaderValue, ACCEPT, REFERER, USER_AGENT};
 use serde::Deserialize;
 use serde_json::Value;
 
 use crate::config::Settings;
 use crate::pjmp3::fetch_song_lrc_text;
+
+fn netease_portal_headers() -> HeaderMap {
+    let mut h = HeaderMap::new();
+    h.insert(
+        USER_AGENT,
+        HeaderValue::from_static(
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+        ),
+    );
+    h.insert(REFERER, HeaderValue::from_static("https://music.163.com/"));
+    h.insert(ACCEPT, HeaderValue::from_static("application/json, text/plain, */*"));
+    h
+}
 
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -76,6 +90,63 @@ async fn lyric_lrclib(
     if let Some(s) = v.get("plainLyrics").and_then(|x| x.as_str()) {
         if looks_like_lrc(s) {
             return Ok(Some(s.to_string()));
+        }
+    }
+    Ok(None)
+}
+
+/// 直连 music.163.com 网页 API（不依赖自托管 NeteaseCloudMusicApi）。
+async fn lyric_netease_music163_portal(
+    client: &Client,
+    title: &str,
+    artist: &str,
+) -> Result<Option<String>, String> {
+    let kw = format!("{artist} {title}");
+    let search = client
+        .get("https://music.163.com/api/search/get/web")
+        .headers(netease_portal_headers())
+        .query(&[("s", kw.as_str()), ("type", "1"), ("limit", "8")])
+        .send()
+        .await
+        .map_err(|e| e.to_string())?;
+    if !search.status().is_success() {
+        return Ok(None);
+    }
+    let sj: Value = search.json::<Value>().await.map_err(|e| e.to_string())?;
+    if sj.get("code").and_then(|x| x.as_i64()).unwrap_or(0) != 200 {
+        return Ok(None);
+    }
+    let id = sj
+        .pointer("/result/songs/0/id")
+        .and_then(|x| x.as_i64())
+        .or_else(|| sj.pointer("/result/songs/0/song/id").and_then(|x| x.as_i64()));
+    let Some(nid) = id else {
+        return Ok(None);
+    };
+    let lr = client
+        .get("https://music.163.com/api/song/lyric")
+        .headers(netease_portal_headers())
+        .query(&[
+            ("id", nid.to_string()),
+            ("lv", "-1".to_string()),
+            ("kv", "-1".to_string()),
+            ("tv", "-1".to_string()),
+        ])
+        .send()
+        .await
+        .map_err(|e| e.to_string())?;
+    if !lr.status().is_success() {
+        return Ok(None);
+    }
+    let lj: Value = lr.json::<Value>().await.map_err(|e| e.to_string())?;
+    if let Some(ly) = lj.pointer("/lrc/lyric").and_then(|x| x.as_str()) {
+        if looks_like_lrc(ly) {
+            return Ok(Some(ly.to_string()));
+        }
+    }
+    if let Some(ly) = lj.get("lrc").and_then(|x| x.as_str()) {
+        if looks_like_lrc(ly) {
+            return Ok(Some(ly.to_string()));
         }
     }
     Ok(None)
@@ -153,17 +224,21 @@ pub async fn fetch_song_lrc_enriched(
                 }
             }
             Prov::Netease => {
+                let mut txt: Option<String> = None;
                 if !settings.lyrics_netease_api_base.trim().is_empty() {
-                    if let Some(txt) = lyric_netease(
+                    txt = lyric_netease(
                         client,
                         settings.lyrics_netease_api_base.trim(),
                         &req.title,
                         &req.artist,
                     )
-                    .await?
-                    {
-                        return Ok(Some(txt));
-                    }
+                    .await?;
+                }
+                if txt.is_none() {
+                    txt = lyric_netease_music163_portal(client, &req.title, &req.artist).await?;
+                }
+                if let Some(t) = txt {
+                    return Ok(Some(t));
                 }
             }
             Prov::Lrclib => {

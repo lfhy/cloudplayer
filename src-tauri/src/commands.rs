@@ -47,8 +47,9 @@ pub struct SettingsPatch {
     pub lyrics_netease_api_base: Option<String>,
     pub lyrics_lrclib_enabled: Option<bool>,
     pub lyrics_provider_order: Option<String>,
-    pub share_netease_cookie_enabled: Option<bool>,
-    pub share_netease_cookie: Option<String>,
+    pub main_window_close_action: Option<String>,
+    pub desktop_lyrics_color_base: Option<String>,
+    pub desktop_lyrics_color_highlight: Option<String>,
 }
 
 /// 由主窗口调用：在原生层对「lyrics」窗设置鼠标穿透（不依赖子 Webview 的 ACL）。
@@ -59,6 +60,38 @@ pub fn set_desktop_lyrics_click_through(app: AppHandle, ignore_cursor_events: bo
     };
     w.set_ignore_cursor_events(ignore_cursor_events)
         .map_err(|e| e.to_string())
+}
+
+/// 关闭到托盘：隐藏主窗口。
+#[tauri::command]
+pub fn hide_main_window(app: AppHandle) -> Result<(), String> {
+    let Some(w) = app.get_webview_window("main") else {
+        return Ok(());
+    };
+    w.hide().map_err(|e| e.to_string())
+}
+
+/// 从托盘恢复主窗口。
+#[tauri::command]
+pub fn show_main_window(app: AppHandle) -> Result<(), String> {
+    let Some(w) = app.get_webview_window("main") else {
+        return Ok(());
+    };
+    w.show().map_err(|e| e.to_string())?;
+    w.set_focus().map_err(|e| e.to_string())?;
+    Ok(())
+}
+
+#[tauri::command]
+pub fn quit_app(app: AppHandle) {
+    app.exit(0);
+}
+
+/// 播放前校验本地路径是否仍为可读文件（避免静默失败）。
+#[tauri::command]
+pub fn local_path_accessible(path: String) -> bool {
+    let p = std::path::Path::new(path.trim());
+    p.is_file()
 }
 
 #[tauri::command]
@@ -106,11 +139,23 @@ pub fn save_settings(patch: SettingsPatch) -> Result<(), String> {
     if let Some(v) = patch.lyrics_provider_order {
         s.lyrics_provider_order = v;
     }
-    if let Some(v) = patch.share_netease_cookie_enabled {
-        s.share_netease_cookie_enabled = v;
+    if let Some(v) = patch.main_window_close_action {
+        let t = v.trim().to_ascii_lowercase();
+        if t == "ask" || t == "quit" || t == "tray" {
+            s.main_window_close_action = t;
+        }
     }
-    if let Some(v) = patch.share_netease_cookie {
-        s.share_netease_cookie = v;
+    if let Some(v) = patch.desktop_lyrics_color_base {
+        let t = v.trim();
+        if t.len() == 7 && t.starts_with('#') && t.chars().skip(1).all(|c| c.is_ascii_hexdigit()) {
+            s.desktop_lyrics_color_base = t.to_ascii_lowercase();
+        }
+    }
+    if let Some(v) = patch.desktop_lyrics_color_highlight {
+        let t = v.trim();
+        if t.len() == 7 && t.starts_with('#') && t.chars().skip(1).all(|c| c.is_ascii_hexdigit()) {
+            s.desktop_lyrics_color_highlight = t.to_ascii_lowercase();
+        }
     }
     s.save()
 }
@@ -537,16 +582,7 @@ pub async fn fetch_share_playlist(
         return Err("请先粘贴分享链接。".to_string());
     }
     state.limiter.acquire_slot().await;
-    let settings = Settings::load();
-    let (playlist_name, tracks) = crate::share_link::fetch_playlist_from_share_url(
-        &state.client,
-        u,
-        crate::share_link::ShareFetchOptions {
-            netease_cookie_enabled: settings.share_netease_cookie_enabled,
-            netease_cookie: settings.share_netease_cookie,
-        },
-    )
-    .await?;
+    let (playlist_name, tracks) = crate::share_link::fetch_playlist_from_share_url(&state.client, u).await?;
     Ok(SharePlaylistResponse {
         playlist_name,
         tracks,

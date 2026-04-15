@@ -4,6 +4,10 @@ description = "主窗口调用 CloudPlayer 全部业务命令（与 core:default
 commands.allow = [
   "get_settings",
   "save_settings",
+  "hide_main_window",
+  "show_main_window",
+  "quit_app",
+  "local_path_accessible",
   "set_desktop_lyrics_click_through",
   "db_status",
   "search_songs",

@@ -65,6 +65,9 @@ let lrcEntries = [];
 /** @type {string | null} */
 let lrcCacheKey = null;
 
+/** 主窗口关闭：`ask` | `quit` | `tray`（与 settings 同步） */
+let mainWindowCloseAction = "ask";
+
 /** @type {number | null} */
 let selectedPlaylistId = null;
 let selectedPlaylistName = "";
@@ -73,18 +76,6 @@ let playlistDetailRows = [];
 
 /** 分享链接拉取成功后建议的歌单名（网易云 / QQ 返回） */
 let importShareSuggestedName = "";
-let neteaseCookieEnabled = false;
-let neteaseCookieValue = "";
-
-function syncNeteaseCookieUi() {
-  const chk = document.getElementById("opt-netease-cookie-enabled");
-  const inp = document.getElementById("opt-netease-cookie");
-  if (chk) chk.checked = !!neteaseCookieEnabled;
-  if (inp) {
-    inp.value = neteaseCookieValue || "";
-    inp.disabled = !neteaseCookieEnabled;
-  }
-}
 
 /** 与 Py RecentPlaysPage：本会话内最近播放，最多 100 条 */
 const RECENT_SESSION_MAX = 100;
@@ -179,6 +170,141 @@ function toggleDockMenu(menuEl) {
   menuEl.hidden = !willOpen;
 }
 
+function normalizeCloseAction(v) {
+  const t = String(v || "ask").toLowerCase();
+  return t === "quit" || t === "tray" ? t : "ask";
+}
+
+/** 偏好设置表单上次已保存/已加载的基线，用于对比是否有改动 */
+let settingsFormBaseline = { action: "ask", base: "#ffffff", highlight: "#ffb7d4" };
+
+function normalizeLyricHexInput(x, def) {
+  const t = (x || "").trim();
+  return /^#[0-9a-fA-F]{6}$/.test(t) ? t.toLowerCase() : def;
+}
+
+function getSettingsFormValues() {
+  const sel = document.getElementById("setting-close-action");
+  const b = document.getElementById("setting-ly-base");
+  const h = document.getElementById("setting-ly-highlight");
+  return {
+    action: normalizeCloseAction(sel?.value),
+    base: normalizeLyricHexInput(b?.value, "#ffffff"),
+    highlight: normalizeLyricHexInput(h?.value, "#ffb7d4"),
+  };
+}
+
+function settingsFormIsDirty() {
+  const cur = getSettingsFormValues();
+  return (
+    cur.action !== settingsFormBaseline.action ||
+    cur.base !== settingsFormBaseline.base ||
+    cur.highlight !== settingsFormBaseline.highlight
+  );
+}
+
+function syncSettingsFormBaselineFromDom() {
+  settingsFormBaseline = getSettingsFormValues();
+  updateSettingsSaveButtonState();
+}
+
+function updateSettingsSaveButtonState() {
+  const btn = document.getElementById("settings-save");
+  if (!btn) return;
+  const dirty = settingsFormIsDirty();
+  btn.disabled = !dirty;
+  btn.setAttribute("aria-disabled", dirty ? "false" : "true");
+}
+
+function fillSettingsFormFromSettings(s) {
+  const sel = document.getElementById("setting-close-action");
+  const v = normalizeCloseAction(s?.main_window_close_action ?? s?.mainWindowCloseAction);
+  if (sel) sel.value = v;
+  const b = document.getElementById("setting-ly-base");
+  const h = document.getElementById("setting-ly-highlight");
+  if (b) b.value = normalizeLyricHexInput(s?.desktop_lyrics_color_base ?? s?.desktopLyricsColorBase, "#ffffff");
+  if (h) h.value = normalizeLyricHexInput(s?.desktop_lyrics_color_highlight ?? s?.desktopLyricsColorHighlight, "#ffb7d4");
+  syncSettingsFormBaselineFromDom();
+}
+
+function openCloseConfirmModal() {
+  const cb = document.getElementById("close-choice-remember");
+  if (cb) cb.checked = false;
+  const el = document.getElementById("close-confirm-modal");
+  if (el) {
+    el.hidden = false;
+    el.setAttribute("aria-hidden", "false");
+  }
+}
+
+function closeCloseConfirmModal() {
+  const el = document.getElementById("close-confirm-modal");
+  if (el) {
+    el.hidden = true;
+    el.setAttribute("aria-hidden", "true");
+  }
+}
+
+async function runCloseChoice(mode) {
+  const remember = !!document.getElementById("close-choice-remember")?.checked;
+  closeCloseConfirmModal();
+  if (remember) {
+    const patch = { main_window_close_action: mode === "tray" ? "tray" : "quit" };
+    try {
+      await invoke("save_settings", { patch });
+      mainWindowCloseAction = patch.main_window_close_action;
+    } catch (e) {
+      console.warn("save_settings main_window_close_action", e);
+    }
+  }
+  try {
+    if (mode === "tray") await invoke("hide_main_window");
+    else await invoke("quit_app");
+  } catch (e) {
+    alertRequestFailed(e, "close flow");
+  }
+}
+
+function wireSettingsFormDirtyTracking() {
+  const onChange = () => updateSettingsSaveButtonState();
+  document.getElementById("setting-close-action")?.addEventListener("change", onChange);
+  document.getElementById("setting-ly-base")?.addEventListener("input", onChange);
+  document.getElementById("setting-ly-highlight")?.addEventListener("input", onChange);
+}
+
+function wirePreferencesModals() {
+  document.getElementById("btn-settings-back")?.addEventListener("click", () => setPage("discover"));
+  wireSettingsFormDirtyTracking();
+  document.getElementById("settings-save")?.addEventListener("click", async () => {
+    if (!settingsFormIsDirty()) return;
+    const cur = getSettingsFormValues();
+    try {
+      await invoke("save_settings", {
+        patch: {
+          main_window_close_action: cur.action,
+          desktop_lyrics_color_base: cur.base,
+          desktop_lyrics_color_highlight: cur.highlight,
+        },
+      });
+      mainWindowCloseAction = cur.action;
+      syncSettingsFormBaselineFromDom();
+      void broadcastDesktopLyricsColors();
+    } catch (e) {
+      alertRequestFailed(e, "save settings");
+    }
+  });
+  document.getElementById("close-choice-tray")?.addEventListener("click", () => {
+    void runCloseChoice("tray");
+  });
+  document.getElementById("close-choice-quit")?.addEventListener("click", () => {
+    void runCloseChoice("quit");
+  });
+  document.getElementById("close-choice-cancel")?.addEventListener("click", () => closeCloseConfirmModal());
+  document.getElementById("close-confirm-modal")?.addEventListener("click", (e) => {
+    if (e.target.id === "close-confirm-modal") closeCloseConfirmModal();
+  });
+}
+
 function wireDockBar() {
   const modeBtn = document.getElementById("btn-play-mode");
   if (modeBtn) {
@@ -251,6 +377,11 @@ function wireDockBar() {
   document.getElementById("btn-dock-more")?.addEventListener("click", (e) => {
     e.stopPropagation();
     toggleDockMenu(document.getElementById("popover-more"));
+  });
+  document.getElementById("btn-dock-settings")?.addEventListener("click", (e) => {
+    e.stopPropagation();
+    closeAllDockMenus();
+    setPage("settings");
   });
   document.querySelector('[data-more="add-pl"]')?.addEventListener("click", (e) => {
     e.stopPropagation();
@@ -398,13 +529,15 @@ function cmBtn(label, onClick, disabled) {
   return b;
 }
 
-async function copyImportTrackInfoToClipboard({ title, artist, album, sourceId, coverUrl }) {
+async function copyImportTrackInfoToClipboard({ title, artist, album, sourceId, coverUrl, localPath }) {
   const lines = [];
   if ((title || "").trim()) lines.push((title || "").trim());
   if ((artist || "").trim()) lines.push((artist || "").trim());
   if ((album || "").trim()) lines.push(`专辑：${(album || "").trim()}`);
   const sid = (sourceId || "").trim();
   if (sid) lines.push(`曲库 ID：${sid}`);
+  const lp = (localPath || "").trim();
+  if (lp) lines.push(`本地路径：${lp}`);
   const cu = (coverUrl || "").trim();
   if (cu) lines.push(`封面：${cu}`);
   const text = lines.join("\n");
@@ -777,6 +910,144 @@ async function openPlaylistDetailRowContextMenu(ev, rowIdx) {
   mountContextMenuAt(ev.clientX, ev.clientY, root);
 }
 
+/** 本地曲库行 → 播放队列项 */
+function localLibraryRowToQueueItem(r) {
+  return {
+    title: r.title || "",
+    artist: r.artist || "",
+    local_path: (r.file_path || "").trim(),
+    cover_url: null,
+  };
+}
+
+async function openLocalLibraryRowContextMenu(ev, rowIdx) {
+  ev.preventDefault();
+  const r = localLibraryRows[rowIdx];
+  if (!r) return;
+  const item = localLibraryRowToQueueItem(r);
+  const pathOk = !!(item.local_path || "").trim();
+  const pls = await listPlaylistsCached();
+
+  const root = document.createElement("div");
+  root.appendChild(
+    cmBtn(
+      "播放",
+      () => {
+        if (!pathOk) {
+          alert("无有效本地文件路径。");
+          return;
+        }
+        playQueue = [item];
+        void playFromQueueIndex(0);
+        renderQueuePanel();
+      },
+      !pathOk
+    )
+  );
+  root.appendChild(
+    cmBtn(
+      "下一首播放",
+      () => {
+        if (!pathOk) {
+          alert("无有效本地文件路径，无法插播。");
+          return;
+        }
+        if (!playQueue.length) {
+          playQueue = [item];
+          void playFromQueueIndex(0);
+        } else {
+          playQueue.splice(playIndex + 1, 0, item);
+        }
+        renderQueuePanel();
+      },
+      !pathOk
+    )
+  );
+  root.appendChild(cmSep());
+
+  const addRow = document.createElement("div");
+  addRow.className = "ctx-menu__row--sub";
+  const fly = document.createElement("div");
+  fly.className = "ctx-menu__fly";
+  fly.textContent = "添加到";
+  const sub = document.createElement("div");
+  sub.className = "ctx-menu__subpanel";
+  sub.appendChild(
+    cmBtn("播放队列", () => {
+      if (!pathOk) {
+        alert("无有效本地文件路径。");
+        return;
+      }
+      playQueue.push(item);
+      renderQueuePanel();
+    })
+  );
+  sub.appendChild(
+    cmBtn("试听列表", () => {
+      if (!pathOk) {
+        alert("无有效本地文件路径。");
+        return;
+      }
+      playQueue.push(item);
+      renderQueuePanel();
+    })
+  );
+  sub.appendChild(cmSep());
+  sub.appendChild(
+    cmBtn("添加到新歌单", async () => {
+      const name = window.prompt("歌单名称（将写入 library.db）", "新歌单");
+      if (!name || !name.trim()) return;
+      const pid = await invoke("create_playlist", { name: name.trim() });
+      await invoke("append_playlist_import_items", {
+        playlistId: pid,
+        items: [{ title: r.title, artist: r.artist || "", album: r.album || "" }],
+      });
+      await refreshSidebarPlaylists();
+      await refreshPlaylistSelect();
+    })
+  );
+  sub.appendChild(cmSep());
+  let any = false;
+  for (const p of pls) {
+    const pid = p.id;
+    if (pid == null) continue;
+    any = true;
+    const name = (p.name || "").trim() || `#${pid}`;
+    sub.appendChild(
+      cmBtn(name, async () => {
+        await invoke("append_playlist_import_items", {
+          playlistId: pid,
+          items: [{ title: r.title, artist: r.artist || "", album: r.album || "" }],
+        });
+        await refreshSidebarPlaylists();
+      })
+    );
+  }
+  if (!any) sub.appendChild(cmBtn("（暂无歌单，请先新建）", () => {}, true));
+  addRow.appendChild(fly);
+  addRow.appendChild(sub);
+  root.appendChild(addRow);
+
+  root.appendChild(cmBtn("下载", () => {}, true));
+  root.appendChild(cmBtn("分享", () => {}, true));
+  root.appendChild(cmBtn("查看评论", () => {}, true));
+  root.appendChild(cmSep());
+  root.appendChild(
+    cmBtn("复制歌曲信息", () =>
+      copyImportTrackInfoToClipboard({
+        title: r.title,
+        artist: r.artist,
+        album: r.album,
+        sourceId: "",
+        coverUrl: null,
+        localPath: r.file_path,
+      })
+    )
+  );
+
+  mountContextMenuAt(ev.clientX, ev.clientY, root);
+}
+
 function parseLrc(text) {
   const lines = [];
   const re = /^\[(\d{1,2}):(\d{2})(?:\.(\d{1,3}))?\]/;
@@ -795,21 +1066,34 @@ function parseLrc(text) {
   return lines;
 }
 
-function lyricLinesAtTime(ct) {
+/** 桌面歌词：当前行、下一行、当前行时间锚点（子窗 rAF 逐字插值） */
+function lyricDisplayForDesktop(ct) {
   const cur = playQueue[playIndex];
   const t = Number(ct) || 0;
-  if (!cur) return ["—", "—"];
+  if (!cur) {
+    return { line1: "—", line2: "—", line1StartT: 0, line1EndT: 1, audioNow: t };
+  }
   if (!lrcEntries.length) {
-    return [cur.title || "—", cur.artist || "在线试听"];
+    return {
+      line1: cur.title || "—",
+      line2: cur.artist || "在线试听",
+      line1StartT: 0,
+      line1EndT: 1,
+      audioNow: t,
+    };
   }
   let idx = 0;
   for (let k = 0; k < lrcEntries.length; k++) {
     if (lrcEntries[k].t <= t + 0.12) idx = k;
     else break;
   }
-  const line1 = lrcEntries[idx]?.text || "—";
-  const line2 = lrcEntries[idx + 1]?.text || "\u00a0";
-  return [line1, line2];
+  const curLine = lrcEntries[idx];
+  const nextLine = lrcEntries[idx + 1];
+  const line1 = curLine?.text || "—";
+  const line2 = nextLine?.text || "\u00a0";
+  const line1StartT = curLine?.t ?? 0;
+  const line1EndT = nextLine ? nextLine.t : line1StartT + 4;
+  return { line1, line2, line1StartT, line1EndT, audioNow: t };
 }
 
 const LYRICS_WW_TARGET = { kind: "WebviewWindow", label: "lyrics" };
@@ -826,6 +1110,19 @@ async function broadcastDesktopLyricsLock() {
   }
 }
 
+async function broadcastDesktopLyricsColors() {
+  if (!desktopLyricsOpen) return;
+  try {
+    const s = await invoke("get_settings");
+    await emitTo(LYRICS_WW_TARGET, "desktop-lyrics-colors", {
+      base: s.desktop_lyrics_color_base || s.desktopLyricsColorBase || "#ffffff",
+      highlight: s.desktop_lyrics_color_highlight || s.desktopLyricsColorHighlight || "#ffb7d4",
+    });
+  } catch (e) {
+    console.warn("emit desktop-lyrics-colors", e);
+  }
+}
+
 function refreshLyricsLockMenuLabel() {
   const btn = document.getElementById("btn-more-lyrics-lock");
   if (!btn) return;
@@ -834,7 +1131,13 @@ function refreshLyricsLockMenuLabel() {
     : "桌面歌词：未锁定（可拖动）— 点此锁定";
 }
 
-async function pushDesktopLyricsLines(line1, line2) {
+async function pushDesktopLyricsLines({
+  line1,
+  line2,
+  line1StartT,
+  line1EndT,
+  audioNow,
+}) {
   if (!desktopLyricsOpen) return;
   try {
     const win = desktopLyricsWindow || (await WebviewWindow.getByLabel("lyrics"));
@@ -842,6 +1145,9 @@ async function pushDesktopLyricsLines(line1, line2) {
     await emitTo(LYRICS_WW_TARGET, "desktop-lyrics-lines", {
       line1: line1 || "—",
       line2: line2 || "—",
+      line1StartT: Number(line1StartT) || 0,
+      line1EndT: Number(line1EndT) || 0,
+      audioNow: Number(audioNow) || 0,
     });
   } catch (e) {
     console.warn("emit lyrics", e);
@@ -857,7 +1163,14 @@ async function pushDesktopLyricsLines(line1, line2) {
 async function ensureLrcLoadedForCurrentTrack(loadGen) {
   const cur = playQueue[playIndex];
   if (!cur) {
-    await pushDesktopLyricsLines("—", "—");
+    const a = audioEl();
+    await pushDesktopLyricsLines({
+      line1: "—",
+      line2: "—",
+      line1StartT: 0,
+      line1EndT: 1,
+      audioNow: a?.currentTime ?? 0,
+    });
     return;
   }
   const cacheKey = cur.local_path ? `local:${cur.local_path}` : (cur.source_id || "").trim();
@@ -911,8 +1224,8 @@ async function ensureLrcLoadedForCurrentTrack(loadGen) {
 async function syncDesktopLyrics() {
   if (!desktopLyricsOpen) return;
   const ct = audioEl()?.currentTime ?? 0;
-  const [a, b] = lyricLinesAtTime(ct);
-  await pushDesktopLyricsLines(a, b);
+  const data = lyricDisplayForDesktop(ct);
+  await pushDesktopLyricsLines(data);
 }
 
 async function setDockLyricsActive(on) {
@@ -965,6 +1278,7 @@ async function openDesktopLyricsFromSettingsIfNeeded(s) {
     await syncDesktopLyrics();
     queueMicrotask(() => {
       void broadcastDesktopLyricsLock();
+      void broadcastDesktopLyricsColors();
     });
     return;
   }
@@ -1003,6 +1317,7 @@ async function openDesktopLyricsFromSettingsIfNeeded(s) {
     await syncDesktopLyrics();
     queueMicrotask(() => {
       void broadcastDesktopLyricsLock();
+      void broadcastDesktopLyricsColors();
     });
   });
 }
@@ -1029,6 +1344,7 @@ async function toggleDesktopLyrics() {
     await syncDesktopLyrics();
     queueMicrotask(() => {
       void broadcastDesktopLyricsLock();
+      void broadcastDesktopLyricsColors();
     });
     return;
   }
@@ -1080,6 +1396,7 @@ async function toggleDesktopLyrics() {
     await syncDesktopLyrics();
     queueMicrotask(() => {
       void broadcastDesktopLyricsLock();
+      void broadcastDesktopLyricsColors();
     });
   });
 }
@@ -1306,31 +1623,6 @@ function downloadBlob(filename, text, mime) {
 }
 
 function wireImportPage() {
-  const cookieEnableEl = document.getElementById("opt-netease-cookie-enabled");
-  const cookieInputEl = document.getElementById("opt-netease-cookie");
-  const persistNeteaseCookieSettings = async () => {
-    try {
-      await invoke("save_settings", {
-        patch: {
-          share_netease_cookie_enabled: !!neteaseCookieEnabled,
-          share_netease_cookie: neteaseCookieValue || "",
-        },
-      });
-    } catch (e) {
-      console.warn("save_settings share_netease_cookie", e);
-    }
-  };
-  cookieEnableEl?.addEventListener("change", () => {
-    neteaseCookieEnabled = !!cookieEnableEl.checked;
-    syncNeteaseCookieUi();
-    void persistNeteaseCookieSettings();
-  });
-  cookieInputEl?.addEventListener("change", () => {
-    neteaseCookieValue = (cookieInputEl.value || "").trim();
-    void persistNeteaseCookieSettings();
-  });
-  syncNeteaseCookieUi();
-
   document.getElementById("btn-import-parse")?.addEventListener("click", async () => {
     const raw = document.getElementById("import-text")?.value?.trim() ?? "";
     if (!raw) return;
@@ -1525,7 +1817,21 @@ function renderSidebar() {
   void refreshSidebarPlaylists();
 }
 
+function clearSidebarPlaylistHighlight() {
+  document.querySelectorAll(".sidebar-pl-item.is-active").forEach((el) => el.classList.remove("is-active"));
+}
+
+/** 主导航页面（非歌单详情）：离开歌单上下文时清除侧栏选中与歌单 id，避免刷新列表时再次高亮 */
+const MAIN_NAV_PAGE_IDS = new Set(["discover", "recent", "download", "import", "settings"]);
+
 function setPage(pageId) {
+  if (pageId !== "playlist") {
+    clearSidebarPlaylistHighlight();
+    if (MAIN_NAV_PAGE_IDS.has(pageId)) {
+      selectedPlaylistId = null;
+      selectedPlaylistName = "";
+    }
+  }
   document.querySelectorAll(".nav-item").forEach((b) => {
     b.classList.toggle("active", b.dataset.page === pageId);
   });
@@ -1543,6 +1849,17 @@ function setPage(pageId) {
   }
   if (pageId === "import") {
     void refreshPlaylistSelect();
+  }
+  if (pageId === "settings") {
+    void (async () => {
+      try {
+        const s = await invoke("get_settings");
+        mainWindowCloseAction = normalizeCloseAction(s?.main_window_close_action ?? s?.mainWindowCloseAction);
+        fillSettingsFormFromSettings(s);
+      } catch (e) {
+        console.warn("get_settings", e);
+      }
+    })();
   }
   if (pageId === "playlist") {
     if (selectedPlaylistId == null) {
@@ -1893,6 +2210,7 @@ async function refreshLocalLibraryTable() {
         void playFromQueueIndex(0);
         renderQueuePanel();
       });
+      tr.addEventListener("contextmenu", (ev) => void openLocalLibraryRowContextMenu(ev, i));
       tbody.appendChild(tr);
     });
   } catch (e) {
@@ -1988,6 +2306,22 @@ async function playFromQueueIndex(idx) {
   try {
     let assetUrl;
     if (item.local_path) {
+      let pathOk = false;
+      try {
+        pathOk = await invoke("local_path_accessible", { path: item.local_path });
+      } catch (e) {
+        console.warn("local_path_accessible", e);
+      }
+      if (!pathOk) {
+        if (generation !== playLoadGeneration) return;
+        updatePlayerChrome({
+          title: item.title,
+          sub: `${item.artist ? `${item.artist} · ` : ""}本地文件不可用`,
+          touchCover: false,
+        });
+        alert(`本地文件不存在或无法访问：\n${String(item.local_path || "").trim() || "（路径为空）"}`);
+        return;
+      }
       assetUrl = convertFileSrc(item.local_path);
     } else {
       /** 后端顺序：已下载文件 → 试听缓存文件 → 拉取并缓存试听 → 直链 URL */
@@ -2198,32 +2532,42 @@ function wireAudio() {
   });
 }
 
+function submitGlobalSearch() {
+  const gs = document.getElementById("global-search");
+  if (!gs) return;
+  const v = gs.value.trim();
+  setPage("discover");
+  if (!v) {
+    searchState.keyword = "";
+    searchState.page = 1;
+    searchState.results = [];
+    searchState.hasNext = false;
+    const tbody = document.querySelector("#search-table tbody");
+    if (tbody) tbody.innerHTML = "";
+    updateSearchToolbar();
+    return;
+  }
+  searchState.keyword = v;
+  searchState.page = 1;
+  fetchSearchPage();
+}
+
 function wireGlobalSearch() {
   const gs = document.getElementById("global-search");
+  if (!gs) return;
   gs.addEventListener("keydown", (e) => {
     if (e.key !== "Enter") return;
     e.preventDefault();
-    const v = gs.value.trim();
-    setPage("discover");
-    if (!v) {
-      searchState.keyword = "";
-      searchState.page = 1;
-      searchState.results = [];
-      searchState.hasNext = false;
-      const tbody = document.querySelector("#search-table tbody");
-      if (tbody) tbody.innerHTML = "";
-      updateSearchToolbar();
-      return;
-    }
-    searchState.keyword = v;
-    searchState.page = 1;
-    fetchSearchPage();
+    submitGlobalSearch();
   });
+  document.getElementById("btn-global-search")?.addEventListener("click", () => submitGlobalSearch());
 }
 
 async function loadSettings() {
   try {
     const s = await invoke("get_settings");
+    mainWindowCloseAction = normalizeCloseAction(s?.main_window_close_action ?? s?.mainWindowCloseAction);
+    fillSettingsFormFromSettings(s);
     const vol = document.getElementById("volume");
     if (s && typeof s.volume === "number") {
       vol.value = String(Math.round(s.volume * 100));
@@ -2244,11 +2588,11 @@ async function loadSettings() {
     } else {
       updateDownloadFolderHint("");
     }
-    neteaseCookieEnabled = !!(s && s.share_netease_cookie_enabled);
-    neteaseCookieValue = (s && (s.share_netease_cookie || "")) || "";
-    syncNeteaseCookieUi();
     refreshLyricsLockMenuLabel();
-    if (desktopLyricsOpen) void broadcastDesktopLyricsLock();
+    if (desktopLyricsOpen) {
+      void broadcastDesktopLyricsLock();
+      void broadcastDesktopLyricsColors();
+    }
     if (s?.desktop_lyrics_visible) {
       queueMicrotask(() => {
         void openDesktopLyricsFromSettingsIfNeeded(s);
@@ -2304,6 +2648,7 @@ document.addEventListener("DOMContentLoaded", () => {
   wireImportPage();
   wirePlaylistPage();
   wireVolume();
+  wirePreferencesModals();
   wireGlobalSearch();
   wireDiscoverToolbar();
   wireAudio();
@@ -2353,6 +2698,26 @@ document.addEventListener("DOMContentLoaded", () => {
       console.warn("save_settings desktop_lyrics_locked (request-lock)", err);
     }
     await broadcastDesktopLyricsLock();
+  });
+  listen("main-close-requested", async () => {
+    const a = mainWindowCloseAction;
+    if (a === "quit") {
+      try {
+        await invoke("quit_app");
+      } catch (e) {
+        alertRequestFailed(e, "close flow");
+      }
+      return;
+    }
+    if (a === "tray") {
+      try {
+        await invoke("hide_main_window");
+      } catch (e) {
+        alertRequestFailed(e, "close flow");
+      }
+      return;
+    }
+    openCloseConfirmModal();
   });
   void loadRecentPlaysFromDb();
   loadSettings();
