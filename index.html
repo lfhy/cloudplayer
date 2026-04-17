@@ -2,11 +2,33 @@
 <html lang="zh-CN">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1, user-scalable=no"
+    />
     <link rel="icon" href="data:," />
     <title>CloudPlayer</title>
-    <script type="module" src="/src/main.js"></script>
-    <link rel="stylesheet" href="/src/styles.css" />
+    <!-- 先于模块执行：避免 WebView 在 bootstrap 前短暂绘制桌面壳（样式见 styles.css 内 .app-root） -->
+    <script>
+      (function () {
+        try {
+          var ua = typeof navigator !== "undefined" ? navigator.userAgent || "" : "";
+          if (/Android|iPhone|iPad|iPod/i.test(ua)) {
+            document.documentElement.classList.add("cp-mobile-ua");
+          }
+        } catch (e) {}
+      })();
+    </script>
+    <style>
+      html.cp-mobile-ua #app.app-root {
+        display: none !important;
+      }
+      html.cp-mobile-ua body {
+        margin: 0;
+        background: #f8f8f8;
+      }
+    </style>
+    <script type="module" src="/src/bootstrap.js"></script>
   </head>
   <body>
     <div id="app" class="app-root">
@@ -123,39 +145,26 @@
             </section>
             <section class="page" data-page="download">
               <h1 class="page-title">本地和下载</h1>
-              <div class="page-tabs" role="tablist" aria-label="本地和下载">
-                <button type="button" class="page-tab page-tab--active" data-download-tab="dl" role="tab" aria-selected="true">
-                  下载
+              <div class="page-tabs" role="tablist" aria-label="本地和下载子页面">
+                <button
+                  type="button"
+                  class="page-tab page-tab--active"
+                  data-download-tab="local"
+                  role="tab"
+                  aria-selected="true"
+                >
+                  本地歌曲
                 </button>
-                <button type="button" class="page-tab" data-download-tab="local" role="tab" aria-selected="false">本地</button>
+                <button type="button" class="page-tab" data-download-tab="saved" role="tab" aria-selected="false">下载歌曲</button>
+                <button type="button" class="page-tab" data-download-tab="active" role="tab" aria-selected="false">正在下载</button>
               </div>
               <div class="page-tab-panels">
-                <div class="page-tab-panel page-tab-panel--active" data-download-panel="dl" role="tabpanel">
-                  <div class="download-toolbar">
-                    <button type="button" id="btn-pick-download-folder" class="btn-accent">下载保存目录…</button>
-                    <span id="download-folder-hint" class="muted"></span>
-                  </div>
-                  <div class="table-wrap">
-                    <table class="search-table" id="download-queue-table">
-                      <thead>
-                        <tr>
-                          <th>状态</th>
-                          <th>标题</th>
-                          <th>音质</th>
-                          <th class="col-dlprog">进度</th>
-                        </tr>
-                      </thead>
-                      <tbody></tbody>
-                    </table>
-                  </div>
-                </div>
-                <div class="page-tab-panel" data-download-panel="local" role="tabpanel">
-                  <h2 class="page-subtitle">本地音乐</h2>
+                <div class="page-tab-panel page-tab-panel--active" data-download-panel="local" role="tabpanel">
                   <div class="local-lib-toolbar">
                     <button type="button" id="btn-scan-library-folder" class="btn-accent">选择文件夹并扫描</button>
                     <span id="local-library-status" class="muted" aria-live="polite"></span>
                   </div>
-                  <div class="table-wrap">
+                  <div class="table-wrap table-wrap--tab">
                     <table class="search-table" id="local-library-table">
                       <thead>
                         <tr>
@@ -163,6 +172,40 @@
                           <th>歌曲</th>
                           <th>歌手</th>
                           <th class="col-path">路径</th>
+                        </tr>
+                      </thead>
+                      <tbody></tbody>
+                    </table>
+                  </div>
+                </div>
+                <div class="page-tab-panel" data-download-panel="saved" role="tabpanel">
+                  <div class="table-wrap table-wrap--tab playlist-table-wrap">
+                    <table class="search-table playlist-table" id="download-completed-table">
+                      <thead>
+                        <tr>
+                          <th>歌曲</th>
+                          <th>专辑</th>
+                          <th class="col-dur">时长</th>
+                          <th class="col-size">大小</th>
+                        </tr>
+                      </thead>
+                      <tbody></tbody>
+                    </table>
+                  </div>
+                </div>
+                <div class="page-tab-panel" data-download-panel="active" role="tabpanel">
+                  <div class="download-toolbar">
+                    <button type="button" id="btn-pick-download-folder" class="btn-accent">下载保存目录…</button>
+                    <span id="download-folder-hint" class="muted"></span>
+                  </div>
+                  <div class="table-wrap table-wrap--tab">
+                    <table class="search-table" id="download-active-table">
+                      <thead>
+                        <tr>
+                          <th>状态</th>
+                          <th>标题</th>
+                          <th>音质</th>
+                          <th class="col-dlprog">进度</th>
                         </tr>
                       </thead>
                       <tbody></tbody>
@@ -225,8 +268,25 @@
             </section>
             <section class="page" data-page="settings" aria-label="偏好设置">
               <h1 class="page-title">偏好设置</h1>
-              <p class="page-hint muted">关闭主窗口行为与桌面歌词颜色将保存到本地配置。</p>
+              <p class="page-hint muted">
+                关闭主窗口行为、网易云 API 根地址（可选）与桌面歌词颜色将保存到本地配置。播放页歌词固定为 QQ → 酷狗 → 网易云 → LRCLIB（与「换」歌词替换同源）。
+              </p>
               <div class="settings-form">
+                <div class="settings-field">
+                  <label for="setting-netease-api-base" class="settings-field-label">网易云 API 根地址（可选）</label>
+                  <input
+                    type="url"
+                    id="setting-netease-api-base"
+                    class="settings-field-control settings-field-control--text"
+                    spellcheck="false"
+                    autocomplete="off"
+                    placeholder="https://example.com"
+                    aria-describedby="setting-netease-api-base-hint"
+                  />
+                  <p id="setting-netease-api-base-hint" class="settings-field-hint muted">
+                    自托管 <a href="https://github.com/Binaryify/NeteaseCloudMusicApi" target="_blank" rel="noopener noreferrer">NeteaseCloudMusicApi</a> 或兼容服务的根 URL（无尾斜杠亦可）。填写后「netease」源将优先请求 <code>/lyric/new</code> 获取 YRC 逐字歌词；留空则仅用网易云网页门户的行级 LRC。
+                  </p>
+                </div>
                 <div class="settings-field">
                   <label for="setting-close-action" class="settings-field-label">关闭主窗口时</label>
                   <select id="setting-close-action" class="import-select import-select--wide settings-field-control">
@@ -332,6 +392,14 @@
               <button type="button" class="dock-menu__item" data-quality="128">标准</button>
             </div>
           </div>
+          <button
+            type="button"
+            id="btn-dock-lyrics-replace"
+            class="dock-ic dock-ic--accent"
+            title="搜索并替换当前歌词（多源）"
+          >
+            换
+          </button>
           <button type="button" id="btn-dock-lyrics" class="dock-ic dock-ic--accent" title="桌面歌词（独立窗口）">词</button>
           <button type="button" id="btn-dock-queue" class="dock-ic" title="播放列表">☰</button>
           <label class="dock-vol" title="音量">
@@ -340,6 +408,66 @@
           </label>
         </div>
       </footer>
+      <div id="lyrics-replace-modal" class="modal-overlay" hidden aria-hidden="true">
+        <div
+          class="modal-dialog modal-dialog--lyrics-replace"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="lyrics-replace-title"
+        >
+          <h3 id="lyrics-replace-title" class="modal-title">替换歌词</h3>
+          <p class="modal-desc">从 QQ 音乐、酷狗、网易云、LRCLIB 搜索并预览，应用到当前播放曲目。</p>
+          <div class="lyrics-replace-search">
+            <input
+              type="search"
+              id="lyrics-replace-keyword"
+              class="lyrics-replace-input"
+              placeholder="歌手 + 歌名"
+              autocomplete="off"
+            />
+            <button type="button" class="btn-accent" id="lyrics-replace-search-btn">搜索</button>
+          </div>
+          <div class="lyrics-replace-sources" role="group" aria-label="歌词来源">
+            <label class="lyrics-replace-chip"
+              ><input type="checkbox" id="lyrics-replace-src-qq" checked /> <span class="src-qq">QQ</span></label
+            >
+            <label class="lyrics-replace-chip"
+              ><input type="checkbox" id="lyrics-replace-src-kugou" checked /> <span class="src-kg">酷狗</span></label
+            >
+            <label class="lyrics-replace-chip"
+              ><input type="checkbox" id="lyrics-replace-src-netease" checked />
+              <span class="src-ne">网易</span></label
+            >
+            <label class="lyrics-replace-chip"
+              ><input type="checkbox" id="lyrics-replace-src-lrclib" checked /> <span class="src-lr">LRCLIB</span></label
+            >
+          </div>
+          <div class="lyrics-replace-body">
+            <div class="lyrics-replace-results-wrap">
+              <table class="lyrics-replace-table" aria-label="搜索结果">
+                <thead>
+                  <tr>
+                    <th class="col-lr-src">来源</th>
+                    <th>标题</th>
+                    <th>艺人</th>
+                    <th class="col-lr-dur">时长</th>
+                  </tr>
+                </thead>
+                <tbody id="lyrics-replace-tbody"></tbody>
+              </table>
+            </div>
+            <div class="lyrics-replace-preview-wrap">
+              <div class="lyrics-replace-preview-label">预览</div>
+              <pre id="lyrics-replace-preview" class="lyrics-replace-preview"></pre>
+            </div>
+          </div>
+          <p id="lyrics-replace-error" class="lyrics-replace-error" hidden></p>
+          <div class="modal-actions modal-actions--row modal-actions--end">
+            <button type="button" class="btn-outline" id="lyrics-replace-cancel">取消</button>
+            <button type="button" class="btn-accent" id="lyrics-replace-apply" disabled>应用</button>
+          </div>
+        </div>
+      </div>
       <div id="close-confirm-modal" class="modal-overlay" hidden aria-hidden="true">
         <div class="modal-dialog" role="dialog" aria-modal="true" aria-labelledby="close-modal-title">
           <h3 id="close-modal-title" class="modal-title">关闭主窗口</h3>
@@ -355,6 +483,187 @@
         </div>
       </div>
     </div>
+
+    <!-- Stitch projects/843519584139902455/screens/cd912b9bacb241529e9279c39d352786 · CloudPlayer Mobile Library -->
+    <div id="mobile-app" class="cp-mobile-library" hidden>
+      <header class="cp-m-topbar">
+        <div class="cp-m-nav-slot cp-m-nav-slot--start">
+          <button type="button" id="cp-m-nav-search" class="cp-m-navbtn" aria-label="搜索">
+            <svg class="cp-m-ico" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+              />
+            </svg>
+          </button>
+        </div>
+        <h1 class="cp-m-page-title" id="cp-m-page-title">我的音乐</h1>
+        <div class="cp-m-nav-slot cp-m-nav-slot--end">
+          <button type="button" id="cp-m-nav-settings" class="cp-m-navbtn" aria-label="设置">
+            <svg class="cp-m-ico" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"
+              />
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+            </svg>
+          </button>
+        </div>
+      </header>
+
+      <main class="cp-m-main" id="cp-m-home">
+        <section class="cp-m-profile">
+          <div class="cp-m-avatar-wrap">
+            <img
+              id="cp-m-user-avatar"
+              class="cp-m-avatar"
+              alt=""
+              src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='64' height='64'%3E%3Crect fill='%23e5e7eb' width='64' height='64'/%3E%3C/svg%3E"
+            />
+          </div>
+          <div class="cp-m-profile-text">
+            <h2 class="cp-m-user-name">CloudPlayer 用户</h2>
+            <p class="cp-m-user-meta"><span id="cp-m-stat-follow">0</span> 关注 · <span id="cp-m-stat-fans">0</span> 粉丝</p>
+          </div>
+        </section>
+
+        <section class="cp-m-quick" aria-label="快捷入口">
+          <button type="button" class="cp-m-quick-item" id="cp-m-qa-dl">
+            <span class="cp-m-quick-ic cp-m-quick-ic--accent">↓</span>
+            <span class="cp-m-quick-label">下载</span>
+          </button>
+          <button type="button" class="cp-m-quick-item" id="cp-m-qa-fav">
+            <span class="cp-m-quick-ic cp-m-quick-ic--accent">♡</span>
+            <span class="cp-m-quick-label">收藏</span>
+          </button>
+          <button type="button" class="cp-m-quick-item" id="cp-m-qa-local">
+            <span class="cp-m-quick-ic cp-m-quick-ic--accent">▣</span>
+            <span class="cp-m-quick-label">本地音乐</span>
+          </button>
+          <button type="button" class="cp-m-quick-item" id="cp-m-qa-import">
+            <span class="cp-m-quick-ic cp-m-quick-ic--accent">＋</span>
+            <span class="cp-m-quick-label">导入歌单</span>
+          </button>
+        </section>
+
+        <section class="cp-m-section" aria-labelledby="cp-m-recent-heading">
+          <div class="cp-m-section-head">
+            <h3 id="cp-m-recent-heading" class="cp-m-section-title">最近播放</h3>
+          </div>
+          <div class="cp-m-recent-scroll no-scrollbar" id="cp-m-recent-row"></div>
+          <p id="cp-m-recent-empty" class="cp-m-muted cp-m-center">暂无播放记录</p>
+        </section>
+
+        <section class="cp-m-section" id="cp-m-section-playlists" aria-labelledby="cp-m-pl-heading">
+          <h3 id="cp-m-pl-heading" class="cp-m-section-title">我的歌单</h3>
+          <ul class="cp-m-pl-list" id="cp-m-playlist-ul"></ul>
+          <p id="cp-m-pl-empty" class="cp-m-muted cp-m-center">
+            暂无歌单。点上方「导入歌单」解析链接或文本后保存即可。
+          </p>
+        </section>
+      </main>
+
+      <section class="cp-m-pl-detail hidden" id="cp-m-pl-detail" aria-label="歌单曲目">
+        <div class="cp-m-pl-detail-head">
+          <button type="button" id="cp-m-pl-back" class="cp-m-pl-back" aria-label="返回">← 返回</button>
+        </div>
+        <div class="cp-m-pl-hero" id="cp-m-pl-hero">
+          <img id="cp-m-pl-hero-cover" class="cp-m-pl-hero-cover" width="112" height="112" alt="" src="" />
+          <div class="cp-m-pl-hero-meta">
+            <p id="cp-m-pl-hero-title" class="cp-m-pl-hero-title"></p>
+            <p id="cp-m-pl-hero-sub" class="cp-m-pl-hero-sub"></p>
+          </div>
+        </div>
+        <ul class="cp-m-track-list" id="cp-m-pl-tracks-ul"></ul>
+      </section>
+
+      <div id="cp-m-import-panel" class="cp-m-import-panel hidden" role="dialog" aria-modal="true" aria-label="导入歌单">
+        <div class="cp-m-import-head">
+          <h2 class="cp-m-import-heading">导入歌单</h2>
+          <button type="button" id="cp-m-import-close" class="cp-m-search-close">关闭</button>
+        </div>
+        <div class="cp-m-import-scroll">
+          <p class="cp-m-import-section-title">分享链接（网易云 / QQ 音乐）</p>
+          <div class="cp-m-import-row">
+            <input
+              type="url"
+              id="cp-m-import-share-url"
+              class="cp-m-search-input"
+              placeholder="粘贴歌单分享链接，例如 music.163.com / y.qq.com …"
+              autocomplete="off"
+            />
+            <button type="button" id="cp-m-import-share-btn" class="cp-m-search-go">解析</button>
+          </div>
+          <p id="cp-m-import-share-status" class="cp-m-discover-hint" aria-live="polite"></p>
+
+          <p class="cp-m-import-section-title">粘贴文本</p>
+          <div class="cp-m-import-toolbar">
+            <select id="cp-m-import-fmt" class="cp-m-import-select" aria-label="文本格式">
+              <option value="auto">自动检测</option>
+              <option value="text">纯文本</option>
+              <option value="csv">CSV</option>
+              <option value="json">JSON</option>
+            </select>
+            <button type="button" id="cp-m-import-parse-btn" class="cp-m-search-go">解析文本</button>
+          </div>
+          <textarea
+            id="cp-m-import-text"
+            class="cp-m-import-textarea"
+            rows="8"
+            placeholder="示例：&#10;晴天 - 周杰伦&#10;七里香 - 周杰伦"
+          ></textarea>
+
+          <div class="cp-m-import-actions">
+            <button type="button" id="cp-m-import-save-new" class="cp-m-import-primary" disabled>保存为新歌单</button>
+            <label class="cp-m-import-merge-label" for="cp-m-import-merge-pl">合并到已有歌单</label>
+            <select id="cp-m-import-merge-pl" class="cp-m-import-select cp-m-import-select--full" aria-label="合并目标歌单"></select>
+            <button type="button" id="cp-m-import-merge-btn" class="cp-m-import-secondary" disabled>合并到所选歌单</button>
+            <div class="cp-m-import-export-row">
+              <button type="button" id="cp-m-import-export-txt" class="cp-m-import-ghost" disabled>导出 TXT</button>
+              <button type="button" id="cp-m-import-export-csv" class="cp-m-import-ghost" disabled>导出 CSV</button>
+            </div>
+          </div>
+
+          <p id="cp-m-import-hint" class="cp-m-discover-hint">解析结果将显示在下方</p>
+          <ul id="cp-m-import-ul" class="cp-m-import-result-list"></ul>
+        </div>
+      </div>
+
+      <div id="cp-m-search-panel" class="cp-m-search-panel hidden" role="dialog" aria-modal="true" aria-label="搜索">
+        <div class="cp-m-search-bar">
+          <input type="search" id="cp-m-search" class="cp-m-search-input" placeholder="搜索歌曲、艺人…" autocomplete="off" />
+          <button type="button" id="cp-m-search-go" class="cp-m-search-go">搜索</button>
+          <button type="button" id="cp-m-search-close" class="cp-m-search-close">关闭</button>
+        </div>
+        <p id="cp-m-discover-hint" class="cp-m-discover-hint">输入关键词并点「搜索」</p>
+        <ul class="cp-m-discover-list" id="cp-m-discover-ul"></ul>
+      </div>
+
+      <div class="cp-m-player-wrap">
+        <div class="cp-m-mini-player">
+          <img id="cp-m-dock-cover" width="48" height="48" alt="" class="cp-m-dock-cover" />
+          <div class="cp-m-dock-meta">
+            <div id="cp-m-dock-title" class="cp-m-dock-title">未播放</div>
+            <div id="cp-m-dock-sub" class="cp-m-dock-sub">选择曲目开始</div>
+          </div>
+          <div class="cp-m-dock-ctrl">
+            <button type="button" id="cp-m-prev" class="cp-m-dock-btn" aria-label="上一首">⏮</button>
+            <button type="button" id="cp-m-play" class="cp-m-dock-btn cp-m-dock-play" aria-label="播放">▶</button>
+            <button type="button" id="cp-m-next" class="cp-m-dock-btn" aria-label="下一首">⏭</button>
+          </div>
+        </div>
+        <div class="cp-m-progress">
+          <span id="cp-m-time-cur" class="cp-m-time">0:00</span>
+          <input type="range" id="cp-m-seek" class="cp-m-seek" min="0" max="1000" value="0" disabled aria-label="进度" />
+          <span id="cp-m-time-tot" class="cp-m-time">0:00</span>
+        </div>
+      </div>
+    </div>
+
     <audio id="audio-player" preload="metadata"></audio>
   </body>
 </html>

@@ -1,6 +1,8 @@
 node_modules/
 dist/
 src-tauri/target/
+# 本地 Android 签名密钥（勿提交）
+src-tauri/keystore/
 .DS_Store
 *.log
 

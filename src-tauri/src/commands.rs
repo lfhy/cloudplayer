@@ -1,8 +1,11 @@
 use std::path::PathBuf;
 use std::sync::Arc;
 
+use rusqlite::OptionalExtension;
 use serde::{Deserialize, Serialize};
-use tauri::{AppHandle, Manager, State};
+#[cfg(desktop)]
+use tauri::Manager;
+use tauri::{AppHandle, State};
 use walkdir::WalkDir;
 
 use crate::import_enrich;
@@ -46,13 +49,13 @@ pub struct SettingsPatch {
     pub download_folder: Option<String>,
     pub lyrics_netease_api_base: Option<String>,
     pub lyrics_lrclib_enabled: Option<bool>,
-    pub lyrics_provider_order: Option<String>,
     pub main_window_close_action: Option<String>,
     pub desktop_lyrics_color_base: Option<String>,
     pub desktop_lyrics_color_highlight: Option<String>,
 }
 
 /// 由主窗口调用：在原生层对「lyrics」窗设置鼠标穿透（不依赖子 Webview 的 ACL）。
+#[cfg(desktop)]
 #[tauri::command]
 pub fn set_desktop_lyrics_click_through(app: AppHandle, ignore_cursor_events: bool) -> Result<(), String> {
     let Some(w) = app.get_webview_window("lyrics") else {
@@ -62,7 +65,14 @@ pub fn set_desktop_lyrics_click_through(app: AppHandle, ignore_cursor_events: bo
         .map_err(|e| e.to_string())
 }
 
+#[cfg(not(desktop))]
+#[tauri::command]
+pub fn set_desktop_lyrics_click_through(_app: AppHandle, _ignore_cursor_events: bool) -> Result<(), String> {
+    Ok(())
+}
+
 /// 关闭到托盘：隐藏主窗口。
+#[cfg(desktop)]
 #[tauri::command]
 pub fn hide_main_window(app: AppHandle) -> Result<(), String> {
     let Some(w) = app.get_webview_window("main") else {
@@ -71,7 +81,14 @@ pub fn hide_main_window(app: AppHandle) -> Result<(), String> {
     w.hide().map_err(|e| e.to_string())
 }
 
+#[cfg(not(desktop))]
+#[tauri::command]
+pub fn hide_main_window(_app: AppHandle) -> Result<(), String> {
+    Ok(())
+}
+
 /// 从托盘恢复主窗口。
+#[cfg(desktop)]
 #[tauri::command]
 pub fn show_main_window(app: AppHandle) -> Result<(), String> {
     let Some(w) = app.get_webview_window("main") else {
@@ -79,6 +96,12 @@ pub fn show_main_window(app: AppHandle) -> Result<(), String> {
     };
     w.show().map_err(|e| e.to_string())?;
     w.set_focus().map_err(|e| e.to_string())?;
+    Ok(())
+}
+
+#[cfg(not(desktop))]
+#[tauri::command]
+pub fn show_main_window(_app: AppHandle) -> Result<(), String> {
     Ok(())
 }
 
@@ -135,9 +158,6 @@ pub fn save_settings(patch: SettingsPatch) -> Result<(), String> {
     }
     if let Some(v) = patch.lyrics_lrclib_enabled {
         s.lyrics_lrclib_enabled = v;
-    }
-    if let Some(v) = patch.lyrics_provider_order {
-        s.lyrics_provider_order = v;
     }
     if let Some(v) = patch.main_window_close_action {
         let t = v.trim().to_ascii_lowercase();
@@ -216,7 +236,7 @@ pub async fn cache_preview_for_play(state: State<'_, Arc<AppState>>, song_id: St
     Ok(path.to_string_lossy().to_string())
 }
 
-/// 在线播放解析顺序：**已下载文件 → 已有试听缓存 → 拉取并写入试听缓存 → 解析直链 URL**；均失败则 Err。
+/// 在线播放解析顺序：**本地曲库 songs → 下载目录同名文件 → 试听磁盘缓存 → 最近播放保存的试听直链 → 拉取试听缓存 → 解析直链**；均失败则 Err。
 #[derive(Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ResolveOnlinePlayOut {
@@ -228,9 +248,57 @@ pub struct ResolveOnlinePlayOut {
     pub via: String,
 }
 
+fn local_library_audio_path(conn: &rusqlite::Connection, sid: &str, title: &str, artist: &str) -> Option<PathBuf> {
+    if !sid.is_empty() {
+        let q: std::result::Result<String, rusqlite::Error> = conn.query_row(
+            "SELECT file_path FROM songs WHERE TRIM(IFNULL(source_id,'')) = TRIM(?1) LIMIT 1",
+            [sid],
+            |r| r.get(0),
+        );
+        if let Ok(fp) = q {
+            let p = PathBuf::from(fp);
+            if p.is_file() {
+                return Some(p);
+            }
+        }
+    }
+    if title.is_empty() {
+        return None;
+    }
+    let q: std::result::Result<String, rusqlite::Error> = conn.query_row(
+        "SELECT file_path FROM songs WHERE title = ?1 COLLATE NOCASE AND artist = ?2 COLLATE NOCASE LIMIT 1",
+        rusqlite::params![title, artist],
+        |r| r.get(0),
+    );
+    if let Ok(fp) = q {
+        let p = PathBuf::from(fp);
+        if p.is_file() {
+            return Some(p);
+        }
+    }
+    None
+}
+
+fn recent_play_stored_preview_url(conn: &rusqlite::Connection, sid: &str) -> Option<String> {
+    if sid.is_empty() {
+        return None;
+    }
+    conn.query_row(
+        "SELECT play_url FROM recent_plays WHERE kind='online' AND TRIM(IFNULL(pjmp3_source_id,'')) = TRIM(?1)
+         AND TRIM(IFNULL(play_url,'')) != '' ORDER BY played_at DESC LIMIT 1",
+        [sid],
+        |r| r.get::<_, String>(0),
+    )
+    .optional()
+    .ok()
+    .flatten()
+    .filter(|s| !s.trim().is_empty())
+}
+
 #[tauri::command]
 pub async fn resolve_online_play(
     state: State<'_, Arc<AppState>>,
+    db: State<'_, DbState>,
     song_id: String,
     title: String,
     artist: String,
@@ -242,25 +310,63 @@ pub async fn resolve_online_play(
     let tit = title.trim();
     let art = artist.trim();
 
-    for p in crate::download::candidate_downloaded_audio_paths(tit, art) {
-        if let Ok(meta) = tokio::fs::metadata(&p).await {
-            if meta.is_file() && meta.len() > 0 {
-                return Ok(ResolveOnlinePlayOut {
-                    kind: "file".to_string(),
-                    path: Some(p.to_string_lossy().to_string()),
-                    url: None,
-                    via: "download".to_string(),
-                });
-            }
+    // 1) 本地音乐（扫描进库的 songs）
+    let local_from_library: Option<PathBuf> = {
+        let conn = db.conn.lock().map_err(|e| e.to_string())?;
+        local_library_audio_path(&conn, sid, tit, art)
+    };
+    if let Some(p) = local_from_library {
+        if tokio::fs::metadata(&p)
+            .await
+            .map(|m| m.is_file() && m.len() > 0)
+            .unwrap_or(false)
+        {
+            return Ok(ResolveOnlinePlayOut {
+                kind: "file".to_string(),
+                path: Some(p.to_string_lossy().to_string()),
+                url: None,
+                via: "local_library".to_string(),
+            });
         }
     }
 
+    // 1b) 下载目录同名文件（本地，未入库也能播）
+    for p in crate::download::candidate_downloaded_audio_paths(tit, art) {
+        if tokio::fs::metadata(&p)
+            .await
+            .map(|m| m.is_file() && m.len() > 0)
+            .unwrap_or(false)
+        {
+            return Ok(ResolveOnlinePlayOut {
+                kind: "file".to_string(),
+                path: Some(p.to_string_lossy().to_string()),
+                url: None,
+                via: "download".to_string(),
+            });
+        }
+    }
+
+    // 2) 试听磁盘缓存
     if let Some(p) = crate::pjmp3::preview_cache_path_if_exists(sid) {
         return Ok(ResolveOnlinePlayOut {
             kind: "file".to_string(),
             path: Some(p.to_string_lossy().to_string()),
             url: None,
             via: "preview_cache".to_string(),
+        });
+    }
+
+    // 3) 播放记录中上次成功使用的试听直链（可能已过期，由播放器侧失败）
+    let stored_recent_url: Option<String> = {
+        let conn = db.conn.lock().map_err(|e| e.to_string())?;
+        recent_play_stored_preview_url(&conn, sid)
+    };
+    if let Some(u) = stored_recent_url {
+        return Ok(ResolveOnlinePlayOut {
+            kind: "url".to_string(),
+            path: None,
+            url: Some(u),
+            via: "recent_play_url".to_string(),
         });
     }
 
@@ -333,6 +439,49 @@ pub fn list_playlists(state: State<'_, DbState>) -> Result<Vec<PlaylistRow>, Str
             Ok(PlaylistRow {
                 id: r.get(0)?,
                 name: r.get(1)?,
+            })
+        })
+        .map_err(|e| e.to_string())?;
+    let mut out = Vec::new();
+    for row in rows {
+        out.push(row.map_err(|e| e.to_string())?);
+    }
+    Ok(out)
+}
+
+/// 歌单列表（含导入曲目数量、封面），供移动端「我的歌单」展示。
+#[derive(Serialize)]
+pub struct PlaylistSummaryRow {
+    pub id: i64,
+    pub name: String,
+    pub track_count: i64,
+    /// 首条非空 `cover_url`（按 `sort_order`），与歌单详情页头图一致。
+    #[serde(default)]
+    pub cover_url: String,
+}
+
+#[tauri::command]
+pub fn list_playlists_summary(state: State<'_, DbState>) -> Result<Vec<PlaylistSummaryRow>, String> {
+    let conn = state.conn.lock().map_err(|e| e.to_string())?;
+    let mut stmt = conn
+        .prepare(
+            "SELECT p.id, p.name, COUNT(i.id) AS cnt, \
+             COALESCE((SELECT TRIM(COALESCE(i2.cover_url, '')) FROM playlist_import_items i2 \
+              WHERE i2.playlist_id = p.id AND LENGTH(TRIM(COALESCE(i2.cover_url, ''))) > 0 \
+              ORDER BY i2.sort_order ASC, i2.id ASC LIMIT 1), '') AS cover_url \
+             FROM playlists p \
+             LEFT JOIN playlist_import_items i ON i.playlist_id = p.id \
+             GROUP BY p.id \
+             ORDER BY p.name COLLATE NOCASE",
+        )
+        .map_err(|e| e.to_string())?;
+    let rows = stmt
+        .query_map([], |r| {
+            Ok(PlaylistSummaryRow {
+                id: r.get(0)?,
+                name: r.get(1)?,
+                track_count: r.get(2)?,
+                cover_url: r.get::<_, Option<String>>(3)?.unwrap_or_default(),
             })
         })
         .map_err(|e| e.to_string())?;
@@ -550,19 +699,65 @@ pub async fn fetch_song_lrc(
     if sid.is_empty() {
         return Err("无效的歌曲 ID".to_string());
     }
+    eprintln!("[lyrics] command fetch_song_lrc song_id={sid}");
     state.limiter.acquire_slot().await;
-    crate::pjmp3::fetch_song_lrc_text(&state.client, sid).await
+    let raw = crate::pjmp3::fetch_song_lrc_text(&state.client, sid).await?;
+    Ok(raw.map(crate::lyrics::pack_lyrics_for_ui))
 }
 
-/// 多源歌词（pjmp3 → 可选网易云 → 可选 LRCLIB），由 [`Settings`] 控制顺序与开关。
+/// 多源歌词：固定顺序 QQ → 酷狗 → 网易云 → LRCLIB（与歌词替换「换」同源）；自托管网易 API 时在拉取候选后仍走 `/lyric/new` 优先。
 #[tauri::command]
 pub async fn fetch_song_lrc_enriched(
     state: State<'_, Arc<AppState>>,
     req: crate::lyrics::LyricsFetchIn,
-) -> Result<Option<String>, String> {
+) -> Result<Option<crate::lyrics::LyricsPayload>, String> {
     let settings = Settings::load();
     state.limiter.acquire_slot().await;
-    crate::lyrics::fetch_song_lrc_enriched(&state.client, &settings, &req).await
+    crate::lyric_replace::fetch_song_lddc_enriched(&state.client, &settings, &req).await
+}
+
+/// 封面补全：`GET https://api.lrc.cx/cover`（跟随重定向至图片 URL）。
+#[tauri::command]
+pub async fn fetch_lrc_cx_cover(
+    state: State<'_, Arc<AppState>>,
+    title: String,
+    artist: String,
+    album: Option<String>,
+) -> Result<Option<String>, String> {
+    state.limiter.acquire_slot().await;
+    let alb = album.unwrap_or_default();
+    crate::lyrics::fetch_lrc_cx_cover(&state.client, &title, &artist, &alb).await
+}
+
+/// 歌词替换：多源搜索候选（QQ / 酷狗 / 网易 / LRCLIB）。
+#[tauri::command]
+pub async fn lyrics_search_candidates(
+    state: State<'_, Arc<AppState>>,
+    keyword: String,
+    duration_ms: Option<i64>,
+    sources: Option<Vec<String>>,
+) -> Result<Vec<crate::lyric_replace::LyricCandidate>, String> {
+    let settings = Settings::load();
+    state.limiter.acquire_slot().await;
+    crate::lyric_replace::lyrics_search_candidates(
+        &state.client,
+        &settings,
+        keyword,
+        duration_ms,
+        sources,
+    )
+    .await
+}
+
+/// 歌词替换：拉取选中候选的完整 [`LyricsPayload`]。
+#[tauri::command]
+pub async fn lyrics_fetch_candidate(
+    state: State<'_, Arc<AppState>>,
+    candidate: crate::lyric_replace::LyricCandidate,
+) -> Result<crate::lyrics::LyricsPayload, String> {
+    let settings = Settings::load();
+    state.limiter.acquire_slot().await;
+    crate::lyric_replace::lyrics_fetch_candidate(&state.client, &settings, candidate).await
 }
 
 #[derive(Serialize)]
@@ -621,6 +816,13 @@ pub fn list_local_songs(state: State<'_, DbState>) -> Result<Vec<LocalSongRow>, 
         out.push(row.map_err(|e| e.to_string())?);
     }
     Ok(out)
+}
+
+/// 「下载歌曲」Tab：库中已记录的本地下载文件（含重启后持久化）。
+#[tauri::command]
+pub fn list_downloaded_songs(state: State<'_, DbState>) -> Result<Vec<crate::db::DownloadedSongRow>, String> {
+    let conn = state.conn.lock().map_err(|e| e.to_string())?;
+    crate::db::list_downloaded_tracks(&conn).map_err(|e| e.to_string())
 }
 
 #[derive(Serialize)]
@@ -690,6 +892,9 @@ pub struct RecentPlayIn {
     pub cover_url: Option<String>,
     pub pjmp3_source_id: Option<String>,
     pub file_path: Option<String>,
+    /// 在线曲目上次成功播放使用的直链（用于解析降级前优先重试）
+    #[serde(default)]
+    pub play_url: Option<String>,
 }
 
 #[derive(Serialize)]
@@ -701,6 +906,7 @@ pub struct RecentPlayRow {
     pub cover_url: Option<String>,
     pub pjmp3_source_id: Option<String>,
     pub file_path: Option<String>,
+    pub play_url: Option<String>,
     pub played_at: i64,
 }
 
@@ -709,12 +915,14 @@ pub fn list_recent_plays(state: State<'_, DbState>) -> Result<Vec<RecentPlayRow>
     let conn = state.conn.lock().map_err(|e| e.to_string())?;
     let mut stmt = conn
         .prepare(
-            "SELECT kind, title, artist, cover_url, pjmp3_source_id, file_path, played_at
+            "SELECT kind, title, artist, cover_url, pjmp3_source_id, file_path,
+                    IFNULL(play_url, ''), played_at
              FROM recent_plays ORDER BY played_at DESC LIMIT ?1",
         )
         .map_err(|e| e.to_string())?;
     let rows = stmt
         .query_map([RECENT_PLAYS_MAX], |r| {
+            let pu: String = r.get(6)?;
             Ok(RecentPlayRow {
                 kind: r.get::<_, Option<String>>(0)?.unwrap_or_default(),
                 title: r.get::<_, Option<String>>(1)?.unwrap_or_default(),
@@ -722,7 +930,12 @@ pub fn list_recent_plays(state: State<'_, DbState>) -> Result<Vec<RecentPlayRow>
                 cover_url: r.get(3)?,
                 pjmp3_source_id: r.get(4)?,
                 file_path: r.get(5)?,
-                played_at: r.get(6)?,
+                play_url: if pu.trim().is_empty() {
+                    None
+                } else {
+                    Some(pu)
+                },
+                played_at: r.get(7)?,
             })
         })
         .map_err(|e| e.to_string())?;
@@ -774,9 +987,15 @@ pub fn record_recent_play(state: State<'_, DbState>, row: RecentPlayIn) -> Resul
     } else {
         (None, row.file_path)
     };
+    let play_url = row
+        .play_url
+        .as_ref()
+        .map(|s| s.trim().to_string())
+        .filter(|s| !s.is_empty())
+        .unwrap_or_default();
     tx.execute(
-        "INSERT INTO recent_plays (kind, title, artist, cover_url, pjmp3_source_id, file_path, played_at) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)",
-        rusqlite::params![k, row.title, row.artist, row.cover_url, pid, fpath, now],
+        "INSERT INTO recent_plays (kind, title, artist, cover_url, pjmp3_source_id, file_path, play_url, played_at) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8)",
+        rusqlite::params![k, row.title, row.artist, row.cover_url, pid, fpath, play_url, now],
     )
     .map_err(|e| e.to_string())?;
     tx.execute(

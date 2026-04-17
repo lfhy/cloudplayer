@@ -9,9 +9,10 @@ let scale = 1;
 let lyricsLocked = true;
 let persistTimer = null;
 
-/** @type {{ line1: string, line2: string, line1StartT: number, line1EndT: number, audioNow: number, receivedAtMs: number } | null} */
+/** @type {{ line1: string, line2: string, activeSlot: number, line1StartT: number, line1EndT: number, line2StartT: number, line2EndT: number, line1Words: object | null, line2Words: object | null, audioNow: number, receivedAtMs: number } | null} */
 let lyAnchor = null;
-let builtLine = "";
+let builtLine1 = "";
+let builtLine2 = "";
 
 /** 未唱 / 已唱（与主窗设置一致，可由事件更新） */
 let baseRgb = { r: 255, g: 255, b: 255 };
@@ -40,33 +41,137 @@ function charColor(t) {
   return `rgb(${lerp255(baseRgb.r, hiRgb.r, t)},${lerp255(baseRgb.g, hiRgb.g, t)},${lerp255(baseRgb.b, hiRgb.b, t)})`;
 }
 
-function rebuildLine1Spans(text) {
-  const e1 = document.getElementById("line1");
-  if (!e1 || builtLine === text) return;
-  builtLine = text;
-  e1.replaceChildren();
+/** @param {{ words?: Array<{ text?: string }> } | null | undefined} wl */
+function wordsJoinForTiming(wl) {
+  if (!wl?.words?.length) return "";
+  return wl.words.map((w) => w.text ?? "").join("");
+}
+
+function rebuildLineSpans(lineElId, text, wordLine) {
+  const el = document.getElementById(lineElId);
+  if (!el) return;
+  const useWords =
+    wordLine?.words?.length && wordsJoinForTiming(wordLine) === text;
+  const cacheKey = `${lineElId}::${text}::${useWords ? `W${wordLine.words.length}` : "plain"}`;
+  if (lineElId === "line1") {
+    if (builtLine1 === cacheKey) return;
+    builtLine1 = cacheKey;
+  } else {
+    if (builtLine2 === cacheKey) return;
+    builtLine2 = cacheKey;
+  }
+  el.replaceChildren();
+  if (useWords && wordLine) {
+    for (const w of wordLine.words) {
+      for (const ch of Array.from(w.text ?? "")) {
+        const s = document.createElement("span");
+        s.className = "ly-char";
+        s.textContent = ch;
+        el.appendChild(s);
+      }
+    }
+    return;
+  }
   for (const ch of Array.from(text)) {
     const s = document.createElement("span");
     s.className = "ly-char";
     s.textContent = ch;
-    e1.appendChild(s);
+    el.appendChild(s);
+  }
+}
+
+/** 逐词时间轴上色；`t` 为秒。与 `rebuildLineSpans` 生成的 span 顺序一致时返回 true */
+function colorLineWords(lineElId, wordLine, t) {
+  const el = document.getElementById(lineElId);
+  const spans = el?.children ?? [];
+  const words = wordLine?.words;
+  if (!words?.length) return false;
+  let offset = 0;
+  for (const w of words) {
+    const chars = Array.from(w.text ?? "");
+    const n = chars.length;
+    const startS = (w.startMs ?? 0) / 1000;
+    const endS = (w.endMs ?? 0) / 1000;
+    const dur = endS - startS;
+    const p =
+      dur > 0
+        ? Math.min(1, Math.max(0, (t - startS) / dur))
+        : t >= endS
+          ? 1
+          : t < startS
+            ? 0
+            : 1;
+    for (let i = 0; i < n; i++) {
+      const charP = Math.min(1, Math.max(0, p * n - i));
+      if (spans[offset + i]) spans[offset + i].style.color = charColor(charP);
+      offset++;
+    }
+  }
+  return offset === spans.length;
+}
+
+function setSpansUniform(lineElId, t01) {
+  const el = document.getElementById(lineElId);
+  const spans = el?.children ?? [];
+  for (let i = 0; i < spans.length; i++) {
+    spans[i].style.color = charColor(t01);
   }
 }
 
 function animateLyrics() {
   if (lyAnchor) {
-    const { line1StartT, line1EndT, audioNow, receivedAtMs, line1 } = lyAnchor;
-    rebuildLine1Spans(line1);
-    const spans = document.getElementById("line1")?.children ?? [];
-    const n = spans.length;
-    if (n > 0) {
-      const elapsed = (Date.now() - receivedAtMs) / 1000;
-      const t = audioNow + elapsed;
-      const dur = line1EndT - line1StartT;
-      const p = dur > 0 ? Math.min(1, Math.max(0, (t - line1StartT) / dur)) : 1;
-      for (let i = 0; i < n; i++) {
-        const charP = Math.min(1, Math.max(0, p * n - i));
-        spans[i].style.color = charColor(charP);
+    const {
+      line1,
+      line2,
+      activeSlot,
+      line1StartT,
+      line1EndT,
+      line2StartT,
+      line2EndT,
+      line1Words,
+      line2Words,
+      audioNow,
+      receivedAtMs,
+    } = lyAnchor;
+    const slot = activeSlot === 2 ? 2 : 1;
+    rebuildLineSpans("line1", line1, line1Words);
+    rebuildLineSpans("line2", line2, line2Words);
+    const elapsed = (Date.now() - receivedAtMs) / 1000;
+    const t = audioNow + elapsed;
+
+    if (slot === 1) {
+      const useW1 =
+        line1Words?.words?.length && wordsJoinForTiming(line1Words) === line1;
+      if (
+        !useW1 ||
+        !colorLineWords("line1", line1Words, t)
+      ) {
+        const dur = line1EndT - line1StartT;
+        const p = dur > 0 ? Math.min(1, Math.max(0, (t - line1StartT) / dur)) : 1;
+        const spans1 = document.getElementById("line1")?.children ?? [];
+        const n1 = spans1.length;
+        for (let i = 0; i < n1; i++) {
+          const charP = Math.min(1, Math.max(0, p * n1 - i));
+          spans1[i].style.color = charColor(charP);
+        }
+      }
+      setSpansUniform("line2", 0);
+    } else {
+      setSpansUniform("line1", 1);
+      const useW2 =
+        line2Words?.words?.length && wordsJoinForTiming(line2Words) === line2;
+      if (
+        !useW2 ||
+        !colorLineWords("line2", line2Words, t)
+      ) {
+        const dur = line2EndT - line2StartT;
+        const p = dur > 0 ? Math.min(1, Math.max(0, (t - line2StartT) / dur)) : 1;
+        const spans2 = document.getElementById("line2")?.children ?? [];
+        const n2 = spans2.length;
+        for (let i = 0; i < n2; i++) {
+          const charP = Math.min(1, Math.max(0, p * n2 - i));
+          spans2[i].style.color = charColor(charP);
+        }
       }
     }
   }
@@ -163,16 +268,20 @@ async function initLyricsWindow() {
 
   await lyricsWin.listen("desktop-lyrics-lines", (e) => {
     const p = e?.payload ?? {};
+    const as = Number(p.activeSlot ?? p.active_slot);
     lyAnchor = {
       line1: p.line1 ?? "—",
       line2: p.line2 ?? "—",
+      activeSlot: as === 2 ? 2 : 1,
       line1StartT: Number(p.line1StartT ?? p.line1_start_t) || 0,
       line1EndT: Number(p.line1EndT ?? p.line1_end_t) || 0,
+      line2StartT: Number(p.line2StartT ?? p.line2_start_t) || 0,
+      line2EndT: Number(p.line2EndT ?? p.line2_end_t) || 0,
+      line1Words: p.line1Words ?? p.line1_words ?? null,
+      line2Words: p.line2Words ?? p.line2_words ?? null,
       audioNow: Number(p.audioNow ?? p.audio_now) || 0,
       receivedAtMs: Date.now(),
     };
-    const e2 = document.getElementById("line2");
-    if (e2) e2.textContent = lyAnchor.line2;
   });
 
   await lyricsWin.listen("desktop-lyrics-lock", (e) => {

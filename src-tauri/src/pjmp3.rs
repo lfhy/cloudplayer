@@ -1,9 +1,22 @@
 //! pjmp3.com 搜索与试听解析，行为对齐 Python `services/search_service.py`。
 
 use std::collections::HashSet;
+use std::error::Error;
 use std::fs;
 use std::path::PathBuf;
 use std::time::Duration;
+
+/// reqwest 的 `Display` 往往只有「error sending request」；把 `source()` 链拼上便于 Android logcat 区分 DNS/TLS/超时。
+fn reqwest_err_chain(e: reqwest::Error) -> String {
+    let mut s = e.to_string();
+    let mut src: Option<&(dyn Error + 'static)> = e.source();
+    while let Some(err) = src {
+        s.push_str(": ");
+        s.push_str(&err.to_string());
+        src = err.source();
+    }
+    s
+}
 
 use regex::Regex;
 use scraper::{ElementRef, Html, Selector};
@@ -333,12 +346,12 @@ pub async fn search_pjmp3(
         .header("Accept-Language", "zh-CN,zh;q=0.9,en;q=0.8")
         .send()
         .await
-        .map_err(|e| e.to_string())?
+        .map_err(reqwest_err_chain)?
         .error_for_status()
-        .map_err(|e| e.to_string())?
+        .map_err(reqwest_err_chain)?
         .text()
         .await
-        .map_err(|e| e.to_string())?;
+        .map_err(reqwest_err_chain)?;
 
     parse_search_html_page(&body, page)
 }
@@ -388,12 +401,12 @@ pub async fn fetch_song_page_html(client: &reqwest::Client, song_id: &str) -> Re
         .header("Accept-Language", "zh-CN,zh;q=0.9,en;q=0.8")
         .send()
         .await
-        .map_err(|e| e.to_string())?
+        .map_err(reqwest_err_chain)?
         .error_for_status()
-        .map_err(|e| e.to_string())?
+        .map_err(reqwest_err_chain)?
         .text()
         .await
-        .map_err(|e| e.to_string())
+        .map_err(reqwest_err_chain)
 }
 
 fn normalize_media_url(raw: &str) -> String {
@@ -556,7 +569,7 @@ async fn download_mp3_bytes(
         let resp = match req.send().await {
             Ok(r) => r,
             Err(e) => {
-                last_err = e.to_string();
+                last_err = reqwest_err_chain(e);
                 continue;
             }
         };
@@ -573,7 +586,7 @@ async fn download_mp3_bytes(
         let bytes = match resp.bytes().await {
             Ok(b) => b,
             Err(e) => {
-                last_err = e.to_string();
+                last_err = reqwest_err_chain(e);
                 continue;
             }
         };
@@ -673,10 +686,6 @@ pub fn extract_lrc_urls(html: &str) -> Vec<String> {
     out
 }
 
-fn looks_like_lrc(text: &str) -> bool {
-    let t = text.trim_start();
-    t.starts_with('[') || t.contains("[00:") || t.contains("[01:") || t.contains("[02:")
-}
 
 async fn download_text_with_song_referer(
     client: &reqwest::Client,
@@ -702,7 +711,7 @@ async fn download_text_with_song_referer(
         let resp = match req.send().await {
             Ok(r) => r,
             Err(e) => {
-                last_err = e.to_string();
+                last_err = reqwest_err_chain(e);
                 continue;
             }
         };
@@ -713,7 +722,7 @@ async fn download_text_with_song_referer(
         let bytes = match resp.bytes().await {
             Ok(b) => b,
             Err(e) => {
-                last_err = e.to_string();
+                last_err = reqwest_err_chain(e);
                 continue;
             }
         };
@@ -727,18 +736,34 @@ async fn download_text_with_song_referer(
 pub async fn fetch_song_lrc_text(client: &reqwest::Client, song_id: &str) -> Result<Option<String>, String> {
     let sid = song_id.trim();
     if sid.is_empty() {
+        eprintln!("[lyrics] pjmp3 fetch_song_lrc_text: empty song id");
         return Err("无效的歌曲 ID".to_string());
     }
+    eprintln!("[lyrics] pjmp3 fetch_song_lrc_text song_id={sid}");
     let song_page = format!("{}/song.php?id={}", BASE_URL.trim_end_matches('/'), sid);
     let html = fetch_song_page_html(client, sid).await?;
     let urls = extract_lrc_urls(&html);
+    eprintln!("[lyrics] pjmp3 extracted {} .lrc url(s)", urls.len());
     for u in urls {
         match download_text_with_song_referer(client, &u, &song_page).await {
-            Ok(t) if looks_like_lrc(&t) => return Ok(Some(t)),
-            Ok(_) => continue,
-            Err(_) => continue,
+            Ok(t) if crate::lrc_format::has_lrc_timestamp_tags(&t) => {
+                eprintln!("[lyrics] pjmp3 downloaded lrc chars={} url={u}", t.len());
+                return Ok(Some(t));
+            }
+            Ok(t) => {
+                eprintln!(
+                    "[lyrics] pjmp3 skip url (not lrc-like) chars={} url={u}",
+                    t.len()
+                );
+                continue;
+            }
+            Err(e) => {
+                eprintln!("[lyrics] pjmp3 download failed url={u} err={e}");
+                continue;
+            }
         }
     }
+    eprintln!("[lyrics] pjmp3: no valid lrc from song page");
     Ok(None)
 }
 

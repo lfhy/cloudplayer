@@ -1,13 +1,16 @@
 {
   "name": "cloudplayer-tauri",
   "private": true,
-  "version": "1.1.0",
+  "version": "1.2.3",
   "type": "module",
   "scripts": {
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "tauri": "tauri"
+    "tauri": "tauri",
+    "android:build": "tauri android build",
+    "android:build:arm64": "tauri android build -t aarch64 --apk",
+    "android:dev": "tauri android dev"
   },
   "devDependencies": {
     "@tauri-apps/cli": "^2",
@@ -15,6 +18,7 @@
   },
   "dependencies": {
     "@tauri-apps/api": "^2",
-    "@tauri-apps/plugin-dialog": "^2.7.0"
+    "@tauri-apps/plugin-dialog": "^2.7.0",
+    "@tauri-apps/plugin-os": "^2.3.0"
   }
 }

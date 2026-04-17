@@ -1,6 +1,6 @@
 [package]
 name = "cloudplayer-tauri"
-version = "1.1.0"
+version = "1.2.3"
 description = "CloudPlayer desktop (Tauri / Rust)"
 edition = "2021"
 
@@ -14,13 +14,12 @@ tauri-build = { version = "2", features = [] }
 [dependencies]
 tauri = { version = "2", features = ["protocol-asset", "tray-icon", "image-png"] }
 tauri-plugin-dialog = "2"
+tauri-plugin-os = "2"
 walkdir = "2"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 rusqlite = { version = "0.32", features = ["bundled"] }
 dirs = "5"
-# native-tls：Windows 走 Schannel，与系统浏览器证书/代理行为更接近，减少「浏览器能开页、Rust 请求失败」
-reqwest = { version = "0.12", default-features = false, features = ["json", "native-tls"] }
 scraper = "0.21"
 regex = "1"
 url = "2"
@@ -30,8 +29,26 @@ image = "0.25"
 imageproc = "0.25"
 rand = "0.8"
 chrono = { version = "0.4", default-features = false, features = ["clock"] }
+lofty = "0.22"
+log = "0.4"
+simplelog = "0.12"
+# LRC / YRC / TTML（Lyric-Atlas、amll-ttml-db 等）
+amll-lyric = { version = "0.3", default-features = false, features = ["lrc", "yrc", "ttml"] }
+# QQ QRC（自定义 3DES + zlib）、酷狗 KRC（XOR + zlib）、签名
+flate2 = "1"
+md-5 = "0.10"
+hex = "0.4"
+
+# reqwest TLS：桌面用 native-tls（Windows Schannel）；Android 用 rustls + webpki 内置根证书。
+# rustls-native-certs 在部分 Android 上读不到系统 CA，会导致 TLS 握手失败；webpki-roots 与常见浏览器根集一致。
+[target.'cfg(target_os = "android")'.dependencies]
+reqwest = { version = "0.12", default-features = false, features = ["json", "rustls-tls-webpki-roots", "stream"] }
+
+[target.'cfg(not(target_os = "android"))'.dependencies]
+reqwest = { version = "0.12", default-features = false, features = ["json", "native-tls", "stream"] }
+futures-util = { version = "0.3", default-features = false, features = ["std", "alloc"] }
 
 [profile.release]
-panic = "abort"
+panic = "abort" 
 codegen-units = 1
 lto = true

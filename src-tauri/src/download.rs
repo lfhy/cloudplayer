@@ -1,19 +1,112 @@
 //! 与 Python `services/download_service.py` 对齐：顺序队列、captcha 链、流式落盘。
 
-use std::path::PathBuf;
-use std::time::Duration;
+use std::error::Error;
+use std::path::{Path, PathBuf};
+use std::time::{Duration, Instant};
 
+use futures_util::StreamExt;
+use log::{error, info, warn};
 use rand::Rng;
 use reqwest::Client;
 use serde::Serialize;
 use serde_json::Value;
-use tauri::{AppHandle, Emitter};
+use tauri::{AppHandle, Emitter, Manager};
 use tokio::io::AsyncWriteExt;
 
-use crate::captcha_slider::guess_slider_offset;
+use crate::captcha_slider::solve_tianai_slider;
 use crate::config::{default_download_dir, Settings, BASE_URL};
 
 const BROWSER_UA: &str = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36";
+
+fn persist_downloaded_record(app: &AppHandle, path: &Path, job: &DownloadJob, written_len: u64) {
+    let Some(state) = app.try_state::<crate::db::DbState>() else {
+        warn!(target: "download", "DbState missing, skip downloaded_tracks insert");
+        return;
+    };
+    let file_size = std::fs::metadata(path)
+        .map(|m| m.len() as i64)
+        .unwrap_or(written_len as i64);
+    let (duration_ms, album_tag) = crate::download_meta::probe_audio_file(path);
+    let path_str = path.to_string_lossy().to_string();
+    let completed_at = chrono::Utc::now().timestamp_millis();
+    let conn = match state.conn.lock() {
+        Ok(c) => c,
+        Err(e) => {
+            warn!(target: "download", "db lock: {}", e);
+            return;
+        }
+    };
+    if let Err(e) = crate::db::insert_downloaded_track(
+        &conn,
+        &path_str,
+        job.title.trim(),
+        job.artist.trim(),
+        album_tag.trim(),
+        duration_ms,
+        file_size,
+        job.source_id.trim(),
+        job.quality.trim(),
+        completed_at,
+    ) {
+        warn!(target: "download", "insert downloaded_tracks: {}", e);
+    }
+}
+
+/// 把 `reqwest` 的根因（TLS/DNS/连接等）拼进文案，便于与「站点业务错误」区分。
+fn format_reqwest_err(e: &reqwest::Error) -> String {
+    let mut parts: Vec<String> = vec![e.to_string()];
+    let mut cur: Option<&dyn Error> = e.source();
+    while let Some(c) = cur {
+        parts.push(c.to_string());
+        cur = c.source();
+    }
+    let detail = parts.join(" | ");
+    let hint = if e.is_timeout() {
+        "（请求超时：可检查网络、代理或稍后重试）"
+    } else if e.is_connect() {
+        "（无法连接服务器：DNS、防火墙、代理或目标站点不可达）"
+    } else if e.is_request() {
+        "（请求构建或发送阶段失败）"
+    } else {
+        ""
+    };
+    if hint.is_empty() {
+        detail
+    } else {
+        format!("{detail}{hint}")
+    }
+}
+
+async fn get_captcha_gen_with_retry(client: &Client, base: &str) -> Result<reqwest::Response, reqwest::Error> {
+    let url = format!("{}/captcha/gen", base);
+    let mut last_err: Option<reqwest::Error> = None;
+    for attempt in 1..=3u32 {
+        match client
+            .get(&url)
+            .header("User-Agent", BROWSER_UA)
+            .header("Referer", format!("{}/", base))
+            .header("Accept", "application/json, text/plain, */*")
+            .header("Accept-Language", "zh-CN,zh;q=0.9,en;q=0.8")
+            .send()
+            .await
+        {
+            Ok(r) => return Ok(r),
+            Err(e) => {
+                if attempt < 3 {
+                    warn!(
+                        target: "download",
+                        "captcha/gen 第 {} 次请求失败: {}",
+                        attempt,
+                        format_reqwest_err(&e)
+                    );
+                    tokio::time::sleep(Duration::from_millis(400 * attempt as u64)).await;
+                }
+                last_err = Some(e);
+            }
+        }
+    }
+    Err(last_err.expect("retry loop"))
+}
 
 #[derive(Debug, Clone)]
 pub struct DownloadJob {
@@ -35,6 +128,17 @@ pub struct DownloadTaskEvent {
     pub message: Option<String>,
 }
 
+fn emit_download_step(
+    task: &mut DownloadTaskEvent,
+    emit: &impl Fn(DownloadTaskEvent),
+    progress: f64,
+    msg: impl Into<String>,
+) {
+    task.progress = progress.clamp(0.0, 1.0);
+    task.message = Some(msg.into());
+    emit(task.clone());
+}
+
 fn sanitize_filename(s: &str) -> String {
     s.chars()
         .map(|c| match c {
@@ -45,62 +149,57 @@ fn sanitize_filename(s: &str) -> String {
         .collect()
 }
 
-fn find_long_base64_strings(v: &Value, min_len: usize, out: &mut Vec<String>) {
-    match v {
-        Value::Object(map) => {
-            for x in map.values() {
-                find_long_base64_strings(x, min_len, out);
-            }
-        }
-        Value::Array(a) => {
-            for x in a {
-                find_long_base64_strings(x, min_len, out);
-            }
-        }
-        Value::String(s) => {
-            let t = s.trim();
-            if t.len() >= min_len && t.chars().take(200).all(|c| c.is_ascii_alphanumeric() || "+/=\n\r ".contains(c)) {
-                out.push(s.clone());
-            }
-        }
-        _ => {}
-    }
+/// tianai-captcha `/captcha/gen` 相关字段的提取。
+#[derive(Debug, Clone)]
+struct TianaiCaptcha {
+    id: String,
+    background_b64: String,
+    template_b64: String,
+    bg_w: u32,
+    bg_h: u32,
+    tmpl_w: u32,
+    tmpl_h: u32,
 }
 
-fn extract_captcha_id(v: &Value) -> Option<String> {
-    match v {
-        Value::Object(map) => {
-            for k in ["captchaId", "captcha_id", "token", "id", "uuid", "cid"] {
-                if let Some(Value::String(s)) = map.get(k) {
-                    if s.len() > 8 {
-                        return Some(s.clone());
-                    }
-                }
-            }
-            for x in map.values() {
-                if let Some(r) = extract_captcha_id(x) {
-                    return Some(r);
-                }
-            }
-        }
-        Value::Array(a) => {
-            for x in a {
-                if let Some(r) = extract_captcha_id(x) {
-                    return Some(r);
-                }
-            }
-        }
-        _ => {}
-    }
-    None
+fn u32_from_value(v: Option<&Value>) -> Option<u32> {
+    v.and_then(|x| x.as_u64()).and_then(|n| u32::try_from(n).ok())
 }
 
-fn pick_two_images(blobs: &[String]) -> Option<(String, String)> {
-    if blobs.len() >= 2 {
-        return Some((blobs[0].clone(), blobs[1].clone()));
+/// 从 `/captcha/gen` JSON 里按 tianai-captcha 字段抽取；
+/// 兼容 `{id, captcha:{backgroundImage,templateImage,...}}` 与顶层平铺两种结构。
+fn extract_tianai_captcha(v: &Value) -> Option<TianaiCaptcha> {
+    fn try_obj(id: &str, m: &serde_json::Map<String, Value>) -> Option<TianaiCaptcha> {
+        let bg = m.get("backgroundImage")?.as_str()?.to_string();
+        let tmpl = m.get("templateImage")?.as_str()?.to_string();
+        let bg_w = u32_from_value(m.get("backgroundImageWidth")).unwrap_or(0);
+        let bg_h = u32_from_value(m.get("backgroundImageHeight")).unwrap_or(0);
+        let tmpl_w = u32_from_value(m.get("templateImageWidth")).unwrap_or(0);
+        let tmpl_h = u32_from_value(m.get("templateImageHeight")).unwrap_or(0);
+        if bg.len() < 200 || tmpl.len() < 100 {
+            return None;
+        }
+        Some(TianaiCaptcha {
+            id: id.to_string(),
+            background_b64: bg,
+            template_b64: tmpl,
+            bg_w,
+            bg_h,
+            tmpl_w,
+            tmpl_h,
+        })
     }
-    if blobs.len() == 1 {
-        return Some((blobs[0].clone(), blobs[0].clone()));
+
+    let m = v.as_object()?;
+    let id = m.get("id").and_then(|x| x.as_str()).unwrap_or("");
+    if id.len() >= 8 {
+        if let Some(Value::Object(inner)) = m.get("captcha") {
+            if let Some(c) = try_obj(id, inner) {
+                return Some(c);
+            }
+        }
+        if let Some(c) = try_obj(id, m) {
+            return Some(c);
+        }
     }
     None
 }
@@ -139,6 +238,25 @@ fn check_and_reserve_download_slot() -> Result<(), String> {
     Ok(())
 }
 
+fn download_fail_emit(
+    task: &mut DownloadTaskEvent,
+    emit: &impl Fn(DownloadTaskEvent),
+    job: &DownloadJob,
+    msg: String,
+) {
+    error!(
+        target: "download",
+        "{} | source_id={} title={} artist={}",
+        msg,
+        job.source_id,
+        job.title,
+        job.artist
+    );
+    task.status = "failed".to_string();
+    task.message = Some(msg);
+    emit(task.clone());
+}
+
 fn record_download_success() -> Result<(), String> {
     let mut s = Settings::load();
     let today = chrono::Local::now().format("%Y-%m-%d").to_string();
@@ -166,113 +284,199 @@ pub async fn run_one_job(client: Client, app: AppHandle, job: DownloadJob) {
     };
 
     if let Err(e) = check_and_reserve_download_slot() {
-        task.status = "failed".to_string();
-        task.message = Some(e.clone());
-        emit(task);
+        download_fail_emit(&mut task, &emit, &job, e);
         return;
     }
 
     task.status = "downloading".to_string();
     emit(task.clone());
+    emit_download_step(&mut task, &emit, 0.04, "准备下载（验证码）…");
 
     let base = BASE_URL.trim_end_matches('/');
     let song_page = format!("{}/song.php?id={}", base, job.source_id);
 
-    // 1) captcha/gen
-    let gen_r = match client
-        .get(format!("{}/captcha/gen", base))
-        .header("User-Agent", BROWSER_UA)
-        .header("Referer", format!("{}/", base))
-        .header("Accept-Language", "zh-CN,zh;q=0.9,en;q=0.8")
-        .send()
-        .await
-    {
-        Ok(r) => r,
-        Err(e) => {
-            task.status = "failed".to_string();
-            task.message = Some(format!("captcha/gen: {e}"));
-            emit(task);
-            return;
+    // tianai-captcha TTL 很短且每个 id 只能校验一次；遇到 `已失效`/`基础校验失败` 时重新 gen。
+    const CAPTCHA_MAX_ATTEMPTS: usize = 4;
+    let mut captcha_id = String::new();
+    let mut last_fail_msg: Option<String> = None;
+
+    for attempt in 1..=CAPTCHA_MAX_ATTEMPTS {
+        emit_download_step(
+            &mut task,
+            &emit,
+            0.06 + (attempt.saturating_sub(1)) as f64 * 0.06,
+            format!("验证码 {attempt}/{max}：拉取图片…", max = CAPTCHA_MAX_ATTEMPTS),
+        );
+        let gen_r = match get_captcha_gen_with_retry(&client, base).await {
+            Ok(r) => r,
+            Err(e) => {
+                last_fail_msg = Some(format!("captcha/gen: {}", format_reqwest_err(&e)));
+                continue;
+            }
+        };
+        if !gen_r.status().is_success() {
+            last_fail_msg = Some(format!("captcha/gen HTTP {}", gen_r.status()));
+            continue;
         }
-    };
-    if !gen_r.status().is_success() {
-        task.status = "failed".to_string();
-        task.message = Some(format!("captcha/gen HTTP {}", gen_r.status()));
-        emit(task);
+        let gen_text = match gen_r.text().await {
+            Ok(t) => t,
+            Err(e) => {
+                last_fail_msg =
+                    Some(format!("读取验证码响应: {}", format_reqwest_err(&e)));
+                continue;
+            }
+        };
+        let payload: Value = match serde_json::from_str(&gen_text) {
+            Ok(v) => v,
+            Err(e) => {
+                last_fail_msg = Some(format!("验证码响应非 JSON: {e}"));
+                continue;
+            }
+        };
+        let Some(cap) = extract_tianai_captcha(&payload) else {
+            let prefix: String = gen_text.chars().take(500).collect();
+            warn!(
+                target: "download",
+                "captcha/gen: tianai 字段缺失 | body prefix: {}",
+                prefix
+            );
+            last_fail_msg = Some("无法解析验证码响应结构".to_string());
+            continue;
+        };
+
+        emit_download_step(
+            &mut task,
+            &emit,
+            0.12 + (attempt.saturating_sub(1)) as f64 * 0.06,
+            "识别滑块位置（计算中，请稍候）…",
+        );
+        let drag_x = match solve_tianai_slider(&cap.background_b64, &cap.template_b64) {
+            Some(v) => v,
+            None => {
+                last_fail_msg = Some("自动滑块匹配失败".to_string());
+                continue;
+            }
+        };
+
+        emit_download_step(
+            &mut task,
+            &emit,
+            0.22 + (attempt.saturating_sub(1)) as f64 * 0.05,
+            "提交验证…",
+        );
+        // tianai-captcha `/captcha/check`：POST JSON，需要 bg/tmpl 尺寸 + trackList。
+        let start = chrono::Local::now();
+        // 模拟 1.1~1.8s 的拖动过程；与后端"轨迹熵"校验相容。
+        let drag_duration_ms: u64 = {
+            let mut rng = rand::thread_rng();
+            rng.gen_range(1100u64..1800u64)
+        };
+        let stop = start + chrono::Duration::milliseconds(drag_duration_ms as i64);
+        let fmt =
+            |t: chrono::DateTime<chrono::Local>| t.format("%Y-%m-%d %H:%M:%S").to_string();
+
+        // 用 3 个关键点构造一条单调上升的拖动轨迹（down → 中段 move → up）。
+        let mid_x = (drag_x as f64 * 0.55).round() as i32;
+        let mid_t = (drag_duration_ms as f64 * 0.5).round() as i64;
+        let end_t = drag_duration_ms as i64;
+        let track = serde_json::json!([
+            {"x": 0, "y": 0, "type": "down", "t": 0},
+            {"x": mid_x, "y": 4, "type": "move", "t": mid_t},
+            {"x": drag_x, "y": 6, "type": "move", "t": end_t - 50},
+            {"x": drag_x, "y": 6, "type": "up", "t": end_t},
+        ]);
+
+        let (bg_w, bg_h) = if cap.bg_w > 0 && cap.bg_h > 0 {
+            (cap.bg_w, cap.bg_h)
+        } else {
+            (600, 300)
+        };
+        let (tmpl_w, tmpl_h) = if cap.tmpl_w > 0 && cap.tmpl_h > 0 {
+            (cap.tmpl_w, cap.tmpl_h)
+        } else {
+            (110, 300)
+        };
+
+        let check_body = serde_json::json!({
+            "id": cap.id,
+            "data": {
+                "bgImageWidth": bg_w,
+                "bgImageHeight": bg_h,
+                "sliderImageWidth": tmpl_w,
+                "sliderImageHeight": tmpl_h,
+                "startTime": fmt(start),
+                "stopTime": fmt(stop),
+                "trackList": track,
+            }
+        });
+
+        let chk = match client
+            .post(format!("{}/captcha/check", base))
+            .header("Content-Type", "application/json")
+            .header("User-Agent", BROWSER_UA)
+            .header("Referer", song_page.as_str())
+            .json(&check_body)
+            .send()
+            .await
+        {
+            Ok(r) => r,
+            Err(e) => {
+                last_fail_msg =
+                    Some(format!("captcha/check: {}", format_reqwest_err(&e)));
+                continue;
+            }
+        };
+        if !chk.status().is_success() {
+            last_fail_msg = Some(format!("captcha/check HTTP {}", chk.status()));
+            continue;
+        }
+        let chk_text = chk.text().await.unwrap_or_default();
+        let chk_json: Value = serde_json::from_str(&chk_text).unwrap_or(Value::Null);
+        let chk_ok = chk_json
+            .get("success")
+            .and_then(|b| b.as_bool())
+            .unwrap_or(false);
+        if chk_ok {
+            captcha_id = cap.id;
+            info!(
+                target: "download",
+                "captcha 通过 attempt={} drag_x={} id={}",
+                attempt,
+                drag_x,
+                captcha_id
+            );
+            emit_download_step(&mut task, &emit, 0.40, "验证通过，获取音频地址…");
+            break;
+        }
+
+        warn!(
+            target: "download",
+            "captcha/check 未通过 attempt={} drag_x={} body={}",
+            attempt,
+            drag_x,
+            chk_text.chars().take(300).collect::<String>()
+        );
+        last_fail_msg = Some(format!("验证未通过（x={drag_x}）: {chk_text}"));
+    }
+
+    if captcha_id.is_empty() {
+        download_fail_emit(
+            &mut task,
+            &emit,
+            &job,
+            last_fail_msg.unwrap_or_else(|| "验证码校验失败".to_string()),
+        );
         return;
     }
-    let gen_text = match gen_r.text().await {
-        Ok(t) => t,
-        Err(e) => {
-            task.status = "failed".to_string();
-            task.message = Some(e.to_string());
-            emit(task);
-            return;
-        }
-    };
-    let payload: Value = match serde_json::from_str(&gen_text) {
-        Ok(v) => v,
-        Err(e) => {
-            task.status = "failed".to_string();
-            task.message = Some(format!("验证码响应非 JSON: {e}"));
-            emit(task);
-            return;
-        }
-    };
-    let mut blobs = Vec::new();
-    find_long_base64_strings(&payload, 500, &mut blobs);
-    let Some((bg_b64, sl_b64)) = pick_two_images(&blobs) else {
-        task.status = "failed".to_string();
-        task.message = Some("无法解析验证码图片".to_string());
-        emit(task);
-        return;
-    };
-    let Some(captcha_id) = extract_captcha_id(&payload) else {
-        task.status = "failed".to_string();
-        task.message = Some("无法解析 captchaId".to_string());
-        emit(task);
-        return;
-    };
 
-    let x = match guess_slider_offset(&bg_b64, &sl_b64) {
-        Some(v) => v,
-        None => {
-            task.status = "failed".to_string();
-            task.message = Some("自动滑块匹配失败".to_string());
-            emit(task);
-            return;
-        }
-    };
-
-    let chk = match client
-        .get(format!("{}/captcha/check", base))
-        .query(&[("id", captcha_id.as_str()), ("x", &x.to_string())])
-        .header("User-Agent", BROWSER_UA)
-        .header("Referer", song_page.as_str())
-        .send()
-        .await
-    {
-        Ok(r) => r,
-        Err(e) => {
-            task.status = "failed".to_string();
-            task.message = Some(format!("captcha/check: {e}"));
-            emit(task);
-            return;
-        }
-    };
-    if !chk.status().is_success() {
-        task.status = "failed".to_string();
-        task.message = Some(format!("captcha/check HTTP {}", chk.status()));
-        emit(task);
-        return;
-    }
-
-    let jitter = {
+    // captcha 通过后 token 时效很短，立刻换链接；短暂 150~350ms 抖动模拟真人。
+    let gap_ms = {
         let mut rng = rand::thread_rng();
-        rng.gen_range(0.5f64..2.0f64)
+        rng.gen_range(150u64..350u64)
     };
-    tokio::time::sleep(Duration::from_secs_f64(2.0 + jitter)).await;
+    tokio::time::sleep(Duration::from_millis(gap_ms)).await;
 
+    emit_download_step(&mut task, &emit, 0.43, "请求下载链接…");
     let url_r = match client
         .get(format!("{}/captcha/check/getMusicUrl", base))
         .query(&[
@@ -287,37 +491,47 @@ pub async fn run_one_job(client: Client, app: AppHandle, job: DownloadJob) {
     {
         Ok(r) => r,
         Err(e) => {
-            task.status = "failed".to_string();
-            task.message = Some(format!("getMusicUrl: {e}"));
-            emit(task);
+            download_fail_emit(
+                &mut task,
+                &emit,
+                &job,
+                format!("getMusicUrl: {}", format_reqwest_err(&e)),
+            );
             return;
         }
     };
     if !url_r.status().is_success() {
-        task.status = "failed".to_string();
-        task.message = Some(format!("getMusicUrl HTTP {}", url_r.status()));
-        emit(task);
+        download_fail_emit(
+            &mut task,
+            &emit,
+            &job,
+            format!("getMusicUrl HTTP {}", url_r.status()),
+        );
         return;
     }
     let url_json: Value = match url_r.json::<Value>().await {
         Ok(v) => v,
         Err(e) => {
-            task.status = "failed".to_string();
-            task.message = Some(format!("解析 getMusicUrl JSON: {e}"));
-            emit(task);
+            download_fail_emit(
+                &mut task,
+                &emit,
+                &job,
+                format!("解析 getMusicUrl JSON: {}", format_reqwest_err(&e)),
+            );
             return;
         }
     };
     if url_json.get("code").and_then(|c| c.as_i64()) != Some(200) {
-        task.status = "failed".to_string();
-        task.message = Some(format!("获取下载链接失败: {url_json}"));
-        emit(task);
+        download_fail_emit(
+            &mut task,
+            &emit,
+            &job,
+            format!("获取下载链接失败: {url_json}"),
+        );
         return;
     }
     let Some(music_url) = url_json.get("result").and_then(|r| r.as_str()) else {
-        task.status = "failed".to_string();
-        task.message = Some("响应无 result URL".to_string());
-        emit(task);
+        download_fail_emit(&mut task, &emit, &job, "响应无 result URL".to_string());
         return;
     };
 
@@ -325,12 +539,18 @@ pub async fn run_one_job(client: Client, app: AppHandle, job: DownloadJob) {
     let name = sanitize_filename(&format!("{} - {}{}", job.title, job.artist, ext));
     let root = dest_root();
     if let Err(e) = tokio::fs::create_dir_all(&root).await {
-        task.status = "failed".to_string();
-        task.message = Some(format!("创建目录: {e}"));
-        emit(task);
+        download_fail_emit(&mut task, &emit, &job, format!("创建目录: {e}"));
         return;
     }
     let out_path = root.join(name);
+
+    emit_download_step(&mut task, &emit, 0.46, "连接 CDN，开始下载…");
+    info!(
+        target: "download",
+        "streaming audio source_id={} url_len={}",
+        job.source_id,
+        music_url.len()
+    );
 
     let resp = match client
         .get(music_url)
@@ -341,63 +561,117 @@ pub async fn run_one_job(client: Client, app: AppHandle, job: DownloadJob) {
     {
         Ok(r) => r,
         Err(e) => {
-            task.status = "failed".to_string();
-            task.message = Some(format!("下载音频: {e}"));
-            emit(task);
+            download_fail_emit(
+                &mut task,
+                &emit,
+                &job,
+                format!("下载音频: {}", format_reqwest_err(&e)),
+            );
             return;
         }
     };
     if !resp.status().is_success() {
-        task.status = "failed".to_string();
-        task.message = Some(format!("音频 HTTP {}", resp.status()));
-        emit(task);
+        download_fail_emit(
+            &mut task,
+            &emit,
+            &job,
+            format!("音频 HTTP {}", resp.status()),
+        );
         return;
     }
     let total = resp.content_length().unwrap_or(0);
-    let body = match resp.bytes().await {
-        Ok(b) => b,
-        Err(e) => {
-            task.status = "failed".to_string();
-            task.message = Some(format!("读取音频: {e}"));
-            emit(task);
-            return;
-        }
-    };
+    let mut stream = resp.bytes_stream();
     let mut file = match tokio::fs::File::create(&out_path).await {
         Ok(f) => f,
         Err(e) => {
-            task.status = "failed".to_string();
-            task.message = Some(format!("创建文件: {e}"));
-            emit(task);
+            download_fail_emit(&mut task, &emit, &job, format!("创建文件: {e}"));
             return;
         }
     };
-    if let Err(e) = file.write_all(&body).await {
-        task.status = "failed".to_string();
-        task.message = Some(format!("写入: {e}"));
-        emit(task);
+
+    let mut received: u64 = 0;
+    let mut last_emit = Instant::now();
+    let mut acc_emit: usize = 0;
+    const EMIT_EVERY: Duration = Duration::from_millis(280);
+    const EMIT_BYTES: usize = 256 * 1024;
+
+    while let Some(item) = stream.next().await {
+        let chunk = match item {
+            Ok(c) => c,
+            Err(e) => {
+                download_fail_emit(
+                    &mut task,
+                    &emit,
+                    &job,
+                    format!("下载流: {}", format_reqwest_err(&e)),
+                );
+                return;
+            }
+        };
+        let n = chunk.len() as u64;
+        if let Err(e) = file.write_all(&chunk).await {
+            download_fail_emit(&mut task, &emit, &job, format!("写入: {e}"));
+            return;
+        }
+        received += n;
+        acc_emit += chunk.len();
+
+        let time_ok = last_emit.elapsed() >= EMIT_EVERY;
+        let size_ok = acc_emit >= EMIT_BYTES;
+        if time_ok || size_ok {
+            acc_emit = 0;
+            last_emit = Instant::now();
+            let frac = if total > 0 {
+                (received as f64 / total as f64).min(1.0)
+            } else {
+                (1.0 - (-(received as f64) / 5_000_000.0).exp()).min(0.92)
+            };
+            let p = 0.48 + 0.48 * frac;
+            let mb = received as f64 / 1_048_576.0;
+            let msg = if total > 0 {
+                format!(
+                    "下载中 {mb:.1} / {:.1} MB",
+                    total as f64 / 1_048_576.0
+                )
+            } else {
+                format!("下载中 {mb:.1} MB…")
+            };
+            emit_download_step(&mut task, &emit, p.min(0.98), msg);
+        }
+    }
+
+    if let Err(e) = file.flush().await {
+        download_fail_emit(&mut task, &emit, &job, format!("写入: {e}"));
         return;
     }
-    let done = body.len() as u64;
+
+    let done = received;
     if total > 0 {
         task.progress = (done as f64) / (total as f64);
     } else {
         task.progress = 0.99;
     }
     emit(task.clone());
-    if let Err(e) = file.flush().await {
-        task.status = "failed".to_string();
-        task.message = Some(e.to_string());
-        emit(task);
-        return;
-    }
 
     if let Err(e) = record_download_success() {
+        log::warn!(
+            target: "download",
+            "saved file but daily count failed: {} | source_id={}",
+            e,
+            job.source_id
+        );
         task.message = Some(format!("已保存但计数失败: {e}"));
     } else {
         task.message = Some(format!("已保存: {}", out_path.display()));
     }
+    persist_downloaded_record(&app, out_path.as_path(), &job, done);
     task.status = "completed".to_string();
     task.progress = 1.0;
+    info!(
+        target: "download",
+        "completed source_id={} path={}",
+        job.source_id,
+        out_path.display()
+    );
     emit(task);
 }

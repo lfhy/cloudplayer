@@ -1,37 +1,67 @@
-mod captcha_slider;
+pub mod captcha_slider;
 mod commands;
 mod config;
+mod logging;
 mod db;
 mod download;
+mod download_meta;
 mod import_enrich;
 mod import_playlist;
+mod lrc_format;
+mod lrc_embedded;
+mod lddc_parse;
 mod lyrics;
+mod qrc_des;
+mod lyric_qq;
+mod lyric_kugou;
+mod lyric_replace;
 mod pjmp3;
 mod rate_limiter;
 mod share_link;
 
+#[cfg(target_os = "android")]
+use crate::config::init_android_storage;
+
+#[cfg(desktop)]
 use std::path::PathBuf;
 use std::sync::Arc;
 use std::time::Duration;
 
+#[cfg(desktop)]
+use tauri::Emitter;
+use tauri::Manager;
+#[cfg(desktop)]
+use tauri::WindowEvent;
+
+#[cfg(desktop)]
 use tauri::menu::{MenuBuilder, MenuItem};
+#[cfg(desktop)]
 use tauri::tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent};
-use tauri::{Emitter, Manager, WindowEvent};
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
+    logging::install_panic_hook();
     tauri::Builder::default()
         .plugin(tauri_plugin_dialog::init())
-        .on_window_event(|window, event| {
+        .plugin(tauri_plugin_os::init())
+        .on_window_event(|window, _event| {
             if window.label() != "main" {
                 return;
             }
-            if let WindowEvent::CloseRequested { api, .. } = event {
+            #[cfg(desktop)]
+            if let WindowEvent::CloseRequested { api, .. } = _event {
                 api.prevent_close();
                 let _ = window.emit("main-close-requested", ());
             }
         })
         .setup(|app| {
+            #[cfg(target_os = "android")]
+            {
+                init_android_storage(app)?;
+            }
+            if let Err(e) = logging::init_from_app(app.handle()) {
+                eprintln!("CloudPlayer: file logging init failed: {e}");
+            }
             let conn = db::open_and_init().map_err(|e| format!("数据库初始化失败: {e}"))?;
             app.manage(db::DbState {
                 conn: std::sync::Mutex::new(conn),
@@ -41,6 +71,8 @@ pub fn run() {
                 .timeout(Duration::from_secs(45))
                 .connect_timeout(Duration::from_secs(15))
                 .redirect(reqwest::redirect::Policy::limited(10))
+                // 部分站点在 HTTP/2 下偶发连接异常；与浏览器常见 HTTP/1.1 行为更一致。
+                .http1_only()
                 .user_agent(
                     "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
                 )
@@ -63,53 +95,56 @@ pub fn run() {
                 download_tx,
             }));
 
-            // 系统托盘：恢复 / 退出；左键单击显示主窗口
-            let tray_icon = app.default_window_icon().cloned().unwrap_or_else(|| {
-                let p = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("icons/32x32.png");
-                tauri::image::Image::from_path(p).expect("load tray icon from icons/32x32.png")
-            });
-            let tray_menu = MenuBuilder::new(app)
-                .item(&MenuItem::with_id(
-                    app,
-                    "tray_show",
-                    "显示主窗口",
-                    true,
-                    None::<&str>,
-                )?)
-                .item(&MenuItem::with_id(app, "tray_quit", "退出", true, None::<&str>)?)
-                .build()?;
-            let _tray = TrayIconBuilder::new()
-                .icon(tray_icon)
-                .menu(&tray_menu)
-                .tooltip("CloudPlayer")
-                .show_menu_on_left_click(false)
-                .on_menu_event(|app, event| {
-                    if event.id == "tray_show" {
-                        if let Some(w) = app.get_webview_window("main") {
-                            let _ = w.show();
-                            let _ = w.set_focus();
-                        }
-                    } else if event.id == "tray_quit" {
-                        app.exit(0);
-                    }
-                })
-                .on_tray_icon_event(|tray, event| {
-                    if let TrayIconEvent::Click {
-                        button,
-                        button_state,
-                        ..
-                    } = event
-                    {
-                        if button == MouseButton::Left && button_state == MouseButtonState::Up {
-                            let app = tray.app_handle();
+            #[cfg(desktop)]
+            {
+                // 系统托盘：恢复 / 退出；左键单击显示主窗口（仅桌面）
+                let tray_icon = app.default_window_icon().cloned().unwrap_or_else(|| {
+                    let p = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("icons/32x32.png");
+                    tauri::image::Image::from_path(p).expect("load tray icon from icons/32x32.png")
+                });
+                let tray_menu = MenuBuilder::new(app)
+                    .item(&MenuItem::with_id(
+                        app,
+                        "tray_show",
+                        "显示主窗口",
+                        true,
+                        None::<&str>,
+                    )?)
+                    .item(&MenuItem::with_id(app, "tray_quit", "退出", true, None::<&str>)?)
+                    .build()?;
+                let _tray = TrayIconBuilder::new()
+                    .icon(tray_icon)
+                    .menu(&tray_menu)
+                    .tooltip("CloudPlayer")
+                    .show_menu_on_left_click(false)
+                    .on_menu_event(|app, event| {
+                        if event.id == "tray_show" {
                             if let Some(w) = app.get_webview_window("main") {
                                 let _ = w.show();
                                 let _ = w.set_focus();
                             }
+                        } else if event.id == "tray_quit" {
+                            app.exit(0);
                         }
-                    }
-                })
-                .build(app)?;
+                    })
+                    .on_tray_icon_event(|tray, event| {
+                        if let TrayIconEvent::Click {
+                            button,
+                            button_state,
+                            ..
+                        } = event
+                        {
+                            if button == MouseButton::Left && button_state == MouseButtonState::Up {
+                                let app = tray.app_handle();
+                                if let Some(w) = app.get_webview_window("main") {
+                                    let _ = w.show();
+                                    let _ = w.set_focus();
+                                }
+                            }
+                        }
+                    })
+                    .build(app)?;
+            }
 
             Ok(())
         })
@@ -128,6 +163,7 @@ pub fn run() {
             commands::resolve_online_play,
             commands::parse_import_text,
             commands::list_playlists,
+            commands::list_playlists_summary,
             commands::list_playlist_import_items,
             commands::create_playlist,
             commands::rename_playlist,
@@ -138,8 +174,12 @@ pub fn run() {
             commands::start_import_enrich,
             commands::fetch_song_lrc,
             commands::fetch_song_lrc_enriched,
+            commands::fetch_lrc_cx_cover,
+            commands::lyrics_search_candidates,
+            commands::lyrics_fetch_candidate,
             commands::fetch_share_playlist,
             commands::list_local_songs,
+            commands::list_downloaded_songs,
             commands::scan_music_folder,
             commands::list_recent_plays,
             commands::record_recent_play,

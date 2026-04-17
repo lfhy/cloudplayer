@@ -84,9 +84,24 @@ pub fn open_and_init() -> Result<Connection, rusqlite::Error> {
             cover_url TEXT,
             pjmp3_source_id TEXT,
             file_path TEXT,
+            play_url TEXT NOT NULL DEFAULT '',
             played_at INTEGER NOT NULL
         );
         CREATE INDEX IF NOT EXISTS idx_recent_played_at ON recent_plays(played_at DESC);
+
+        CREATE TABLE IF NOT EXISTS downloaded_tracks (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            file_path TEXT NOT NULL UNIQUE,
+            title TEXT NOT NULL DEFAULT '',
+            artist TEXT NOT NULL DEFAULT '',
+            album TEXT NOT NULL DEFAULT '',
+            duration_ms INTEGER NOT NULL DEFAULT 0,
+            file_size INTEGER NOT NULL DEFAULT 0,
+            pjmp3_source_id TEXT NOT NULL DEFAULT '',
+            quality TEXT NOT NULL DEFAULT '',
+            completed_at INTEGER NOT NULL
+        );
+        CREATE INDEX IF NOT EXISTS idx_downloaded_completed ON downloaded_tracks(completed_at DESC);
         "#,
     )?;
 
@@ -99,9 +114,91 @@ pub fn open_and_init() -> Result<Connection, rusqlite::Error> {
         "ALTER TABLE playlist_import_items ADD COLUMN cover_cache_path TEXT NOT NULL DEFAULT ''",
         "ALTER TABLE playlist_import_items ADD COLUMN duration_ms INTEGER NOT NULL DEFAULT 0",
         "ALTER TABLE playlist_import_items ADD COLUMN audio_cache_path TEXT NOT NULL DEFAULT ''",
+        "ALTER TABLE recent_plays ADD COLUMN play_url TEXT NOT NULL DEFAULT ''",
     ] {
         let _ = conn.execute(stmt, []);
     }
 
     Ok(conn)
+}
+
+/// 写入「下载歌曲」列表（同一路径再次下载则更新元数据）。
+pub fn insert_downloaded_track(
+    conn: &Connection,
+    file_path: &str,
+    title: &str,
+    artist: &str,
+    album: &str,
+    duration_ms: i64,
+    file_size: i64,
+    pjmp3_source_id: &str,
+    quality: &str,
+    completed_at_ms: i64,
+) -> rusqlite::Result<()> {
+    conn.execute(
+        r#"
+        INSERT INTO downloaded_tracks (
+            file_path, title, artist, album, duration_ms, file_size,
+            pjmp3_source_id, quality, completed_at
+        ) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9)
+        ON CONFLICT(file_path) DO UPDATE SET
+            title = excluded.title,
+            artist = excluded.artist,
+            album = excluded.album,
+            duration_ms = excluded.duration_ms,
+            file_size = excluded.file_size,
+            pjmp3_source_id = excluded.pjmp3_source_id,
+            quality = excluded.quality,
+            completed_at = excluded.completed_at
+        "#,
+        rusqlite::params![
+            file_path,
+            title,
+            artist,
+            album,
+            duration_ms,
+            file_size,
+            pjmp3_source_id,
+            quality,
+            completed_at_ms,
+        ],
+    )?;
+    Ok(())
+}
+
+#[derive(Debug, serde::Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct DownloadedSongRow {
+    pub file_path: String,
+    pub title: String,
+    pub artist: String,
+    pub album: String,
+    pub duration_ms: i64,
+    pub file_size: i64,
+    pub pjmp3_source_id: String,
+    pub quality: String,
+    pub completed_at: i64,
+}
+
+pub fn list_downloaded_tracks(conn: &Connection) -> rusqlite::Result<Vec<DownloadedSongRow>> {
+    let mut stmt = conn.prepare(
+        r#"SELECT file_path, title, artist, album, duration_ms, file_size,
+                  pjmp3_source_id, quality, completed_at
+           FROM downloaded_tracks
+           ORDER BY completed_at DESC"#,
+    )?;
+    let rows = stmt.query_map([], |r| {
+        Ok(DownloadedSongRow {
+            file_path: r.get(0)?,
+            title: r.get(1)?,
+            artist: r.get(2)?,
+            album: r.get(3)?,
+            duration_ms: r.get(4)?,
+            file_size: r.get(5)?,
+            pjmp3_source_id: r.get(6)?,
+            quality: r.get(7)?,
+            completed_at: r.get(8)?,
+        })
+    })?;
+    rows.collect()
 }
