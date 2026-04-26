@@ -27,7 +27,7 @@
   --sidebar-width: 200px;
   --titlebar-left-gap: 16px;
   --sidebar-top-gap: 12px;
-  --ui-icon-optical-offset-y: 0.045em;
+  --ui-icon-optical-offset-y: 3px;
   color-scheme: light;
 }
 
