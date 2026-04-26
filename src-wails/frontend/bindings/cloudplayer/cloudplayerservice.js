@@ -33,6 +33,16 @@ export function AppendPlaylistImportItems(playlistID, items) {
 }
 
 /**
+ * @param {config$0.GlobalHotkeys} cfg
+ * @returns {$CancellablePromise<$models.HotkeyApplyReport>}
+ */
+export function ApplyGlobalHotkeys(cfg) {
+    return $Call.ByID(118142895, cfg).then(/** @type {($result: any) => any} */(($result) => {
+        return $$createType0($result);
+    }));
+}
+
+/**
  * @param {string} songID
  * @returns {$CancellablePromise<string>}
  */
@@ -86,7 +96,7 @@ export function EnqueueDownload(job) {
  */
 export function FetchSharePlaylist(rawURL) {
     return $Call.ByID(1158076056, rawURL).then(/** @type {($result: any) => any} */(($result) => {
-        return $$createType0($result);
+        return $$createType1($result);
     }));
 }
 
@@ -96,6 +106,22 @@ export function FetchSharePlaylist(rawURL) {
  */
 export function FetchSongLRCEnriched(req) {
     return $Call.ByID(3474565065, req);
+}
+
+/**
+ * @returns {$CancellablePromise<string>}
+ */
+export function GetAppLogPath() {
+    return $Call.ByID(2852082131);
+}
+
+/**
+ * @returns {$CancellablePromise<config$0.GlobalHotkeys>}
+ */
+export function GetGlobalHotkeys() {
+    return $Call.ByID(219400075).then(/** @type {($result: any) => any} */(($result) => {
+        return $$createType2($result);
+    }));
 }
 
 /**
@@ -111,7 +137,7 @@ export function GetPreviewURL(songID) {
  */
 export function GetSettings() {
     return $Call.ByID(107746166).then(/** @type {($result: any) => any} */(($result) => {
-        return $$createType1($result);
+        return $$createType3($result);
     }));
 }
 
@@ -127,7 +153,7 @@ export function HideMainWindow() {
  */
 export function ListLocalSongs() {
     return $Call.ByID(817478326).then(/** @type {($result: any) => any} */(($result) => {
-        return $$createType3($result);
+        return $$createType5($result);
     }));
 }
 
@@ -137,7 +163,7 @@ export function ListLocalSongs() {
  */
 export function ListPlaylistImportItems(playlistID) {
     return $Call.ByID(3153693406, playlistID).then(/** @type {($result: any) => any} */(($result) => {
-        return $$createType5($result);
+        return $$createType7($result);
     }));
 }
 
@@ -146,7 +172,7 @@ export function ListPlaylistImportItems(playlistID) {
  */
 export function ListPlaylists() {
     return $Call.ByID(571711640).then(/** @type {($result: any) => any} */(($result) => {
-        return $$createType7($result);
+        return $$createType9($result);
     }));
 }
 
@@ -155,7 +181,7 @@ export function ListPlaylists() {
  */
 export function ListRecentPlays() {
     return $Call.ByID(3719470761).then(/** @type {($result: any) => any} */(($result) => {
-        return $$createType9($result);
+        return $$createType11($result);
     }));
 }
 
@@ -168,13 +194,25 @@ export function LocalPathAccessible(path) {
 }
 
 /**
+ * @param {string} stage
+ * @param {string | null} url
+ * @param {number | null} errorCode
+ * @param {string | null} message
+ * @param {string | null} extra
+ * @returns {$CancellablePromise<void>}
+ */
+export function LogPlayEvent(stage, url, errorCode, message, extra) {
+    return $Call.ByID(5666241, stage, url, errorCode, message, extra);
+}
+
+/**
  * @param {string} text
  * @param {string} format
  * @returns {$CancellablePromise<importplaylist$0.ImportedTrackDTO[]>}
  */
 export function ParseImportText(text, format) {
     return $Call.ByID(604755238, text, format).then(/** @type {($result: any) => any} */(($result) => {
-        return $$createType11($result);
+        return $$createType13($result);
     }));
 }
 
@@ -219,7 +257,7 @@ export function ReplacePlaylistImportItems(playlistID, items) {
  */
 export function ResolveOnlinePlay(songID, title, artist) {
     return $Call.ByID(3264812082, songID, title, artist).then(/** @type {($result: any) => any} */(($result) => {
-        return $$createType12($result);
+        return $$createType14($result);
     }));
 }
 
@@ -237,7 +275,7 @@ export function SaveSettings(patch) {
  */
 export function ScanMusicFolder(path) {
     return $Call.ByID(1885705547, path).then(/** @type {($result: any) => any} */(($result) => {
-        return $$createType13($result);
+        return $$createType15($result);
     }));
 }
 
@@ -248,7 +286,7 @@ export function ScanMusicFolder(path) {
  */
 export function SearchSongs(keyword, page) {
     return $Call.ByID(1830530133, keyword, page).then(/** @type {($result: any) => any} */(($result) => {
-        return $$createType14($result);
+        return $$createType16($result);
     }));
 }
 
@@ -275,19 +313,29 @@ export function StartImportEnrich(playlistID) {
     return $Call.ByID(16697315, playlistID);
 }
 
+/**
+ * @param {string} value
+ * @returns {$CancellablePromise<void>}
+ */
+export function ValidateAccelerator(value) {
+    return $Call.ByID(3102319518, value);
+}
+
 // Private type creation functions
-const $$createType0 = $models.SharePlaylistResponse.createFrom;
-const $$createType1 = config$0.Settings.createFrom;
-const $$createType2 = $models.LocalSongRow.createFrom;
-const $$createType3 = $Create.Array($$createType2);
-const $$createType4 = $models.PlaylistImportItemRow.createFrom;
+const $$createType0 = $models.HotkeyApplyReport.createFrom;
+const $$createType1 = $models.SharePlaylistResponse.createFrom;
+const $$createType2 = config$0.GlobalHotkeys.createFrom;
+const $$createType3 = config$0.Settings.createFrom;
+const $$createType4 = $models.LocalSongRow.createFrom;
 const $$createType5 = $Create.Array($$createType4);
-const $$createType6 = $models.PlaylistRow.createFrom;
+const $$createType6 = $models.PlaylistImportItemRow.createFrom;
 const $$createType7 = $Create.Array($$createType6);
-const $$createType8 = $models.RecentPlayRow.createFrom;
+const $$createType8 = $models.PlaylistRow.createFrom;
 const $$createType9 = $Create.Array($$createType8);
-const $$createType10 = importplaylist$0.ImportedTrackDTO.createFrom;
+const $$createType10 = $models.RecentPlayRow.createFrom;
 const $$createType11 = $Create.Array($$createType10);
-const $$createType12 = $models.ResolveOnlinePlayOut.createFrom;
-const $$createType13 = $models.ScanMusicFolderResult.createFrom;
-const $$createType14 = $models.SearchResponse.createFrom;
+const $$createType12 = importplaylist$0.ImportedTrackDTO.createFrom;
+const $$createType13 = $Create.Array($$createType12);
+const $$createType14 = $models.ResolveOnlinePlayOut.createFrom;
+const $$createType15 = $models.ScanMusicFolderResult.createFrom;
+const $$createType16 = $models.SearchResponse.createFrom;

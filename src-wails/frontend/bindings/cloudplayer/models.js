@@ -13,6 +13,117 @@ import * as importplaylist$0 from "./internal/cloudplayer/importplaylist/models.
 // @ts-ignore: Unused imports
 import * as pjmp3$0 from "./internal/cloudplayer/pjmp3/models.js";
 
+export class HotkeyApplyReport {
+    /**
+     * Creates a new HotkeyApplyReport instance.
+     * @param {Partial<HotkeyApplyReport>} [$$source = {}] - The source object to create the HotkeyApplyReport.
+     */
+    constructor($$source = {}) {
+        if (!("play_pause" in $$source)) {
+            /**
+             * @member
+             * @type {HotkeyEntryStatus}
+             */
+            this["play_pause"] = (new HotkeyEntryStatus());
+        }
+        if (!("prev" in $$source)) {
+            /**
+             * @member
+             * @type {HotkeyEntryStatus}
+             */
+            this["prev"] = (new HotkeyEntryStatus());
+        }
+        if (!("next" in $$source)) {
+            /**
+             * @member
+             * @type {HotkeyEntryStatus}
+             */
+            this["next"] = (new HotkeyEntryStatus());
+        }
+        if (!("volume_up" in $$source)) {
+            /**
+             * @member
+             * @type {HotkeyEntryStatus}
+             */
+            this["volume_up"] = (new HotkeyEntryStatus());
+        }
+        if (!("volume_down" in $$source)) {
+            /**
+             * @member
+             * @type {HotkeyEntryStatus}
+             */
+            this["volume_down"] = (new HotkeyEntryStatus());
+        }
+
+        Object.assign(this, $$source);
+    }
+
+    /**
+     * Creates a new HotkeyApplyReport instance from a string or object.
+     * @param {any} [$$source = {}]
+     * @returns {HotkeyApplyReport}
+     */
+    static createFrom($$source = {}) {
+        const $$createField0_0 = $$createType0;
+        const $$createField1_0 = $$createType0;
+        const $$createField2_0 = $$createType0;
+        const $$createField3_0 = $$createType0;
+        const $$createField4_0 = $$createType0;
+        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
+        if ("play_pause" in $$parsedSource) {
+            $$parsedSource["play_pause"] = $$createField0_0($$parsedSource["play_pause"]);
+        }
+        if ("prev" in $$parsedSource) {
+            $$parsedSource["prev"] = $$createField1_0($$parsedSource["prev"]);
+        }
+        if ("next" in $$parsedSource) {
+            $$parsedSource["next"] = $$createField2_0($$parsedSource["next"]);
+        }
+        if ("volume_up" in $$parsedSource) {
+            $$parsedSource["volume_up"] = $$createField3_0($$parsedSource["volume_up"]);
+        }
+        if ("volume_down" in $$parsedSource) {
+            $$parsedSource["volume_down"] = $$createField4_0($$parsedSource["volume_down"]);
+        }
+        return new HotkeyApplyReport(/** @type {Partial<HotkeyApplyReport>} */($$parsedSource));
+    }
+}
+
+export class HotkeyEntryStatus {
+    /**
+     * Creates a new HotkeyEntryStatus instance.
+     * @param {Partial<HotkeyEntryStatus>} [$$source = {}] - The source object to create the HotkeyEntryStatus.
+     */
+    constructor($$source = {}) {
+        if (!("ok" in $$source)) {
+            /**
+             * @member
+             * @type {boolean}
+             */
+            this["ok"] = false;
+        }
+        if (/** @type {any} */(false)) {
+            /**
+             * @member
+             * @type {string | null | undefined}
+             */
+            this["error"] = undefined;
+        }
+
+        Object.assign(this, $$source);
+    }
+
+    /**
+     * Creates a new HotkeyEntryStatus instance from a string or object.
+     * @param {any} [$$source = {}]
+     * @returns {HotkeyEntryStatus}
+     */
+    static createFrom($$source = {}) {
+        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
+        return new HotkeyEntryStatus(/** @type {Partial<HotkeyEntryStatus>} */($$parsedSource));
+    }
+}
+
 export class LocalSongRow {
     /**
      * Creates a new LocalSongRow instance.
@@ -421,7 +532,7 @@ export class SearchResponse {
      * @returns {SearchResponse}
      */
     static createFrom($$source = {}) {
-        const $$createField0_0 = $$createType1;
+        const $$createField0_0 = $$createType2;
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
         if ("results" in $$parsedSource) {
             $$parsedSource["results"] = $$createField0_0($$parsedSource["results"]);
@@ -614,7 +725,7 @@ export class SharePlaylistResponse {
      * @returns {SharePlaylistResponse}
      */
     static createFrom($$source = {}) {
-        const $$createField1_0 = $$createType3;
+        const $$createField1_0 = $$createType4;
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
         if ("tracks" in $$parsedSource) {
             $$parsedSource["tracks"] = $$createField1_0($$parsedSource["tracks"]);
@@ -785,7 +896,8 @@ export class WindowInfo {
 }
 
 // Private type creation functions
-const $$createType0 = pjmp3$0.SearchResult.createFrom;
-const $$createType1 = $Create.Array($$createType0);
-const $$createType2 = importplaylist$0.ImportedTrackDTO.createFrom;
-const $$createType3 = $Create.Array($$createType2);
+const $$createType0 = HotkeyEntryStatus.createFrom;
+const $$createType1 = pjmp3$0.SearchResult.createFrom;
+const $$createType2 = $Create.Array($$createType1);
+const $$createType3 = importplaylist$0.ImportedTrackDTO.createFrom;
+const $$createType4 = $Create.Array($$createType3);

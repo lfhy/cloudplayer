@@ -21,3 +21,7 @@ src-tauri/gen/android/*.keystore
 # OS temp files
 Thumbs.db
 src-wails/cloudplayer
+
+# npm cache path can fall back to a literal ${LOCALAPPDATA} directory on non-Windows hosts
+${LOCALAPPDATA}/
+src-wails/${LOCALAPPDATA}/

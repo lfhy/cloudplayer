@@ -6,6 +6,69 @@
 // @ts-ignore: Unused imports
 import { Create as $Create } from "@wailsio/runtime";
 
+export class GlobalHotkeys {
+    /**
+     * Creates a new GlobalHotkeys instance.
+     * @param {Partial<GlobalHotkeys>} [$$source = {}] - The source object to create the GlobalHotkeys.
+     */
+    constructor($$source = {}) {
+        if (!("play_pause" in $$source)) {
+            /**
+             * @member
+             * @type {string}
+             */
+            this["play_pause"] = "";
+        }
+        if (!("prev" in $$source)) {
+            /**
+             * @member
+             * @type {string}
+             */
+            this["prev"] = "";
+        }
+        if (!("next" in $$source)) {
+            /**
+             * @member
+             * @type {string}
+             */
+            this["next"] = "";
+        }
+        if (!("volume_up" in $$source)) {
+            /**
+             * @member
+             * @type {string}
+             */
+            this["volume_up"] = "";
+        }
+        if (!("volume_down" in $$source)) {
+            /**
+             * @member
+             * @type {string}
+             */
+            this["volume_down"] = "";
+        }
+        if (!("enabled" in $$source)) {
+            /**
+             * @member
+             * @type {boolean}
+             */
+            this["enabled"] = false;
+        }
+
+        Object.assign(this, $$source);
+    }
+
+    /**
+     * Creates a new GlobalHotkeys instance from a string or object.
+     * @param {any} [$$source = {}]
+     * @returns {GlobalHotkeys}
+     */
+    static createFrom($$source = {}) {
+        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
+        return new GlobalHotkeys(/** @type {Partial<GlobalHotkeys>} */($$parsedSource));
+    }
+}
+
 export class Settings {
     /**
      * Creates a new Settings instance.
@@ -145,6 +208,13 @@ export class Settings {
              */
             this["main_window_close_action"] = "";
         }
+        if (!("global_hotkeys" in $$source)) {
+            /**
+             * @member
+             * @type {GlobalHotkeys}
+             */
+            this["global_hotkeys"] = (new GlobalHotkeys());
+        }
         if (!("desktop_lyrics_color_base" in $$source)) {
             /**
              * @member
@@ -183,7 +253,14 @@ export class Settings {
      * @returns {Settings}
      */
     static createFrom($$source = {}) {
+        const $$createField19_0 = $$createType0;
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
+        if ("global_hotkeys" in $$parsedSource) {
+            $$parsedSource["global_hotkeys"] = $$createField19_0($$parsedSource["global_hotkeys"]);
+        }
         return new Settings(/** @type {Partial<Settings>} */($$parsedSource));
     }
 }
+
+// Private type creation functions
+const $$createType0 = GlobalHotkeys.createFrom;

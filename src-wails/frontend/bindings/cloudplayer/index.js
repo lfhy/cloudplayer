@@ -10,6 +10,8 @@ export {
 };
 
 export {
+    HotkeyApplyReport,
+    HotkeyEntryStatus,
     LocalSongRow,
     PlaylistImportItemRow,
     PlaylistRow,

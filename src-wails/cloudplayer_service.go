@@ -115,8 +115,43 @@ type RecentPlayRow struct {
 	PlayedAt      int64   `json:"played_at"`
 }
 
+func (s *CloudPlayerService) GetAppLogPath() (string, error) {
+	return GetAppLogPath()
+}
+
+func (s *CloudPlayerService) LogPlayEvent(stage string, url *string, errorCode *int, message *string, extra *string) error {
+	LogPlayEvent(stage, url, errorCode, message, extra)
+	return nil
+}
+
 func (s *CloudPlayerService) GetSettings() config.Settings {
 	return config.LoadSettings()
+}
+
+func (s *CloudPlayerService) GetGlobalHotkeys() config.GlobalHotkeys {
+	settings := config.LoadSettings()
+	return settings.GlobalHotkeys
+}
+
+func (s *CloudPlayerService) ValidateAccelerator(value string) error {
+	return ValidateAcceleratorString(value)
+}
+
+func (s *CloudPlayerService) ApplyGlobalHotkeys(cfg config.GlobalHotkeys) (HotkeyApplyReport, error) {
+	report := AllOKHotkeyReport()
+	var err error
+	if s.state.Hotkeys != nil {
+		report, err = s.state.Hotkeys.Apply(cfg)
+		if err != nil {
+			return HotkeyApplyReport{}, err
+		}
+	}
+	settings := config.LoadSettings()
+	settings.GlobalHotkeys = cfg
+	if err := config.SaveSettings(settings); err != nil {
+		return HotkeyApplyReport{}, err
+	}
+	return report, nil
 }
 
 func (s *CloudPlayerService) SetDesktopLyricsClickThrough(ignoreCursorEvents bool) error {

@@ -20,6 +20,10 @@ var appIcon []byte
 var quitRequested atomic.Bool
 
 func main() {
+	defer HandlePanic()
+	if err := InitAppLogging(); err != nil {
+		log.Printf("init logging failed: %v", err)
+	}
 	conn, err := db.OpenAndInit()
 	if err != nil {
 		log.Fatal(err)
@@ -50,6 +54,12 @@ func main() {
 			ApplicationShouldTerminateAfterLastWindowClosed: false,
 		},
 	})
+	state.Hotkeys = NewHotkeyManager(func(action string) {
+		_ = app.Event.Emit("global-hotkey", action)
+	})
+	if _, err := state.Hotkeys.Apply(cloudPlayer.GetGlobalHotkeys()); err != nil {
+		log.Printf("global hotkeys init failed: %v", err)
+	}
 	mainWindow := app.Window.NewWithOptions(application.WebviewWindowOptions{
 		Name:             "main",
 		Title:            "CloudPlayer",

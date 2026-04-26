@@ -1,6 +1,7 @@
 import { CloudPlayerService } from "../../bindings/cloudplayer";
 
 const invokeMap = {
+  apply_global_hotkeys: (args) => CloudPlayerService.ApplyGlobalHotkeys(args.cfg),
   append_playlist_import_items: (args) =>
     CloudPlayerService.AppendPlaylistImportItems(args.playlistId, args.items),
   create_playlist: (args) => CloudPlayerService.CreatePlaylist(args.name),
@@ -11,6 +12,8 @@ const invokeMap = {
   enqueue_download: (args) => CloudPlayerService.EnqueueDownload(args),
   fetch_share_playlist: (args) => CloudPlayerService.FetchSharePlaylist(args.url),
   fetch_song_lrc_enriched: (args) => CloudPlayerService.FetchSongLRCEnriched(args.req),
+  get_app_log_path: () => CloudPlayerService.GetAppLogPath(),
+  get_global_hotkeys: () => CloudPlayerService.GetGlobalHotkeys(),
   get_preview_url: (args) => CloudPlayerService.GetPreviewURL(args.songId),
   get_settings: () => CloudPlayerService.GetSettings(),
   hide_main_window: () => CloudPlayerService.HideMainWindow(),
@@ -20,6 +23,8 @@ const invokeMap = {
   list_playlists: () => CloudPlayerService.ListPlaylists(),
   list_recent_plays: () => CloudPlayerService.ListRecentPlays(),
   local_path_accessible: (args) => CloudPlayerService.LocalPathAccessible(args.path),
+  log_play_event: (args) =>
+    CloudPlayerService.LogPlayEvent(args.stage, args.url ?? null, args.error_code ?? null, args.message ?? null, args.extra ?? null),
   parse_import_text: (args) => CloudPlayerService.ParseImportText(args.text, args.fmt),
   cache_preview_for_play: (args) => CloudPlayerService.CachePreviewForPlay(args.songId),
   quit_app: () => CloudPlayerService.QuitApp(),
@@ -36,6 +41,7 @@ const invokeMap = {
     CloudPlayerService.SetDesktopLyricsClickThrough(args.ignoreCursorEvents),
   show_main_window: () => CloudPlayerService.ShowMainWindow(),
   start_import_enrich: (args) => CloudPlayerService.StartImportEnrich(args.playlistId),
+  validate_accelerator: (args) => CloudPlayerService.ValidateAccelerator(args.s),
 };
 
 export function convertFileSrc(path) {

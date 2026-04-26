@@ -15,6 +15,7 @@ type AppState struct {
 	HTTPClient  *http.Client
 	RateLimiter *ratelimiter.Limiter
 	DownloadCh  chan download.DownloadJob
+	Hotkeys     *HotkeyManager
 }
 
 func NewAppState(db *sql.DB) *AppState {

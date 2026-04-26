@@ -241,8 +241,25 @@
             </section>
             <section class="page" data-page="settings" aria-label="偏好设置">
               <h1 class="page-title">偏好设置</h1>
-              <p class="page-hint muted">关闭主窗口行为与桌面歌词颜色将保存到本地配置。</p>
+              <p class="page-hint muted">
+                关闭主窗口行为、快捷键、网易云 API 根地址（可选）与桌面歌词颜色将保存到本地配置。播放页歌词固定为 QQ → 酷狗 → 网易云 → LRCLIB（与「换」歌词替换同源）。
+              </p>
               <div class="settings-form">
+                <div class="settings-field">
+                  <label for="setting-netease-api-base" class="settings-field-label">网易云 API 根地址（可选）</label>
+                  <input
+                    type="url"
+                    id="setting-netease-api-base"
+                    class="settings-field-control settings-field-control--text"
+                    spellcheck="false"
+                    autocomplete="off"
+                    placeholder="https://example.com"
+                    aria-describedby="setting-netease-api-base-hint"
+                  />
+                  <p id="setting-netease-api-base-hint" class="settings-field-hint muted">
+                    自托管 <a href="https://github.com/Binaryify/NeteaseCloudMusicApi" target="_blank" rel="noopener noreferrer">NeteaseCloudMusicApi</a> 或兼容服务的根 URL（无尾斜杠亦可）。填写后「netease」源将优先请求 <code>/lyric/new</code> 获取 YRC 逐字歌词；留空则仅用网易云网页门户的行级 LRC。
+                  </p>
+                </div>
                 <div class="settings-field">
                   <label for="setting-close-action" class="settings-field-label">关闭主窗口时</label>
                   <select id="setting-close-action" class="import-select import-select--wide settings-field-control">
@@ -250,6 +267,45 @@
                     <option value="tray">最小化到系统托盘</option>
                     <option value="quit">退出应用</option>
                   </select>
+                </div>
+                <div class="settings-field settings-field--hotkeys">
+                  <label class="settings-hotkeys-master">
+                    <input type="checkbox" id="setting-hotkeys-enabled" checked />
+                    <span>启用全局快捷键</span>
+                  </label>
+                  <p class="settings-field-hint muted">
+                    后台也能响应；默认使用 Ctrl+Alt+ 组合以避免中文输入法占用 Ctrl+Space。点击快捷键框后按下新组合即可替换，Esc 取消、Backspace 清除；保存后生效。
+                  </p>
+                  <div class="hotkeys-panel">
+                    <span class="hotkeys-panel__group" aria-hidden="true">播放控制</span>
+                    <div class="hotkeys-table" role="group" aria-label="播放控制快捷键">
+                      <div class="hotkeys-row" data-action="play_pause">
+                        <span class="hotkeys-row__name">播放/暂停</span>
+                        <button type="button" class="hotkeys-input" id="hk-play-pause" aria-label="录制 播放/暂停 快捷键"></button>
+                        <span class="hotkeys-status" data-status="ok" id="hk-status-play-pause">正常</span>
+                      </div>
+                      <div class="hotkeys-row" data-action="prev">
+                        <span class="hotkeys-row__name">上一首</span>
+                        <button type="button" class="hotkeys-input" id="hk-prev" aria-label="录制 上一首 快捷键"></button>
+                        <span class="hotkeys-status" data-status="ok" id="hk-status-prev">正常</span>
+                      </div>
+                      <div class="hotkeys-row" data-action="next">
+                        <span class="hotkeys-row__name">下一首</span>
+                        <button type="button" class="hotkeys-input" id="hk-next" aria-label="录制 下一首 快捷键"></button>
+                        <span class="hotkeys-status" data-status="ok" id="hk-status-next">正常</span>
+                      </div>
+                      <div class="hotkeys-row" data-action="volume_up">
+                        <span class="hotkeys-row__name">增大音量</span>
+                        <button type="button" class="hotkeys-input" id="hk-vol-up" aria-label="录制 增大音量 快捷键"></button>
+                        <span class="hotkeys-status" data-status="ok" id="hk-status-vol-up">正常</span>
+                      </div>
+                      <div class="hotkeys-row" data-action="volume_down">
+                        <span class="hotkeys-row__name">减少音量</span>
+                        <button type="button" class="hotkeys-input" id="hk-vol-down" aria-label="录制 减少音量 快捷键"></button>
+                        <span class="hotkeys-status" data-status="ok" id="hk-status-vol-down">正常</span>
+                      </div>
+                    </div>
+                  </div>
                 </div>
                 <div class="settings-field">
                   <span class="settings-field-label">桌面歌词字色</span>
