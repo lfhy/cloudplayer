@@ -4,6 +4,7 @@ import (
 	"embed"
 	"log"
 	"net/http"
+	"runtime"
 	"sync/atomic"
 
 	"cloudplayer/internal/cloudplayer/db"
@@ -16,6 +17,9 @@ var assets embed.FS
 
 //go:embed build/appicon.png
 var appIcon []byte
+
+//go:embed build/trayicon_macos.png
+var macTrayIcon []byte
 
 var quitRequested atomic.Bool
 
@@ -94,7 +98,9 @@ func main() {
 		requestAppQuit()
 	})
 	systemTray := app.SystemTray.New()
-	if len(appIcon) > 0 {
+	if runtime.GOOS == "darwin" && len(macTrayIcon) > 0 {
+		systemTray.SetTemplateIcon(macTrayIcon)
+	} else if len(appIcon) > 0 {
 		systemTray.SetIcon(appIcon)
 	}
 	systemTray.SetTooltip("CloudPlayer")
