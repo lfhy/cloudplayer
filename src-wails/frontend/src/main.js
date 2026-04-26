@@ -833,6 +833,18 @@ function escapeHtml(s) {
   return String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 }
 
+function setTableMutedMessage(tbody, colSpan, message) {
+  if (!tbody) return;
+  tbody.innerHTML = "";
+  const tr = document.createElement("tr");
+  const td = document.createElement("td");
+  td.colSpan = colSpan;
+  td.className = "muted";
+  td.textContent = String(message ?? "");
+  tr.appendChild(td);
+  tbody.appendChild(tr);
+}
+
 /** ---------- 右键菜单（对齐 Py sidebar / import_track_context_menu） ---------- */
 
 let contextMenuCleanup = null;
@@ -2146,14 +2158,16 @@ function updateSearchToolbar() {
 function renderSearchTable() {
   const tbody = document.querySelector("#search-table tbody");
   if (!tbody) return;
-  tbody.innerHTML = "";
   const rows = searchState.results;
   if (!rows.length) {
-    const tr = document.createElement("tr");
-    tr.innerHTML = `<td colspan="5" class="muted">无结果（或站点 HTML 已变化）。</td>`;
-    tbody.appendChild(tr);
+    setTableMutedMessage(
+      tbody,
+      5,
+      searchState.keyword.trim() ? "无结果（或站点 HTML 已变化）。" : "输入关键词后点击「搜索」",
+    );
     return;
   }
+  tbody.innerHTML = "";
   for (let i = 0; i < rows.length; i++) {
     const r = rows[i];
     const tr = document.createElement("tr");
@@ -2187,7 +2201,7 @@ async function fetchSearchPage() {
   searchState.busy = true;
   updateSearchToolbar();
   const tbody = document.querySelector("#search-table tbody");
-  if (tbody) tbody.innerHTML = `<tr><td colspan="5" class="muted">搜索中…</td></tr>`;
+  setTableMutedMessage(tbody, 5, "搜索中…");
   try {
     const res = await invoke("search_songs", { keyword: kw, page: searchState.page });
     searchState.results = res.results || [];
@@ -2195,9 +2209,7 @@ async function fetchSearchPage() {
     renderSearchTable();
   } catch (e) {
     warnRequestFailed(e, "search_songs");
-    if (tbody) {
-      tbody.innerHTML = `<tr><td colspan="5" class="muted">${escapeHtml(MSG_REQUEST_FAILED)}</td></tr>`;
-    }
+    setTableMutedMessage(tbody, 5, MSG_REQUEST_FAILED);
     searchState.results = [];
     searchState.hasNext = false;
   } finally {
@@ -2841,8 +2853,7 @@ function submitGlobalSearch() {
     searchState.page = 1;
     searchState.results = [];
     searchState.hasNext = false;
-    const tbody = document.querySelector("#search-table tbody");
-    if (tbody) tbody.innerHTML = "";
+    renderSearchTable();
     updateSearchToolbar();
     return;
   }
@@ -2996,6 +3007,7 @@ document.addEventListener("DOMContentLoaded", () => {
   wireGlobalHotkeyListener();
   wireDiscoverToolbar();
   wireAudio();
+  renderSearchTable();
   updateSearchToolbar();
   renderQueuePanel();
   refreshLyricsLockMenuLabel();
