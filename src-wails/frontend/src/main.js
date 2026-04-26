@@ -472,7 +472,7 @@ function refreshQuickThemeModeUi(mode = getSettingsFormValues().mode) {
   document.querySelectorAll("[data-quick-theme-mode]").forEach((el) => {
     const active = el.getAttribute("data-quick-theme-mode") === quickMode;
     el.classList.toggle("is-active", active);
-    if (el.classList.contains("dock-menu__item")) {
+    if (el.classList.contains("dock-menu__item") || el.classList.contains("sidebar-account__menu-item")) {
       el.setAttribute("aria-checked", active ? "true" : "false");
     }
   });

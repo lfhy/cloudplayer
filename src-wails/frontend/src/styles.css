@@ -460,8 +460,22 @@ body {
 }
 
 .sidebar-account__submenu-panel .sidebar-account__menu-item {
+  position: relative;
   grid-template-columns: minmax(0, 1fr);
   gap: 0;
+  padding-right: 30px;
+}
+
+.sidebar-account__submenu-panel .sidebar-account__menu-item.is-active::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  right: 13px;
+  width: 8px;
+  height: 4px;
+  border-left: 1.8px solid currentColor;
+  border-bottom: 1.8px solid currentColor;
+  transform: translateY(-62%) rotate(-45deg);
 }
 
 .sidebar-account__submenu-row:hover .sidebar-account__submenu-panel,
@@ -1570,6 +1584,23 @@ body {
 .dock-menu__item.is-active {
   background: rgba(var(--accent-rgb), 0.1);
   color: var(--accent);
+}
+
+.dock-menu__subpanel .dock-menu__item {
+  position: relative;
+  padding-right: 28px;
+}
+
+.dock-menu__subpanel .dock-menu__item.is-active::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  right: 11px;
+  width: 8px;
+  height: 4px;
+  border-left: 1.8px solid currentColor;
+  border-bottom: 1.8px solid currentColor;
+  transform: translateY(-62%) rotate(-45deg);
 }
 
 .dock-menu__row--sub {
