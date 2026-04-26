@@ -32,15 +32,13 @@ body {
 }
 
 .app-root {
-  display: flex;
-  flex-direction: column;
   height: 100vh;
   min-height: 400px;
 }
 
 .body-row {
   display: flex;
-  flex: 1;
+  height: 100%;
   min-height: 0;
 }
 
@@ -260,6 +258,9 @@ body {
   display: flex;
   flex-direction: column;
   min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+  background: var(--bg-main);
 }
 
 .top-search-row {
@@ -576,7 +577,7 @@ body {
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  padding: 24px;
+  padding: 24px 24px 18px;
   background: var(--bg-main);
 }
 
@@ -1043,9 +1044,10 @@ body {
 .queue-panel {
   border-top: 1px solid var(--border);
   background: var(--bg-card);
-  max-height: 280px;
+  max-height: 220px;
   display: flex;
   flex-direction: column;
+  flex-shrink: 0;
 }
 
 .queue-panel.collapsed .queue-body {
