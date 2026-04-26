@@ -1514,15 +1514,11 @@ body {
   width: 16px;
   height: 16px;
   display: block;
-  transform-origin: center;
-  transition:
-    transform 0.2s ease,
-    opacity 0.2s ease;
+  transition: opacity 0.14s ease;
 }
 
 .dock-mode.is-switching svg {
-  opacity: 0.78;
-  transform: scale(0.82) rotate(-18deg);
+  opacity: 0.72;
 }
 
 .dock-mode:hover {
@@ -1578,15 +1574,11 @@ body {
   width: 15px;
   height: 15px;
   display: block;
-  transform-origin: center;
-  transition:
-    transform 0.2s ease,
-    opacity 0.2s ease;
+  transition: opacity 0.14s ease;
 }
 
 .dock-chip--icon.is-switching svg {
-  opacity: 0.78;
-  transform: scale(0.82) rotate(-18deg);
+  opacity: 0.72;
 }
 
 .dock-chip:hover {
