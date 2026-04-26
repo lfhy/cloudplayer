@@ -108,6 +108,16 @@ body {
   justify-content: center;
 }
 
+.sidebar-pl-add svg {
+  width: 16px;
+  height: 16px;
+  stroke: currentColor;
+  stroke-width: 1.7;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  fill: none;
+}
+
 .sidebar-pl-add:hover {
   background: rgba(0, 0, 0, 0.06);
   border-color: rgba(var(--accent-rgb), 0.35);
@@ -185,14 +195,42 @@ body {
 }
 
 .nav-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
   text-align: left;
-  padding: 8px 12px;
+  padding: 9px 12px;
   border: none;
-  border-radius: 6px;
+  border-radius: 10px;
   background: transparent;
   color: var(--text);
   cursor: pointer;
   font: inherit;
+}
+
+.nav-item__icon {
+  width: 18px;
+  height: 18px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: inherit;
+  flex: 0 0 18px;
+}
+
+.nav-item__icon svg {
+  width: 18px;
+  height: 18px;
+  stroke: currentColor;
+  stroke-width: 1.7;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  fill: none;
+}
+
+.nav-item__label {
+  min-width: 0;
+  flex: 1;
 }
 
 .nav-item:hover {
@@ -368,7 +406,7 @@ body {
 }
 
 /* 发现页：仅表格区域滚动，底栏（播放全部 / 分页）固定在主内容区底部 */
-.page-active[data-page="discover"] {
+.page-active[data-page="search"] {
   overflow: hidden;
 }
 
@@ -399,24 +437,24 @@ body {
 }
 
 /* 其它页面仍在 .stack 内整体滚动（歌单 / 导入等） */
-.page-active:not([data-page="discover"]) {
+.page-active:not([data-page="search"]) {
   scrollbar-width: thin;
   scrollbar-color: rgba(100, 100, 110, 0.45) transparent;
 }
-.page-active:not([data-page="discover"])::-webkit-scrollbar {
+.page-active:not([data-page="search"])::-webkit-scrollbar {
   width: 8px;
   height: 8px;
 }
-.page-active:not([data-page="discover"])::-webkit-scrollbar-track {
+.page-active:not([data-page="search"])::-webkit-scrollbar-track {
   background: transparent;
 }
-.page-active:not([data-page="discover"])::-webkit-scrollbar-thumb {
+.page-active:not([data-page="search"])::-webkit-scrollbar-thumb {
   background: rgba(100, 100, 110, 0.35);
   border-radius: 999px;
   border: 2px solid transparent;
   background-clip: padding-box;
 }
-.page-active:not([data-page="discover"])::-webkit-scrollbar-thumb:hover {
+.page-active:not([data-page="search"])::-webkit-scrollbar-thumb:hover {
   background: rgba(80, 80, 90, 0.5);
   background-clip: padding-box;
 }
@@ -425,6 +463,183 @@ body {
   font-size: 20px;
   margin: 0 0 8px;
   flex-shrink: 0;
+}
+
+.page-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 14px;
+}
+
+.home-hero {
+  display: grid;
+  grid-template-columns: minmax(0, 1.2fr) minmax(260px, 360px);
+  gap: 18px;
+  margin-bottom: 18px;
+}
+
+.home-hero__copy,
+.home-hero__panel,
+.home-card,
+.import-shell,
+.import-soft-card {
+  background: linear-gradient(180deg, rgba(255,255,255,0.92), rgba(255,255,255,0.78));
+  border: 1px solid rgba(255,255,255,0.82);
+  box-shadow:
+    0 20px 44px rgba(15, 23, 42, 0.08),
+    inset 0 1px 0 rgba(255, 255, 255, 0.7);
+}
+
+.home-hero__copy,
+.home-hero__panel {
+  border-radius: 24px;
+  padding: 24px;
+}
+
+.home-eyebrow,
+.import-stage__eyebrow {
+  margin: 0 0 10px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+
+.home-title {
+  margin: 0;
+  font-size: 34px;
+  line-height: 1.08;
+  letter-spacing: -0.03em;
+}
+
+.home-subtitle {
+  margin: 14px 0 0;
+  max-width: 40em;
+  font-size: 14px;
+  line-height: 1.65;
+  color: var(--text-secondary);
+}
+
+.home-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 20px;
+}
+
+.home-hero__panel {
+  display: grid;
+  gap: 12px;
+  align-content: start;
+}
+
+.home-stat {
+  padding: 14px 16px;
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.62);
+  border: 1px solid rgba(15, 23, 42, 0.06);
+}
+
+.home-stat__label {
+  display: block;
+  color: var(--text-secondary);
+  font-size: 12px;
+}
+
+.home-stat__value {
+  display: block;
+  margin-top: 6px;
+  font-size: 28px;
+  line-height: 1;
+  letter-spacing: -0.03em;
+}
+
+.home-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.home-card {
+  border-radius: 22px;
+  padding: 18px;
+}
+
+.home-card__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.home-card__head h2 {
+  margin: 0;
+  font-size: 17px;
+}
+
+.text-action {
+  border: none;
+  background: transparent;
+  color: var(--accent);
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.home-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.home-list__item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 12px 14px;
+  border: 1px solid rgba(15, 23, 42, 0.06);
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.68);
+  color: var(--text);
+  text-align: left;
+  cursor: pointer;
+}
+
+.home-list__meta {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.home-list__meta strong,
+.home-list__meta span {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.home-list__meta span {
+  color: var(--text-secondary);
+  font-size: 12px;
+}
+
+.home-list__index,
+.home-list__badge {
+  flex: 0 0 auto;
+  min-width: 40px;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--accent);
+}
+
+.home-list__empty {
+  margin: 0;
+  padding: 12px 0;
 }
 
 .page-hint {
@@ -1055,6 +1270,90 @@ body {
 }
 
 /* 导入歌单页 */
+.import-shell {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  border-radius: 28px;
+  padding: 20px;
+}
+
+.import-stage__intro h2,
+.import-stage__head h2 {
+  margin: 0;
+  font-size: 24px;
+  letter-spacing: -0.02em;
+}
+
+.import-stage__intro p:last-child {
+  margin: 8px 0 0;
+  color: var(--text-secondary);
+}
+
+.import-stage__head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 14px;
+}
+
+.import-method-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+  margin-top: 18px;
+}
+
+.import-method-card {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 10px;
+  min-height: 178px;
+  padding: 20px 18px;
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  border-radius: 22px;
+  background: rgba(255, 255, 255, 0.72);
+  text-align: left;
+  cursor: pointer;
+  transition: transform 120ms ease, box-shadow 120ms ease, border-color 120ms ease;
+}
+
+.import-method-card:hover,
+.import-method-card.is-active {
+  transform: translateY(-1px);
+  border-color: rgba(var(--accent-rgb), 0.28);
+  box-shadow: 0 14px 28px rgba(var(--accent-rgb), 0.08);
+}
+
+.import-method-card__icon {
+  width: 42px;
+  height: 42px;
+  border-radius: 14px;
+  background: rgba(var(--accent-rgb), 0.1);
+}
+
+.import-method-card__title {
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.import-method-card__desc {
+  color: var(--text-secondary);
+  line-height: 1.55;
+}
+
+.import-soft-card {
+  border-radius: 24px;
+  padding: 20px;
+}
+
+.import-soft-card h3 {
+  margin: 0 0 8px;
+  font-size: 18px;
+}
+
 .import-section-title {
   font-weight: 600;
   margin: 16px 0 8px;
@@ -1148,7 +1447,7 @@ body {
   flex-wrap: wrap;
   align-items: center;
   gap: 8px 12px;
-  margin: 12px 0;
+  margin: 0;
 }
 
 .import-merge {
@@ -1165,6 +1464,22 @@ body {
   border: 1px solid var(--border);
   border-radius: 8px;
   background: var(--bg-card);
+}
+
+.import-save-bar {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  margin-bottom: 8px;
+}
+
+.import-name-field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-secondary);
 }
 
 /* 与 Py 版 QMenu 对齐的右键菜单（发现 / 歌单 / 侧栏歌单） */
@@ -1668,4 +1983,17 @@ body {
 .hotkeys-status[data-status="conflict"] {
   color: #c96b4a;
   font-weight: 500;
+}
+
+@media (max-width: 1080px) {
+  .home-hero,
+  .home-grid,
+  .import-method-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .page-heading,
+  .import-stage__head {
+    flex-direction: column;
+  }
 }

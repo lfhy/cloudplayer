@@ -4,11 +4,13 @@ import { emitTo, listen } from "./wails/tauri-event.js";
 import { WebviewWindow } from "./wails/tauri-webviewWindow.js";
 
 const NAV = [
-  { id: "discover", label: "发现", key: "like" },
-  { id: "recent", label: "最近播放", key: "recent" },
-  { id: "download", label: "本地和下载", key: "local_download" },
-  { id: "import", label: "导入歌单", key: "import" },
-  { id: "settings", label: "设置", key: "settings" },
+  { id: "home", label: "主页", icon: "home" },
+  { id: "search", label: "搜索", icon: "search" },
+  { id: "daily", label: "每日推荐", icon: "sparkles" },
+  { id: "recent", label: "最近播放", icon: "clock" },
+  { id: "download", label: "下载管理", icon: "download" },
+  { id: "import", label: "导入歌单", icon: "library" },
+  { id: "settings", label: "偏好设置", icon: "settings" },
 ];
 
 const APP_THEMES = {
@@ -124,6 +126,9 @@ let playlistDetailRows = [];
 let importShareSuggestedName = "";
 let neteaseCookieEnabled = false;
 let neteaseCookieValue = "";
+let importMethod = "";
+let importDraftDirty = false;
+let dailyRecommendationRows = [];
 
 function dockLyricsLockIcon(unlockAction) {
   if (unlockAction) {
@@ -165,6 +170,24 @@ function appLogoMarkSvg() {
   `;
 }
 
+function navIconSvg(name) {
+  const paths = {
+    home: `<path d="M4.5 10.5 12 4l7.5 6.5"></path><path d="M6.5 9.5v9h11v-9"></path>`,
+    search: `<circle cx="11" cy="11" r="6.5"></circle><path d="m16 16 4 4"></path>`,
+    sparkles: `<path d="m12 3 1.9 4.8L19 10l-5.1 2.2L12 17l-1.9-4.8L5 10l5.1-2.2L12 3Z"></path><path d="m19.5 3.5.7 1.8 1.8.7-1.8.7-.7 1.8-.7-1.8-1.8-.7 1.8-.7.7-1.8Z"></path><path d="m4.5 14.5.8 2 .2.8.8.2 2 .8-2 .8-.8.2-.2.8-.8 2-.8-2-.2-.8-.8-.2-2-.8 2-.8.8-.2.2-.8.8-2Z"></path>`,
+    clock: `<circle cx="12" cy="12" r="8.5"></circle><path d="M12 7.5v5l3 2"></path>`,
+    download: `<path d="M12 4.5v9"></path><path d="m8.5 10.5 3.5 3.5 3.5-3.5"></path><path d="M5 18.5h14"></path>`,
+    library: `<rect x="4.5" y="5" width="4.5" height="14" rx="1.5"></rect><rect x="10.25" y="5" width="4.5" height="14" rx="1.5"></rect><path d="M17 5.5h2.5A1.5 1.5 0 0 1 21 7v10.5a1.5 1.5 0 0 1-1.5 1.5H17"></path>`,
+    settings: `<circle cx="12" cy="12" r="3.25"></circle><path d="M12 2.75v2.1"></path><path d="M12 19.15v2.1"></path><path d="m5.46 5.46 1.48 1.48"></path><path d="m17.06 17.06 1.48 1.48"></path><path d="M2.75 12h2.1"></path><path d="M19.15 12h2.1"></path><path d="m5.46 18.54 1.48-1.48"></path><path d="m17.06 6.94 1.48-1.48"></path>`,
+    playlist: `<path d="M4.5 7.5h9"></path><path d="M4.5 11.5h9"></path><path d="M4.5 15.5h6"></path><path d="M16.5 7.5v8.2a2.3 2.3 0 1 1-1.4-2.1V8.2l4-1v6.5a2.3 2.3 0 1 1-1.4-2.1V6.1Z"></path>`,
+  };
+  return `
+    <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+      ${paths[name] || paths.playlist}
+    </svg>
+  `;
+}
+
 function syncNeteaseCookieUi() {
   const chk = document.getElementById("opt-netease-cookie-enabled");
   const inp = document.getElementById("opt-netease-cookie");
@@ -173,6 +196,64 @@ function syncNeteaseCookieUi() {
     inp.value = neteaseCookieValue || "";
     inp.disabled = !neteaseCookieEnabled;
   }
+}
+
+function setImportMethod(method = "") {
+  importMethod = method;
+  document.querySelectorAll("[data-import-method]").forEach((card) => {
+    card.classList.toggle("is-active", card.getAttribute("data-import-method") === method);
+  });
+  const chooser = document.getElementById("import-method-stage");
+  const config = document.getElementById("import-config-stage");
+  if (chooser) chooser.hidden = method !== "";
+  if (config) config.hidden = method === "";
+  document.querySelectorAll(".import-panel").forEach((panel) => {
+    panel.hidden = panel.id !== `import-panel-${method}`;
+  });
+  const title = document.getElementById("import-config-title");
+  const desc = document.getElementById("import-config-desc");
+  const copy = {
+    local: ["导入本地目录", "选择一个音乐文件夹，扫描完成后会自动把结果带入歌单草稿。"],
+    share: ["导入分享链接", "粘贴歌单分享链接并解析，完成后可以直接保存或合并到已有歌单。"],
+    text: ["导入文本列表", "把歌单文本、CSV 或 JSON 粘贴进来，解析后统一进入保存步骤。"],
+  };
+  if (title) title.textContent = copy[method]?.[0] || "配置导入参数";
+  if (desc) desc.textContent = copy[method]?.[1] || "";
+}
+
+function showImportResultStage(show = true) {
+  const stage = document.getElementById("import-result-stage");
+  if (stage) stage.hidden = !show;
+}
+
+function resetImportFlow({ keepDraft = false } = {}) {
+  setImportMethod("");
+  showImportResultStage(keepDraft && importTracks.length > 0);
+  if (!keepDraft) {
+    importTracks = [];
+    importShareSuggestedName = "";
+    importDraftDirty = false;
+    renderImportTable();
+  }
+  const shareStatus = document.getElementById("import-share-status");
+  if (shareStatus) shareStatus.textContent = "";
+}
+
+function setImportDraft(tracks, { suggestedName = "", method = importMethod, statusText = "" } = {}) {
+  importTracks = Array.isArray(tracks) ? tracks : [];
+  importShareSuggestedName = suggestedName || "";
+  importDraftDirty = importTracks.length > 0;
+  const nameEl = document.getElementById("import-playlist-name");
+  if (nameEl) {
+    nameEl.value = importShareSuggestedName || (method === "local" ? "本地导入歌单" : "导入歌单");
+  }
+  const hintEl = document.getElementById("import-result-hint");
+  if (hintEl) {
+    hintEl.textContent =
+      statusText || `已整理 ${importTracks.length} 首歌曲。建议先保存为歌单，再继续调整或切换页面。`;
+  }
+  renderImportTable();
+  showImportResultStage(importTracks.length > 0);
 }
 
 /** 与 Py RecentPlaysPage：本会话内最近播放，最多 100 条 */
@@ -232,7 +313,7 @@ function renderQueuePanel() {
   ul.innerHTML = "";
   if (!playQueue.length) {
     const li = document.createElement("li");
-    li.textContent = "（空）在「发现」搜索并双击曲目加入队列";
+    li.textContent = "（空）去「搜索」页找歌，或从导入歌单开始建立你的播放队列";
     ul.appendChild(li);
     return;
   }
@@ -1333,7 +1414,7 @@ async function openSidebarPlaylistContextMenu(ev, pl) {
       await refreshSidebarPlaylists();
       await refreshPlaylistSelect();
       const plPage = document.querySelector('.page[data-page="playlist"]');
-      if (plPage?.classList.contains("page-active")) setPage("discover");
+      if (plPage?.classList.contains("page-active")) setPage("home");
     })
   );
   mountContextMenuAt(ev.clientX, ev.clientY, root);
@@ -1354,7 +1435,7 @@ async function openPlaylistDetailRowContextMenu(ev, rowIdx) {
       "播放",
       () => {
         if (!item) {
-          alert("该条没有曲库 id，请使用「发现」搜索歌名后播放。");
+          alert("该条没有曲库 id，请使用「搜索」搜索歌名后播放。");
           return;
         }
         playQueue = [item];
@@ -1883,6 +1964,112 @@ async function refreshSidebarPlaylists() {
     });
     ul.appendChild(li);
   }
+  if (document.querySelector('.page[data-page="home"]')?.classList.contains("page-active")) {
+    renderHomePage();
+  }
+}
+
+function getDailyRecommendations() {
+  const base = sessionRecentPlays.filter((item) => !!(item?.title || "").trim());
+  const dedup = [];
+  const seen = new Set();
+  for (const item of base) {
+    const key = `${(item.title || "").trim()}::${(item.artist || "").trim()}::${item.local_path ? "local" : (item.source_id || "").trim()}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    dedup.push(item);
+  }
+  const daySeed = new Date().toISOString().slice(0, 10).replace(/-/g, "");
+  dailyRecommendationRows = dedup
+    .map((item, index) => ({ item, score: Number(daySeed) % (index + 7) }))
+    .sort((a, b) => a.score - b.score)
+    .map((entry) => entry.item)
+    .slice(0, 24);
+  return dailyRecommendationRows;
+}
+
+function renderHomePage() {
+  const playlistCountEl = document.getElementById("home-playlist-count");
+  const recentCountEl = document.getElementById("home-recent-count");
+  const downloadCountEl = document.getElementById("home-download-count");
+  const recentList = document.getElementById("home-recent-list");
+  const dailyList = document.getElementById("home-daily-list");
+  const recommendations = getDailyRecommendations();
+  if (recentCountEl) recentCountEl.textContent = String(sessionRecentPlays.length);
+  if (downloadCountEl) downloadCountEl.textContent = String(downloadTasksBySourceId.size);
+  if (recentList) {
+    recentList.innerHTML = "";
+    const rows = sessionRecentPlays.slice(0, 4);
+    if (!rows.length) {
+      recentList.innerHTML = '<p class="home-list__empty muted">还没有最近播放。去搜索或导入一张歌单开始吧。</p>';
+    } else {
+      rows.forEach((item, index) => {
+        const button = document.createElement("button");
+        button.type = "button";
+        button.className = "home-list__item";
+        button.innerHTML = `<span class="home-list__index">${index + 1}</span><span class="home-list__meta"><strong>${escapeHtml(item.title || "—")}</strong><span>${escapeHtml(item.artist || (item.local_path ? "本地音乐" : "在线曲目"))}</span></span>`;
+        button.addEventListener("click", () => playFromRecentRow(index));
+        recentList.appendChild(button);
+      });
+    }
+  }
+  if (dailyList) {
+    dailyList.innerHTML = "";
+    const rows = recommendations.slice(0, 4);
+    if (!rows.length) {
+      dailyList.innerHTML = '<p class="home-list__empty muted">需要一些最近播放记录后，主页才会生成今日推荐。</p>';
+    } else {
+      rows.forEach((item) => {
+        const button = document.createElement("button");
+        button.type = "button";
+        button.className = "home-list__item";
+        button.innerHTML = `<span class="home-list__badge">推荐</span><span class="home-list__meta"><strong>${escapeHtml(item.title || "—")}</strong><span>${escapeHtml(item.artist || (item.local_path ? "本地音乐" : "在线曲目"))}</span></span>`;
+        button.addEventListener("click", () => {
+          if (item.local_path) {
+            playQueue = [{ title: item.title, artist: item.artist || "", local_path: item.local_path, cover_url: null }];
+          } else {
+            playQueue = [{ source_id: item.source_id, title: item.title, artist: item.artist || "", cover_url: item.cover_url || null }];
+          }
+          void playFromQueueIndex(0);
+          renderQueuePanel();
+        });
+        dailyList.appendChild(button);
+      });
+    }
+  }
+  void invoke("list_playlists")
+    .then((playlists) => {
+      if (playlistCountEl) playlistCountEl.textContent = String(Array.isArray(playlists) ? playlists.length : 0);
+    })
+    .catch(() => {
+      if (playlistCountEl) playlistCountEl.textContent = "0";
+    });
+}
+
+function renderDailyTable() {
+  const tbody = document.querySelector("#daily-table tbody");
+  if (!tbody) return;
+  const rows = getDailyRecommendations();
+  if (!rows.length) {
+    tbody.innerHTML = '<tr><td colspan="4" class="muted">最近播放还不够，先听几首歌再回来生成每日推荐。</td></tr>';
+    return;
+  }
+  tbody.innerHTML = "";
+  rows.forEach((item, index) => {
+    const tr = document.createElement("tr");
+    const src = item.local_path ? "本地" : "在线";
+    tr.innerHTML = `<td>${index + 1}</td><td>${escapeHtml(item.title || "—")}</td><td>${escapeHtml(item.artist || "—")}</td><td>${escapeHtml(src)}</td>`;
+    tr.addEventListener("dblclick", () => {
+      if (item.local_path) {
+        playQueue = [{ title: item.title, artist: item.artist || "", local_path: item.local_path, cover_url: null }];
+      } else {
+        playQueue = [{ source_id: item.source_id, title: item.title, artist: item.artist || "", cover_url: item.cover_url || null }];
+      }
+      void playFromQueueIndex(0);
+      renderQueuePanel();
+    });
+    tbody.appendChild(tr);
+  });
 }
 
 async function loadPlaylistDetail(id, name) {
@@ -1944,7 +2131,7 @@ function renderPlaylistDetailTable() {
       <td class="col-like muted">${liked ? "♥" : "♡"}</td>
       <td class="muted col-dur">${dur}</td>`;
     tr.style.cursor = ok ? "pointer" : "default";
-    tr.title = ok ? "双击从该曲起播整单（仅含曲库 id 的曲目入队）" : "无曲库 id：请到「发现」搜索后播放";
+    tr.title = ok ? "双击从该曲起播整单（仅含曲库 id 的曲目入队）" : "无曲库 id：请到「搜索」搜索后播放";
     if (ok) {
       tr.addEventListener("dblclick", () => playFromPlaylistRow(i));
     }
@@ -1986,12 +2173,25 @@ function playFromPlaylistRow(rowIdx) {
 
 function wirePlaylistPage() {
   document.getElementById("btn-playlist-back")?.addEventListener("click", () => {
-    setPage("discover");
+    setPage("home");
+  });
+  document.getElementById("btn-playlist-rename")?.addEventListener("click", async () => {
+    if (selectedPlaylistId == null) return;
+    const nextName = window.prompt("重命名歌单", selectedPlaylistName || "歌单");
+    if (nextName == null || !nextName.trim()) return;
+    try {
+      await invoke("rename_playlist", { playlistId: selectedPlaylistId, name: nextName.trim() });
+      selectedPlaylistName = nextName.trim();
+      await refreshSidebarPlaylists();
+      await loadPlaylistDetail(selectedPlaylistId, selectedPlaylistName);
+    } catch (e) {
+      alertRequestFailed(e, "rename_playlist");
+    }
   });
   document.getElementById("btn-playlist-play-all")?.addEventListener("click", () => {
     const playable = playlistDetailRows.filter((r) => (r.pjmp3_source_id || "").trim());
     if (!playable.length) {
-      alert("没有可播放条目（导入条目需含 pjmp3 曲库 id；可先使用「发现」搜索）。");
+      alert("没有可播放条目（导入条目需含 pjmp3 曲库 id；可先使用「搜索」搜索）。");
       return;
     }
     playQueue = playable.map((r) => ({
@@ -2009,6 +2209,9 @@ function renderImportTable() {
   const tbody = document.querySelector("#import-table tbody");
   if (!tbody) return;
   tbody.innerHTML = "";
+  if (!importTracks.length) {
+    tbody.innerHTML = '<tr><td colspan="4" class="muted">还没有导入结果。先选择一种导入方式开始。</td></tr>';
+  }
   importTracks.forEach((t, i) => {
     const tr = document.createElement("tr");
     tr.innerHTML = `
@@ -2062,19 +2265,72 @@ function wireImportPage() {
   });
   syncNeteaseCookieUi();
 
+  document.querySelectorAll("[data-import-method]").forEach((button) => {
+    button.addEventListener("click", () => {
+      setImportMethod(button.getAttribute("data-import-method") || "");
+    });
+  });
+
+  document.getElementById("btn-import-cancel")?.addEventListener("click", () => {
+    resetImportFlow({ keepDraft: importTracks.length > 0 });
+  });
+
+  document.getElementById("btn-scan-library-folder")?.addEventListener("click", async () => {
+    const statusEl = document.getElementById("local-library-status");
+    try {
+      const s = await invoke("get_settings");
+      const def = ((s && s.last_library_folder) || lastLibraryFolder || "").trim();
+      const picked = await open({
+        directory: true,
+        multiple: false,
+        defaultPath: def || undefined,
+        title: "选择音乐文件夹",
+      });
+      if (picked == null) return;
+      const folder = Array.isArray(picked) ? picked[0] : picked;
+      if (!folder || !String(folder).trim()) return;
+      const path = String(folder).trim();
+      lastLibraryFolder = path;
+      await invoke("save_settings", { patch: { last_library_folder: path } }).catch(() => {});
+      if (statusEl) statusEl.textContent = "正在扫描…";
+      const res = await invoke("scan_music_folder", { path });
+      const rows = await refreshLocalLibraryTable();
+      if (statusEl) {
+        statusEl.textContent = `已扫描 ${res.audio_files_seen} 个音频文件，整理出 ${rows.length} 首。`;
+      }
+      setImportDraft(
+        rows.map((row) => ({
+          title: (row.title || "").trim() || "未命名曲目",
+          artist: (row.artist || "").trim(),
+          album: "",
+        })),
+        {
+          suggestedName: "本地导入歌单",
+          method: "local",
+          statusText: `已从本地目录整理出 ${rows.length} 首歌曲，可以直接保存成歌单。`,
+        }
+      );
+      await refreshPlaylistSelect();
+    } catch (e) {
+      if (statusEl) statusEl.textContent = MSG_REQUEST_FAILED;
+      alertRequestFailed(e, "scan_music_folder");
+    }
+  });
+
   document.getElementById("btn-import-parse")?.addEventListener("click", async () => {
     const raw = document.getElementById("import-text")?.value?.trim() ?? "";
     if (!raw) return;
     const fmt = document.getElementById("import-fmt")?.value ?? "auto";
     try {
       const rows = await invoke("parse_import_text", { text: raw, fmt });
-      importTracks = rows || [];
-      importShareSuggestedName = "";
       const shareSt = document.getElementById("import-share-status");
       if (shareSt) shareSt.textContent = "";
-      renderImportTable();
+      setImportDraft(rows || [], {
+        suggestedName: "文本导入歌单",
+        method: "text",
+        statusText: `已解析 ${Array.isArray(rows) ? rows.length : 0} 条文本记录，请确认歌单名称后保存。`,
+      });
       await refreshPlaylistSelect();
-      alert(`共解析 ${importTracks.length} 条。`);
     } catch (e) {
       alertRequestFailed(e, "parse_import_text");
     }
@@ -2099,11 +2355,9 @@ function wireImportPage() {
 
   document.getElementById("btn-import-save-new")?.addEventListener("click", async () => {
     if (!importTracks.length) return;
-    const defaultName = (importShareSuggestedName && importShareSuggestedName.trim()) || "导入歌单";
-    const name = window.prompt("歌单名称（将写入 library.db）", defaultName);
-    if (!name || !name.trim()) return;
+    const name = document.getElementById("import-playlist-name")?.value?.trim() || importShareSuggestedName || "导入歌单";
     try {
-      const id = await invoke("create_playlist", { name: name.trim() });
+      const id = await invoke("create_playlist", { name });
       await invoke("replace_playlist_import_items", {
         playlistId: id,
         items: importTracks.map((t) => ({
@@ -2112,8 +2366,12 @@ function wireImportPage() {
           album: t.album || "",
         })),
       });
-      alert(`已创建歌单「${name.trim()}」，共 ${importTracks.length} 首导入条目。`);
+      selectedPlaylistId = id;
+      selectedPlaylistName = name;
       await refreshPlaylistSelect();
+      await refreshSidebarPlaylists();
+      await loadPlaylistDetail(id, name);
+      setPage("playlist");
     } catch (e) {
       alertRequestFailed(e, "import save playlist");
     }
@@ -2132,14 +2390,17 @@ function wireImportPage() {
     if (btn) btn.disabled = true;
     try {
       const res = await invoke("fetch_share_playlist", { url });
-      importTracks = res.tracks || [];
-      importShareSuggestedName = res.playlist_name || res.playlistName || "";
-      renderImportTable();
+      const tracks = res.tracks || [];
+      const suggestedName = res.playlist_name || res.playlistName || "";
+      setImportDraft(tracks, {
+        suggestedName,
+        method: "share",
+        statusText: `已拉取「${suggestedName || "未命名歌单"}」共 ${tracks.length} 首，可直接保存或合并。`,
+      });
       await refreshPlaylistSelect();
-      const n = importTracks.length;
-      const pn = importShareSuggestedName || "—";
+      const n = tracks.length;
+      const pn = suggestedName || "—";
       if (st) st.textContent = `已拉取 ${n} 首 · ${pn}`;
-      alert(`已拉取「${pn}」共 ${n} 首。可导出、保存为新歌单或合并到已有歌单。`);
     } catch (e) {
       if (st) st.textContent = "";
       alertRequestFailed(e, "fetch_share_playlist");
@@ -2172,11 +2433,12 @@ function wireImportPage() {
           album: t.album || "",
         })),
       });
-      alert(`已向所选歌单追加 ${importTracks.length} 首。`);
       await refreshSidebarPlaylists();
-      if (selectedPlaylistId === pid) {
-        void loadPlaylistDetail(pid, selectedPlaylistName);
-      }
+      const playlistName = sel.options[sel.selectedIndex]?.textContent?.replace(/\s*\(id=.*\)\s*$/, "") || "";
+      selectedPlaylistId = pid;
+      selectedPlaylistName = playlistName;
+      await loadPlaylistDetail(pid, playlistName);
+      setPage("playlist");
     } catch (e) {
       alertRequestFailed(e, "append_playlist_import_items");
     }
@@ -2220,7 +2482,7 @@ function renderSidebar() {
     btn.type = "button";
     btn.className = "nav-item";
     btn.dataset.page = item.id;
-    btn.textContent = item.label;
+    btn.innerHTML = `<span class="nav-item__icon">${navIconSvg(item.icon)}</span><span class="nav-item__label">${escapeHtml(item.label)}</span>`;
     btn.addEventListener("click", () => setPage(item.id));
     el.appendChild(btn);
   }
@@ -2240,7 +2502,7 @@ function renderSidebar() {
   btnAdd.className = "sidebar-pl-add";
   btnAdd.title = "新建歌单";
   btnAdd.setAttribute("aria-label", "新建歌单");
-  btnAdd.textContent = "+";
+  btnAdd.innerHTML = navIconSvg("playlist");
   btnAdd.addEventListener("click", async (e) => {
     e.preventDefault();
     e.stopPropagation();
@@ -2271,16 +2533,22 @@ function setPage(pageId) {
   document.querySelectorAll(".page").forEach((p) => {
     p.classList.toggle("page-active", p.dataset.page === pageId);
   });
+  if (pageId === "home") {
+    renderHomePage();
+  }
+  if (pageId === "daily") {
+    renderDailyTable();
+  }
   if (pageId === "recent") {
     renderRecentPlaysTable();
   }
   if (pageId === "download") {
-    const activeTab = document.querySelector("[data-download-tab].page-tab--active");
-    const tid = activeTab?.getAttribute("data-download-tab");
-    if (tid === "local") void refreshLocalLibraryTable();
-    if (tid === "dl") renderDownloadQueueTable();
+    renderDownloadQueueTable();
   }
   if (pageId === "import") {
+    if (!importMethod && !importTracks.length) {
+      resetImportFlow();
+    }
     void refreshPlaylistSelect();
   }
   if (pageId === "playlist") {
@@ -2558,6 +2826,12 @@ function pushSessionRecentFromCurrentTrack(_onlineResolvedPlayUrl = null) {
   if (document.querySelector('.page[data-page="recent"]')?.classList.contains("page-active")) {
     renderRecentPlaysTable();
   }
+  if (document.querySelector('.page[data-page="home"]')?.classList.contains("page-active")) {
+    renderHomePage();
+  }
+  if (document.querySelector('.page[data-page="daily"]')?.classList.contains("page-active")) {
+    renderDailyTable();
+  }
 }
 
 async function loadRecentPlaysFromDb() {
@@ -2579,6 +2853,8 @@ async function loadRecentPlaysFromDb() {
     if (document.querySelector('.page[data-page="recent"]')?.classList.contains("page-active")) {
       renderRecentPlaysTable();
     }
+    renderHomePage();
+    renderDailyTable();
   } catch (e) {
     console.warn("list_recent_plays", e);
   }
@@ -2589,7 +2865,7 @@ function renderDownloadQueueTable() {
   if (!tbody) return;
   const list = [...downloadTasksBySourceId.values()];
   if (!list.length) {
-    tbody.innerHTML = '<tr><td colspan="4" class="muted">队列为空。在「发现」或歌单右键选择「下载」。</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="4" class="muted">队列为空。在「搜索」、歌单或每日推荐里选择「下载」后会出现在这里。</td></tr>';
     return;
   }
   tbody.innerHTML = "";
@@ -2638,7 +2914,7 @@ function renderRecentPlaysTable() {
   if (!tbody) return;
   if (!sessionRecentPlays.length) {
     tbody.innerHTML =
-      '<tr><td colspan="4" class="muted">暂无记录。在「发现」或「本地」播放曲目后将显示在此处。</td></tr>';
+      '<tr><td colspan="4" class="muted">暂无记录。在「搜索」、每日推荐或歌单中播放曲目后将显示在此处。</td></tr>';
     return;
   }
   tbody.innerHTML = "";
@@ -2654,53 +2930,17 @@ function renderRecentPlaysTable() {
 }
 
 async function refreshLocalLibraryTable() {
-  const tbody = document.querySelector("#local-library-table tbody");
-  if (!tbody) return;
-  tbody.innerHTML = '<tr><td colspan="4" class="muted">加载中…</td></tr>';
   try {
     const rows = await invoke("list_local_songs");
     localLibraryRows = Array.isArray(rows) ? rows : [];
-    tbody.innerHTML = "";
-    if (!localLibraryRows.length) {
-      const tr = document.createElement("tr");
-      tr.innerHTML = '<td colspan="4" class="muted">暂无本地曲库。请点击「选择文件夹并扫描」。</td>';
-      tbody.appendChild(tr);
-      return;
-    }
-    localLibraryRows.forEach((r, i) => {
-      const tr = document.createElement("tr");
-      tr.innerHTML = `<td>${i + 1}</td><td>${escapeHtml(r.title || "")}</td><td>${escapeHtml(r.artist || "")}</td><td class="col-path" title="${escapeHtml(r.file_path || "")}">${escapeHtml(r.file_path || "")}</td>`;
-      tr.addEventListener("dblclick", () => {
-        playQueue = [{ title: r.title, artist: r.artist || "", local_path: r.file_path, cover_url: null }];
-        void playFromQueueIndex(0);
-        renderQueuePanel();
-      });
-      tbody.appendChild(tr);
-    });
+    return localLibraryRows;
   } catch (e) {
     warnRequestFailed(e, "list_local_songs");
-    tbody.innerHTML = `<tr><td colspan="4" class="muted">${escapeHtml(MSG_REQUEST_FAILED)}</td></tr>`;
+    return [];
   }
 }
 
 function wireDownloadPage() {
-  document.querySelectorAll("[data-download-tab]").forEach((btn) => {
-    btn.addEventListener("click", () => {
-      const id = btn.getAttribute("data-download-tab");
-      document.querySelectorAll("[data-download-tab]").forEach((b) => {
-        const on = b === btn;
-        b.classList.toggle("page-tab--active", on);
-        b.setAttribute("aria-selected", on ? "true" : "false");
-      });
-      document.querySelectorAll("[data-download-panel]").forEach((p) => {
-        const show = p.getAttribute("data-download-panel") === id;
-        p.classList.toggle("page-tab-panel--active", show);
-      });
-      if (id === "local") void refreshLocalLibraryTable();
-      if (id === "dl") renderDownloadQueueTable();
-    });
-  });
-
   document.getElementById("btn-pick-download-folder")?.addEventListener("click", async () => {
     const statusEl = document.getElementById("download-folder-hint");
     try {
@@ -2721,35 +2961,6 @@ function wireDownloadPage() {
     } catch (e) {
       if (statusEl) statusEl.textContent = MSG_REQUEST_FAILED;
       alertRequestFailed(e, "pick download folder");
-    }
-  });
-
-  document.getElementById("btn-scan-library-folder")?.addEventListener("click", async () => {
-    const statusEl = document.getElementById("local-library-status");
-    try {
-      const s = await invoke("get_settings");
-      const def = ((s && s.last_library_folder) || lastLibraryFolder || "").trim();
-      const picked = await open({
-        directory: true,
-        multiple: false,
-        defaultPath: def || undefined,
-        title: "选择音乐文件夹",
-      });
-      if (picked == null) return;
-      const folder = Array.isArray(picked) ? picked[0] : picked;
-      if (!folder || !String(folder).trim()) return;
-      const path = String(folder).trim();
-      lastLibraryFolder = path;
-      await invoke("save_settings", { patch: { last_library_folder: path } }).catch(() => {});
-      if (statusEl) statusEl.textContent = "正在扫描…";
-      const res = await invoke("scan_music_folder", { path });
-      if (statusEl) {
-        statusEl.textContent = `已扫描 ${res.audio_files_seen} 个音频文件，写入/更新 ${res.rows_written} 条。`;
-      }
-      await refreshLocalLibraryTable();
-    } catch (e) {
-      if (statusEl) statusEl.textContent = MSG_REQUEST_FAILED;
-      alertRequestFailed(e, "scan_music_folder");
     }
   });
 }
@@ -3051,7 +3262,7 @@ function submitGlobalSearch() {
   const gs = document.getElementById("global-search");
   if (!gs) return;
   const value = gs.value.trim();
-  setPage("discover");
+  setPage("search");
   if (!value) {
     searchState.keyword = "";
     searchState.page = 1;
@@ -3224,7 +3435,12 @@ function wireVolume() {
 document.addEventListener("DOMContentLoaded", () => {
   applyPlatformClassNames();
   renderSidebar();
-  setPage("discover");
+  setPage("home");
+  document.getElementById("btn-home-search")?.addEventListener("click", () => setPage("search"));
+  document.getElementById("btn-home-import")?.addEventListener("click", () => setPage("import"));
+  document.getElementById("btn-home-open-recent")?.addEventListener("click", () => setPage("recent"));
+  document.getElementById("btn-home-open-daily")?.addEventListener("click", () => setPage("daily"));
+  document.getElementById("btn-refresh-daily")?.addEventListener("click", () => renderDailyTable());
   wireQueueToggle();
   wireDockBar();
   wireDownloadPage();
@@ -3237,6 +3453,7 @@ document.addEventListener("DOMContentLoaded", () => {
   wireDiscoverToolbar();
   wireAudio();
   renderSearchTable();
+  renderImportTable();
   updateSearchToolbar();
   renderQueuePanel();
   refreshLyricsLockMenuLabel();
@@ -3299,6 +3516,9 @@ document.addEventListener("DOMContentLoaded", () => {
       downloadTasksBySourceId.set(String(sid), p);
     }
     renderDownloadQueueTable();
+    if (document.querySelector('.page[data-page="home"]')?.classList.contains("page-active")) {
+      renderHomePage();
+    }
   });
   listen("desktop-lyrics-request-lock", async (e) => {
     const locked = e?.payload?.locked;
