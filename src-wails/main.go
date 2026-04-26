@@ -100,7 +100,7 @@ func main() {
 	})
 	systemTray := app.SystemTray.New()
 	if runtime.GOOS == "darwin" && len(macTrayIcon) > 0 {
-		systemTray.SetTemplateIcon(macTrayIcon)
+		systemTray.SetIcon(macTrayIcon)
 	} else if len(appIcon) > 0 {
 		systemTray.SetIcon(appIcon)
 	}
