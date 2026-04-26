@@ -1491,6 +1491,9 @@ body {
   width: 34px;
   height: 34px;
   padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   border-radius: 8px;
   border: 1px solid var(--dock-edge);
   background: var(--dock-chip-bg);
@@ -1499,6 +1502,25 @@ body {
   font-weight: 600;
   cursor: pointer;
   flex-shrink: 0;
+  transition:
+    background 0.15s ease,
+    border-color 0.15s ease,
+    transform 0.14s ease;
+}
+
+.dock-mode svg {
+  width: 16px;
+  height: 16px;
+  display: block;
+  transform-origin: center;
+  transition:
+    transform 0.2s ease,
+    opacity 0.2s ease;
+}
+
+.dock-mode.is-switching svg {
+  opacity: 0.78;
+  transform: scale(0.82) rotate(-18deg);
 }
 
 .dock-mode:hover {

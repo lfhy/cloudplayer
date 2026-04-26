@@ -108,10 +108,10 @@ async function logPlayEventDesktop(
 
 /** 与 Py 版 PlayMode 对应：序 → 循 → 单 → 随 */
 const PLAY_MODES = [
-  { key: "sequential", label: "序", tip: "顺序播放（点击切换模式）" },
-  { key: "loop_list", label: "循", tip: "列表循环" },
-  { key: "one", label: "单", tip: "单曲循环" },
-  { key: "shuffle", label: "随", tip: "随机播放" },
+  { key: "sequential", icon: "playlist-minimalistic-2-linear", tip: "顺序播放（点击切换模式）" },
+  { key: "loop_list", icon: "repeat-linear", tip: "列表循环" },
+  { key: "one", icon: "repeat-one-linear", tip: "单曲循环" },
+  { key: "shuffle", icon: "shuffle-linear", tip: "随机播放" },
 ];
 let playModeIndex = 0;
 
@@ -210,6 +210,14 @@ function navIconSvg(name) {
   const height = icon.height || solarIcons.height || 24;
   const rotate = name === "chevron-up-down" ? ' style="transform: rotate(180deg); transform-origin: center;"' : "";
   return `<svg viewBox="0 0 ${width} ${height}" aria-hidden="true" focusable="false"${rotate}>${icon.body}</svg>`;
+}
+
+function iconSvgByName(iconName) {
+  const icon = solarIcons.icons[iconName];
+  if (!icon) return "";
+  const width = icon.width || solarIcons.width || 24;
+  const height = icon.height || solarIcons.height || 24;
+  return `<svg viewBox="0 0 ${width} ${height}" aria-hidden="true" focusable="false">${icon.body}</svg>`;
 }
 
 function syncNeteaseCookieUi() {
@@ -1045,14 +1053,21 @@ function wirePreferencesModals() {
 function wireDockBar() {
   const modeBtn = document.getElementById("btn-play-mode");
   if (modeBtn) {
-    const m0 = PLAY_MODES[playModeIndex];
-    modeBtn.textContent = m0.label;
-    modeBtn.title = m0.tip;
+    const refreshPlayModeButton = () => {
+      const mode = PLAY_MODES[playModeIndex];
+      modeBtn.innerHTML = iconSvgByName(mode.icon);
+      modeBtn.title = mode.tip;
+      modeBtn.setAttribute("aria-label", mode.tip);
+      modeBtn.dataset.playMode = mode.key;
+    };
+    refreshPlayModeButton();
     modeBtn.addEventListener("click", () => {
       playModeIndex = (playModeIndex + 1) % PLAY_MODES.length;
-      const mm = PLAY_MODES[playModeIndex];
-      modeBtn.textContent = mm.label;
-      modeBtn.title = mm.tip;
+      modeBtn.classList.remove("is-switching");
+      void modeBtn.offsetWidth;
+      modeBtn.classList.add("is-switching");
+      refreshPlayModeButton();
+      window.setTimeout(() => modeBtn.classList.remove("is-switching"), 220);
       setPlayerNavEnabled();
     });
   }
