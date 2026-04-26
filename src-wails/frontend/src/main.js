@@ -2884,6 +2884,26 @@ function wireGlobalSearch() {
   document.getElementById("btn-global-search")?.addEventListener("click", () => submitGlobalSearch());
 }
 
+function isEditableElement(el) {
+  if (!el || !(el instanceof Element)) return false;
+  if (el instanceof HTMLInputElement || el instanceof HTMLTextAreaElement) {
+    return !el.disabled && !el.readOnly;
+  }
+  if (el instanceof HTMLElement && el.isContentEditable) {
+    return true;
+  }
+  const owner = el.closest('input, textarea, [contenteditable="true"]');
+  if (!owner) return false;
+  if (owner instanceof HTMLInputElement || owner instanceof HTMLTextAreaElement) {
+    return !owner.disabled && !owner.readOnly;
+  }
+  return owner instanceof HTMLElement;
+}
+
+function shouldIgnoreGlobalHotkeyAction() {
+  return isEditableElement(document.activeElement);
+}
+
 async function togglePlayPauseFromHotkey() {
   const a = audioEl();
   if (!a || !a.src) return;
@@ -2912,6 +2932,7 @@ async function adjustPlayerVolumeDelta(delta) {
 
 function wireGlobalHotkeyListener() {
   void listen("global-hotkey", (e) => {
+    if (shouldIgnoreGlobalHotkeyAction()) return;
     const action = e?.payload;
     if (action === "play_pause") void togglePlayPauseFromHotkey();
     else if (action === "prev") document.getElementById("btn-player-prev")?.click();
