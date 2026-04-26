@@ -199,7 +199,7 @@ function navIconSvg(name) {
     playlist: "playlist-minimalistic-2-linear",
     "chevron-up-down": "alt-arrow-up-line-duotone",
     appearance: "moon-fog-linear",
-    "appearance-system": "monitor-bold",
+    "appearance-system": "text-bold-circle-bold",
     "appearance-light": "sun-2-bold",
     "appearance-dark": "moon-stars-bold",
   };
