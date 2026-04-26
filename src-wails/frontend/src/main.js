@@ -2055,7 +2055,18 @@ function renderSidebar() {
   el.innerHTML = "";
   const logo = document.createElement("div");
   logo.className = "sidebar-logo";
-  logo.textContent = "CloudPlayer";
+  const logoImg = document.createElement("img");
+  logoImg.className = "sidebar-logo__mark";
+  logoImg.src = "/logo.svg";
+  logoImg.width = 28;
+  logoImg.height = 28;
+  logoImg.alt = "";
+  logoImg.setAttribute("aria-hidden", "true");
+  const logoText = document.createElement("span");
+  logoText.className = "sidebar-logo__text";
+  logoText.textContent = "CloudPlayer";
+  logo.appendChild(logoImg);
+  logo.appendChild(logoText);
   el.appendChild(logo);
   for (const item of NAV) {
     const btn = document.createElement("button");

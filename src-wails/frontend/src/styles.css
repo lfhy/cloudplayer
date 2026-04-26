@@ -155,10 +155,24 @@ body {
 }
 
 .sidebar-logo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
   font-weight: 700;
   font-size: 15px;
   padding: 8px 12px;
   color: var(--accent);
+}
+
+.sidebar-logo__mark {
+  width: 28px;
+  height: 28px;
+  display: block;
+  flex: 0 0 28px;
+}
+
+.sidebar-logo__text {
+  line-height: 1;
 }
 
 .nav-item {
