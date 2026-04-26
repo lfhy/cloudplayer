@@ -8,6 +8,9 @@ const NAV = [
   { id: "search", label: "音乐搜索", icon: "search" },
   { id: "daily", label: "每日推荐", icon: "sparkles" },
   { id: "recent", label: "最近播放", icon: "clock" },
+];
+
+const SIDEBAR_MENU_NAV = [
   { id: "download", label: "下载管理", icon: "download" },
   { id: "import", label: "导入歌单", icon: "library" },
   { id: "settings", label: "偏好设置", icon: "settings" },
@@ -2495,18 +2498,6 @@ function formatDurationMs(ms) {
 function renderSidebar() {
   const el = document.getElementById("sidebar");
   el.innerHTML = "";
-  const logo = document.createElement("div");
-  logo.className = "sidebar-logo";
-  const logoImg = document.createElement("span");
-  logoImg.className = "sidebar-logo__mark";
-  logoImg.setAttribute("aria-hidden", "true");
-  logoImg.innerHTML = appLogoMarkSvg();
-  const logoText = document.createElement("span");
-  logoText.className = "sidebar-logo__text";
-  logoText.textContent = "CloudPlayer";
-  logo.appendChild(logoImg);
-  logo.appendChild(logoText);
-  el.appendChild(logo);
   for (const item of NAV) {
     const btn = document.createElement("button");
     btn.type = "button";
@@ -2553,6 +2544,36 @@ function renderSidebar() {
   plWrap.appendChild(plHead);
   plWrap.appendChild(ul);
   el.appendChild(plWrap);
+
+  const accountWrap = document.createElement("div");
+  accountWrap.className = "sidebar-account";
+  const accountButton = document.createElement("button");
+  accountButton.type = "button";
+  accountButton.className = "sidebar-account__button";
+  accountButton.setAttribute("aria-label", "CloudPlayer 菜单");
+  accountButton.innerHTML = `
+    <span class="sidebar-account__mark" aria-hidden="true">${appLogoMarkSvg()}</span>
+    <span class="sidebar-account__meta">
+      <strong>CloudPlayer</strong>
+      <span>Library Menu</span>
+    </span>
+    <span class="sidebar-account__chevron" aria-hidden="true">${navIconSvg("settings")}</span>
+  `;
+
+  const accountMenu = document.createElement("div");
+  accountMenu.className = "sidebar-account__menu";
+  SIDEBAR_MENU_NAV.forEach((item) => {
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "sidebar-account__menu-item";
+    btn.innerHTML = `<span class="sidebar-account__menu-icon">${navIconSvg(item.icon)}</span><span>${escapeHtml(item.label)}</span>`;
+    btn.addEventListener("click", () => setPage(item.id));
+    accountMenu.appendChild(btn);
+  });
+
+  accountWrap.appendChild(accountButton);
+  accountWrap.appendChild(accountMenu);
+  el.appendChild(accountWrap);
   void refreshSidebarPlaylists();
 }
 
