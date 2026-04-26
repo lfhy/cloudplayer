@@ -11,6 +11,19 @@
   --border: #e5e5e5;
   --shadow-soft: 0 8px 20px rgba(15, 23, 42, 0.05);
   --shadow-float: 0 18px 34px rgba(15, 23, 42, 0.14);
+  --surface-soft: linear-gradient(180deg, rgba(255, 255, 255, 0.92), rgba(255, 255, 255, 0.78));
+  --surface-soft-border: rgba(255, 255, 255, 0.82);
+  --surface-soft-inset: inset 0 1px 0 rgba(255, 255, 255, 0.7);
+  --surface-subtle: rgba(255, 255, 255, 0.68);
+  --surface-subtle-2: rgba(255, 255, 255, 0.62);
+  --topbar-grad-start: #eef0f3;
+  --cover-placeholder: #e5e7eb;
+  --cover-placeholder-grad: linear-gradient(135deg, #eee, #ddd);
+  --dock-fg: #1f2937;
+  --dock-muted: #6b7280;
+  --dock-edge: #e5e7eb;
+  --dock-hover: #f3f4f6;
+  --dock-chip-bg: #fafafa;
   --sidebar-width: 200px;
   --titlebar-left-gap: 16px;
   --sidebar-top-gap: 12px;
@@ -27,6 +40,19 @@
   --border: rgba(255, 255, 255, 0.1);
   --shadow-soft: 0 10px 28px rgba(0, 0, 0, 0.24);
   --shadow-float: 0 24px 44px rgba(0, 0, 0, 0.3);
+  --surface-soft: linear-gradient(180deg, rgba(34, 37, 43, 0.96), rgba(27, 30, 36, 0.92));
+  --surface-soft-border: rgba(255, 255, 255, 0.08);
+  --surface-soft-inset: inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  --surface-subtle: rgba(255, 255, 255, 0.06);
+  --surface-subtle-2: rgba(255, 255, 255, 0.05);
+  --topbar-grad-start: rgba(34, 38, 46, 0.96);
+  --cover-placeholder: rgba(255, 255, 255, 0.08);
+  --cover-placeholder-grad: linear-gradient(135deg, rgba(255, 255, 255, 0.12), rgba(255, 255, 255, 0.05));
+  --dock-fg: #f2f3f5;
+  --dock-muted: #a4acb8;
+  --dock-edge: rgba(255, 255, 255, 0.1);
+  --dock-hover: rgba(255, 255, 255, 0.08);
+  --dock-chip-bg: rgba(255, 255, 255, 0.06);
   color-scheme: dark;
 }
 
@@ -430,7 +456,7 @@ body {
 
 .platform-macos .top-search-row {
   background:
-    linear-gradient(180deg, #eef0f3 0px, var(--bg-main) 52px);
+    linear-gradient(180deg, var(--topbar-grad-start) 0px, var(--bg-main) 52px);
 }
 
 .top-search-row .neon-search-wrap,
@@ -468,7 +494,7 @@ body {
   min-height: 36px;
   border-radius: 9999px;
   overflow: hidden;
-  background: #ffffff;
+  background: var(--bg-card);
 }
 
 .neon-search-wrap:focus-within {
@@ -492,7 +518,7 @@ body {
   border: none;
   border-radius: 0;
   background: transparent;
-  color: #222222;
+  color: var(--text);
   font: inherit;
   font-size: 10pt;
   outline: none;
@@ -599,9 +625,9 @@ body {
 }
 
 .search-scope-chip.is-active {
-  background: #fff;
+  background: var(--bg-card);
   color: var(--accent);
-  box-shadow: 0 6px 16px rgba(15, 23, 42, 0.08);
+  box-shadow: var(--shadow-soft);
 }
 
 .search-suggestions {
@@ -632,7 +658,7 @@ body {
   border-radius: 20px;
   background:
     radial-gradient(circle at top right, rgba(var(--accent-rgb), 0.16), transparent 38%),
-    rgba(255,255,255,0.76);
+    var(--bg-card-muted);
   text-align: left;
   cursor: pointer;
   transition: transform 120ms ease, box-shadow 120ms ease, border-color 120ms ease;
@@ -829,11 +855,11 @@ body {
 .home-card,
 .import-shell,
 .import-soft-card {
-  background: linear-gradient(180deg, rgba(255,255,255,0.92), rgba(255,255,255,0.78));
-  border: 1px solid rgba(255,255,255,0.82);
+  background: var(--surface-soft);
+  border: 1px solid var(--surface-soft-border);
   box-shadow:
     0 20px 44px rgba(15, 23, 42, 0.08),
-    inset 0 1px 0 rgba(255, 255, 255, 0.7);
+    var(--surface-soft-inset);
 }
 
 .home-hero__copy,
@@ -882,7 +908,7 @@ body {
 .home-stat {
   padding: 14px 16px;
   border-radius: 18px;
-  background: rgba(255, 255, 255, 0.62);
+  background: var(--surface-subtle-2);
   border: 1px solid rgba(15, 23, 42, 0.06);
 }
 
@@ -947,7 +973,7 @@ body {
   padding: 12px 14px;
   border: 1px solid rgba(15, 23, 42, 0.06);
   border-radius: 16px;
-  background: rgba(255, 255, 255, 0.68);
+  background: var(--surface-subtle);
   color: var(--text);
   text-align: left;
   cursor: pointer;
@@ -1116,7 +1142,7 @@ body {
   width: 40px;
   height: 40px;
   border-radius: 4px;
-  background: linear-gradient(135deg, #eee, #ddd);
+  background: var(--cover-placeholder-grad);
 }
 
 .col-like {
@@ -1137,7 +1163,7 @@ body {
   border-radius: 12px;
   object-fit: cover;
   box-shadow: 0 10px 26px rgba(15, 23, 42, 0.16);
-  background: #e5e7eb;
+  background: var(--cover-placeholder);
 }
 
 .playlist-hero__meta {
@@ -1254,9 +1280,6 @@ body {
 
 /* —— 底部播放 dock：白底轻量样式 —— */
 .dock-player {
-  --dock-fg: #1f2937;
-  --dock-muted: #6b7280;
-  --dock-edge: #e5e7eb;
   --dock-accent: var(--accent);
 
   display: flex;
@@ -1266,7 +1289,7 @@ body {
   min-height: 76px;
   flex-shrink: 0;
   border-top: 1px solid var(--dock-edge);
-  background: #ffffff;
+  background: var(--bg-card);
   box-shadow: 0 -2px 16px rgba(15, 23, 42, 0.06);
   font-family: "Segoe UI", "Microsoft YaHei UI", system-ui, sans-serif;
 }
@@ -1293,7 +1316,7 @@ body {
   height: 52px;
   object-fit: cover;
   display: block;
-  background: #f3f4f6;
+  background: var(--dock-hover);
 }
 
 .dock-player__meta-col {
@@ -1347,7 +1370,7 @@ body {
 
 .dock-ic:hover {
   color: var(--dock-fg);
-  background: #f3f4f6;
+  background: var(--dock-hover);
 }
 
 .dock-ic:disabled {
@@ -1385,7 +1408,7 @@ body {
   padding: 0;
   border-radius: 8px;
   border: 1px solid var(--dock-edge);
-  background: #fafafa;
+  background: var(--dock-chip-bg);
   color: var(--dock-accent);
   font-size: 12px;
   font-weight: 600;
@@ -1394,7 +1417,7 @@ body {
 }
 
 .dock-mode:hover {
-  background: #f3f4f6;
+  background: var(--dock-hover);
 }
 
 .dock-player__tools {
@@ -1408,7 +1431,7 @@ body {
   padding: 4px 10px;
   border-radius: 8px;
   border: 1px solid var(--dock-edge);
-  background: #fafafa;
+  background: var(--dock-chip-bg);
   color: var(--dock-fg);
   font-size: 11px;
   cursor: pointer;
@@ -1416,7 +1439,7 @@ body {
 
 .dock-chip:hover {
   border-color: #d1d5db;
-  background: #f3f4f6;
+  background: var(--dock-hover);
 }
 
 .dock-menu {
@@ -1426,7 +1449,7 @@ body {
   padding: 4px;
   border-radius: 8px;
   border: 1px solid var(--dock-edge);
-  background: #ffffff;
+  background: var(--bg-elevated);
   box-shadow: 0 10px 30px rgba(15, 23, 42, 0.12);
 }
 
@@ -1455,7 +1478,7 @@ body {
 }
 
 .dock-menu__item:hover {
-  background: #f3f4f6;
+  background: var(--dock-hover);
 }
 
 .dock-player__title {
@@ -1499,7 +1522,7 @@ body {
   height: 38px;
   border-radius: 50%;
   border: 1px solid var(--dock-edge);
-  background: #fafafa;
+  background: var(--dock-chip-bg);
   color: var(--dock-fg);
   font-size: 15px;
   line-height: 1;
@@ -1508,8 +1531,8 @@ body {
 }
 
 .dock-tbtn:hover:not(:disabled) {
-  background: #f3f4f6;
-  border-color: #d1d5db;
+  background: var(--dock-hover);
+  border-color: var(--dock-edge);
 }
 
 .dock-tbtn:active:not(:disabled) {
@@ -1567,7 +1590,7 @@ body {
   height: 6px;
   border-radius: 3px;
   appearance: none;
-  background: #e5e7eb;
+  background: var(--dock-edge);
   accent-color: var(--dock-accent);
   cursor: pointer;
 }
@@ -1590,7 +1613,7 @@ body {
 .dock-seek::-webkit-slider-runnable-track {
   height: 6px;
   border-radius: 3px;
-  background: #e5e7eb;
+  background: var(--dock-edge);
 }
 
 .dock-vol {
@@ -1659,7 +1682,7 @@ body {
   padding: 20px 18px;
   border: 1px solid rgba(15, 23, 42, 0.08);
   border-radius: 22px;
-  background: rgba(255, 255, 255, 0.72);
+  background: var(--bg-card-muted);
   text-align: left;
   cursor: pointer;
   transition: transform 120ms ease, box-shadow 120ms ease, border-color 120ms ease;
@@ -1836,7 +1859,7 @@ body {
   padding: 4px;
   border-radius: 8px;
   border: 1px solid var(--dock-edge);
-  background: #ffffff;
+  background: var(--bg-elevated);
   box-shadow: 0 10px 30px rgba(15, 23, 42, 0.14);
   font-size: 12px;
   color: var(--dock-fg);
@@ -1909,7 +1932,7 @@ body {
   padding: 4px;
   border-radius: 8px;
   border: 1px solid var(--dock-edge);
-  background: #ffffff;
+  background: var(--bg-elevated);
   box-shadow: 0 10px 30px rgba(15, 23, 42, 0.14);
 }
 
@@ -2009,7 +2032,7 @@ body {
   overflow: auto;
   padding: 20px 22px;
   border-radius: 12px;
-  background: #ffffff;
+  background: var(--bg-card);
   border: 1px solid var(--border);
   box-shadow: 0 16px 40px rgba(15, 23, 42, 0.12);
   color: var(--text);
