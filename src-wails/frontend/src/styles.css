@@ -120,8 +120,7 @@ body {
 }
 
 .platform-macos .sidebar {
-  background:
-    linear-gradient(180deg, #e8eaee 0px, #eff0f3 38px, var(--bg-main) 94px);
+  background: var(--bg-main);
 }
 
 :root[data-theme-mode-resolved="dark"] .platform-macos .sidebar {
@@ -454,8 +453,7 @@ body {
 }
 
 .platform-macos .top-search-row {
-  background:
-    linear-gradient(180deg, var(--topbar-grad-start) 0px, var(--bg-main) 52px);
+  background: var(--bg-main);
   --wails-draggable: no-drag;
 }
 
