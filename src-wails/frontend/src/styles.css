@@ -1529,12 +1529,25 @@ body {
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  transition:
+    background 0.15s ease,
+    border-color 0.15s ease,
+    transform 0.14s ease;
 }
 
 .dock-chip--icon svg {
   width: 15px;
   height: 15px;
   display: block;
+  transform-origin: center;
+  transition:
+    transform 0.2s ease,
+    opacity 0.2s ease;
+}
+
+.dock-chip--icon.is-switching svg {
+  opacity: 0.78;
+  transform: scale(0.82) rotate(-18deg);
 }
 
 .dock-chip:hover {
@@ -1584,73 +1597,6 @@ body {
 .dock-menu__item.is-active {
   background: rgba(var(--accent-rgb), 0.1);
   color: var(--accent);
-}
-
-.dock-menu__subpanel .dock-menu__item {
-  position: relative;
-  padding-right: 28px;
-}
-
-.dock-menu__subpanel .dock-menu__item.is-active::after {
-  content: "";
-  position: absolute;
-  top: 50%;
-  right: 11px;
-  width: 8px;
-  height: 4px;
-  border-left: 1.8px solid currentColor;
-  border-bottom: 1.8px solid currentColor;
-  transform: translateY(-62%) rotate(-45deg);
-}
-
-.dock-menu__row--sub {
-  position: relative;
-}
-
-.dock-menu__item--fly {
-  position: relative;
-  padding-right: 28px;
-}
-
-.dock-menu__item--fly::after {
-  content: "";
-  position: absolute;
-  top: 50%;
-  right: 10px;
-  width: 6px;
-  height: 6px;
-  border-top: 1.5px solid currentColor;
-  border-right: 1.5px solid currentColor;
-  transform: translateY(-50%) rotate(45deg);
-  opacity: 0.72;
-}
-
-.dock-menu__subpanel {
-  position: absolute;
-  right: calc(100% + 6px);
-  top: -4px;
-  min-width: 120px;
-  padding: 4px;
-  border-radius: 8px;
-  border: 1px solid var(--dock-edge);
-  background: var(--bg-elevated);
-  box-shadow: 0 10px 30px rgba(15, 23, 42, 0.12);
-  opacity: 0;
-  visibility: hidden;
-  pointer-events: none;
-  transform: translateX(4px);
-  transition:
-    opacity 120ms ease,
-    transform 120ms ease,
-    visibility 120ms ease;
-}
-
-.dock-menu__row--sub:hover > .dock-menu__subpanel,
-.dock-menu__row--sub:focus-within > .dock-menu__subpanel {
-  opacity: 1;
-  visibility: visible;
-  pointer-events: auto;
-  transform: translateX(0);
 }
 
 .dock-player__title {

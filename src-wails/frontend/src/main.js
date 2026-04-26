@@ -199,6 +199,9 @@ function navIconSvg(name) {
     playlist: "playlist-minimalistic-2-linear",
     "chevron-up-down": "alt-arrow-up-line-duotone",
     appearance: "moon-fog-linear",
+    "appearance-system": "monitor-linear",
+    "appearance-light": "sun-2-linear",
+    "appearance-dark": "moon-stars-linear",
   };
   const iconName = icons[name] || icons.playlist;
   const icon = solarIcons.icons[iconName];
@@ -478,8 +481,19 @@ function refreshQuickThemeModeUi(mode = getSettingsFormValues().mode) {
   });
   const dockBtn = document.getElementById("dock-theme-mode");
   if (dockBtn) {
-    dockBtn.innerHTML = navIconSvg("appearance");
+    const iconName =
+      quickMode === "system" ? "appearance-system" : quickMode === "light" ? "appearance-light" : "appearance-dark";
+    dockBtn.innerHTML = navIconSvg(iconName);
+    dockBtn.dataset.quickThemeMode = quickMode;
+    dockBtn.title = `界面模式：${QUICK_THEME_MODE_LABELS[quickMode] || "外观"}（点击切换）`;
+    dockBtn.setAttribute("aria-label", dockBtn.title);
   }
+}
+
+function nextQuickThemeMode(mode) {
+  if (mode === "system") return "light";
+  if (mode === "light") return "dark";
+  return "system";
 }
 
 function resolveDarkThemeModeFallback(mode) {
@@ -1062,20 +1076,16 @@ function wireDockBar() {
   }
 
   const themeBtn = document.getElementById("dock-theme-mode");
-  const themePop = document.getElementById("popover-theme-mode");
-  if (themeBtn && themePop) {
+  if (themeBtn) {
     refreshQuickThemeModeUi();
-    themeBtn.addEventListener("click", (e) => {
-      e.stopPropagation();
-      toggleDockMenu(themePop);
-    });
-    themePop.querySelectorAll("[data-quick-theme-mode]").forEach((b) => {
-      b.addEventListener("click", (e) => {
-        e.stopPropagation();
-        const quickMode = b.getAttribute("data-quick-theme-mode") || "system";
-        closeAllDockMenus();
-        applyQuickThemeMode(quickMode);
-      });
+    themeBtn.addEventListener("click", () => {
+      const currentMode = themeBtn.dataset.quickThemeMode || effectiveQuickThemeMode();
+      const nextMode = nextQuickThemeMode(currentMode);
+      themeBtn.classList.remove("is-switching");
+      void themeBtn.offsetWidth;
+      themeBtn.classList.add("is-switching");
+      applyQuickThemeMode(nextMode);
+      window.setTimeout(() => themeBtn.classList.remove("is-switching"), 220);
     });
   }
 
