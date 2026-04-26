@@ -46,6 +46,7 @@ type SettingsPatch struct {
 	LyricsProviderOrder         *string  `json:"lyrics_provider_order,omitempty"`
 	MainWindowCloseAction       *string  `json:"main_window_close_action,omitempty"`
 	AppTheme                    *string  `json:"app_theme,omitempty"`
+	AppThemeCustomAccent        *string  `json:"app_theme_custom_accent,omitempty"`
 	DesktopLyricsColorBase      *string  `json:"desktop_lyrics_color_base,omitempty"`
 	DesktopLyricsColorHighlight *string  `json:"desktop_lyrics_color_highlight,omitempty"`
 	ShareNeteaseCookieEnabled   *bool    `json:"share_netease_cookie_enabled,omitempty"`
@@ -251,6 +252,11 @@ func (s *CloudPlayerService) SaveSettings(patch SettingsPatch) error {
 	if patch.AppTheme != nil {
 		settings.AppTheme = config.NormalizeAppTheme(*patch.AppTheme)
 	}
+	if patch.AppThemeCustomAccent != nil {
+		if value, ok := normalizeHexColour(*patch.AppThemeCustomAccent); ok {
+			settings.AppThemeCustomAccent = value
+		}
+	}
 	if patch.DesktopLyricsColorBase != nil {
 		if value, ok := normalizeHexColour(*patch.DesktopLyricsColorBase); ok {
 			settings.DesktopLyricsColorBase = value
@@ -270,7 +276,7 @@ func (s *CloudPlayerService) SaveSettings(patch SettingsPatch) error {
 	if err := config.SaveSettings(settings); err != nil {
 		return err
 	}
-	applyThemeAssets(s.state, settings.AppTheme)
+	applyThemeAssets(s.state, settings.AppTheme, settings.AppThemeCustomAccent)
 	return nil
 }
 

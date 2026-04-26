@@ -30,6 +30,7 @@ func main() {
 	state := NewAppState(conn)
 	initialSettings := config.LoadSettings()
 	state.AppTheme = initialSettings.AppTheme
+	state.AppThemeCustomAccent = initialSettings.AppThemeCustomAccent
 	state.StartBackgroundWorkers()
 	cloudPlayer := NewCloudPlayerService(state)
 	desktop := &DesktopService{}
@@ -38,7 +39,7 @@ func main() {
 	app := application.New(application.Options{
 		Name:        "CloudPlayer",
 		Description: "CloudPlayer desktop rebuilt with Wails v3",
-		Icon:        appIconForTheme(initialSettings.AppTheme),
+		Icon:        appIconForTheme(initialSettings.AppTheme, initialSettings.AppThemeCustomAccent),
 		Services: []application.Service{
 			application.NewService(cloudPlayer),
 			application.NewService(desktop),
@@ -103,7 +104,7 @@ func main() {
 	})
 	app.Event.OnApplicationEvent(events.Common.ApplicationStarted, func(_ *application.ApplicationEvent) {
 		application.InvokeSync(app.Show)
-		applyThemeAssets(state, initialSettings.AppTheme)
+		applyThemeAssets(state, initialSettings.AppTheme, initialSettings.AppThemeCustomAccent)
 		showMainWindow()
 		if _, err := state.Hotkeys.Apply(cloudPlayer.GetGlobalHotkeys()); err != nil {
 			log.Printf("global hotkeys init failed: %v", err)
@@ -120,8 +121,8 @@ func main() {
 	systemTray := app.SystemTray.New()
 	if runtime.GOOS == "darwin" && len(macTrayTemplateIcon) > 0 {
 		systemTray.SetTemplateIcon(macTrayTemplateIcon)
-	} else if len(appIconCoral) > 0 {
-		systemTray.SetIcon(appIconCoral)
+	} else if icon := appIconForTheme(initialSettings.AppTheme, initialSettings.AppThemeCustomAccent); len(icon) > 0 {
+		systemTray.SetIcon(icon)
 	}
 	state.SystemTray = systemTray
 	systemTray.SetTooltip("CloudPlayer")

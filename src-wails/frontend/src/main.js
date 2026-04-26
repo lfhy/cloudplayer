@@ -12,9 +12,12 @@ const NAV = [
 ];
 
 const APP_THEMES = {
-  netease: { accent: "#c62f2f", accentRgb: "198, 47, 47" },
-  kugou: { accent: "#1f6aa5", accentRgb: "31, 106, 165" },
-  qqmusic: { accent: "#2f7d4b", accentRgb: "47, 125, 75" },
+  coral: { accent: "#c62f2f", accentRgb: "198, 47, 47" },
+  ocean: { accent: "#1f6aa5", accentRgb: "31, 106, 165" },
+  forest: { accent: "#2f7d4b", accentRgb: "47, 125, 75" },
+  netease: { accent: "#d43c33", accentRgb: "212, 60, 51" },
+  kugou: { accent: "#1977ff", accentRgb: "25, 119, 255" },
+  qqmusic: { accent: "#31c27c", accentRgb: "49, 194, 124" },
 };
 
 /** @type {{ keyword: string, page: number, hasNext: boolean, results: any[], busy: boolean }} */
@@ -264,24 +267,51 @@ function normalizeCloseAction(value) {
 }
 
 function normalizeAppTheme(value) {
-  const normalized = String(value || "netease").trim().toLowerCase();
-  if (normalized === "coral") return "netease";
-  if (normalized === "ocean") return "kugou";
-  if (normalized === "forest") return "qqmusic";
-  return APP_THEMES[normalized] ? normalized : "netease";
+  const normalized = String(value || "coral").trim().toLowerCase();
+  return normalized === "custom" || APP_THEMES[normalized] ? normalized : "coral";
 }
 
-function applyAppTheme(theme) {
+function normalizeAccentHex(value, fallback = "#c62f2f") {
+  const normalized = String(value || "").trim().toLowerCase();
+  return /^#[0-9a-f]{6}$/.test(normalized) ? normalized : fallback;
+}
+
+function themeAccentRgb(hex) {
+  const normalized = normalizeAccentHex(hex);
+  const r = parseInt(normalized.slice(1, 3), 16);
+  const g = parseInt(normalized.slice(3, 5), 16);
+  const b = parseInt(normalized.slice(5, 7), 16);
+  return `${r}, ${g}, ${b}`;
+}
+
+function applyAppTheme(theme, customAccent = "#c62f2f") {
   const normalized = normalizeAppTheme(theme);
-  const palette = APP_THEMES[normalized];
+  const palette =
+    normalized === "custom"
+      ? { accent: normalizeAccentHex(customAccent), accentRgb: themeAccentRgb(customAccent) }
+      : APP_THEMES[normalized];
   document.documentElement.style.setProperty("--accent", palette.accent);
   document.documentElement.style.setProperty("--accent-rgb", palette.accentRgb);
   document.documentElement.dataset.appTheme = normalized;
   return normalized;
 }
 
+function setThemeCardSelection(theme) {
+  const normalized = normalizeAppTheme(theme);
+  const hidden = document.getElementById("setting-app-theme");
+  const customWrap = document.getElementById("settings-custom-theme");
+  if (hidden) hidden.value = normalized;
+  document.querySelectorAll("[data-theme-card]").forEach((card) => {
+    const active = card.getAttribute("data-theme-card") === normalized;
+    card.classList.toggle("is-active", active);
+    card.setAttribute("aria-checked", active ? "true" : "false");
+  });
+  if (customWrap) customWrap.hidden = normalized !== "custom";
+}
+
 let settingsFormBaseline = {
-  theme: "netease",
+  theme: "coral",
+  customAccent: "#c62f2f",
   action: "ask",
   base: "#ffffff",
   highlight: "#ffb7d4",
@@ -540,6 +570,7 @@ function fillHotkeysFormFromSettings(settings) {
 
 function getSettingsFormValues() {
   const themeEl = document.getElementById("setting-app-theme");
+  const customAccentEl = document.getElementById("setting-app-theme-custom-accent");
   const closeActionEl = document.getElementById("setting-close-action");
   const baseEl = document.getElementById("setting-ly-base");
   const highlightEl = document.getElementById("setting-ly-highlight");
@@ -547,6 +578,7 @@ function getSettingsFormValues() {
   const globalHotkeys = getGlobalHotkeysPayloadFromDom();
   return {
     theme: normalizeAppTheme(themeEl?.value),
+    customAccent: normalizeAccentHex(customAccentEl?.value, "#c62f2f"),
     action: normalizeCloseAction(closeActionEl?.value),
     base: normalizeLyricHexInput(baseEl?.value, "#ffffff"),
     highlight: normalizeLyricHexInput(highlightEl?.value, "#ffb7d4"),
@@ -560,6 +592,7 @@ function settingsFormIsDirty() {
   const current = getSettingsFormValues();
   return (
     current.theme !== settingsFormBaseline.theme ||
+    current.customAccent !== settingsFormBaseline.customAccent ||
     current.action !== settingsFormBaseline.action ||
     current.base !== settingsFormBaseline.base ||
     current.highlight !== settingsFormBaseline.highlight ||
@@ -582,9 +615,17 @@ function syncSettingsFormBaselineFromDom() {
 }
 
 function fillSettingsFormFromSettings(settings) {
-  const themeEl = document.getElementById("setting-app-theme");
-  const theme = applyAppTheme(settings?.app_theme ?? settings?.appTheme ?? "coral");
-  if (themeEl) themeEl.value = theme;
+  const theme = normalizeAppTheme(settings?.app_theme ?? settings?.appTheme ?? "coral");
+  const customAccent = normalizeAccentHex(
+    settings?.app_theme_custom_accent ?? settings?.appThemeCustomAccent ?? "#c62f2f",
+    "#c62f2f"
+  );
+  const customAccentEl = document.getElementById("setting-app-theme-custom-accent");
+  const customAccentCodeEl = document.getElementById("setting-app-theme-custom-accent-code");
+  if (customAccentEl) customAccentEl.value = customAccent;
+  if (customAccentCodeEl) customAccentCodeEl.textContent = customAccent;
+  setThemeCardSelection(theme);
+  applyAppTheme(theme, customAccent);
   const closeActionEl = document.getElementById("setting-close-action");
   const closeAction = normalizeCloseAction(
     settings?.main_window_close_action ?? settings?.mainWindowCloseAction
@@ -653,6 +694,7 @@ async function runCloseChoice(mode) {
 function wireSettingsFormDirtyTracking() {
   const onChange = () => updateSettingsSaveButtonState();
   document.getElementById("setting-app-theme")?.addEventListener("change", onChange);
+  document.getElementById("setting-app-theme-custom-accent")?.addEventListener("input", onChange);
   document.getElementById("setting-close-action")?.addEventListener("change", onChange);
   document.getElementById("setting-ly-base")?.addEventListener("input", onChange);
   document.getElementById("setting-ly-highlight")?.addEventListener("input", onChange);
@@ -660,10 +702,36 @@ function wireSettingsFormDirtyTracking() {
   document.getElementById("setting-hotkeys-enabled")?.addEventListener("change", onChange);
 }
 
+function wireThemeCards() {
+  document.querySelectorAll("[data-theme-card]").forEach((card) => {
+    card.addEventListener("click", () => {
+      const theme = card.getAttribute("data-theme-card") || "coral";
+      setThemeCardSelection(theme);
+      const current = getSettingsFormValues();
+      const codeEl = document.getElementById("setting-app-theme-custom-accent-code");
+      if (codeEl) codeEl.textContent = current.customAccent;
+      applyAppTheme(current.theme, current.customAccent);
+      updateSettingsSaveButtonState();
+    });
+  });
+  document.getElementById("setting-app-theme-custom-accent")?.addEventListener("input", (event) => {
+    const input = event.currentTarget;
+    const value = normalizeAccentHex(input?.value, "#c62f2f");
+    const codeEl = document.getElementById("setting-app-theme-custom-accent-code");
+    if (input) input.value = value;
+    if (codeEl) codeEl.textContent = value;
+    if (normalizeAppTheme(document.getElementById("setting-app-theme")?.value) === "custom") {
+      applyAppTheme("custom", value);
+    }
+    updateSettingsSaveButtonState();
+  });
+}
+
 function wirePreferencesModals() {
   document.getElementById("btn-dock-settings")?.addEventListener("click", () => setPage("settings"));
   document.getElementById("btn-settings-back")?.addEventListener("click", () => setPage("discover"));
   wireSettingsFormDirtyTracking();
+  wireThemeCards();
   wireHotkeySettingsUi();
   document.getElementById("settings-save")?.addEventListener("click", async () => {
     if (!settingsFormIsDirty()) return;
@@ -696,13 +764,14 @@ function wirePreferencesModals() {
       await invoke("save_settings", {
         patch: {
           app_theme: current.theme,
+          app_theme_custom_accent: current.customAccent,
           main_window_close_action: current.action,
           desktop_lyrics_color_base: current.base,
           desktop_lyrics_color_highlight: current.highlight,
           lyrics_netease_api_base: current.neteaseApiBase,
         },
       });
-      applyAppTheme(current.theme);
+      applyAppTheme(current.theme, current.customAccent);
       mainWindowCloseAction = current.action;
       syncSettingsFormBaselineFromDom();
       void broadcastDesktopLyricsColors();
@@ -2979,7 +3048,10 @@ function wireGlobalHotkeyListener() {
 async function loadSettings() {
   try {
     const s = await invoke("get_settings");
-    applyAppTheme(s?.app_theme ?? s?.appTheme ?? "coral");
+    applyAppTheme(
+      s?.app_theme ?? s?.appTheme ?? "coral",
+      s?.app_theme_custom_accent ?? s?.appThemeCustomAccent ?? "#c62f2f"
+    );
     mainWindowCloseAction = normalizeCloseAction(
       s?.main_window_close_action ?? s?.mainWindowCloseAction
     );

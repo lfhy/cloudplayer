@@ -12,13 +12,14 @@ import (
 )
 
 type AppState struct {
-	DB          *sql.DB
-	HTTPClient  *http.Client
-	RateLimiter *ratelimiter.Limiter
-	DownloadCh  chan download.DownloadJob
-	Hotkeys     *HotkeyManager
-	SystemTray  *application.SystemTray
-	AppTheme    string
+	DB                   *sql.DB
+	HTTPClient           *http.Client
+	RateLimiter          *ratelimiter.Limiter
+	DownloadCh           chan download.DownloadJob
+	Hotkeys              *HotkeyManager
+	SystemTray           *application.SystemTray
+	AppTheme             string
+	AppThemeCustomAccent string
 }
 
 func NewAppState(db *sql.DB) *AppState {

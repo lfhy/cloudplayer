@@ -1444,6 +1444,77 @@ body {
   max-width: 360px;
 }
 
+.theme-card-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(148px, 1fr));
+  gap: 12px;
+  max-width: 760px;
+}
+
+.theme-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 12px 14px;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: var(--bg-card);
+  color: var(--text);
+  text-align: left;
+  cursor: pointer;
+  transition:
+    border-color 120ms ease,
+    box-shadow 120ms ease,
+    transform 120ms ease;
+}
+
+.theme-card:hover {
+  border-color: rgba(var(--accent-rgb), 0.35);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.06);
+  transform: translateY(-1px);
+}
+
+.theme-card.is-active {
+  border-color: rgba(var(--accent-rgb), 0.5);
+  box-shadow: 0 0 0 2px rgba(var(--accent-rgb), 0.18);
+}
+
+.theme-card__swatch {
+  width: 20px;
+  height: 20px;
+  border-radius: 999px;
+  flex: 0 0 20px;
+  background: var(--theme-card-accent);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.25);
+}
+
+.theme-card__swatch--custom {
+  background: linear-gradient(135deg, #ff5f6d 0%, #ffc371 32%, #42d392 68%, #5b8cff 100%);
+}
+
+.theme-card__meta {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.theme-card__title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.theme-card__desc {
+  font-size: 11px;
+  color: var(--text-secondary);
+}
+
+.settings-custom-theme {
+  margin-top: 12px;
+}
+
 .settings-colors-row {
   display: flex;
   flex-wrap: wrap;
@@ -1460,6 +1531,13 @@ body {
   cursor: pointer;
 }
 
+.settings-color-lab--accent {
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--bg-card);
+}
+
 .settings-color-lab input[type="color"] {
   width: 40px;
   height: 32px;
@@ -1468,6 +1546,12 @@ body {
   border-radius: 6px;
   background: var(--bg-card);
   cursor: pointer;
+}
+
+.settings-color-code {
+  font-family: ui-monospace, "SFMono-Regular", Consolas, monospace;
+  font-size: 12px;
+  color: var(--text-secondary);
 }
 
 .settings-field--hotkeys {
