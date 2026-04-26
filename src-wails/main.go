@@ -69,6 +69,7 @@ func main() {
 		BackgroundColour: application.NewRGB(24, 26, 31),
 		Mac: application.MacWindow{
 			TitleBar:                application.MacTitleBarHiddenInset,
+			Appearance:              application.NSAppearanceNameDarkAqua,
 			InvisibleTitleBarHeight: 56,
 		},
 	})
