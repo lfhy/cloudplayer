@@ -2,7 +2,7 @@
 :root {
   --accent: #c62f2f;
   --accent-rgb: 198, 47, 47;
-  --bg-main: #f1f2f4;
+  --bg-main: #f7f7f7;
   --bg-card: #ffffff;
   --bg-card-muted: rgba(255, 255, 255, 0.72);
   --bg-elevated: rgba(255, 255, 255, 0.95);
