@@ -114,13 +114,13 @@ body {
   position: absolute;
   top: 6px;
   left: 6px;
-  width: 168px;
-  height: 56px;
+  width: 220px;
+  height: 72px;
   pointer-events: none;
   border-top-left-radius: 16px;
   background:
-    linear-gradient(90deg, rgba(126, 132, 144, 0.18), rgba(126, 132, 144, 0.08) 38%, rgba(126, 132, 144, 0) 86%),
-    linear-gradient(180deg, rgba(126, 132, 144, 0.14), rgba(126, 132, 144, 0) 78%);
+    linear-gradient(90deg, rgba(126, 132, 144, 0.16) 0%, rgba(126, 132, 144, 0.08) 32%, rgba(126, 132, 144, 0.03) 58%, rgba(126, 132, 144, 0) 100%),
+    linear-gradient(180deg, rgba(126, 132, 144, 0.12) 0%, rgba(126, 132, 144, 0.05) 34%, rgba(126, 132, 144, 0.015) 60%, rgba(126, 132, 144, 0) 100%);
 }
 
 .sidebar {
