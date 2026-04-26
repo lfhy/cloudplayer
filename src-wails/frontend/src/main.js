@@ -184,6 +184,7 @@ const downloadTasksBySourceId = new Map();
 /** 本地曲库列表行缓存（双击播放） @type {any[]} */
 let localLibraryRows = [];
 let lastLibraryFolder = "";
+const TRAY_PLAYER_TARGET = { kind: "WebviewWindow", label: "tray-player" };
 
 function isMacDesktop() {
   const platform =
@@ -2412,6 +2413,9 @@ function updatePlayerChrome(patch = {}) {
   if (title !== undefined && tEl) tEl.textContent = title;
   if (sub !== undefined && sEl) sEl.textContent = sub;
   if (touchCover && cov && coverUrl !== undefined && coverUrl) cov.src = coverUrl;
+  queueMicrotask(() => {
+    void broadcastTrayPlayerState();
+  });
 }
 
 function syncSeekUi() {
@@ -2459,6 +2463,41 @@ function setPlayerNavEnabled() {
   }
   if (prev) prev.disabled = playIndex <= 0;
   if (next) next.disabled = playIndex >= n - 1;
+  queueMicrotask(() => {
+    void broadcastTrayPlayerState();
+  });
+}
+
+function currentTrayPlayerState() {
+  const current = playQueue[playIndex] || null;
+  const audio = audioEl();
+  const title = document.getElementById("dock-title")?.textContent?.trim() || "CloudPlayer";
+  const sub = document.getElementById("dock-sub")?.textContent?.trim() || "从菜单栏快速控制当前播放";
+  const coverUrl = document.getElementById("dock-cover")?.getAttribute("src") || null;
+  const prevDisabled = !!document.getElementById("btn-player-prev")?.disabled;
+  const nextDisabled = !!document.getElementById("btn-player-next")?.disabled;
+  const duration = audio?.duration;
+  const currentTime = audio?.currentTime ?? 0;
+  const progressPct =
+    duration && Number.isFinite(duration) && duration > 0 ? (currentTime / duration) * 100 : 0;
+  return {
+    hasTrack: !!current,
+    title,
+    sub,
+    coverUrl,
+    playing: !!audio && !!audio.src && !audio.paused,
+    hasPrev: !prevDisabled,
+    hasNext: !nextDisabled,
+    progressPct,
+  };
+}
+
+async function broadcastTrayPlayerState() {
+  try {
+    await emitTo(TRAY_PLAYER_TARGET, "tray-player-state", currentTrayPlayerState());
+  } catch (error) {
+    console.warn("emit tray-player-state", error);
+  }
 }
 
 async function persistRecentPlaySnapshot(snap) {
@@ -2922,9 +2961,11 @@ function wireAudio() {
   });
   a.addEventListener("play", () => {
     if (playBtn) playBtn.textContent = "⏸";
+    void broadcastTrayPlayerState();
   });
   a.addEventListener("pause", () => {
     if (playBtn) playBtn.textContent = "▶";
+    void broadcastTrayPlayerState();
   });
   a.addEventListener("error", () => {
     const err = a.error;
@@ -2940,6 +2981,7 @@ function wireAudio() {
     if (sub && err) {
       sub.textContent = MSG_REQUEST_FAILED;
     }
+    void broadcastTrayPlayerState();
   });
 
   if (seek) {
@@ -3220,6 +3262,31 @@ document.addEventListener("DOMContentLoaded", () => {
     await ensureLrcLoadedForCurrentTrack(playLoadGeneration);
     await syncDesktopLyricsState();
   });
+  listen("tray-player-request-sync", async () => {
+    await broadcastTrayPlayerState();
+  });
+  listen("tray-player-command", async (e) => {
+    const action = e?.payload?.action;
+    if (action === "toggle") {
+      document.getElementById("btn-player-play")?.click();
+      return;
+    }
+    if (action === "prev") {
+      document.getElementById("btn-player-prev")?.click();
+      return;
+    }
+    if (action === "next") {
+      document.getElementById("btn-player-next")?.click();
+      return;
+    }
+    if (action === "open-main") {
+      try {
+        await invoke("show_main_window");
+      } catch (err) {
+        console.warn("show_main_window from tray-player-command", err);
+      }
+    }
+  });
   listen("download-task-changed", (e) => {
     const p = e?.payload;
     const sid = p?.source_id ?? p?.sourceId;
@@ -3262,4 +3329,5 @@ document.addEventListener("DOMContentLoaded", () => {
   });
   void loadRecentPlaysFromDb();
   loadSettings();
+  void broadcastTrayPlayerState();
 });

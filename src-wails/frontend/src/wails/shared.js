@@ -57,6 +57,9 @@ function resolveBootstrapWindowLabel() {
   if (path === "/desktop_lyrics.html") {
     return "lyrics";
   }
+  if (path === "/tray_player.html") {
+    return "tray-player";
+  }
   return "main";
 }
 
