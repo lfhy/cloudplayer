@@ -108,10 +108,10 @@ async function logPlayEventDesktop(
 
 /** 与 Py 版 PlayMode 对应：序 → 循 → 单 → 随 */
 const PLAY_MODES = [
-  { key: "sequential", icon: "playlist-minimalistic-2-bold-duotone", tip: "顺序播放（点击切换模式）" },
-  { key: "loop_list", icon: "repeat-bold-duotone", tip: "列表循环" },
-  { key: "one", icon: "repeat-one-bold-duotone", tip: "单曲循环" },
-  { key: "shuffle", icon: "shuffle-bold-duotone", tip: "随机播放" },
+  { key: "sequential", icon: "playlist-minimalistic-2-bold", tip: "顺序播放（点击切换模式）" },
+  { key: "loop_list", icon: "repeat-bold", tip: "列表循环" },
+  { key: "one", icon: "repeat-one-bold", tip: "单曲循环" },
+  { key: "shuffle", icon: "shuffle-bold", tip: "随机播放" },
 ];
 let playModeIndex = 0;
 
@@ -199,9 +199,9 @@ function navIconSvg(name) {
     playlist: "playlist-minimalistic-2-linear",
     "chevron-up-down": "alt-arrow-up-line-duotone",
     appearance: "moon-fog-linear",
-    "appearance-system": "monitor-bold-duotone",
-    "appearance-light": "sun-2-bold-duotone",
-    "appearance-dark": "moon-stars-bold-duotone",
+    "appearance-system": "monitor-bold",
+    "appearance-light": "sun-2-bold",
+    "appearance-dark": "moon-stars-bold",
   };
   const iconName = icons[name] || icons.playlist;
   const icon = solarIcons.icons[iconName];
