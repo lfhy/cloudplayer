@@ -125,8 +125,7 @@ body {
 }
 
 :root[data-theme-mode-resolved="dark"] .platform-macos .sidebar {
-  background:
-    linear-gradient(180deg, rgba(34, 38, 46, 0.95) 0px, rgba(26, 31, 39, 0.96) 38px, var(--bg-main) 94px);
+  background: var(--bg-main);
 }
 
 .sidebar-playlist-section {
@@ -457,6 +456,7 @@ body {
 .platform-macos .top-search-row {
   background:
     linear-gradient(180deg, var(--topbar-grad-start) 0px, var(--bg-main) 52px);
+  --wails-draggable: no-drag;
 }
 
 .top-search-row .neon-search-wrap,
