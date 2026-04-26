@@ -2,7 +2,7 @@ import { convertFileSrc, invoke } from "./wails/tauri-core.js";
 import { open } from "./wails/tauri-plugin-dialog.js";
 import { emitTo, listen } from "./wails/tauri-event.js";
 import { WebviewWindow } from "./wails/tauri-webviewWindow.js";
-import "iconify-icon";
+import solarIcons from "@iconify-json/solar/icons.json";
 
 const NAV = [
   { id: "home", label: "音乐首页", icon: "home" },
@@ -189,20 +189,24 @@ function appLogoMarkSvg() {
 
 function navIconSvg(name) {
   const icons = {
-    home: "solar:home-2-linear",
-    search: "solar:magnifer-linear",
-    sparkles: "solar:stars-line-duotone",
-    clock: "solar:history-linear",
-    download: "solar:download-linear",
-    library: "solar:library-linear",
-    settings: "solar:settings-linear",
-    playlist: "solar:playlist-minimalistic-2-linear",
-    "chevron-up-down": "solar:alt-arrow-up-line-duotone",
-    appearance: "solar:moon-fog-linear",
+    home: "home-2-linear",
+    search: "magnifer-linear",
+    sparkles: "stars-line-duotone",
+    clock: "history-linear",
+    download: "download-linear",
+    library: "library-linear",
+    settings: "settings-linear",
+    playlist: "playlist-minimalistic-2-linear",
+    "chevron-up-down": "alt-arrow-up-line-duotone",
+    appearance: "moon-fog-linear",
   };
-  const icon = icons[name] || icons.playlist;
-  const rotate = name === "chevron-up-down" ? ' style="transform: rotate(180deg);"' : "";
-  return `<iconify-icon icon="${icon}" aria-hidden="true"${rotate}></iconify-icon>`;
+  const iconName = icons[name] || icons.playlist;
+  const icon = solarIcons.icons[iconName];
+  if (!icon) return "";
+  const width = icon.width || solarIcons.width || 24;
+  const height = icon.height || solarIcons.height || 24;
+  const rotate = name === "chevron-up-down" ? ' style="transform: rotate(180deg); transform-origin: center;"' : "";
+  return `<svg viewBox="0 0 ${width} ${height}" aria-hidden="true" focusable="false"${rotate}>${icon.body}</svg>`;
 }
 
 function syncNeteaseCookieUi() {
@@ -474,7 +478,7 @@ function refreshQuickThemeModeUi(mode = getSettingsFormValues().mode) {
   });
   const dockBtn = document.getElementById("dock-theme-mode");
   if (dockBtn) {
-    dockBtn.textContent = QUICK_THEME_MODE_LABELS[quickMode] || "外观";
+    dockBtn.innerHTML = navIconSvg("appearance");
   }
 }
 

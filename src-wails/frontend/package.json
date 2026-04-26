@@ -10,8 +10,8 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "@wailsio/runtime": "latest",
-    "iconify-icon": "^3.0.2"
+    "@iconify-json/solar": "^1.2.5",
+    "@wailsio/runtime": "latest"
   },
   "devDependencies": {
     "vite": "^6.0.0"
