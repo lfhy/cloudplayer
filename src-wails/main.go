@@ -41,6 +41,7 @@ func main() {
 	app := application.New(application.Options{
 		Name:        "CloudPlayer",
 		Description: "CloudPlayer desktop rebuilt with Wails v3",
+		Icon:        appIcon,
 		Services: []application.Service{
 			application.NewService(cloudPlayer),
 			application.NewService(desktop),
