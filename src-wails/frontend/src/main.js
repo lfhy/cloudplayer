@@ -4,8 +4,8 @@ import { emitTo, listen } from "./wails/tauri-event.js";
 import { WebviewWindow } from "./wails/tauri-webviewWindow.js";
 
 const NAV = [
-  { id: "home", label: "主页", icon: "home" },
-  { id: "search", label: "搜索", icon: "search" },
+  { id: "home", label: "音乐首页", icon: "home" },
+  { id: "search", label: "音乐搜索", icon: "search" },
   { id: "daily", label: "每日推荐", icon: "sparkles" },
   { id: "recent", label: "最近播放", icon: "clock" },
   { id: "download", label: "下载管理", icon: "download" },
