@@ -30,6 +30,7 @@ type Settings struct {
 	LyricsProviderOrder         string        `json:"lyrics_provider_order"`
 	MainWindowCloseAction       string        `json:"main_window_close_action"`
 	AppTheme                    string        `json:"app_theme"`
+	AppThemeMode                string        `json:"app_theme_mode"`
 	AppThemeCustomAccent        string        `json:"app_theme_custom_accent"`
 	GlobalHotkeys               GlobalHotkeys `json:"global_hotkeys"`
 	DesktopLyricsColorBase      string        `json:"desktop_lyrics_color_base"`
@@ -57,6 +58,7 @@ func DefaultSettings() Settings {
 		LyricsProviderOrder:         "pjmp3,netease,lrclib",
 		MainWindowCloseAction:       "ask",
 		AppTheme:                    "coral",
+		AppThemeMode:                "system",
 		AppThemeCustomAccent:        "#c62f2f",
 		GlobalHotkeys:               DefaultGlobalHotkeys(),
 		DesktopLyricsColorBase:      "#ffffff",
@@ -116,6 +118,15 @@ func NormalizeAppTheme(value string) string {
 		return strings.ToLower(strings.TrimSpace(value))
 	default:
 		return "coral"
+	}
+}
+
+func NormalizeAppThemeMode(value string) string {
+	switch strings.ToLower(strings.TrimSpace(value)) {
+	case "system", "light", "graphite", "midnight", "forestnight":
+		return strings.ToLower(strings.TrimSpace(value))
+	default:
+		return "system"
 	}
 }
 

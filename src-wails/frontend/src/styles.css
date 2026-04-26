@@ -4,12 +4,51 @@
   --accent-rgb: 198, 47, 47;
   --bg-main: #f5f5f7;
   --bg-card: #ffffff;
+  --bg-card-muted: rgba(255, 255, 255, 0.72);
+  --bg-elevated: rgba(255, 255, 255, 0.95);
   --text: #333333;
   --text-secondary: #888888;
   --border: #e5e5e5;
+  --shadow-soft: 0 8px 20px rgba(15, 23, 42, 0.05);
+  --shadow-float: 0 18px 34px rgba(15, 23, 42, 0.14);
   --sidebar-width: 200px;
   --titlebar-left-gap: 16px;
   --sidebar-top-gap: 12px;
+  color-scheme: light;
+}
+
+:root[data-theme-mode-resolved="dark"] {
+  --bg-main: #16181c;
+  --bg-card: #22252b;
+  --bg-card-muted: rgba(34, 37, 43, 0.78);
+  --bg-elevated: rgba(30, 33, 39, 0.96);
+  --text: #f2f3f5;
+  --text-secondary: #a4acb8;
+  --border: rgba(255, 255, 255, 0.1);
+  --shadow-soft: 0 10px 28px rgba(0, 0, 0, 0.24);
+  --shadow-float: 0 24px 44px rgba(0, 0, 0, 0.3);
+  color-scheme: dark;
+}
+
+:root[data-theme-mode-resolved="dark"][data-theme-mode="graphite"] {
+  --bg-main: #181a1f;
+  --bg-card: #24272d;
+  --bg-card-muted: rgba(36, 39, 45, 0.8);
+  --bg-elevated: rgba(31, 34, 40, 0.96);
+}
+
+:root[data-theme-mode-resolved="dark"][data-theme-mode="midnight"] {
+  --bg-main: #101725;
+  --bg-card: #182131;
+  --bg-card-muted: rgba(24, 33, 49, 0.8);
+  --bg-elevated: rgba(19, 28, 44, 0.96);
+}
+
+:root[data-theme-mode-resolved="dark"][data-theme-mode="forestnight"] {
+  --bg-main: #141c19;
+  --bg-card: #1d2824;
+  --bg-card-muted: rgba(29, 40, 36, 0.8);
+  --bg-elevated: rgba(24, 34, 31, 0.96);
 }
 
 * {
@@ -57,6 +96,11 @@ body {
 .platform-macos .sidebar {
   background:
     linear-gradient(180deg, #e8eaee 0px, #eff0f3 38px, var(--bg-main) 94px);
+}
+
+:root[data-theme-mode-resolved="dark"] .platform-macos .sidebar {
+  background:
+    linear-gradient(180deg, rgba(34, 38, 46, 0.95) 0px, rgba(26, 31, 39, 0.96) 38px, var(--bg-main) 94px);
 }
 
 .sidebar-playlist-section {
@@ -232,11 +276,11 @@ body {
   padding: 10px 12px;
   border: 1px solid rgba(15, 23, 42, 0.08);
   border-radius: 14px;
-  background: rgba(255, 255, 255, 0.72);
+  background: var(--bg-card-muted);
   color: var(--text);
   cursor: pointer;
   text-align: left;
-  box-shadow: 0 8px 20px rgba(15, 23, 42, 0.05);
+  box-shadow: var(--shadow-soft);
 }
 
 .sidebar-account__mark {
@@ -298,8 +342,8 @@ body {
   padding: 6px;
   border-radius: 16px;
   border: 1px solid rgba(15, 23, 42, 0.08);
-  background: rgba(255, 255, 255, 0.95);
-  box-shadow: 0 18px 34px rgba(15, 23, 42, 0.14);
+  background: var(--bg-elevated);
+  box-shadow: var(--shadow-float);
   opacity: 0;
   transform: translateY(6px);
   pointer-events: none;
@@ -2073,6 +2117,76 @@ body {
   grid-template-columns: repeat(auto-fit, minmax(148px, 1fr));
   gap: 12px;
   max-width: 760px;
+}
+
+.theme-mode-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(168px, 1fr));
+  gap: 12px;
+  max-width: 760px;
+}
+
+.theme-mode-card,
+.theme-card {
+  text-decoration: none;
+}
+
+.theme-mode-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 12px 14px;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: var(--bg-card);
+  color: var(--text);
+  text-align: left;
+  cursor: pointer;
+  transition:
+    border-color 120ms ease,
+    box-shadow 120ms ease,
+    transform 120ms ease;
+}
+
+.theme-mode-card:hover {
+  border-color: rgba(var(--accent-rgb), 0.35);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.06);
+  transform: translateY(-1px);
+}
+
+.theme-mode-card.is-active {
+  border-color: rgba(var(--accent-rgb), 0.5);
+  box-shadow: 0 0 0 2px rgba(var(--accent-rgb), 0.18);
+}
+
+.theme-mode-card__preview {
+  width: 34px;
+  height: 34px;
+  border-radius: 12px;
+  flex: 0 0 34px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.06);
+}
+
+.theme-mode-card__preview--system {
+  background: linear-gradient(135deg, #f6f6f8 0 50%, #1f232a 50% 100%);
+}
+
+.theme-mode-card__preview--light {
+  background: linear-gradient(180deg, #ffffff 0%, #eceef2 100%);
+}
+
+.theme-mode-card__preview--graphite {
+  background: linear-gradient(180deg, #2b2f36 0%, #1b1e23 100%);
+}
+
+.theme-mode-card__preview--midnight {
+  background: linear-gradient(180deg, #24324a 0%, #101725 100%);
+}
+
+.theme-mode-card__preview--forestnight {
+  background: linear-gradient(180deg, #274036 0%, #141c19 100%);
 }
 
 .theme-card {

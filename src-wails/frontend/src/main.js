@@ -25,6 +25,12 @@ const APP_THEMES = {
   qqmusic: { accent: "#31c27c", accentRgb: "49, 194, 124" },
 };
 
+const APP_THEME_MODES = new Set(["system", "light", "graphite", "midnight", "forestnight"]);
+const systemDarkMedia =
+  typeof window !== "undefined" && typeof window.matchMedia === "function"
+    ? window.matchMedia("(prefers-color-scheme: dark)")
+    : null;
+
 /** @type {{ keyword: string, page: number, hasNext: boolean, results: any[], busy: boolean }} */
 const searchState = {
   keyword: "",
@@ -185,6 +191,7 @@ function navIconSvg(name) {
     library: `<rect x="4.5" y="5" width="4.5" height="14" rx="1.5"></rect><rect x="10.25" y="5" width="4.5" height="14" rx="1.5"></rect><path d="M17 5.5h2.5A1.5 1.5 0 0 1 21 7v10.5a1.5 1.5 0 0 1-1.5 1.5H17"></path>`,
     settings: `<circle cx="12" cy="12" r="3.25"></circle><path d="M12 2.75v2.1"></path><path d="M12 19.15v2.1"></path><path d="m5.46 5.46 1.48 1.48"></path><path d="m17.06 17.06 1.48 1.48"></path><path d="M2.75 12h2.1"></path><path d="M19.15 12h2.1"></path><path d="m5.46 18.54 1.48-1.48"></path><path d="m17.06 6.94 1.48-1.48"></path>`,
     playlist: `<path d="M4.5 7.5h9"></path><path d="M4.5 11.5h9"></path><path d="M4.5 15.5h6"></path><path d="M16.5 7.5v8.2a2.3 2.3 0 1 1-1.4-2.1V8.2l4-1v6.5a2.3 2.3 0 1 1-1.4-2.1V6.1Z"></path>`,
+    "chevron-up-down": `<path d="m8 10 4-4 4 4"></path><path d="m8 14 4 4 4-4"></path>`,
   };
   return `
     <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
@@ -379,6 +386,11 @@ function normalizeAppTheme(value) {
   return normalized === "custom" || APP_THEMES[normalized] ? normalized : "coral";
 }
 
+function normalizeAppThemeMode(value) {
+  const normalized = String(value || "system").trim().toLowerCase();
+  return APP_THEME_MODES.has(normalized) ? normalized : "system";
+}
+
 function normalizeAccentHex(value, fallback = "#c62f2f") {
   const normalized = String(value || "").trim().toLowerCase();
   return /^#[0-9a-f]{6}$/.test(normalized) ? normalized : fallback;
@@ -392,8 +404,16 @@ function themeAccentRgb(hex) {
   return `${r}, ${g}, ${b}`;
 }
 
-function applyAppTheme(theme, customAccent = "#c62f2f") {
+function resolveAppThemeMode(mode) {
+  const normalized = normalizeAppThemeMode(mode);
+  if (normalized === "system") return systemDarkMedia?.matches ? "dark" : "light";
+  return normalized === "light" ? "light" : "dark";
+}
+
+function applyAppTheme(theme, customAccent = "#c62f2f", mode = "system") {
   const normalized = normalizeAppTheme(theme);
+  const normalizedMode = normalizeAppThemeMode(mode);
+  const resolvedMode = resolveAppThemeMode(normalizedMode);
   const palette =
     normalized === "custom"
       ? { accent: normalizeAccentHex(customAccent), accentRgb: themeAccentRgb(customAccent) }
@@ -401,6 +421,8 @@ function applyAppTheme(theme, customAccent = "#c62f2f") {
   document.documentElement.style.setProperty("--accent", palette.accent);
   document.documentElement.style.setProperty("--accent-rgb", palette.accentRgb);
   document.documentElement.dataset.appTheme = normalized;
+  document.documentElement.dataset.themeMode = normalizedMode;
+  document.documentElement.dataset.themeModeResolved = resolvedMode;
   return normalized;
 }
 
@@ -417,8 +439,20 @@ function setThemeCardSelection(theme) {
   if (customWrap) customWrap.hidden = normalized !== "custom";
 }
 
+function setThemeModeSelection(mode) {
+  const normalized = normalizeAppThemeMode(mode);
+  const hidden = document.getElementById("setting-app-theme-mode");
+  if (hidden) hidden.value = normalized;
+  document.querySelectorAll("[data-theme-mode-card]").forEach((card) => {
+    const active = card.getAttribute("data-theme-mode-card") === normalized;
+    card.classList.toggle("is-active", active);
+    card.setAttribute("aria-checked", active ? "true" : "false");
+  });
+}
+
 let settingsFormBaseline = {
   theme: "coral",
+  mode: "system",
   customAccent: "#c62f2f",
   action: "ask",
   base: "#ffffff",
@@ -682,6 +716,7 @@ function fillHotkeysFormFromSettings(settings) {
 
 function getSettingsFormValues() {
   const themeEl = document.getElementById("setting-app-theme");
+  const themeModeEl = document.getElementById("setting-app-theme-mode");
   const customAccentEl = document.getElementById("setting-app-theme-custom-accent");
   const closeActionEl = document.getElementById("setting-close-action");
   const baseEl = document.getElementById("setting-ly-base");
@@ -690,6 +725,7 @@ function getSettingsFormValues() {
   const globalHotkeys = getGlobalHotkeysPayloadFromDom();
   return {
     theme: normalizeAppTheme(themeEl?.value),
+    mode: normalizeAppThemeMode(themeModeEl?.value),
     customAccent: normalizeAccentHex(customAccentEl?.value, "#c62f2f"),
     action: normalizeCloseAction(closeActionEl?.value),
     base: normalizeLyricHexInput(baseEl?.value, "#ffffff"),
@@ -704,6 +740,7 @@ function settingsFormIsDirty() {
   const current = getSettingsFormValues();
   return (
     current.theme !== settingsFormBaseline.theme ||
+    current.mode !== settingsFormBaseline.mode ||
     current.customAccent !== settingsFormBaseline.customAccent ||
     current.action !== settingsFormBaseline.action ||
     current.base !== settingsFormBaseline.base ||
@@ -724,6 +761,7 @@ function syncSettingsFormBaselineFromDom() {
 
 function fillSettingsFormFromSettings(settings) {
   const theme = normalizeAppTheme(settings?.app_theme ?? settings?.appTheme ?? "coral");
+  const mode = normalizeAppThemeMode(settings?.app_theme_mode ?? settings?.appThemeMode ?? "system");
   const customAccent = normalizeAccentHex(
     settings?.app_theme_custom_accent ?? settings?.appThemeCustomAccent ?? "#c62f2f",
     "#c62f2f"
@@ -732,8 +770,9 @@ function fillSettingsFormFromSettings(settings) {
   const customAccentCodeEl = document.getElementById("setting-app-theme-custom-accent-code");
   if (customAccentEl) customAccentEl.value = customAccent;
   if (customAccentCodeEl) customAccentCodeEl.textContent = customAccent;
+  setThemeModeSelection(mode);
   setThemeCardSelection(theme);
-  applyAppTheme(theme, customAccent);
+  applyAppTheme(theme, customAccent, mode);
   const closeActionEl = document.getElementById("setting-close-action");
   const closeAction = normalizeCloseAction(
     settings?.main_window_close_action ?? settings?.mainWindowCloseAction
@@ -796,6 +835,7 @@ async function persistSettingsFromForm() {
     await invoke("save_settings", {
       patch: {
         app_theme: current.theme,
+        app_theme_mode: current.mode,
         app_theme_custom_accent: current.customAccent,
         main_window_close_action: current.action,
         desktop_lyrics_color_base: current.base,
@@ -803,7 +843,7 @@ async function persistSettingsFromForm() {
         lyrics_netease_api_base: current.neteaseApiBase,
       },
     });
-    applyAppTheme(current.theme, current.customAccent);
+    applyAppTheme(current.theme, current.customAccent, current.mode);
     mainWindowCloseAction = current.action;
     syncSettingsFormBaselineFromDom();
     void broadcastDesktopLyricsColors();
@@ -873,6 +913,7 @@ async function runCloseChoice(mode) {
 }
 
 function wireSettingsFormDirtyTracking() {
+  document.getElementById("setting-app-theme-mode")?.addEventListener("change", () => queueSettingsAutosave(true));
   document.getElementById("setting-app-theme")?.addEventListener("change", () => queueSettingsAutosave(true));
   document.getElementById("setting-app-theme-custom-accent")?.addEventListener("input", () => queueSettingsAutosave());
   document.getElementById("setting-close-action")?.addEventListener("change", () => queueSettingsAutosave(true));
@@ -880,6 +921,18 @@ function wireSettingsFormDirtyTracking() {
   document.getElementById("setting-ly-highlight")?.addEventListener("input", () => queueSettingsAutosave());
   document.getElementById("setting-netease-api-base")?.addEventListener("input", () => queueSettingsAutosave());
   document.getElementById("setting-hotkeys-enabled")?.addEventListener("change", () => queueSettingsAutosave(true));
+}
+
+function wireThemeModeCards() {
+  document.querySelectorAll("[data-theme-mode-card]").forEach((card) => {
+    card.addEventListener("click", () => {
+      const mode = card.getAttribute("data-theme-mode-card") || "system";
+      setThemeModeSelection(mode);
+      const current = getSettingsFormValues();
+      applyAppTheme(current.theme, current.customAccent, current.mode);
+      queueSettingsAutosave(true);
+    });
+  });
 }
 
 function wireThemeCards() {
@@ -890,7 +943,7 @@ function wireThemeCards() {
       const current = getSettingsFormValues();
       const codeEl = document.getElementById("setting-app-theme-custom-accent-code");
       if (codeEl) codeEl.textContent = current.customAccent;
-      applyAppTheme(current.theme, current.customAccent);
+      applyAppTheme(current.theme, current.customAccent, current.mode);
       queueSettingsAutosave(true);
     });
   });
@@ -901,7 +954,7 @@ function wireThemeCards() {
     if (input) input.value = value;
     if (codeEl) codeEl.textContent = value;
     if (normalizeAppTheme(document.getElementById("setting-app-theme")?.value) === "custom") {
-      applyAppTheme("custom", value);
+      applyAppTheme("custom", value, getSettingsFormValues().mode);
     }
     queueSettingsAutosave();
   });
@@ -910,6 +963,7 @@ function wireThemeCards() {
 function wirePreferencesModals() {
   document.getElementById("btn-dock-settings")?.addEventListener("click", () => setPage("settings"));
   wireSettingsFormDirtyTracking();
+  wireThemeModeCards();
   wireThemeCards();
   wireHotkeySettingsUi();
   document.getElementById("close-choice-tray")?.addEventListener("click", () => {
@@ -2555,9 +2609,8 @@ function renderSidebar() {
     <span class="sidebar-account__mark" aria-hidden="true">${appLogoMarkSvg()}</span>
     <span class="sidebar-account__meta">
       <strong>CloudPlayer</strong>
-      <span>Library Menu</span>
     </span>
-    <span class="sidebar-account__chevron" aria-hidden="true">${navIconSvg("settings")}</span>
+    <span class="sidebar-account__chevron" aria-hidden="true">${navIconSvg("chevron-up-down")}</span>
   `;
 
   const accountMenu = document.createElement("div");
@@ -3524,7 +3577,8 @@ async function loadSettings() {
     const s = await invoke("get_settings");
     applyAppTheme(
       s?.app_theme ?? s?.appTheme ?? "coral",
-      s?.app_theme_custom_accent ?? s?.appThemeCustomAccent ?? "#c62f2f"
+      s?.app_theme_custom_accent ?? s?.appThemeCustomAccent ?? "#c62f2f",
+      s?.app_theme_mode ?? s?.appThemeMode ?? "system"
     );
     mainWindowCloseAction = normalizeCloseAction(
       s?.main_window_close_action ?? s?.mainWindowCloseAction
@@ -3728,6 +3782,18 @@ document.addEventListener("DOMContentLoaded", () => {
     }
     openCloseConfirmModal();
   });
+  if (systemDarkMedia && typeof systemDarkMedia.addEventListener === "function") {
+    systemDarkMedia.addEventListener("change", () => {
+      const mode = normalizeAppThemeMode(
+        document.getElementById("setting-app-theme-mode")?.value ??
+          document.documentElement.dataset.themeMode ??
+          "system"
+      );
+      if (mode !== "system") return;
+      const current = getSettingsFormValues();
+      applyAppTheme(current.theme, current.customAccent, mode);
+    });
+  }
   void loadRecentPlaysFromDb();
   loadSettings();
   void broadcastTrayPlayerState();

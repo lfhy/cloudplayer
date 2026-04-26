@@ -215,6 +215,13 @@ export class Settings {
              */
             this["app_theme"] = "";
         }
+        if (!("app_theme_mode" in $$source)) {
+            /**
+             * @member
+             * @type {string}
+             */
+            this["app_theme_mode"] = "";
+        }
         if (!("app_theme_custom_accent" in $$source)) {
             /**
              * @member
@@ -267,10 +274,10 @@ export class Settings {
      * @returns {Settings}
      */
     static createFrom($$source = {}) {
-        const $$createField21_0 = $$createType0;
+        const $$createField22_0 = $$createType0;
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
         if ("global_hotkeys" in $$parsedSource) {
-            $$parsedSource["global_hotkeys"] = $$createField21_0($$parsedSource["global_hotkeys"]);
+            $$parsedSource["global_hotkeys"] = $$createField22_0($$parsedSource["global_hotkeys"]);
         }
         return new Settings(/** @type {Partial<Settings>} */($$parsedSource));
     }

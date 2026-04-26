@@ -419,6 +419,50 @@
               </p>
               <div class="settings-form">
                 <div class="settings-field">
+                  <span class="settings-field-label">界面模式</span>
+                  <input type="hidden" id="setting-app-theme-mode" value="system" />
+                  <div class="theme-mode-grid" role="radiogroup" aria-label="界面模式">
+                    <button type="button" class="theme-mode-card" data-theme-mode-card="system" role="radio" aria-checked="false">
+                      <span class="theme-mode-card__preview theme-mode-card__preview--system"></span>
+                      <span class="theme-card__meta">
+                        <span class="theme-card__title">跟随系统</span>
+                        <span class="theme-card__desc">自动匹配 macOS 亮暗模式</span>
+                      </span>
+                    </button>
+                    <button type="button" class="theme-mode-card" data-theme-mode-card="light" role="radio" aria-checked="false">
+                      <span class="theme-mode-card__preview theme-mode-card__preview--light"></span>
+                      <span class="theme-card__meta">
+                        <span class="theme-card__title">浅色</span>
+                        <span class="theme-card__desc">明亮干净的主界面</span>
+                      </span>
+                    </button>
+                    <button type="button" class="theme-mode-card" data-theme-mode-card="graphite" role="radio" aria-checked="false">
+                      <span class="theme-mode-card__preview theme-mode-card__preview--graphite"></span>
+                      <span class="theme-card__meta">
+                        <span class="theme-card__title">石墨夜</span>
+                        <span class="theme-card__desc">偏中性的深灰暗色</span>
+                      </span>
+                    </button>
+                    <button type="button" class="theme-mode-card" data-theme-mode-card="midnight" role="radio" aria-checked="false">
+                      <span class="theme-mode-card__preview theme-mode-card__preview--midnight"></span>
+                      <span class="theme-card__meta">
+                        <span class="theme-card__title">深海夜</span>
+                        <span class="theme-card__desc">偏蓝的夜间界面</span>
+                      </span>
+                    </button>
+                    <button type="button" class="theme-mode-card" data-theme-mode-card="forestnight" role="radio" aria-checked="false">
+                      <span class="theme-mode-card__preview theme-mode-card__preview--forestnight"></span>
+                      <span class="theme-card__meta">
+                        <span class="theme-card__title">森林夜</span>
+                        <span class="theme-card__desc">偏绿的柔和暗色</span>
+                      </span>
+                    </button>
+                  </div>
+                  <p class="settings-field-hint muted">
+                    亮暗模式与主题色分开保存。选择「跟随系统」后，会随着 macOS 外观实时切换。
+                  </p>
+                </div>
+                <div class="settings-field">
                   <span class="settings-field-label">应用主题</span>
                   <input type="hidden" id="setting-app-theme" value="coral" />
                   <div class="theme-card-grid" role="radiogroup" aria-label="应用主题">

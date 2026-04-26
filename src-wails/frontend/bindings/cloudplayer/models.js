@@ -664,6 +664,13 @@ export class SettingsPatch {
              * @member
              * @type {string | null | undefined}
              */
+            this["app_theme_mode"] = undefined;
+        }
+        if (/** @type {any} */(false)) {
+            /**
+             * @member
+             * @type {string | null | undefined}
+             */
             this["app_theme_custom_accent"] = undefined;
         }
         if (/** @type {any} */(false)) {
