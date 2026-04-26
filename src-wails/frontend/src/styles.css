@@ -411,6 +411,41 @@ body {
   color: var(--accent);
 }
 
+.sidebar-account__menu-section {
+  padding: 8px 10px 6px;
+}
+
+.sidebar-account__menu-label {
+  display: block;
+  margin: 0 0 8px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+.sidebar-account__mode-row {
+  display: flex;
+  gap: 6px;
+}
+
+.sidebar-account__mode-chip {
+  flex: 1;
+  padding: 7px 10px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--bg-card);
+  color: var(--text-secondary);
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.sidebar-account__mode-chip.is-active {
+  border-color: rgba(var(--accent-rgb), 0.35);
+  background: rgba(var(--accent-rgb), 0.1);
+  color: var(--accent);
+}
+
 .sidebar-account__menu-icon {
   width: 18px;
   height: 18px;
@@ -1486,6 +1521,11 @@ body {
   background: var(--dock-hover);
 }
 
+.dock-menu__item.is-active {
+  background: rgba(var(--accent-rgb), 0.1);
+  color: var(--accent);
+}
+
 .dock-player__title {
   font-size: 13px;
   font-weight: 600;
@@ -2193,8 +2233,8 @@ body {
   height: 34px;
   border-radius: 12px;
   flex: 0 0 34px;
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(15, 23, 42, 0.12);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.02);
 }
 
 .theme-mode-card__preview--system {

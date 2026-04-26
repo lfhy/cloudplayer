@@ -26,6 +26,11 @@ const APP_THEMES = {
 };
 
 const APP_THEME_MODES = new Set(["system", "light", "graphite", "midnight", "forestnight"]);
+const QUICK_THEME_MODE_LABELS = {
+  system: "跟随系统",
+  light: "浅色",
+  dark: "深色",
+};
 const systemDarkMedia =
   typeof window !== "undefined" && typeof window.matchMedia === "function"
     ? window.matchMedia("(prefers-color-scheme: dark)")
@@ -192,6 +197,7 @@ function navIconSvg(name) {
     settings: `<circle cx="12" cy="12" r="3.25"></circle><path d="M12 2.75v2.1"></path><path d="M12 19.15v2.1"></path><path d="m5.46 5.46 1.48 1.48"></path><path d="m17.06 17.06 1.48 1.48"></path><path d="M2.75 12h2.1"></path><path d="M19.15 12h2.1"></path><path d="m5.46 18.54 1.48-1.48"></path><path d="m17.06 6.94 1.48-1.48"></path>`,
     playlist: `<path d="M4.5 7.5h9"></path><path d="M4.5 11.5h9"></path><path d="M4.5 15.5h6"></path><path d="M16.5 7.5v8.2a2.3 2.3 0 1 1-1.4-2.1V8.2l4-1v6.5a2.3 2.3 0 1 1-1.4-2.1V6.1Z"></path>`,
     "chevron-up-down": `<path d="m8 10 4-4 4 4"></path><path d="m8 14 4 4 4-4"></path>`,
+    appearance: `<path d="M12 3.5a7.8 7.8 0 1 0 0 17 6.5 6.5 0 0 1 0-17Z"></path>`,
   };
   return `
     <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
@@ -448,6 +454,45 @@ function setThemeModeSelection(mode) {
     card.classList.toggle("is-active", active);
     card.setAttribute("aria-checked", active ? "true" : "false");
   });
+  refreshQuickThemeModeUi(normalized);
+}
+
+function effectiveQuickThemeMode(mode) {
+  const normalized = normalizeAppThemeMode(mode);
+  if (normalized === "system") return "system";
+  if (normalized === "light") return "light";
+  return "dark";
+}
+
+function refreshQuickThemeModeUi(mode = getSettingsFormValues().mode) {
+  const quickMode = effectiveQuickThemeMode(mode);
+  document.querySelectorAll("[data-quick-theme-mode]").forEach((el) => {
+    const active = el.getAttribute("data-quick-theme-mode") === quickMode;
+    el.classList.toggle("is-active", active);
+    if (el.classList.contains("dock-menu__item")) {
+      el.setAttribute("aria-checked", active ? "true" : "false");
+    }
+  });
+  const dockBtn = document.getElementById("dock-theme-mode");
+  if (dockBtn) {
+    dockBtn.textContent = QUICK_THEME_MODE_LABELS[quickMode] || "外观";
+  }
+}
+
+function resolveDarkThemeModeFallback(mode) {
+  const normalized = normalizeAppThemeMode(mode);
+  return normalized !== "system" && normalized !== "light" ? normalized : "graphite";
+}
+
+function applyQuickThemeMode(nextQuickMode) {
+  const current = getSettingsFormValues();
+  let targetMode = "system";
+  if (nextQuickMode === "light") targetMode = "light";
+  else if (nextQuickMode === "dark") targetMode = resolveDarkThemeModeFallback(current.mode);
+  setThemeModeSelection(targetMode);
+  const updated = getSettingsFormValues();
+  applyAppTheme(updated.theme, updated.customAccent, updated.mode);
+  queueSettingsAutosave(true);
 }
 
 let settingsFormBaseline = {
@@ -1009,6 +1054,24 @@ function wireDockBar() {
         qualityPref = b.getAttribute("data-quality") || "128";
         qBtn.textContent = QUALITY_LABELS[qualityPref] || "标准";
         closeAllDockMenus();
+      });
+    });
+  }
+
+  const themeBtn = document.getElementById("dock-theme-mode");
+  const themePop = document.getElementById("popover-theme-mode");
+  if (themeBtn && themePop) {
+    refreshQuickThemeModeUi();
+    themeBtn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      toggleDockMenu(themePop);
+    });
+    themePop.querySelectorAll("[data-quick-theme-mode]").forEach((b) => {
+      b.addEventListener("click", (e) => {
+        e.stopPropagation();
+        const quickMode = b.getAttribute("data-quick-theme-mode") || "system";
+        closeAllDockMenus();
+        applyQuickThemeMode(quickMode);
       });
     });
   }
@@ -2624,9 +2687,29 @@ function renderSidebar() {
     accountMenu.appendChild(btn);
   });
 
+  const modeSection = document.createElement("div");
+  modeSection.className = "sidebar-account__menu-section";
+  modeSection.innerHTML = `
+    <span class="sidebar-account__menu-label">外观模式</span>
+    <div class="sidebar-account__mode-row">
+      <button type="button" class="sidebar-account__mode-chip" data-quick-theme-mode="system">跟随</button>
+      <button type="button" class="sidebar-account__mode-chip" data-quick-theme-mode="light">浅色</button>
+      <button type="button" class="sidebar-account__mode-chip" data-quick-theme-mode="dark">深色</button>
+    </div>
+  `;
+  modeSection.querySelectorAll("[data-quick-theme-mode]").forEach((btn) => {
+    btn.addEventListener("click", (event) => {
+      event.stopPropagation();
+      const quickMode = btn.getAttribute("data-quick-theme-mode") || "system";
+      applyQuickThemeMode(quickMode);
+    });
+  });
+  accountMenu.appendChild(modeSection);
+
   accountWrap.appendChild(accountButton);
   accountWrap.appendChild(accountMenu);
   el.appendChild(accountWrap);
+  refreshQuickThemeModeUi();
   void refreshSidebarPlaylists();
 }
 
