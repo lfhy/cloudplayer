@@ -85,7 +85,7 @@ func main() {
 		Name:             "tray-player",
 		Title:            "CloudPlayer",
 		Width:            364,
-		Height:           168,
+		Height:           182,
 		URL:              "/tray_player.html",
 		Hidden:           true,
 		Frameless:        true,
@@ -127,7 +127,7 @@ func main() {
 	state.SystemTray = systemTray
 	systemTray.SetTooltip("CloudPlayer")
 	systemTray.SetMenu(trayMenu)
-	systemTray.AttachWindow(trayWindow).WindowOffset(6)
+	systemTray.AttachWindow(trayWindow).WindowOffset(1)
 
 	if err := app.Run(); err != nil {
 		log.Fatal(err)
