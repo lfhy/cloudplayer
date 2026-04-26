@@ -79,7 +79,7 @@ func main() {
 		})
 	})
 	app.Event.OnApplicationEvent(events.Common.ApplicationStarted, func(_ *application.ApplicationEvent) {
-		app.Show()
+		application.InvokeSync(app.Show)
 		showMainWindow()
 		if _, err := state.Hotkeys.Apply(cloudPlayer.GetGlobalHotkeys()); err != nil {
 			log.Printf("global hotkeys init failed: %v", err)
