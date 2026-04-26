@@ -84,8 +84,8 @@ func main() {
 	trayWindow := app.Window.NewWithOptions(application.WebviewWindowOptions{
 		Name:             "tray-player",
 		Title:            "CloudPlayer",
-		Width:            340,
-		Height:           144,
+		Width:            364,
+		Height:           168,
 		URL:              "/tray_player.html",
 		Hidden:           true,
 		Frameless:        true,
