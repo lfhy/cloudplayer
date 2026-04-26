@@ -57,9 +57,6 @@ func main() {
 	state.Hotkeys = NewHotkeyManager(func(action string) {
 		_ = app.Event.Emit("global-hotkey", action)
 	})
-	if _, err := state.Hotkeys.Apply(cloudPlayer.GetGlobalHotkeys()); err != nil {
-		log.Printf("global hotkeys init failed: %v", err)
-	}
 	mainWindow := app.Window.NewWithOptions(application.WebviewWindowOptions{
 		Name:             "main",
 		Title:            "CloudPlayer",
@@ -80,6 +77,13 @@ func main() {
 		_ = application.Get().Event.Emit("main-close-requested", map[string]any{
 			"__tauriTarget": "main",
 		})
+	})
+	app.Event.OnApplicationEvent(events.Common.ApplicationStarted, func(_ *application.ApplicationEvent) {
+		app.Show()
+		showMainWindow()
+		if _, err := state.Hotkeys.Apply(cloudPlayer.GetGlobalHotkeys()); err != nil {
+			log.Printf("global hotkeys init failed: %v", err)
+		}
 	})
 
 	trayMenu := app.NewMenu()

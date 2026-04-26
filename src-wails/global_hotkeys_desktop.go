@@ -63,6 +63,12 @@ func NewHotkeyManager(onAction func(string)) *HotkeyManager {
 }
 
 func (m *HotkeyManager) Apply(cfg config.GlobalHotkeys) (HotkeyApplyReport, error) {
+	return runHotkeyApply(func() (HotkeyApplyReport, error) {
+		return m.applyLocked(cfg)
+	})
+}
+
+func (m *HotkeyManager) applyLocked(cfg config.GlobalHotkeys) (HotkeyApplyReport, error) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
