@@ -28,7 +28,9 @@ const searchState = {
   page: 1,
   hasNext: false,
   results: [],
+  scope: "catalog",
   busy: false,
+  playlistResults: [],
 };
 
 let playQueue = [];
@@ -2072,6 +2074,34 @@ function renderDailyTable() {
   });
 }
 
+async function searchLocalPlaylists(keyword) {
+  const normalized = String(keyword || "").trim().toLowerCase();
+  if (!normalized) return [];
+  const playlists = await invoke("list_playlists");
+  const results = [];
+  for (const playlist of Array.isArray(playlists) ? playlists : []) {
+    const playlistName = String(playlist.name || "").trim();
+    const rows = await invoke("list_playlist_import_items", { playlistId: playlist.id });
+    const matchedTracks = (Array.isArray(rows) ? rows : []).filter((row) => {
+      const haystack = [playlistName, row.title || "", row.artist || "", row.album || ""].join(" ").toLowerCase();
+      return haystack.includes(normalized);
+    });
+    const playlistMatched = playlistName.toLowerCase().includes(normalized);
+    if (!playlistMatched && matchedTracks.length === 0) continue;
+    results.push({
+      id: playlist.id,
+      name: playlistName || `歌单 ${playlist.id}`,
+      trackCount: Array.isArray(rows) ? rows.length : 0,
+      matchedTracks,
+      coverUrl:
+        matchedTracks.find((row) => (row.cover_url || "").trim())?.cover_url ||
+        rows?.find?.((row) => (row.cover_url || "").trim())?.cover_url ||
+        null,
+    });
+  }
+  return results;
+}
+
 async function loadPlaylistDetail(id, name) {
   selectedPlaylistId = id;
   selectedPlaylistName = name || "";
@@ -2562,6 +2592,37 @@ function setPage(pageId) {
       void loadPlaylistDetail(selectedPlaylistId, selectedPlaylistName);
     }
   }
+  if (pageId === "search") {
+    queueMicrotask(() => {
+      document.getElementById("page-search")?.focus();
+    });
+  }
+}
+
+function setSearchScope(scope) {
+  searchState.scope = scope === "playlists" ? "playlists" : "catalog";
+  document.querySelectorAll("[data-search-scope]").forEach((button) => {
+    const active = button.getAttribute("data-search-scope") === searchState.scope;
+    button.classList.toggle("is-active", active);
+    button.setAttribute("aria-selected", active ? "true" : "false");
+  });
+  const catalogPanel = document.getElementById("search-results-catalog");
+  const playlistPanel = document.getElementById("search-results-playlists");
+  if (catalogPanel) catalogPanel.hidden = searchState.scope !== "catalog";
+  if (playlistPanel) playlistPanel.hidden = searchState.scope !== "playlists";
+  updateSearchEmptyState();
+  updateSearchToolbar();
+}
+
+function updateSearchEmptyState() {
+  const suggestions = document.getElementById("search-suggestions");
+  const catalogPanel = document.getElementById("search-results-catalog");
+  const playlistPanel = document.getElementById("search-results-playlists");
+  const hasKeyword = !!searchState.keyword.trim();
+  if (!suggestions) return;
+  suggestions.hidden = hasKeyword;
+  if (catalogPanel) catalogPanel.hidden = !hasKeyword || searchState.scope !== "catalog";
+  if (playlistPanel) playlistPanel.hidden = !hasKeyword || searchState.scope !== "playlists";
 }
 
 function updateSearchToolbar() {
@@ -2570,26 +2631,37 @@ function updateSearchToolbar() {
   const prev = document.getElementById("btn-prev-page");
   const next = document.getElementById("btn-next-page");
   const playAll = document.getElementById("btn-play-all");
+  const playlistInfo = document.getElementById("search-playlist-info");
   if (info) {
     info.textContent =
-      !searchState.keyword.trim()
+      searchState.scope !== "catalog" || !searchState.keyword.trim()
         ? ""
         : `共 ${n} 条 · 第 ${searchState.page} 页${searchState.hasNext ? " · 有下一页" : " · 已到末页"}`;
   }
-  if (prev) prev.disabled = searchState.page <= 1 || searchState.busy;
-  if (next) next.disabled = !searchState.hasNext || searchState.busy;
-  if (playAll) playAll.disabled = !n || searchState.busy;
+  if (playlistInfo) {
+    playlistInfo.textContent =
+      searchState.scope !== "playlists" || !searchState.keyword.trim()
+        ? ""
+        : `找到 ${searchState.playlistResults.length} 张相关歌单`;
+  }
+  if (prev) prev.disabled = searchState.scope !== "catalog" || searchState.page <= 1 || searchState.busy;
+  if (next) next.disabled = searchState.scope !== "catalog" || !searchState.hasNext || searchState.busy;
+  if (playAll) playAll.disabled = searchState.scope !== "catalog" || !n || searchState.busy;
 }
 
 function renderSearchTable() {
   const tbody = document.querySelector("#search-table tbody");
   if (!tbody) return;
+  if (searchState.scope !== "catalog") {
+    tbody.innerHTML = "";
+    return;
+  }
   const rows = searchState.results;
   if (!rows.length) {
     setTableMutedMessage(
       tbody,
       5,
-      searchState.keyword.trim() ? "无结果（或站点 HTML 已变化）。" : "输入关键词后点击「搜索」",
+      searchState.keyword.trim() ? "没有找到匹配的在线音乐结果。" : "",
     );
     return;
   }
@@ -2621,22 +2693,76 @@ function renderSearchTable() {
   }
 }
 
+function renderPlaylistSearchResults() {
+  const wrap = document.getElementById("search-playlist-list");
+  if (!wrap) return;
+  wrap.innerHTML = "";
+  if (searchState.scope !== "playlists") return;
+  if (!searchState.keyword.trim()) return;
+  if (!searchState.playlistResults.length) {
+    wrap.innerHTML = '<div class="search-playlist-empty muted">没有找到匹配的本地歌单或导入曲目。</div>';
+    return;
+  }
+  searchState.playlistResults.forEach((playlist) => {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "search-playlist-card";
+    const cover = playlist.coverUrl
+      ? `<img class="search-playlist-card__cover" src="${escapeHtml(playlist.coverUrl)}" alt="" />`
+      : `<div class="search-playlist-card__cover search-playlist-card__cover--ph" aria-hidden="true"></div>`;
+    const matches = playlist.matchedTracks
+      .slice(0, 3)
+      .map((track) => `<li>${escapeHtml(track.title || "—")}${track.artist ? ` · ${escapeHtml(track.artist)}` : ""}</li>`)
+      .join("");
+    button.innerHTML = `
+      ${cover}
+      <span class="search-playlist-card__body">
+        <strong>${escapeHtml(playlist.name)}</strong>
+        <span>${playlist.trackCount} 首歌曲${playlist.matchedTracks.length ? ` · 命中 ${playlist.matchedTracks.length} 首` : ""}</span>
+        ${matches ? `<ul>${matches}</ul>` : `<em>歌单名称命中</em>`}
+      </span>
+    `;
+    button.addEventListener("click", async () => {
+      selectedPlaylistId = playlist.id;
+      selectedPlaylistName = playlist.name;
+      setPage("playlist");
+      await loadPlaylistDetail(playlist.id, playlist.name);
+    });
+    wrap.appendChild(button);
+  });
+}
+
 async function fetchSearchPage() {
   const kw = searchState.keyword.trim();
   if (!kw) return;
   searchState.busy = true;
   updateSearchToolbar();
-  const tbody = document.querySelector("#search-table tbody");
-  setTableMutedMessage(tbody, 5, "搜索中…");
   try {
-    const res = await invoke("search_songs", { keyword: kw, page: searchState.page });
-    searchState.results = res.results || [];
-    searchState.hasNext = !!res.has_next;
-    renderSearchTable();
+    if (searchState.scope === "catalog") {
+      const tbody = document.querySelector("#search-table tbody");
+      setTableMutedMessage(tbody, 5, "搜索中…");
+      const res = await invoke("search_songs", { keyword: kw, page: searchState.page });
+      searchState.results = res.results || [];
+      searchState.hasNext = !!res.has_next;
+      searchState.playlistResults = [];
+      renderSearchTable();
+    } else {
+      searchState.playlistResults = await searchLocalPlaylists(kw);
+      searchState.results = [];
+      searchState.hasNext = false;
+      renderPlaylistSearchResults();
+    }
   } catch (e) {
-    warnRequestFailed(e, "search_songs");
-    setTableMutedMessage(tbody, 5, MSG_REQUEST_FAILED);
+    warnRequestFailed(e, searchState.scope === "catalog" ? "search_songs" : "search_local_playlists");
+    if (searchState.scope === "catalog") {
+      const tbody = document.querySelector("#search-table tbody");
+      setTableMutedMessage(tbody, 5, MSG_REQUEST_FAILED);
+    } else {
+      const wrap = document.getElementById("search-playlist-list");
+      if (wrap) wrap.innerHTML = `<div class="search-playlist-empty muted">${escapeHtml(MSG_REQUEST_FAILED)}</div>`;
+    }
     searchState.results = [];
+    searchState.playlistResults = [];
     searchState.hasNext = false;
   } finally {
     searchState.busy = false;
@@ -3094,6 +3220,7 @@ async function playFromQueueIndex(idx) {
 }
 
 function playFromSearchRow(rowIdx) {
+  if (searchState.scope !== "catalog") return;
   playQueue = searchState.results.map((r) => ({
     source_id: r.source_id,
     title: r.title,
@@ -3258,17 +3385,21 @@ function wireAudio() {
   });
 }
 
-function submitGlobalSearch() {
-  const gs = document.getElementById("global-search");
-  if (!gs) return;
-  const value = gs.value.trim();
+function submitPageSearch(seed = null) {
+  const input = document.getElementById("page-search");
+  if (!input) return;
+  if (typeof seed === "string") input.value = seed;
+  const value = input.value.trim();
   setPage("search");
+  updateSearchEmptyState();
   if (!value) {
     searchState.keyword = "";
     searchState.page = 1;
     searchState.results = [];
+    searchState.playlistResults = [];
     searchState.hasNext = false;
     renderSearchTable();
+    renderPlaylistSearchResults();
     updateSearchToolbar();
     return;
   }
@@ -3277,15 +3408,36 @@ function submitGlobalSearch() {
   fetchSearchPage();
 }
 
-function wireGlobalSearch() {
-  const gs = document.getElementById("global-search");
-  if (!gs) return;
-  gs.addEventListener("keydown", (e) => {
+function wireSearchPage() {
+  const input = document.getElementById("page-search");
+  if (!input) return;
+  input.addEventListener("keydown", (e) => {
     if (e.key !== "Enter") return;
     e.preventDefault();
-    submitGlobalSearch();
+    submitPageSearch();
   });
-  document.getElementById("btn-global-search")?.addEventListener("click", () => submitGlobalSearch());
+  document.getElementById("btn-page-search")?.addEventListener("click", () => submitPageSearch());
+  document.querySelectorAll("[data-search-scope]").forEach((button) => {
+    button.addEventListener("click", () => {
+      setSearchScope(button.getAttribute("data-search-scope") || "catalog");
+      if (searchState.keyword.trim()) {
+        searchState.page = 1;
+        void fetchSearchPage();
+      } else {
+        renderSearchTable();
+        renderPlaylistSearchResults();
+      }
+    });
+  });
+  document.querySelectorAll("[data-search-seed]").forEach((button) => {
+    button.addEventListener("click", () => {
+      const seed = button.getAttribute("data-search-seed") || "";
+      if (seed.includes("循环")) {
+        setSearchScope("playlists");
+      }
+      submitPageSearch(seed);
+    });
+  });
 }
 
 function isEditableElement(el) {
@@ -3448,11 +3600,14 @@ document.addEventListener("DOMContentLoaded", () => {
   wirePlaylistPage();
   wireVolume();
   wirePreferencesModals();
-  wireGlobalSearch();
+  wireSearchPage();
   wireGlobalHotkeyListener();
   wireDiscoverToolbar();
   wireAudio();
+  setSearchScope(searchState.scope);
+  updateSearchEmptyState();
   renderSearchTable();
+  renderPlaylistSearchResults();
   renderImportTable();
   updateSearchToolbar();
   renderQueuePanel();
