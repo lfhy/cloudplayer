@@ -2474,6 +2474,9 @@ function currentTrayPlayerState() {
   const title = document.getElementById("dock-title")?.textContent?.trim() || "CloudPlayer";
   const sub = document.getElementById("dock-sub")?.textContent?.trim() || "从菜单栏快速控制当前播放";
   const coverUrl = document.getElementById("dock-cover")?.getAttribute("src") || null;
+  const rootStyle = getComputedStyle(document.documentElement);
+  const accent = rootStyle.getPropertyValue("--accent").trim() || "#c62f2f";
+  const accentRgb = rootStyle.getPropertyValue("--accent-rgb").trim() || "198, 47, 47";
   const prevDisabled = !!document.getElementById("btn-player-prev")?.disabled;
   const nextDisabled = !!document.getElementById("btn-player-next")?.disabled;
   const duration = audio?.duration;
@@ -2489,6 +2492,8 @@ function currentTrayPlayerState() {
     hasPrev: !prevDisabled,
     hasNext: !nextDisabled,
     progressPct,
+    accent,
+    accentRgb,
   };
 }
 

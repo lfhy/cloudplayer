@@ -3,9 +3,18 @@ import { emitTo, listen } from "./wails/tauri-event.js";
 
 const MAIN_WW = { kind: "WebviewWindow", label: "main" };
 const FALLBACK_COVER =
-  "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='92' height='92' viewBox='0 0 92 92'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop offset='0%25' stop-color='%23e39b79'/%3E%3Cstop offset='100%25' stop-color='%23c65c45'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='92' height='92' rx='16' fill='url(%23g)'/%3E%3C/svg%3E";
+  "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='92' height='92' viewBox='0 0 92 92'%3E%3Crect width='92' height='92' rx='16' fill='%23292d34'/%3E%3Cpath d='M30 61.5V30.5c0-2 2.2-3.2 3.9-2.1l25.1 15.5c1.6 1 1.6 3.3 0 4.3L33.9 63.6c-1.7 1.1-3.9-.1-3.9-2.1Z' fill='%23ffffff' fill-opacity='.78'/%3E%3C/svg%3E";
+
+function applyTrayTheme(payload = {}) {
+  const root = document.documentElement;
+  const accent = String(payload.accent || "").trim() || "#c62f2f";
+  const accentRgb = String(payload.accentRgb || "").trim() || "198, 47, 47";
+  root.style.setProperty("--accent", accent);
+  root.style.setProperty("--accent-rgb", accentRgb);
+}
 
 function applyTrayState(payload = {}) {
+  applyTrayTheme(payload);
   const card = document.getElementById("tray-card");
   const cover = document.getElementById("tray-cover");
   const title = document.getElementById("tray-title");
