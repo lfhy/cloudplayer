@@ -1,9 +1,22 @@
-<?xml version="1.0" encoding="UTF-8" standalone="no"?>
-<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
-<svg width="100%" height="100%" viewBox="0 0 583 533" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" xml:space="preserve" xmlns:serif="http://www.serif.com/" style="fill-rule:evenodd;clip-rule:evenodd;stroke-linejoin:round;stroke-miterlimit:2;">
-    <g transform="matrix(1,0,0,1,-246,-251)">
-        <g id="Ebene1">
-            <path d="M246,251L265,784L401,784L506,450L507,450L505,784L641,784L829,251L682,251L596,567L595,567L596,251L478,251L378,568L391,251L246,251Z"/>
-        </g>
-    </g>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" role="img" aria-label="CloudPlayer app icon">
+  <defs>
+    <style>
+      .bar { fill: #c85a45; }
+      .axis { stroke: #c85a45; stroke-width: 1.25; stroke-linecap: round; opacity: 0.92; }
+    </style>
+  </defs>
+  <g class="bars">
+    <rect class="bar" x="4" y="58" width="6" height="8" rx="3"/>
+    <rect class="bar" x="14" y="54" width="6" height="16" rx="3"/>
+    <rect class="bar" x="24" y="48" width="6" height="28" rx="3"/>
+    <rect class="bar" x="34" y="42" width="6" height="40" rx="3"/>
+    <rect class="bar" x="44" y="36" width="6" height="52" rx="3"/>
+    <rect class="bar" x="54" y="32" width="6" height="60" rx="3"/>
+    <rect class="bar" x="64" y="36" width="6" height="52" rx="3"/>
+    <rect class="bar" x="74" y="42" width="6" height="40" rx="3"/>
+    <rect class="bar" x="84" y="48" width="6" height="28" rx="3"/>
+    <rect class="bar" x="94" y="54" width="6" height="16" rx="3"/>
+    <rect class="bar" x="104" y="58" width="6" height="8" rx="3"/>
+  </g>
+  <line class="axis" x1="2" y1="60" x2="118" y2="60"/>
 </svg>
