@@ -144,6 +144,27 @@ function dockLyricsLockIcon(unlockAction) {
   `;
 }
 
+function appLogoMarkSvg() {
+  return `
+    <svg viewBox="0 0 120 72" aria-hidden="true" focusable="false">
+      <g fill="currentColor">
+        <rect x="4" y="34" width="6" height="8" rx="3"></rect>
+        <rect x="14" y="30" width="6" height="16" rx="3"></rect>
+        <rect x="24" y="24" width="6" height="28" rx="3"></rect>
+        <rect x="34" y="18" width="6" height="40" rx="3"></rect>
+        <rect x="44" y="12" width="6" height="52" rx="3"></rect>
+        <rect x="54" y="8" width="6" height="60" rx="3"></rect>
+        <rect x="64" y="12" width="6" height="52" rx="3"></rect>
+        <rect x="74" y="18" width="6" height="40" rx="3"></rect>
+        <rect x="84" y="24" width="6" height="28" rx="3"></rect>
+        <rect x="94" y="30" width="6" height="16" rx="3"></rect>
+        <rect x="104" y="34" width="6" height="8" rx="3"></rect>
+        <rect x="2" y="35" width="116" height="2.5" rx="1.25" opacity="0.92"></rect>
+      </g>
+    </svg>
+  `;
+}
+
 function syncNeteaseCookieUi() {
   const chk = document.getElementById("opt-netease-cookie-enabled");
   const inp = document.getElementById("opt-netease-cookie");
@@ -801,7 +822,6 @@ function wireThemeCards() {
 
 function wirePreferencesModals() {
   document.getElementById("btn-dock-settings")?.addEventListener("click", () => setPage("settings"));
-  document.getElementById("btn-settings-back")?.addEventListener("click", () => setPage("discover"));
   wireSettingsFormDirtyTracking();
   wireThemeCards();
   wireHotkeySettingsUi();
@@ -2184,13 +2204,10 @@ function renderSidebar() {
   el.innerHTML = "";
   const logo = document.createElement("div");
   logo.className = "sidebar-logo";
-  const logoImg = document.createElement("img");
+  const logoImg = document.createElement("span");
   logoImg.className = "sidebar-logo__mark";
-  logoImg.src = "/logo.svg";
-  logoImg.width = 28;
-  logoImg.height = 28;
-  logoImg.alt = "";
   logoImg.setAttribute("aria-hidden", "true");
+  logoImg.innerHTML = appLogoMarkSvg();
   const logoText = document.createElement("span");
   logoText.className = "sidebar-logo__text";
   logoText.textContent = "CloudPlayer";

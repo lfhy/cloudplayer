@@ -168,8 +168,16 @@ body {
 .sidebar-logo__mark {
   width: 28px;
   height: 28px;
-  display: block;
+  display: inline-flex;
   flex: 0 0 28px;
+  align-items: center;
+  justify-content: center;
+}
+
+.sidebar-logo__mark svg {
+  width: 28px;
+  height: 16.8px;
+  display: block;
 }
 
 .sidebar-logo__text {
@@ -1660,32 +1668,4 @@ body {
 .hotkeys-status[data-status="conflict"] {
   color: #c96b4a;
   font-weight: 500;
-}
-
-.settings-toolbar-actions {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: space-between;
-  gap: 10px;
-  margin-top: 10px;
-}
-
-.settings-back-btn {
-  padding: 6px 12px;
-  border-radius: 6px;
-  border: 1px solid var(--border);
-  background: var(--bg-card);
-  color: var(--text);
-  font: inherit;
-  cursor: pointer;
-}
-
-.settings-back-btn:hover {
-  background: rgba(0, 0, 0, 0.04);
-}
-
-.settings-autosave-hint {
-  font-size: 12px;
-  color: var(--text-secondary);
 }
