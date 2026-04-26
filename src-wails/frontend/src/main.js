@@ -2,6 +2,7 @@ import { convertFileSrc, invoke } from "./wails/tauri-core.js";
 import { open } from "./wails/tauri-plugin-dialog.js";
 import { emitTo, listen } from "./wails/tauri-event.js";
 import { WebviewWindow } from "./wails/tauri-webviewWindow.js";
+import "iconify-icon";
 
 const NAV = [
   { id: "home", label: "音乐首页", icon: "home" },
@@ -187,23 +188,21 @@ function appLogoMarkSvg() {
 }
 
 function navIconSvg(name) {
-  const paths = {
-    home: `<path d="M4.5 10.5 12 4l7.5 6.5"></path><path d="M6.5 9.5v9h11v-9"></path>`,
-    search: `<circle cx="11" cy="11" r="6.5"></circle><path d="m16 16 4 4"></path>`,
-    sparkles: `<path d="m12 3 1.9 4.8L19 10l-5.1 2.2L12 17l-1.9-4.8L5 10l5.1-2.2L12 3Z"></path><path d="m19.5 3.5.7 1.8 1.8.7-1.8.7-.7 1.8-.7-1.8-1.8-.7 1.8-.7.7-1.8Z"></path><path d="m4.5 14.5.8 2 .2.8.8.2 2 .8-2 .8-.8.2-.2.8-.8 2-.8-2-.2-.8-.8-.2-2-.8 2-.8.8-.2.2-.8.8-2Z"></path>`,
-    clock: `<circle cx="12" cy="12" r="8.5"></circle><path d="M12 7.5v5l3 2"></path>`,
-    download: `<path d="M12 4.5v9"></path><path d="m8.5 10.5 3.5 3.5 3.5-3.5"></path><path d="M5 18.5h14"></path>`,
-    library: `<rect x="4.5" y="5" width="4.5" height="14" rx="1.5"></rect><rect x="10.25" y="5" width="4.5" height="14" rx="1.5"></rect><path d="M17 5.5h2.5A1.5 1.5 0 0 1 21 7v10.5a1.5 1.5 0 0 1-1.5 1.5H17"></path>`,
-    settings: `<circle cx="12" cy="12" r="2.9"></circle><path d="M19.4 15a1 1 0 0 0 .2 1.1l.1.1a1.8 1.8 0 1 1-2.5 2.5l-.1-.1a1 1 0 0 0-1.1-.2 1 1 0 0 0-.6.9V20a1.8 1.8 0 1 1-3.6 0v-.2a1 1 0 0 0-.6-.9 1 1 0 0 0-1.1.2l-.1.1a1.8 1.8 0 1 1-2.5-2.5l.1-.1a1 1 0 0 0 .2-1.1 1 1 0 0 0-.9-.6H4a1.8 1.8 0 1 1 0-3.6h.2a1 1 0 0 0 .9-.6 1 1 0 0 0-.2-1.1l-.1-.1a1.8 1.8 0 1 1 2.5-2.5l.1.1a1 1 0 0 0 1.1.2 1 1 0 0 0 .6-.9V4a1.8 1.8 0 1 1 3.6 0v.2a1 1 0 0 0 .6.9 1 1 0 0 0 1.1-.2l.1-.1a1.8 1.8 0 1 1 2.5 2.5l-.1.1a1 1 0 0 0-.2 1.1 1 1 0 0 0 .9.6h.2a1.8 1.8 0 1 1 0 3.6h-.2a1 1 0 0 0-.9.6Z"></path>`,
-    playlist: `<path d="M4.5 7.5h9"></path><path d="M4.5 11.5h9"></path><path d="M4.5 15.5h6"></path><path d="M16.5 7.5v8.2a2.3 2.3 0 1 1-1.4-2.1V8.2l4-1v6.5a2.3 2.3 0 1 1-1.4-2.1V6.1Z"></path>`,
-    "chevron-up-down": `<path d="m8 10 4-4 4 4"></path><path d="m8 14 4 4 4-4"></path>`,
-    appearance: `<path d="M12 3.5a7.8 7.8 0 1 0 0 17 6.5 6.5 0 0 1 0-17Z"></path>`,
+  const icons = {
+    home: "solar:home-2-linear",
+    search: "solar:magnifer-linear",
+    sparkles: "solar:stars-line-duotone",
+    clock: "solar:history-linear",
+    download: "solar:download-linear",
+    library: "solar:library-linear",
+    settings: "solar:settings-linear",
+    playlist: "solar:playlist-minimalistic-2-linear",
+    "chevron-up-down": "solar:alt-arrow-up-line-duotone",
+    appearance: "solar:moon-fog-linear",
   };
-  return `
-    <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-      ${paths[name] || paths.playlist}
-    </svg>
-  `;
+  const icon = icons[name] || icons.playlist;
+  const rotate = name === "chevron-up-down" ? ' style="transform: rotate(180deg);"' : "";
+  return `<iconify-icon icon="${icon}" aria-hidden="true"${rotate}></iconify-icon>`;
 }
 
 function syncNeteaseCookieUi() {

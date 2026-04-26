@@ -175,14 +175,11 @@ body {
   justify-content: center;
 }
 
-.sidebar-pl-add svg {
+.sidebar-pl-add svg,
+.sidebar-pl-add iconify-icon {
   width: 16px;
   height: 16px;
-  stroke: currentColor;
-  stroke-width: 1.7;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-  fill: none;
+  display: block;
 }
 
 .sidebar-pl-add:hover {
@@ -256,14 +253,11 @@ body {
   flex: 0 0 18px;
 }
 
-.nav-item__icon svg {
+.nav-item__icon svg,
+.nav-item__icon iconify-icon {
   width: 18px;
   height: 18px;
-  stroke: currentColor;
-  stroke-width: 1.7;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-  fill: none;
+  display: block;
 }
 
 .nav-item__label {
@@ -349,14 +343,11 @@ body {
   color: var(--text-secondary);
 }
 
-.sidebar-account__chevron svg {
+.sidebar-account__chevron svg,
+.sidebar-account__chevron iconify-icon {
   width: 16px;
   height: 16px;
-  stroke: currentColor;
-  stroke-width: 1.7;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-  fill: none;
+  display: block;
 }
 
 .sidebar-account__menu {
@@ -453,14 +444,11 @@ body {
   flex: 0 0 18px;
 }
 
-.sidebar-account__menu-icon svg {
+.sidebar-account__menu-icon svg,
+.sidebar-account__menu-icon iconify-icon {
   width: 18px;
   height: 18px;
-  stroke: currentColor;
-  stroke-width: 1.7;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-  fill: none;
+  display: block;
 }
 
 .sidebar-pl-hint {
@@ -1486,15 +1474,11 @@ body {
   justify-content: center;
 }
 
-.dock-chip--icon svg {
+.dock-chip--icon svg,
+.dock-chip--icon iconify-icon {
   width: 15px;
   height: 15px;
   display: block;
-  stroke: currentColor;
-  stroke-width: 1.8;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-  fill: none;
 }
 
 .dock-chip:hover {
