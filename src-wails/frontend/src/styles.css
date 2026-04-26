@@ -45,7 +45,7 @@
   --surface-soft-inset: inset 0 1px 0 rgba(255, 255, 255, 0.05);
   --surface-subtle: rgba(255, 255, 255, 0.06);
   --surface-subtle-2: rgba(255, 255, 255, 0.05);
-  --topbar-grad-start: rgba(34, 38, 46, 0.96);
+  --topbar-grad-start: var(--bg-main);
   --cover-placeholder: rgba(255, 255, 255, 0.08);
   --cover-placeholder-grad: linear-gradient(135deg, rgba(255, 255, 255, 0.12), rgba(255, 255, 255, 0.05));
   --dock-fg: #f2f3f5;
