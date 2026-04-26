@@ -55,7 +55,7 @@ func DefaultSettings() Settings {
 		LyricsLRCLibEnabled:         true,
 		LyricsProviderOrder:         "pjmp3,netease,lrclib",
 		MainWindowCloseAction:       "ask",
-		AppTheme:                    "coral",
+		AppTheme:                    "netease",
 		GlobalHotkeys:               DefaultGlobalHotkeys(),
 		DesktopLyricsColorBase:      "#ffffff",
 		DesktopLyricsColorHighlight: "#ffb7d4",
@@ -110,10 +110,16 @@ func LoadSettings() Settings {
 
 func NormalizeAppTheme(value string) string {
 	switch strings.ToLower(strings.TrimSpace(value)) {
-	case "coral", "ocean", "forest":
+	case "netease", "kugou", "qqmusic":
 		return strings.ToLower(strings.TrimSpace(value))
+	case "coral":
+		return "netease"
+	case "ocean":
+		return "kugou"
+	case "forest":
+		return "qqmusic"
 	default:
-		return "coral"
+		return "netease"
 	}
 }
 

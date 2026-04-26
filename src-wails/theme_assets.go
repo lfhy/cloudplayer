@@ -22,9 +22,9 @@ var macTrayTemplateIcon []byte
 
 func appIconForTheme(theme string) []byte {
 	switch config.NormalizeAppTheme(theme) {
-	case "ocean":
+	case "kugou":
 		return appIconOcean
-	case "forest":
+	case "qqmusic":
 		return appIconForest
 	default:
 		return appIconCoral

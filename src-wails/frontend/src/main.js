@@ -8,12 +8,13 @@ const NAV = [
   { id: "recent", label: "最近播放", key: "recent" },
   { id: "download", label: "本地和下载", key: "local_download" },
   { id: "import", label: "导入歌单", key: "import" },
+  { id: "settings", label: "设置", key: "settings" },
 ];
 
 const APP_THEMES = {
-  coral: { accent: "#c62f2f", accentRgb: "198, 47, 47" },
-  ocean: { accent: "#1f6aa5", accentRgb: "31, 106, 165" },
-  forest: { accent: "#2f7d4b", accentRgb: "47, 125, 75" },
+  netease: { accent: "#c62f2f", accentRgb: "198, 47, 47" },
+  kugou: { accent: "#1f6aa5", accentRgb: "31, 106, 165" },
+  qqmusic: { accent: "#2f7d4b", accentRgb: "47, 125, 75" },
 };
 
 /** @type {{ keyword: string, page: number, hasNext: boolean, results: any[], busy: boolean }} */
@@ -263,8 +264,11 @@ function normalizeCloseAction(value) {
 }
 
 function normalizeAppTheme(value) {
-  const normalized = String(value || "coral").trim().toLowerCase();
-  return APP_THEMES[normalized] ? normalized : "coral";
+  const normalized = String(value || "netease").trim().toLowerCase();
+  if (normalized === "coral") return "netease";
+  if (normalized === "ocean") return "kugou";
+  if (normalized === "forest") return "qqmusic";
+  return APP_THEMES[normalized] ? normalized : "netease";
 }
 
 function applyAppTheme(theme) {
@@ -277,7 +281,7 @@ function applyAppTheme(theme) {
 }
 
 let settingsFormBaseline = {
-  theme: "coral",
+  theme: "netease",
   action: "ask",
   base: "#ffffff",
   highlight: "#ffb7d4",
