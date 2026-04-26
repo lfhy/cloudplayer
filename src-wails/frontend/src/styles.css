@@ -119,8 +119,9 @@ body {
   min-height: 0;
 }
 
-.platform-macos .sidebar {
-  background: var(--bg-main);
+:root[data-theme-mode-resolved="light"] .platform-macos .sidebar {
+  background:
+    linear-gradient(180deg, #e8eaee 0px, #eff0f3 38px, var(--bg-main) 94px);
 }
 
 :root[data-theme-mode-resolved="dark"] .platform-macos .sidebar {
@@ -452,7 +453,13 @@ body {
   --wails-draggable: drag;
 }
 
-.platform-macos .top-search-row {
+:root[data-theme-mode-resolved="light"] .platform-macos .top-search-row {
+  background:
+    linear-gradient(180deg, #eef0f3 0px, var(--bg-main) 52px);
+  --wails-draggable: no-drag;
+}
+
+:root[data-theme-mode-resolved="dark"] .platform-macos .top-search-row {
   background: var(--bg-main);
   --wails-draggable: no-drag;
 }
