@@ -318,6 +318,10 @@ let settingsFormBaseline = {
   neteaseApiBase: "",
   hotkeysSig: "",
 };
+let settingsSaveTimer = null;
+let settingsSaveInFlight = false;
+let settingsSaveQueued = false;
+let suppressSettingsAutoSave = false;
 
 function normalizeLyricHexInput(value, fallback) {
   const normalized = (value || "").trim();
@@ -437,7 +441,7 @@ function onHotkeyCaptureKeydown(ev) {
     hotkeyCaptureButton.dataset.accel = "";
     syncHotkeyButtonUi(hotkeyCaptureButton);
     stopHotkeyCapture(false);
-    updateSettingsSaveButtonState();
+    queueSettingsAutosave(true);
     return;
   }
   ev.preventDefault();
@@ -452,7 +456,7 @@ function onHotkeyCaptureKeydown(ev) {
     hotkeyCaptureButton.dataset.accel = raw;
     syncHotkeyButtonUi(hotkeyCaptureButton);
     stopHotkeyCapture(false);
-    updateSettingsSaveButtonState();
+    queueSettingsAutosave(true);
   })();
 }
 
@@ -602,11 +606,7 @@ function settingsFormIsDirty() {
 }
 
 function updateSettingsSaveButtonState() {
-  const button = document.getElementById("settings-save");
-  if (!button) return;
-  const dirty = settingsFormIsDirty();
-  button.disabled = !dirty;
-  button.setAttribute("aria-disabled", dirty ? "false" : "true");
+  return;
 }
 
 function syncSettingsFormBaselineFromDom() {
@@ -655,6 +655,79 @@ function fillSettingsFormFromSettings(settings) {
   syncSettingsFormBaselineFromDom();
 }
 
+async function persistSettingsFromForm() {
+  if (settingsSaveInFlight) {
+    settingsSaveQueued = true;
+    return;
+  }
+  if (!settingsFormIsDirty()) {
+    return;
+  }
+  settingsSaveInFlight = true;
+  const current = getSettingsFormValues();
+  try {
+    if (current.hotkeysSig !== settingsFormBaseline.hotkeysSig) {
+      const seen = new Map();
+      for (const [fieldKey, accel] of Object.entries(current.globalHotkeys)) {
+        if (fieldKey === "enabled") continue;
+        const normalized = String(accel || "").trim();
+        if (!normalized) continue;
+        if (seen.has(normalized)) {
+          renderHotkeyStatusOk();
+          const duplicateField = seen.get(normalized);
+          const hint = `与「${hotkeyFieldLabel(duplicateField)}」重复`;
+          hotkeyStatusSetConflict(fieldKey, hint);
+          hotkeyStatusSetConflict(duplicateField, hint);
+          return;
+        }
+        seen.set(normalized, fieldKey);
+      }
+      const report = await invoke("apply_global_hotkeys", { cfg: current.globalHotkeys });
+      if (report) renderHotkeyStatusFromReport(report);
+    }
+    await invoke("save_settings", {
+      patch: {
+        app_theme: current.theme,
+        app_theme_custom_accent: current.customAccent,
+        main_window_close_action: current.action,
+        desktop_lyrics_color_base: current.base,
+        desktop_lyrics_color_highlight: current.highlight,
+        lyrics_netease_api_base: current.neteaseApiBase,
+      },
+    });
+    applyAppTheme(current.theme, current.customAccent);
+    mainWindowCloseAction = current.action;
+    syncSettingsFormBaselineFromDom();
+    void broadcastDesktopLyricsColors();
+  } catch (e) {
+    alertRequestFailed(e, "save settings");
+  } finally {
+    settingsSaveInFlight = false;
+    if (settingsSaveQueued) {
+      settingsSaveQueued = false;
+      queueSettingsAutosave(true);
+    }
+  }
+}
+
+function queueSettingsAutosave(immediate = false) {
+  if (suppressSettingsAutoSave) {
+    return;
+  }
+  if (settingsSaveTimer != null) {
+    clearTimeout(settingsSaveTimer);
+    settingsSaveTimer = null;
+  }
+  if (immediate) {
+    void persistSettingsFromForm();
+    return;
+  }
+  settingsSaveTimer = setTimeout(() => {
+    settingsSaveTimer = null;
+    void persistSettingsFromForm();
+  }, 260);
+}
+
 function openCloseConfirmModal() {
   const rememberEl = document.getElementById("close-choice-remember");
   if (rememberEl) rememberEl.checked = false;
@@ -692,14 +765,13 @@ async function runCloseChoice(mode) {
 }
 
 function wireSettingsFormDirtyTracking() {
-  const onChange = () => updateSettingsSaveButtonState();
-  document.getElementById("setting-app-theme")?.addEventListener("change", onChange);
-  document.getElementById("setting-app-theme-custom-accent")?.addEventListener("input", onChange);
-  document.getElementById("setting-close-action")?.addEventListener("change", onChange);
-  document.getElementById("setting-ly-base")?.addEventListener("input", onChange);
-  document.getElementById("setting-ly-highlight")?.addEventListener("input", onChange);
-  document.getElementById("setting-netease-api-base")?.addEventListener("input", onChange);
-  document.getElementById("setting-hotkeys-enabled")?.addEventListener("change", onChange);
+  document.getElementById("setting-app-theme")?.addEventListener("change", () => queueSettingsAutosave(true));
+  document.getElementById("setting-app-theme-custom-accent")?.addEventListener("input", () => queueSettingsAutosave());
+  document.getElementById("setting-close-action")?.addEventListener("change", () => queueSettingsAutosave(true));
+  document.getElementById("setting-ly-base")?.addEventListener("input", () => queueSettingsAutosave());
+  document.getElementById("setting-ly-highlight")?.addEventListener("input", () => queueSettingsAutosave());
+  document.getElementById("setting-netease-api-base")?.addEventListener("input", () => queueSettingsAutosave());
+  document.getElementById("setting-hotkeys-enabled")?.addEventListener("change", () => queueSettingsAutosave(true));
 }
 
 function wireThemeCards() {
@@ -711,7 +783,7 @@ function wireThemeCards() {
       const codeEl = document.getElementById("setting-app-theme-custom-accent-code");
       if (codeEl) codeEl.textContent = current.customAccent;
       applyAppTheme(current.theme, current.customAccent);
-      updateSettingsSaveButtonState();
+      queueSettingsAutosave(true);
     });
   });
   document.getElementById("setting-app-theme-custom-accent")?.addEventListener("input", (event) => {
@@ -723,7 +795,7 @@ function wireThemeCards() {
     if (normalizeAppTheme(document.getElementById("setting-app-theme")?.value) === "custom") {
       applyAppTheme("custom", value);
     }
-    updateSettingsSaveButtonState();
+    queueSettingsAutosave();
   });
 }
 
@@ -733,52 +805,6 @@ function wirePreferencesModals() {
   wireSettingsFormDirtyTracking();
   wireThemeCards();
   wireHotkeySettingsUi();
-  document.getElementById("settings-save")?.addEventListener("click", async () => {
-    if (!settingsFormIsDirty()) return;
-    const current = getSettingsFormValues();
-    try {
-      if (current.hotkeysSig !== settingsFormBaseline.hotkeysSig) {
-        try {
-          const seen = new Map();
-          for (const [fieldKey, accel] of Object.entries(current.globalHotkeys)) {
-            if (fieldKey === "enabled") continue;
-            const normalized = String(accel || "").trim();
-            if (!normalized) continue;
-            if (seen.has(normalized)) {
-              renderHotkeyStatusOk();
-              const duplicateField = seen.get(normalized);
-              const hint = `与「${hotkeyFieldLabel(duplicateField)}」重复`;
-              hotkeyStatusSetConflict(fieldKey, hint);
-              hotkeyStatusSetConflict(duplicateField, hint);
-              return;
-            }
-            seen.set(normalized, fieldKey);
-          }
-          const report = await invoke("apply_global_hotkeys", { cfg: current.globalHotkeys });
-          if (report) renderHotkeyStatusFromReport(report);
-        } catch (err) {
-          alertRequestFailed(err, "apply global hotkeys");
-          return;
-        }
-      }
-      await invoke("save_settings", {
-        patch: {
-          app_theme: current.theme,
-          app_theme_custom_accent: current.customAccent,
-          main_window_close_action: current.action,
-          desktop_lyrics_color_base: current.base,
-          desktop_lyrics_color_highlight: current.highlight,
-          lyrics_netease_api_base: current.neteaseApiBase,
-        },
-      });
-      applyAppTheme(current.theme, current.customAccent);
-      mainWindowCloseAction = current.action;
-      syncSettingsFormBaselineFromDom();
-      void broadcastDesktopLyricsColors();
-    } catch (e) {
-      alertRequestFailed(e, "save settings");
-    }
-  });
   document.getElementById("close-choice-tray")?.addEventListener("click", () => {
     void runCloseChoice("tray");
   });

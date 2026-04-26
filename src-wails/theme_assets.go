@@ -124,7 +124,7 @@ func renderRuntimeAppIcon(accentHex string) []byte {
 	const size = 512
 	img := image.NewNRGBA(image.Rect(0, 0, size, size))
 	accent := parseAccentHex(accentHex)
-	drawGradientRoundedRect(img, 34, 34, size-34, size-34, 112, lightenColor(accent, 0.26), darkenColor(accent, 0.12))
+	drawGradientRoundedRect(img, 34, 34, size-34, size-34, 112, accent, darkenColor(accent, 0.08))
 	if !drawTemplateForeground(img, color.NRGBA{R: 255, G: 255, B: 255, A: 255}) {
 		drawEqualizerGlyph(img, color.NRGBA{R: 255, G: 255, B: 255, A: 255})
 	}
