@@ -112,14 +112,15 @@ body {
 :root[data-theme-mode-resolved="light"] .body-row::after {
   content: "";
   position: absolute;
-  inset: 6px;
+  top: 6px;
+  left: 6px;
+  width: 118px;
+  height: 84px;
   pointer-events: none;
-  border-radius: 14px;
+  border-top-left-radius: 16px;
   background:
-    radial-gradient(22px 22px at top left, rgba(116, 123, 136, 0.2), rgba(116, 123, 136, 0) 72%),
-    radial-gradient(22px 22px at top right, rgba(116, 123, 136, 0.2), rgba(116, 123, 136, 0) 72%),
-    radial-gradient(22px 22px at bottom left, rgba(116, 123, 136, 0.16), rgba(116, 123, 136, 0) 72%),
-    radial-gradient(22px 22px at bottom right, rgba(116, 123, 136, 0.16), rgba(116, 123, 136, 0) 72%);
+    radial-gradient(64px 46px at 22px 18px, rgba(108, 114, 126, 0.24), rgba(108, 114, 126, 0.08) 42%, rgba(108, 114, 126, 0) 78%),
+    linear-gradient(180deg, rgba(144, 149, 160, 0.12), rgba(144, 149, 160, 0) 72%);
 }
 
 .sidebar {
