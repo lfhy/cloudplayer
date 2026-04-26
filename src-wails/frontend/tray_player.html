@@ -12,8 +12,7 @@
       :root {
         --accent: #c62f2f;
         --accent-rgb: 198, 47, 47;
-        --bg: rgba(34, 37, 44, 0.36);
-        --border: rgba(255, 255, 255, 0.12);
+        --bg: rgba(34, 37, 44, 0.26);
         --text: rgba(255, 255, 255, 0.96);
         --muted: rgba(255, 255, 255, 0.68);
       }
@@ -41,10 +40,7 @@
         background: var(--bg);
         -webkit-backdrop-filter: blur(34px) saturate(1.18);
         backdrop-filter: blur(34px) saturate(1.18);
-        border: 1px solid var(--border);
-        box-shadow:
-          0 22px 44px rgba(0, 0, 0, 0.22),
-          inset 0 1px 0 rgba(255, 255, 255, 0.08);
+        box-shadow: 0 18px 36px rgba(0, 0, 0, 0.18);
       }
       .tray-cover {
         width: 92px;
@@ -52,7 +48,7 @@
         border-radius: 16px;
         object-fit: cover;
         background: linear-gradient(135deg, rgba(var(--accent-rgb), 0.94), rgba(var(--accent-rgb), 0.68));
-        box-shadow: 0 16px 30px rgba(0, 0, 0, 0.18);
+        box-shadow: 0 12px 24px rgba(0, 0, 0, 0.14);
       }
       .tray-main {
         min-width: 0;
@@ -109,18 +105,16 @@
       .tray-btn {
         border: 0;
         border-radius: 999px;
-        background: rgba(255, 255, 255, 0.14);
+        background: rgba(255, 255, 255, 0.1);
         color: var(--text);
         cursor: pointer;
         display: inline-flex;
         align-items: center;
         justify-content: center;
-        box-shadow:
-          0 8px 18px rgba(0, 0, 0, 0.16),
-          inset 0 1px 0 rgba(255, 255, 255, 0.08);
+        box-shadow: 0 6px 14px rgba(0, 0, 0, 0.12);
       }
       .tray-btn:hover {
-        background: rgba(255, 255, 255, 0.2);
+        background: rgba(255, 255, 255, 0.16);
       }
       .tray-btn:disabled {
         opacity: 0.38;
