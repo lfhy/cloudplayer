@@ -1564,6 +1564,16 @@ body {
   border-color: transparent;
 }
 
+:root[data-theme-mode-resolved="dark"] .dock-mode,
+:root[data-theme-mode-resolved="dark"] .dock-chip--icon {
+  background: transparent;
+}
+
+:root[data-theme-mode-resolved="dark"] .dock-mode:hover,
+:root[data-theme-mode-resolved="dark"] .dock-chip--icon:hover {
+  background: rgba(255, 255, 255, 0.08);
+}
+
 .dock-chip--icon svg {
   width: 15px;
   height: 15px;
