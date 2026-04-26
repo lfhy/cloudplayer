@@ -2694,11 +2694,16 @@ function renderSidebar() {
   const modeSection = document.createElement("div");
   modeSection.className = "sidebar-account__menu-section";
   modeSection.innerHTML = `
-    <span class="sidebar-account__menu-label">外观模式</span>
-    <div class="sidebar-account__mode-row">
-      <button type="button" class="sidebar-account__mode-chip" data-quick-theme-mode="system">跟随</button>
-      <button type="button" class="sidebar-account__mode-chip" data-quick-theme-mode="light">浅色</button>
-      <button type="button" class="sidebar-account__mode-chip" data-quick-theme-mode="dark">深色</button>
+    <div class="sidebar-account__submenu-row">
+      <button type="button" class="sidebar-account__menu-item sidebar-account__menu-item--fly" aria-haspopup="menu" aria-expanded="false">
+        <span class="sidebar-account__menu-icon">${navIconSvg("appearance")}</span>
+        <span class="sidebar-account__menu-text">外观模式</span>
+      </button>
+      <div class="sidebar-account__submenu-panel">
+        <button type="button" class="sidebar-account__menu-item" data-quick-theme-mode="system">跟随系统</button>
+        <button type="button" class="sidebar-account__menu-item" data-quick-theme-mode="light">浅色</button>
+        <button type="button" class="sidebar-account__menu-item" data-quick-theme-mode="dark">深色</button>
+      </div>
     </div>
   `;
   modeSection.querySelectorAll("[data-quick-theme-mode]").forEach((btn) => {

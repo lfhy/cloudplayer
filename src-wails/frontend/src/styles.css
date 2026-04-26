@@ -404,38 +404,72 @@ body {
 }
 
 .sidebar-account__menu-section {
-  padding: 8px 10px 6px;
+  padding: 4px 0 0;
 }
 
-.sidebar-account__menu-label {
-  display: block;
-  margin: 0 0 8px;
-  font-size: 11px;
-  font-weight: 600;
-  color: var(--text-secondary);
+.sidebar-account__submenu-row {
+  position: relative;
+  padding: 0 0 6px;
 }
 
-.sidebar-account__mode-row {
-  display: flex;
-  gap: 6px;
+.sidebar-account__submenu-row::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  right: -12px;
+  width: 12px;
+  height: 100%;
 }
 
-.sidebar-account__mode-chip {
-  flex: 1;
-  padding: 7px 10px;
+.sidebar-account__menu-item--fly {
+  position: relative;
+  padding-right: 30px;
+}
+
+.sidebar-account__menu-item--fly::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  right: 13px;
+  width: 6px;
+  height: 6px;
+  border-top: 1.5px solid currentColor;
+  border-right: 1.5px solid currentColor;
+  transform: translateY(-50%) rotate(45deg);
+  opacity: 0.72;
+}
+
+.sidebar-account__submenu-panel {
+  position: absolute;
+  left: calc(100% + 6px);
+  bottom: -6px;
+  min-width: 124px;
+  padding: 6px;
   border: 1px solid var(--border);
-  border-radius: 10px;
-  background: var(--bg-card);
-  color: var(--text-secondary);
-  font: inherit;
-  font-size: 12px;
-  cursor: pointer;
+  border-radius: 14px;
+  background: var(--bg-elevated);
+  box-shadow: var(--shadow-float);
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transform: translateX(-4px);
+  transition:
+    opacity 140ms ease,
+    transform 140ms ease,
+    visibility 140ms ease;
 }
 
-.sidebar-account__mode-chip.is-active {
-  border-color: rgba(var(--accent-rgb), 0.35);
-  background: rgba(var(--accent-rgb), 0.1);
-  color: var(--accent);
+.sidebar-account__submenu-panel .sidebar-account__menu-item {
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0;
+}
+
+.sidebar-account__submenu-row:hover .sidebar-account__submenu-panel,
+.sidebar-account__submenu-row:focus-within .sidebar-account__submenu-panel {
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+  transform: translateX(0);
 }
 
 .sidebar-account__menu-icon {
