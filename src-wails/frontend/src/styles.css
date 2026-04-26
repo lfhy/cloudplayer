@@ -258,6 +258,7 @@ body {
   width: 18px;
   height: 18px;
   display: block;
+  flex: 0 0 18px;
 }
 
 .nav-item__label {
@@ -348,6 +349,7 @@ body {
   width: 16px;
   height: 16px;
   display: block;
+  flex: 0 0 16px;
 }
 
 .sidebar-account__menu {
@@ -395,6 +397,7 @@ body {
   text-align: left;
   cursor: pointer;
   font: inherit;
+  line-height: 1.2;
 }
 
 .sidebar-account__menu-item:hover {
@@ -449,6 +452,8 @@ body {
   width: 18px;
   height: 18px;
   display: block;
+  flex: 0 0 18px;
+  align-self: center;
 }
 
 .sidebar-pl-hint {
