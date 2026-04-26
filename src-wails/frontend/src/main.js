@@ -10,6 +10,12 @@ const NAV = [
   { id: "import", label: "导入歌单", key: "import" },
 ];
 
+const APP_THEMES = {
+  coral: { accent: "#c62f2f", accentRgb: "198, 47, 47" },
+  ocean: { accent: "#1f6aa5", accentRgb: "31, 106, 165" },
+  forest: { accent: "#2f7d4b", accentRgb: "47, 125, 75" },
+};
+
 /** @type {{ keyword: string, page: number, hasNext: boolean, results: any[], busy: boolean }} */
 const searchState = {
   keyword: "",
@@ -256,7 +262,22 @@ function normalizeCloseAction(value) {
   return normalized === "quit" || normalized === "tray" ? normalized : "ask";
 }
 
+function normalizeAppTheme(value) {
+  const normalized = String(value || "coral").trim().toLowerCase();
+  return APP_THEMES[normalized] ? normalized : "coral";
+}
+
+function applyAppTheme(theme) {
+  const normalized = normalizeAppTheme(theme);
+  const palette = APP_THEMES[normalized];
+  document.documentElement.style.setProperty("--accent", palette.accent);
+  document.documentElement.style.setProperty("--accent-rgb", palette.accentRgb);
+  document.documentElement.dataset.appTheme = normalized;
+  return normalized;
+}
+
 let settingsFormBaseline = {
+  theme: "coral",
   action: "ask",
   base: "#ffffff",
   highlight: "#ffb7d4",
@@ -514,12 +535,14 @@ function fillHotkeysFormFromSettings(settings) {
 }
 
 function getSettingsFormValues() {
+  const themeEl = document.getElementById("setting-app-theme");
   const closeActionEl = document.getElementById("setting-close-action");
   const baseEl = document.getElementById("setting-ly-base");
   const highlightEl = document.getElementById("setting-ly-highlight");
   const neteaseApiBaseEl = document.getElementById("setting-netease-api-base");
   const globalHotkeys = getGlobalHotkeysPayloadFromDom();
   return {
+    theme: normalizeAppTheme(themeEl?.value),
     action: normalizeCloseAction(closeActionEl?.value),
     base: normalizeLyricHexInput(baseEl?.value, "#ffffff"),
     highlight: normalizeLyricHexInput(highlightEl?.value, "#ffb7d4"),
@@ -532,6 +555,7 @@ function getSettingsFormValues() {
 function settingsFormIsDirty() {
   const current = getSettingsFormValues();
   return (
+    current.theme !== settingsFormBaseline.theme ||
     current.action !== settingsFormBaseline.action ||
     current.base !== settingsFormBaseline.base ||
     current.highlight !== settingsFormBaseline.highlight ||
@@ -554,6 +578,9 @@ function syncSettingsFormBaselineFromDom() {
 }
 
 function fillSettingsFormFromSettings(settings) {
+  const themeEl = document.getElementById("setting-app-theme");
+  const theme = applyAppTheme(settings?.app_theme ?? settings?.appTheme ?? "coral");
+  if (themeEl) themeEl.value = theme;
   const closeActionEl = document.getElementById("setting-close-action");
   const closeAction = normalizeCloseAction(
     settings?.main_window_close_action ?? settings?.mainWindowCloseAction
@@ -621,6 +648,7 @@ async function runCloseChoice(mode) {
 
 function wireSettingsFormDirtyTracking() {
   const onChange = () => updateSettingsSaveButtonState();
+  document.getElementById("setting-app-theme")?.addEventListener("change", onChange);
   document.getElementById("setting-close-action")?.addEventListener("change", onChange);
   document.getElementById("setting-ly-base")?.addEventListener("input", onChange);
   document.getElementById("setting-ly-highlight")?.addEventListener("input", onChange);
@@ -663,12 +691,14 @@ function wirePreferencesModals() {
       }
       await invoke("save_settings", {
         patch: {
+          app_theme: current.theme,
           main_window_close_action: current.action,
           desktop_lyrics_color_base: current.base,
           desktop_lyrics_color_highlight: current.highlight,
           lyrics_netease_api_base: current.neteaseApiBase,
         },
       });
+      applyAppTheme(current.theme);
       mainWindowCloseAction = current.action;
       syncSettingsFormBaselineFromDom();
       void broadcastDesktopLyricsColors();
@@ -2945,6 +2975,7 @@ function wireGlobalHotkeyListener() {
 async function loadSettings() {
   try {
     const s = await invoke("get_settings");
+    applyAppTheme(s?.app_theme ?? s?.appTheme ?? "coral");
     mainWindowCloseAction = normalizeCloseAction(
       s?.main_window_close_action ?? s?.mainWindowCloseAction
     );

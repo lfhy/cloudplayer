@@ -7,6 +7,7 @@ import (
 	"runtime"
 	"sync/atomic"
 
+	"cloudplayer/internal/cloudplayer/config"
 	"cloudplayer/internal/cloudplayer/db"
 	"github.com/wailsapp/wails/v3/pkg/application"
 	"github.com/wailsapp/wails/v3/pkg/events"
@@ -14,12 +15,6 @@ import (
 
 //go:embed all:frontend/dist
 var assets embed.FS
-
-//go:embed build/appicon.png
-var appIcon []byte
-
-//go:embed build/trayicon_macos.png
-var macTrayIcon []byte
 
 var quitRequested atomic.Bool
 
@@ -33,6 +28,8 @@ func main() {
 		log.Fatal(err)
 	}
 	state := NewAppState(conn)
+	initialSettings := config.LoadSettings()
+	state.AppTheme = initialSettings.AppTheme
 	state.StartBackgroundWorkers()
 	cloudPlayer := NewCloudPlayerService(state)
 	desktop := &DesktopService{}
@@ -41,7 +38,7 @@ func main() {
 	app := application.New(application.Options{
 		Name:        "CloudPlayer",
 		Description: "CloudPlayer desktop rebuilt with Wails v3",
-		Icon:        appIcon,
+		Icon:        appIconForTheme(initialSettings.AppTheme),
 		Services: []application.Service{
 			application.NewService(cloudPlayer),
 			application.NewService(desktop),
@@ -83,8 +80,30 @@ func main() {
 			"__tauriTarget": "main",
 		})
 	})
+	trayWindow := app.Window.NewWithOptions(application.WebviewWindowOptions{
+		Name:             "tray-player",
+		Title:            "CloudPlayer",
+		Width:            340,
+		Height:           144,
+		URL:              "/tray_player.html",
+		Hidden:           true,
+		Frameless:        true,
+		AlwaysOnTop:      true,
+		DisableResize:    true,
+		HideOnFocusLost:  true,
+		BackgroundColour: application.NewRGB(248, 248, 250),
+		Mac: application.MacWindow{
+			Backdrop:      application.MacBackdropTranslucent,
+			DisableShadow: false,
+			WindowLevel:   application.MacWindowLevelFloating,
+		},
+		Windows: application.WindowsWindow{
+			HiddenOnTaskbar: true,
+		},
+	})
 	app.Event.OnApplicationEvent(events.Common.ApplicationStarted, func(_ *application.ApplicationEvent) {
 		application.InvokeSync(app.Show)
+		applyThemeAssets(state, initialSettings.AppTheme)
 		showMainWindow()
 		if _, err := state.Hotkeys.Apply(cloudPlayer.GetGlobalHotkeys()); err != nil {
 			log.Printf("global hotkeys init failed: %v", err)
@@ -99,16 +118,15 @@ func main() {
 		requestAppQuit()
 	})
 	systemTray := app.SystemTray.New()
-	if runtime.GOOS == "darwin" && len(macTrayIcon) > 0 {
-		systemTray.SetIcon(macTrayIcon)
-	} else if len(appIcon) > 0 {
-		systemTray.SetIcon(appIcon)
+	if runtime.GOOS == "darwin" && len(macTrayTemplateIcon) > 0 {
+		systemTray.SetTemplateIcon(macTrayTemplateIcon)
+	} else if len(appIconCoral) > 0 {
+		systemTray.SetIcon(appIconCoral)
 	}
+	state.SystemTray = systemTray
 	systemTray.SetTooltip("CloudPlayer")
 	systemTray.SetMenu(trayMenu)
-	systemTray.OnClick(func() {
-		showMainWindow()
-	})
+	systemTray.AttachWindow(trayWindow).WindowOffset(6)
 
 	if err := app.Run(); err != nil {
 		log.Fatal(err)

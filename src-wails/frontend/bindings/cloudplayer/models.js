@@ -657,6 +657,13 @@ export class SettingsPatch {
              * @member
              * @type {string | null | undefined}
              */
+            this["app_theme"] = undefined;
+        }
+        if (/** @type {any} */(false)) {
+            /**
+             * @member
+             * @type {string | null | undefined}
+             */
             this["desktop_lyrics_color_base"] = undefined;
         }
         if (/** @type {any} */(false)) {

@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"os"
 	"path/filepath"
+	"strings"
 )
 
 const BaseURL = "https://pjmp3.com"
@@ -28,6 +29,7 @@ type Settings struct {
 	LyricsLRCLibEnabled         bool          `json:"lyrics_lrclib_enabled"`
 	LyricsProviderOrder         string        `json:"lyrics_provider_order"`
 	MainWindowCloseAction       string        `json:"main_window_close_action"`
+	AppTheme                    string        `json:"app_theme"`
 	GlobalHotkeys               GlobalHotkeys `json:"global_hotkeys"`
 	DesktopLyricsColorBase      string        `json:"desktop_lyrics_color_base"`
 	DesktopLyricsColorHighlight string        `json:"desktop_lyrics_color_highlight"`
@@ -53,6 +55,7 @@ func DefaultSettings() Settings {
 		LyricsLRCLibEnabled:         true,
 		LyricsProviderOrder:         "pjmp3,netease,lrclib",
 		MainWindowCloseAction:       "ask",
+		AppTheme:                    "coral",
 		GlobalHotkeys:               DefaultGlobalHotkeys(),
 		DesktopLyricsColorBase:      "#ffffff",
 		DesktopLyricsColorHighlight: "#ffb7d4",
@@ -103,6 +106,15 @@ func LoadSettings() Settings {
 		return DefaultSettings()
 	}
 	return result
+}
+
+func NormalizeAppTheme(value string) string {
+	switch strings.ToLower(strings.TrimSpace(value)) {
+	case "coral", "ocean", "forest":
+		return strings.ToLower(strings.TrimSpace(value))
+	default:
+		return "coral"
+	}
 }
 
 func SaveSettings(settings Settings) error {

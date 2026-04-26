@@ -1,8 +1,8 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" role="img" aria-label="CloudPlayer coral icon">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" role="img" aria-label="CloudPlayer ocean icon">
   <defs>
     <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0%" stop-color="#ef8b5f"/>
-      <stop offset="100%" stop-color="#c85a45"/>
+      <stop offset="0%" stop-color="#68b7ff"/>
+      <stop offset="100%" stop-color="#3279d6"/>
     </linearGradient>
   </defs>
   <rect x="8" y="8" width="104" height="104" rx="26" fill="url(#bg)"/>

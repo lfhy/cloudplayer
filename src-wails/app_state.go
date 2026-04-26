@@ -8,6 +8,7 @@ import (
 
 	"cloudplayer/internal/cloudplayer/download"
 	"cloudplayer/internal/cloudplayer/ratelimiter"
+	"github.com/wailsapp/wails/v3/pkg/application"
 )
 
 type AppState struct {
@@ -16,6 +17,8 @@ type AppState struct {
 	RateLimiter *ratelimiter.Limiter
 	DownloadCh  chan download.DownloadJob
 	Hotkeys     *HotkeyManager
+	SystemTray  *application.SystemTray
+	AppTheme    string
 }
 
 func NewAppState(db *sql.DB) *AppState {

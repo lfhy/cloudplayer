@@ -45,6 +45,7 @@ type SettingsPatch struct {
 	LyricsLRCLibEnabled         *bool    `json:"lyrics_lrclib_enabled,omitempty"`
 	LyricsProviderOrder         *string  `json:"lyrics_provider_order,omitempty"`
 	MainWindowCloseAction       *string  `json:"main_window_close_action,omitempty"`
+	AppTheme                    *string  `json:"app_theme,omitempty"`
 	DesktopLyricsColorBase      *string  `json:"desktop_lyrics_color_base,omitempty"`
 	DesktopLyricsColorHighlight *string  `json:"desktop_lyrics_color_highlight,omitempty"`
 	ShareNeteaseCookieEnabled   *bool    `json:"share_netease_cookie_enabled,omitempty"`
@@ -247,6 +248,9 @@ func (s *CloudPlayerService) SaveSettings(patch SettingsPatch) error {
 			settings.MainWindowCloseAction = value
 		}
 	}
+	if patch.AppTheme != nil {
+		settings.AppTheme = config.NormalizeAppTheme(*patch.AppTheme)
+	}
 	if patch.DesktopLyricsColorBase != nil {
 		if value, ok := normalizeHexColour(*patch.DesktopLyricsColorBase); ok {
 			settings.DesktopLyricsColorBase = value
@@ -263,7 +267,11 @@ func (s *CloudPlayerService) SaveSettings(patch SettingsPatch) error {
 	if patch.ShareNeteaseCookie != nil {
 		settings.ShareNeteaseCookie = *patch.ShareNeteaseCookie
 	}
-	return config.SaveSettings(settings)
+	if err := config.SaveSettings(settings); err != nil {
+		return err
+	}
+	applyThemeAssets(s.state, settings.AppTheme)
+	return nil
 }
 
 func (s *CloudPlayerService) DBStatus() (string, error) {

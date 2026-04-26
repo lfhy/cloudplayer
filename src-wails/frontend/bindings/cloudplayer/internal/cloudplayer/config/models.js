@@ -208,6 +208,13 @@ export class Settings {
              */
             this["main_window_close_action"] = "";
         }
+        if (!("app_theme" in $$source)) {
+            /**
+             * @member
+             * @type {string}
+             */
+            this["app_theme"] = "";
+        }
         if (!("global_hotkeys" in $$source)) {
             /**
              * @member
@@ -253,10 +260,10 @@ export class Settings {
      * @returns {Settings}
      */
     static createFrom($$source = {}) {
-        const $$createField19_0 = $$createType0;
+        const $$createField20_0 = $$createType0;
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
         if ("global_hotkeys" in $$parsedSource) {
-            $$parsedSource["global_hotkeys"] = $$createField19_0($$parsedSource["global_hotkeys"]);
+            $$parsedSource["global_hotkeys"] = $$createField20_0($$parsedSource["global_hotkeys"]);
         }
         return new Settings(/** @type {Partial<Settings>} */($$parsedSource));
     }
