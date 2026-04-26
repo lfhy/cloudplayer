@@ -87,6 +87,7 @@ func main() {
 		Width:            364,
 		Height:           182,
 		URL:              "/tray_player.html",
+		BackgroundType:   application.BackgroundTypeTransparent,
 		Hidden:           true,
 		Frameless:        true,
 		AlwaysOnTop:      true,
