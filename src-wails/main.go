@@ -92,9 +92,9 @@ func main() {
 		AlwaysOnTop:      true,
 		DisableResize:    true,
 		HideOnFocusLost:  true,
-		BackgroundColour: application.NewRGB(248, 248, 250),
+		BackgroundColour: application.NewRGBA(0, 0, 0, 0),
 		Mac: application.MacWindow{
-			Backdrop:      application.MacBackdropTranslucent,
+			Backdrop:      application.MacBackdropTransparent,
 			DisableShadow: false,
 			WindowLevel:   application.MacWindowLevelFloating,
 		},
