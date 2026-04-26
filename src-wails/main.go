@@ -94,7 +94,7 @@ func main() {
 		HideOnFocusLost:  true,
 		BackgroundColour: application.NewRGBA(0, 0, 0, 0),
 		Mac: application.MacWindow{
-			Backdrop:      application.MacBackdropTransparent,
+			Backdrop:      application.MacBackdropTranslucent,
 			DisableShadow: false,
 			WindowLevel:   application.MacWindowLevelFloating,
 		},
