@@ -111,7 +111,7 @@ const PLAY_MODES = [
   { key: "sequential", icon: "playlist-minimalistic-2-bold", tip: "顺序播放（点击切换模式）" },
   { key: "loop_list", icon: "repeat-bold", tip: "列表循环" },
   { key: "one", icon: "repeat-one-bold", tip: "单曲循环" },
-  { key: "shuffle", icon: "sort-horizontal-bold", tip: "随机播放" },
+  { key: "shuffle", icon: "shuffle-outline", tip: "随机播放" },
 ];
 let playModeIndex = 0;
 
