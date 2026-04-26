@@ -19,6 +19,8 @@ import (
 var macTrayTemplateIcon []byte
 
 var appIconCache sync.Map
+var templateIconOnce sync.Once
+var templateIcon image.Image
 
 var presetThemeAccents = map[string]string{
 	"coral":   "#c62f2f",
@@ -122,14 +124,60 @@ func renderRuntimeAppIcon(accentHex string) []byte {
 	const size = 512
 	img := image.NewNRGBA(image.Rect(0, 0, size, size))
 	accent := parseAccentHex(accentHex)
-	fillRoundedRect(img, 24, 24, size-24, size-24, 108, accent)
-	addGloss(img, accent)
-	drawWaveform(img, color.NRGBA{R: 255, G: 255, B: 255, A: 255})
+	drawGradientRoundedRect(img, 34, 34, size-34, size-34, 112, lightenColor(accent, 0.26), darkenColor(accent, 0.12))
+	if !drawTemplateForeground(img, color.NRGBA{R: 255, G: 255, B: 255, A: 255}) {
+		drawEqualizerGlyph(img, color.NRGBA{R: 255, G: 255, B: 255, A: 255})
+	}
 	var buf bytes.Buffer
 	if err := png.Encode(&buf, img); err != nil {
 		return nil
 	}
 	return buf.Bytes()
+}
+
+func drawTemplateForeground(dst *image.NRGBA, tint color.NRGBA) bool {
+	src := loadTemplateIcon()
+	if src == nil {
+		return false
+	}
+	srcBounds := src.Bounds()
+	if srcBounds.Empty() {
+		return false
+	}
+	const inset = 76
+	destRect := image.Rect(inset, inset, dst.Bounds().Dx()-inset, dst.Bounds().Dy()-inset)
+	destWidth := destRect.Dx()
+	destHeight := destRect.Dy()
+	srcWidth := srcBounds.Dx()
+	srcHeight := srcBounds.Dy()
+	for y := 0; y < destHeight; y++ {
+		sy := srcBounds.Min.Y + y*srcHeight/destHeight
+		for x := 0; x < destWidth; x++ {
+			sx := srcBounds.Min.X + x*srcWidth/destWidth
+			_, _, _, a16 := src.At(sx, sy).RGBA()
+			if a16 == 0 {
+				continue
+			}
+			alpha := uint8(a16 >> 8)
+			blendOver(dst, destRect.Min.X+x, destRect.Min.Y+y, color.NRGBA{
+				R: tint.R,
+				G: tint.G,
+				B: tint.B,
+				A: alpha,
+			})
+		}
+	}
+	return true
+}
+
+func loadTemplateIcon() image.Image {
+	templateIconOnce.Do(func() {
+		icon, err := png.Decode(bytes.NewReader(macTrayTemplateIcon))
+		if err == nil {
+			templateIcon = icon
+		}
+	})
+	return templateIcon
 }
 
 func fillRoundedRect(img *image.NRGBA, x0, y0, x1, y1, radius int, c color.NRGBA) {
@@ -160,62 +208,114 @@ func fillRoundedRect(img *image.NRGBA, x0, y0, x1, y1, radius int, c color.NRGBA
 	}
 }
 
-func addGloss(img *image.NRGBA, accent color.NRGBA) {
-	highlight := color.NRGBA{R: 255, G: 255, B: 255, A: 36}
-	fillRoundedRect(img, 56, 56, 456, 200, 72, highlight)
-	shadow := color.NRGBA{R: 0, G: 0, B: 0, A: 18}
-	fillRoundedRect(img, 56, 330, 456, 430, 72, shadow)
-	_ = accent
-}
-
-func drawWaveform(img *image.NRGBA, c color.NRGBA) {
-	points := [][2]float64{
-		{84, 294},
-		{146, 294},
-		{186, 226},
-		{236, 350},
-		{286, 178},
-		{336, 320},
-		{392, 230},
-		{430, 230},
-	}
-	for i := 0; i < len(points)-1; i++ {
-		drawThickSegment(img, points[i][0], points[i][1], points[i+1][0], points[i+1][1], 22, c)
-	}
-	drawDot(img, 84, 294, 11, c)
-	drawDot(img, 430, 230, 11, c)
-}
-
-func drawThickSegment(img *image.NRGBA, x0, y0, x1, y1 float64, radius float64, c color.NRGBA) {
-	dx := x1 - x0
-	dy := y1 - y0
-	distance := math.Hypot(dx, dy)
-	steps := int(distance / 4)
-	if steps < 1 {
-		steps = 1
-	}
-	for i := 0; i <= steps; i++ {
-		t := float64(i) / float64(steps)
-		drawDot(img, x0+dx*t, y0+dy*t, radius, c)
-	}
-}
-
-func drawDot(img *image.NRGBA, cx, cy, radius float64, c color.NRGBA) {
-	minX := int(cx - radius)
-	maxX := int(cx + radius)
-	minY := int(cy - radius)
-	maxY := int(cy + radius)
+func drawGradientRoundedRect(img *image.NRGBA, x0, y0, x1, y1, radius int, topLeft, bottomRight color.NRGBA) {
 	r2 := radius * radius
-	for y := minY; y <= maxY; y++ {
-		for x := minX; x <= maxX; x++ {
-			if !image.Pt(x, y).In(img.Rect) {
+	width := float64(maxInt(x1-x0, 1))
+	height := float64(maxInt(y1-y0, 1))
+	for y := y0; y < y1; y++ {
+		for x := x0; x < x1; x++ {
+			if !pointInsideRoundedRect(x, y, x0, y0, x1, y1, radius, r2) {
 				continue
 			}
-			dx := (float64(x) + 0.5) - cx
-			dy := (float64(y) + 0.5) - cy
-			if dx*dx+dy*dy <= r2 {
-				img.SetNRGBA(x, y, c)
-			}
+			tx := float64(x-x0) / width
+			ty := float64(y-y0) / height
+			t := (tx + ty) / 2
+			img.SetNRGBA(x, y, lerpColor(topLeft, bottomRight, t))
 		}
+	}
+}
+
+func pointInsideRoundedRect(x, y, x0, y0, x1, y1, radius, r2 int) bool {
+	switch {
+	case x >= x0+radius && x < x1-radius:
+		return true
+	case y >= y0+radius && y < y1-radius:
+		return true
+	default:
+		cx := x0 + radius
+		if x >= x1-radius {
+			cx = x1 - radius - 1
+		}
+		cy := y0 + radius
+		if y >= y1-radius {
+			cy = y1 - radius - 1
+		}
+		dx := x - cx
+		dy := y - cy
+		return dx*dx+dy*dy <= r2
+	}
+}
+
+func drawEqualizerGlyph(img *image.NRGBA, c color.NRGBA) {
+	bars := []struct {
+		x      int
+		y      int
+		width  int
+		height int
+	}{
+		{86, 248, 22, 36},
+		{126, 224, 22, 84},
+		{166, 194, 22, 144},
+		{206, 162, 22, 204},
+		{246, 130, 22, 264},
+		{286, 162, 22, 204},
+		{326, 194, 22, 144},
+		{366, 224, 22, 84},
+		{406, 248, 22, 36},
+	}
+	for _, bar := range bars {
+		fillRoundedRect(img, bar.x, bar.y, bar.x+bar.width, bar.y+bar.height, bar.width/2, c)
+	}
+	fillRoundedRect(img, 78, 244, 434, 262, 9, color.NRGBA{R: 255, G: 255, B: 255, A: 242})
+}
+
+func blendOver(dst *image.NRGBA, x, y int, src color.NRGBA) {
+	if !image.Pt(x, y).In(dst.Rect) {
+		return
+	}
+	dstColor := dst.NRGBAAt(x, y)
+	sa := float64(src.A) / 255
+	da := float64(dstColor.A) / 255
+	outA := sa + da*(1-sa)
+	if outA <= 0 {
+		dst.SetNRGBA(x, y, color.NRGBA{})
+		return
+	}
+	blend := func(sc, dc uint8) uint8 {
+		value := (float64(sc)*sa + float64(dc)*da*(1-sa)) / outA
+		return uint8(math.Round(value))
+	}
+	dst.SetNRGBA(x, y, color.NRGBA{
+		R: blend(src.R, dstColor.R),
+		G: blend(src.G, dstColor.G),
+		B: blend(src.B, dstColor.B),
+		A: uint8(math.Round(outA * 255)),
+	})
+}
+
+func lightenColor(c color.NRGBA, amount float64) color.NRGBA {
+	return color.NRGBA{
+		R: uint8(math.Round(float64(c.R) + (255-float64(c.R))*amount)),
+		G: uint8(math.Round(float64(c.G) + (255-float64(c.G))*amount)),
+		B: uint8(math.Round(float64(c.B) + (255-float64(c.B))*amount)),
+		A: c.A,
+	}
+}
+
+func darkenColor(c color.NRGBA, amount float64) color.NRGBA {
+	return color.NRGBA{
+		R: uint8(math.Round(float64(c.R) * (1 - amount))),
+		G: uint8(math.Round(float64(c.G) * (1 - amount))),
+		B: uint8(math.Round(float64(c.B) * (1 - amount))),
+		A: c.A,
+	}
+}
+
+func lerpColor(a, b color.NRGBA, t float64) color.NRGBA {
+	return color.NRGBA{
+		R: uint8(math.Round(float64(a.R) + (float64(b.R)-float64(a.R))*t)),
+		G: uint8(math.Round(float64(a.G) + (float64(b.G)-float64(a.G))*t)),
+		B: uint8(math.Round(float64(a.B) + (float64(b.B)-float64(a.B))*t)),
+		A: uint8(math.Round(float64(a.A) + (float64(b.A)-float64(a.A))*t)),
 	}
 }
