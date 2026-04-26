@@ -188,6 +188,13 @@ function appLogoMarkSvg() {
 }
 
 function navIconSvg(name) {
+  if (name === "appearance-system") {
+    return `
+      <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+        <path fill="currentColor" fill-rule="evenodd" d="M12 2C6.477 2 2 6.477 2 12s4.477 10 10 10s10-4.477 10-10S17.523 2 12 2m-.93 5.75a1 1 0 0 0-.93.63l-2.58 6.45a.75.75 0 1 0 1.392.557l.46-1.137h5.176l.46 1.137a.75.75 0 0 0 1.392-.557l-2.58-6.45a1 1 0 0 0-.93-.63zm.205 1.91L10.02 12.75h3.96l-1.255-3.09a12 12 0 0 1-.27-.721h-.04c-.085.267-.173.507-.27.72" clip-rule="evenodd"/>
+      </svg>
+    `;
+  }
   const icons = {
     home: "home-2-linear",
     search: "magnifer-linear",
@@ -199,7 +206,6 @@ function navIconSvg(name) {
     playlist: "playlist-minimalistic-2-linear",
     "chevron-up-down": "alt-arrow-up-line-duotone",
     appearance: "moon-fog-linear",
-    "appearance-system": "text-bold-circle-bold",
     "appearance-light": "sun-2-bold",
     "appearance-dark": "moon-stars-bold",
   };
