@@ -194,7 +194,7 @@ function navIconSvg(name) {
     clock: `<circle cx="12" cy="12" r="8.5"></circle><path d="M12 7.5v5l3 2"></path>`,
     download: `<path d="M12 4.5v9"></path><path d="m8.5 10.5 3.5 3.5 3.5-3.5"></path><path d="M5 18.5h14"></path>`,
     library: `<rect x="4.5" y="5" width="4.5" height="14" rx="1.5"></rect><rect x="10.25" y="5" width="4.5" height="14" rx="1.5"></rect><path d="M17 5.5h2.5A1.5 1.5 0 0 1 21 7v10.5a1.5 1.5 0 0 1-1.5 1.5H17"></path>`,
-    settings: `<circle cx="12" cy="12" r="3.25"></circle><path d="M12 2.75v2.1"></path><path d="M12 19.15v2.1"></path><path d="m5.46 5.46 1.48 1.48"></path><path d="m17.06 17.06 1.48 1.48"></path><path d="M2.75 12h2.1"></path><path d="M19.15 12h2.1"></path><path d="m5.46 18.54 1.48-1.48"></path><path d="m17.06 6.94 1.48-1.48"></path>`,
+    settings: `<circle cx="12" cy="12" r="2.9"></circle><path d="M19.4 15a1 1 0 0 0 .2 1.1l.1.1a1.8 1.8 0 1 1-2.5 2.5l-.1-.1a1 1 0 0 0-1.1-.2 1 1 0 0 0-.6.9V20a1.8 1.8 0 1 1-3.6 0v-.2a1 1 0 0 0-.6-.9 1 1 0 0 0-1.1.2l-.1.1a1.8 1.8 0 1 1-2.5-2.5l.1-.1a1 1 0 0 0 .2-1.1 1 1 0 0 0-.9-.6H4a1.8 1.8 0 1 1 0-3.6h.2a1 1 0 0 0 .9-.6 1 1 0 0 0-.2-1.1l-.1-.1a1.8 1.8 0 1 1 2.5-2.5l.1.1a1 1 0 0 0 1.1.2 1 1 0 0 0 .6-.9V4a1.8 1.8 0 1 1 3.6 0v.2a1 1 0 0 0 .6.9 1 1 0 0 0 1.1-.2l.1-.1a1.8 1.8 0 1 1 2.5 2.5l-.1.1a1 1 0 0 0-.2 1.1 1 1 0 0 0 .9.6h.2a1.8 1.8 0 1 1 0 3.6h-.2a1 1 0 0 0-.9.6Z"></path>`,
     playlist: `<path d="M4.5 7.5h9"></path><path d="M4.5 11.5h9"></path><path d="M4.5 15.5h6"></path><path d="M16.5 7.5v8.2a2.3 2.3 0 1 1-1.4-2.1V8.2l4-1v6.5a2.3 2.3 0 1 1-1.4-2.1V6.1Z"></path>`,
     "chevron-up-down": `<path d="m8 10 4-4 4 4"></path><path d="m8 14 4 4 4-4"></path>`,
     appearance: `<path d="M12 3.5a7.8 7.8 0 1 0 0 17 6.5 6.5 0 0 1 0-17Z"></path>`,
