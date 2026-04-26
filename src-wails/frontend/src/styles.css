@@ -1393,6 +1393,21 @@ body {
   background: rgba(0, 0, 0, 0.04);
 }
 
+.btn-danger {
+  padding: 8px 14px;
+  font-size: 13px;
+  border-radius: 8px;
+  border: 1px solid rgba(198, 47, 47, 0.26);
+  background: rgba(198, 47, 47, 0.1);
+  color: #a12626;
+  cursor: pointer;
+}
+
+.btn-danger:hover {
+  background: rgba(198, 47, 47, 0.16);
+  border-color: rgba(198, 47, 47, 0.4);
+}
+
 .settings-form {
   max-width: 520px;
 }
