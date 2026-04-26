@@ -25,7 +25,7 @@
         font-family: "SF Pro Display", "PingFang SC", "Microsoft YaHei UI", sans-serif;
       }
       body {
-        padding: 14px;
+        padding: 18px 16px 16px;
         box-sizing: border-box;
         background: transparent;
       }
@@ -35,20 +35,14 @@
         display: grid;
         grid-template-columns: 92px minmax(0, 1fr);
         gap: 14px;
-        padding: 14px;
-        border-radius: 20px;
-        background: var(--bg);
-        -webkit-backdrop-filter: blur(34px) saturate(1.18);
-        backdrop-filter: blur(34px) saturate(1.18);
-        box-shadow: 0 18px 36px rgba(0, 0, 0, 0.18);
+        align-items: center;
       }
       .tray-cover {
         width: 92px;
         height: 92px;
-        border-radius: 16px;
+        border-radius: 14px;
         object-fit: cover;
         background: linear-gradient(135deg, rgba(var(--accent-rgb), 0.94), rgba(var(--accent-rgb), 0.68));
-        box-shadow: 0 12px 24px rgba(0, 0, 0, 0.14);
       }
       .tray-main {
         min-width: 0;
@@ -105,16 +99,15 @@
       .tray-btn {
         border: 0;
         border-radius: 999px;
-        background: rgba(255, 255, 255, 0.1);
+        background: rgba(255, 255, 255, 0.08);
         color: var(--text);
         cursor: pointer;
         display: inline-flex;
         align-items: center;
         justify-content: center;
-        box-shadow: 0 6px 14px rgba(0, 0, 0, 0.12);
       }
       .tray-btn:hover {
-        background: rgba(255, 255, 255, 0.16);
+        background: rgba(255, 255, 255, 0.14);
       }
       .tray-btn:disabled {
         opacity: 0.38;
