@@ -675,3 +675,242 @@ pub async fn run_one_job(client: Client, app: AppHandle, job: DownloadJob) {
     );
     emit(task);
 }
+
+/// 走 tianai-captcha + getMusicUrl 拿到站点授权的**完整**音频直链；
+/// 与 `run_one_job` 的上半段行为一致，但不发事件、不占用每日下载额度，
+/// 专供「在线播放」复用（`pjmp3::cache_full_audio_file`）。
+///
+/// 返回值是可直接流式下载的 URL（已通过验证码签名，TTL 很短，拿到后应立刻下载）。
+pub async fn fetch_full_music_url(
+    client: &Client,
+    source_id: &str,
+    quality: &str,
+) -> Result<String, String> {
+    let sid = source_id.trim();
+    if sid.is_empty() {
+        return Err("无效的歌曲 ID".to_string());
+    }
+    let br = match quality.trim().to_ascii_lowercase().as_str() {
+        "flac" => "flac",
+        "320" | "hq" => "320",
+        _ => "128",
+    };
+    let base = BASE_URL.trim_end_matches('/');
+    let song_page = format!("{}/song.php?id={}", base, sid);
+
+    const MAX_ATTEMPTS: usize = 4;
+    let mut captcha_id = String::new();
+    let mut last_err: Option<String> = None;
+
+    for attempt in 1..=MAX_ATTEMPTS {
+        let gen_r = match get_captcha_gen_with_retry(client, base).await {
+            Ok(r) => r,
+            Err(e) => {
+                last_err = Some(format!("captcha/gen: {}", format_reqwest_err(&e)));
+                continue;
+            }
+        };
+        if !gen_r.status().is_success() {
+            last_err = Some(format!("captcha/gen HTTP {}", gen_r.status()));
+            continue;
+        }
+        let gen_text = match gen_r.text().await {
+            Ok(t) => t,
+            Err(e) => {
+                last_err = Some(format!("读取验证码响应: {}", format_reqwest_err(&e)));
+                continue;
+            }
+        };
+        let payload: Value = match serde_json::from_str(&gen_text) {
+            Ok(v) => v,
+            Err(e) => {
+                last_err = Some(format!("验证码响应非 JSON: {e}"));
+                continue;
+            }
+        };
+        let Some(cap) = extract_tianai_captcha(&payload) else {
+            last_err = Some("无法解析验证码响应结构".to_string());
+            continue;
+        };
+        let drag_x = match solve_tianai_slider(&cap.background_b64, &cap.template_b64) {
+            Some(v) => v,
+            None => {
+                last_err = Some("自动滑块匹配失败".to_string());
+                continue;
+            }
+        };
+
+        let start = chrono::Local::now();
+        let drag_duration_ms: u64 = {
+            let mut rng = rand::thread_rng();
+            rng.gen_range(1100u64..1800u64)
+        };
+        let stop = start + chrono::Duration::milliseconds(drag_duration_ms as i64);
+        let fmt = |t: chrono::DateTime<chrono::Local>| t.format("%Y-%m-%d %H:%M:%S").to_string();
+        let mid_x = (drag_x as f64 * 0.55).round() as i32;
+        let mid_t = (drag_duration_ms as f64 * 0.5).round() as i64;
+        let end_t = drag_duration_ms as i64;
+        let track = serde_json::json!([
+            {"x": 0, "y": 0, "type": "down", "t": 0},
+            {"x": mid_x, "y": 4, "type": "move", "t": mid_t},
+            {"x": drag_x, "y": 6, "type": "move", "t": end_t - 50},
+            {"x": drag_x, "y": 6, "type": "up", "t": end_t},
+        ]);
+        let (bg_w, bg_h) = if cap.bg_w > 0 && cap.bg_h > 0 {
+            (cap.bg_w, cap.bg_h)
+        } else {
+            (600, 300)
+        };
+        let (tmpl_w, tmpl_h) = if cap.tmpl_w > 0 && cap.tmpl_h > 0 {
+            (cap.tmpl_w, cap.tmpl_h)
+        } else {
+            (110, 300)
+        };
+        let check_body = serde_json::json!({
+            "id": cap.id,
+            "data": {
+                "bgImageWidth": bg_w,
+                "bgImageHeight": bg_h,
+                "sliderImageWidth": tmpl_w,
+                "sliderImageHeight": tmpl_h,
+                "startTime": fmt(start),
+                "stopTime": fmt(stop),
+                "trackList": track,
+            }
+        });
+        let chk = match client
+            .post(format!("{}/captcha/check", base))
+            .header("Content-Type", "application/json")
+            .header("User-Agent", BROWSER_UA)
+            .header("Referer", song_page.as_str())
+            .json(&check_body)
+            .send()
+            .await
+        {
+            Ok(r) => r,
+            Err(e) => {
+                last_err = Some(format!("captcha/check: {}", format_reqwest_err(&e)));
+                continue;
+            }
+        };
+        if !chk.status().is_success() {
+            last_err = Some(format!("captcha/check HTTP {}", chk.status()));
+            continue;
+        }
+        let chk_text = chk.text().await.unwrap_or_default();
+        let chk_json: Value = serde_json::from_str(&chk_text).unwrap_or(Value::Null);
+        let chk_ok = chk_json
+            .get("success")
+            .and_then(|b| b.as_bool())
+            .unwrap_or(false);
+        if chk_ok {
+            captcha_id = cap.id;
+            info!(
+                target: "play-full",
+                "captcha ok attempt={} source_id={} drag_x={}",
+                attempt,
+                sid,
+                drag_x
+            );
+            break;
+        }
+        warn!(
+            target: "play-full",
+            "captcha not passed attempt={} source_id={} drag_x={} body_len={}",
+            attempt,
+            sid,
+            drag_x,
+            chk_text.len()
+        );
+        last_err = Some(format!("验证未通过（x={drag_x}）"));
+    }
+
+    if captcha_id.is_empty() {
+        return Err(last_err.unwrap_or_else(|| "验证码校验失败".to_string()));
+    }
+
+    // 立刻换链接；TTL 很短。
+    let gap_ms = {
+        let mut rng = rand::thread_rng();
+        rng.gen_range(150u64..350u64)
+    };
+    tokio::time::sleep(Duration::from_millis(gap_ms)).await;
+
+    let url_r = client
+        .get(format!("{}/captcha/check/getMusicUrl", base))
+        .query(&[
+            ("captchaId", captcha_id.as_str()),
+            ("id", sid),
+            ("br", br),
+        ])
+        .header("User-Agent", BROWSER_UA)
+        .header("Referer", song_page.as_str())
+        .send()
+        .await
+        .map_err(|e| format!("getMusicUrl: {}", format_reqwest_err(&e)))?;
+    if !url_r.status().is_success() {
+        return Err(format!("getMusicUrl HTTP {}", url_r.status()));
+    }
+    let url_json: Value = url_r
+        .json::<Value>()
+        .await
+        .map_err(|e| format!("解析 getMusicUrl JSON: {}", format_reqwest_err(&e)))?;
+    if url_json.get("code").and_then(|c| c.as_i64()) != Some(200) {
+        return Err(format!("getMusicUrl 业务失败: {url_json}"));
+    }
+    let music = url_json
+        .get("result")
+        .and_then(|r| r.as_str())
+        .unwrap_or("")
+        .trim()
+        .to_string();
+    if music.is_empty() {
+        return Err("getMusicUrl 无 result URL".to_string());
+    }
+    info!(
+        target: "play-full",
+        "music url ready source_id={} br={} url_len={}",
+        sid,
+        br,
+        music.len()
+    );
+    Ok(music)
+}
+
+/// 流式下载音频到文件（不发 Tauri 事件、不计每日额度）。供在线播放的本地缓存复用。
+pub async fn stream_audio_to_file(
+    client: &Client,
+    music_url: &str,
+    referer: &str,
+    out_path: &Path,
+) -> Result<u64, String> {
+    let resp = client
+        .get(music_url)
+        .header("User-Agent", BROWSER_UA)
+        .header("Referer", referer)
+        .send()
+        .await
+        .map_err(|e| format!("音频请求: {}", format_reqwest_err(&e)))?;
+    if !resp.status().is_success() {
+        return Err(format!("音频 HTTP {}", resp.status()));
+    }
+    if let Some(parent) = out_path.parent() {
+        if let Err(e) = tokio::fs::create_dir_all(parent).await {
+            return Err(format!("创建目录: {e}"));
+        }
+    }
+    let mut file = tokio::fs::File::create(out_path)
+        .await
+        .map_err(|e| format!("创建文件: {e}"))?;
+    let mut stream = resp.bytes_stream();
+    let mut received: u64 = 0;
+    while let Some(item) = stream.next().await {
+        let chunk = item.map_err(|e| format!("下载流: {}", format_reqwest_err(&e)))?;
+        file.write_all(&chunk)
+            .await
+            .map_err(|e| format!("写入: {e}"))?;
+        received += chunk.len() as u64;
+    }
+    file.flush().await.map_err(|e| format!("写入: {e}"))?;
+    Ok(received)
+}

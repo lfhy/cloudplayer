@@ -3,6 +3,9 @@ dist/
 src-tauri/target/
 # 本地 Android 签名密钥（勿提交）
 src-tauri/keystore/
+src-tauri/gen/android/keystore.properties
+src-tauri/gen/android/*.jks
+src-tauri/gen/android/*.keystore
 .DS_Store
 *.log
 

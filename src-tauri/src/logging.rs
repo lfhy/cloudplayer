@@ -3,11 +3,11 @@ use std::fs::OpenOptions;
 use std::sync::OnceLock;
 
 use log::LevelFilter;
-use simplelog::{Config, CombinedLogger, WriteLogger};
+use simplelog::{Config, WriteLogger};
 use tauri::Manager;
 
 #[cfg(not(target_os = "android"))]
-use simplelog::{ColorChoice, TermLogger, TerminalMode};
+use simplelog::{ColorChoice, CombinedLogger, TermLogger, TerminalMode};
 
 static LOG_DIR: OnceLock<std::path::PathBuf> = OnceLock::new();
 

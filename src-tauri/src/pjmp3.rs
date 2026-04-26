@@ -18,6 +18,7 @@ fn reqwest_err_chain(e: reqwest::Error) -> String {
     s
 }
 
+use log::{info, warn};
 use regex::Regex;
 use scraper::{ElementRef, Html, Selector};
 use serde::Serialize;
@@ -25,6 +26,38 @@ use serde::Serialize;
 use crate::config::BASE_URL;
 
 const BROWSER_UA: &str = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36";
+
+/// 日志里截断 URL，避免单行过长。
+fn truncate_url_160(s: &str) -> String {
+    let t: String = s.chars().take(160).collect();
+    if s.len() > 160 {
+        format!("{t}…")
+    } else {
+        t
+    }
+}
+
+fn log_extracted_urls_summary(sid: &str, urls: &[String]) {
+    let n = urls.len();
+    let er_sycdn = urls
+        .iter()
+        .filter(|u| u.to_ascii_lowercase().contains("er-sycdn"))
+        .count();
+    let sycdn = urls.iter().filter(|u| {
+        let l = u.to_ascii_lowercase();
+        l.contains("sycdn.kuwo.cn") && !l.contains("er-sycdn")
+    }).count();
+    let preview: Vec<String> = urls.iter().take(3).map(|u| truncate_url_160(u)).collect();
+    info!(
+        target: "pj-play",
+        "extracted_urls sid={} count={} er_sycdn={} sycdn_other={} preview={:?}",
+        sid,
+        n,
+        er_sycdn,
+        sycdn,
+        preview
+    );
+}
 
 #[derive(Serialize, Clone, Debug)]
 pub struct SearchResultDto {
@@ -389,24 +422,58 @@ pub fn preview_cache_path_if_exists(song_id: &str) -> Option<PathBuf> {
 }
 
 pub async fn fetch_song_page_html(client: &reqwest::Client, song_id: &str) -> Result<String, String> {
+    let sid = song_id.trim();
     let url = format!(
         "{}/song.php?id={}",
         BASE_URL.trim_end_matches('/'),
-        song_id.trim()
+        sid
     );
-    client
+    let resp = match client
         .get(&url)
         .header("User-Agent", BROWSER_UA)
         .header("Referer", format!("{}/", BASE_URL))
         .header("Accept-Language", "zh-CN,zh;q=0.9,en;q=0.8")
         .send()
         .await
-        .map_err(reqwest_err_chain)?
-        .error_for_status()
-        .map_err(reqwest_err_chain)?
-        .text()
-        .await
-        .map_err(reqwest_err_chain)
+    {
+        Ok(r) => r,
+        Err(e) => {
+            let msg = reqwest_err_chain(e);
+            warn!(target: "pj-play", "song_page send_err sid={} err={}", sid, msg);
+            return Err(msg);
+        }
+    };
+    let status = resp.status();
+    let resp = match resp.error_for_status() {
+        Ok(r) => r,
+        Err(e) => {
+            let msg = reqwest_err_chain(e);
+            warn!(
+                target: "pj-play",
+                "song_page http_err sid={} status={} err={}",
+                sid,
+                status.as_u16(),
+                msg
+            );
+            return Err(msg);
+        }
+    };
+    let text = match resp.text().await {
+        Ok(t) => t,
+        Err(e) => {
+            let msg = reqwest_err_chain(e);
+            warn!(target: "pj-play", "song_page text_err sid={} err={}", sid, msg);
+            return Err(msg);
+        }
+    };
+    info!(
+        target: "pj-play",
+        "song_page ok sid={} status={} body_len={}",
+        sid,
+        status.as_u16(),
+        text.len()
+    );
+    Ok(text)
 }
 
 fn normalize_media_url(raw: &str) -> String {
@@ -540,6 +607,10 @@ fn expand_mp3_url_candidates(url: &str) -> Vec<String> {
 }
 
 /// 多组 Referer/Origin，尽量贴近浏览器从 pjmp3 嵌套酷我试听的行为。
+///
+/// Android 实测：酷我 CDN 对「带 pjmp3/kuwo Referer」的请求在部分 IP/线路下会直接 403/410，
+/// 而 WebView 直连（不带 Referer）却能返回 32s teaser。所以在末尾保留一组
+/// 「完全不带 Referer / Origin」的兜底 attempt，尽量与 WebView 行为一致。
 async fn download_mp3_bytes(
     client: &reqwest::Client,
     mp3_url: &str,
@@ -548,21 +619,31 @@ async fn download_mp3_bytes(
     let base = BASE_URL.trim_end_matches('/');
     let ref_home = format!("{}/", base);
 
-    let attempts: Vec<(String, Option<&str>)> = vec![
-        (song_page.to_string(), Some(base)),
-        (song_page.to_string(), None),
-        ("https://www.kuwo.cn/".to_string(), Some("https://www.kuwo.cn")),
-        (ref_home.clone(), Some(base)),
-        (song_page.to_string(), Some("https://www.kuwo.cn")),
+    let attempts: Vec<(Option<String>, Option<&str>)> = vec![
+        (Some(song_page.to_string()), Some(base)),
+        (Some(song_page.to_string()), None),
+        (Some("https://www.kuwo.cn/".to_string()), Some("https://www.kuwo.cn")),
+        (Some(ref_home.clone()), Some(base)),
+        (Some(song_page.to_string()), Some("https://www.kuwo.cn")),
+        // 兜底：WebView 直连也能拉到（至少 32s teaser），Rust 这里同样覆盖该路径
+        (None, None),
     ];
 
     let mut last_err = String::from("未知错误");
-    for (referer, origin) in attempts {
+    for (attempt_idx, (referer, origin)) in attempts.into_iter().enumerate() {
+        let t0 = std::time::Instant::now();
+        let ref_log = referer
+            .as_ref()
+            .map(|s| truncate_url_160(s.as_str()))
+            .unwrap_or_else(|| "(none)".to_string());
+        let origin_log = origin.unwrap_or("(none)");
         let mut req = client
             .get(mp3_url)
             .header("User-Agent", BROWSER_UA)
-            .header("Accept", "*/*")
-            .header("Referer", referer);
+            .header("Accept", "*/*");
+        if let Some(r) = referer {
+            req = req.header("Referer", r);
+        }
         if let Some(o) = origin {
             req = req.header("Origin", o);
         }
@@ -570,26 +651,96 @@ async fn download_mp3_bytes(
             Ok(r) => r,
             Err(e) => {
                 last_err = reqwest_err_chain(e);
+                warn!(
+                    target: "pj-play",
+                    "download_mp3_bytes attempt={} send_err url={} ref={} origin={} elapsed_ms={} err={}",
+                    attempt_idx,
+                    truncate_url_160(mp3_url),
+                    ref_log,
+                    origin_log,
+                    t0.elapsed().as_millis(),
+                    last_err
+                );
                 continue;
             }
         };
         let status = resp.status();
         let code = status.as_u16();
+        let cl_hdr = resp
+            .headers()
+            .get(reqwest::header::CONTENT_LENGTH)
+            .and_then(|v| v.to_str().ok())
+            .unwrap_or("-")
+            .to_string();
+        let ct_hdr = resp
+            .headers()
+            .get(reqwest::header::CONTENT_TYPE)
+            .and_then(|v| v.to_str().ok())
+            .unwrap_or("-")
+            .to_string();
         if code == 410 || code == 403 || code == 404 {
             last_err = format!("HTTP {code}");
+            warn!(
+                target: "pj-play",
+                "download_mp3_bytes attempt={} bad_status url={} http={} content_length_hdr={} content_type={} ref={} origin={} elapsed_ms={}",
+                attempt_idx,
+                truncate_url_160(mp3_url),
+                code,
+                cl_hdr,
+                ct_hdr,
+                ref_log,
+                origin_log,
+                t0.elapsed().as_millis()
+            );
             continue;
         }
         if !status.is_success() {
             last_err = format!("HTTP {status}");
+            warn!(
+                target: "pj-play",
+                "download_mp3_bytes attempt={} non_success url={} http={} content_length_hdr={} content_type={} ref={} origin={} elapsed_ms={}",
+                attempt_idx,
+                truncate_url_160(mp3_url),
+                code,
+                cl_hdr,
+                ct_hdr,
+                ref_log,
+                origin_log,
+                t0.elapsed().as_millis()
+            );
             continue;
         }
         let bytes = match resp.bytes().await {
             Ok(b) => b,
             Err(e) => {
                 last_err = reqwest_err_chain(e);
+                warn!(
+                    target: "pj-play",
+                    "download_mp3_bytes attempt={} body_err url={} ref={} origin={} elapsed_ms={} err={}",
+                    attempt_idx,
+                    truncate_url_160(mp3_url),
+                    ref_log,
+                    origin_log,
+                    t0.elapsed().as_millis(),
+                    last_err
+                );
                 continue;
             }
         };
+        let n = bytes.len();
+        info!(
+            target: "pj-play",
+            "download_mp3_bytes attempt={} ok url={} http={} bytes_len={} content_length_hdr={} content_type={} ref={} origin={} elapsed_ms={}",
+            attempt_idx,
+            truncate_url_160(mp3_url),
+            code,
+            n,
+            cl_hdr,
+            ct_hdr,
+            ref_log,
+            origin_log,
+            t0.elapsed().as_millis()
+        );
         return Ok(bytes.to_vec());
     }
     Err(last_err)
@@ -597,10 +748,23 @@ async fn download_mp3_bytes(
 
 fn validate_audio_bytes(bytes: &[u8]) -> Result<(), String> {
     if bytes.len() < 64 {
+        warn!(
+            target: "pj-play",
+            "validate_audio_bytes reject too_short len={}",
+            bytes.len()
+        );
         return Err("音频数据过短或无效".to_string());
     }
     let first = bytes.iter().copied().find(|b| !b.is_ascii_whitespace());
     if first == Some(b'<') {
+        let prefix: Vec<u8> = bytes.iter().copied().take(16).collect();
+        let hex: String = prefix.iter().map(|b| format!("{:02x}", b)).collect();
+        warn!(
+            target: "pj-play",
+            "validate_audio_bytes reject html_like len={} first16_hex={}",
+            bytes.len(),
+            hex
+        );
         return Err("试链接返回了网页而非音频".to_string());
     }
     Ok(())
@@ -621,16 +785,49 @@ pub async fn cache_preview_audio_file(client: &reqwest::Client, song_id: &str) -
     let song_page = format!("{}/song.php?id={}", BASE_URL.trim_end_matches('/'), sid);
 
     const ROUNDS: u32 = 6;
+    let mut last_attempt_err = String::new();
+    let mut tried_any = false;
+    let mut html_fetch_err: Option<String> = None;
     for round in 0..ROUNDS {
+        info!(
+            target: "pj-play",
+            "cache_preview_audio_file round_begin sid={} round={}/{}",
+            sid,
+            round + 1,
+            ROUNDS
+        );
         // 每轮重新请求 song 页，更新 Cookie 并解析试听链（含 aac/m4a 等，与 Py 一致）
-        let html = fetch_song_page_html(client, sid).await?;
+        let html = match fetch_song_page_html(client, sid).await {
+            Ok(h) => h,
+            Err(e) => {
+                html_fetch_err = Some(e.clone());
+                warn!(
+                    target: "pj-play",
+                    "cache_preview_audio_file round_fetch_html_fail sid={} round={} err={}",
+                    sid,
+                    round + 1,
+                    e
+                );
+                if round + 1 < ROUNDS {
+                    tokio::time::sleep(Duration::from_millis(240)).await;
+                }
+                continue;
+            }
+        };
         let mut urls = extract_mp3_urls(&html);
         urls.sort_by(|a, b| {
             let ae = a.to_lowercase().contains("er-sycdn");
             let be = b.to_lowercase().contains("er-sycdn");
             ae.cmp(&be)
         });
+        log_extracted_urls_summary(sid, &urls);
         if urls.is_empty() {
+            warn!(
+                target: "pj-play",
+                "cache_preview_audio_file round_no_urls sid={} round={}",
+                sid,
+                round + 1
+            );
             if round + 1 < ROUNDS {
                 tokio::time::sleep(Duration::from_millis(220)).await;
             }
@@ -641,15 +838,46 @@ pub async fn cache_preview_audio_file(client: &reqwest::Client, song_id: &str) -
             let ext = preview_file_extension_for_url(&mp3_url);
             let path = dir.join(format!("preview_{name}{ext}"));
             for candidate in expand_mp3_url_candidates(&mp3_url) {
+                tried_any = true;
                 match download_mp3_bytes(client, &candidate, &song_page).await {
                     Ok(bytes) => {
-                        if validate_audio_bytes(&bytes).is_err() {
+                        let n = bytes.len();
+                        if let Err(e) = validate_audio_bytes(&bytes) {
+                            last_attempt_err = format!("{e}（{candidate}）");
+                            warn!(
+                                target: "pj-play",
+                                "cache_preview_audio_file validate_fail sid={} candidate={} bytes_len={} err={}",
+                                sid,
+                                truncate_url_160(&candidate),
+                                n,
+                                e
+                            );
                             continue;
                         }
                         fs::write(&path, &bytes).map_err(|e| e.to_string())?;
+                        let (dur_ms, _) = crate::download_meta::probe_audio_file(&path);
+                        info!(
+                            target: "pj-play",
+                            "cache_preview_audio_file ok sid={} path={} bytes={} duration_ms={} url={}",
+                            sid,
+                            path.display(),
+                            n,
+                            dur_ms,
+                            truncate_url_160(&candidate)
+                        );
                         return Ok(path);
                     }
-                    Err(_e) => continue,
+                    Err(e) => {
+                        last_attempt_err = format!("{e}（{candidate}）");
+                        warn!(
+                            target: "pj-play",
+                            "cache_preview_audio_file download_fail sid={} candidate={} err={}",
+                            sid,
+                            truncate_url_160(&candidate),
+                            e
+                        );
+                        continue;
+                    }
                 }
             }
         }
@@ -659,10 +887,32 @@ pub async fn cache_preview_audio_file(client: &reqwest::Client, song_id: &str) -
         }
     }
 
-    Err(
-        "无法下载试听：站点返回的试听链暂时不可用（多为酷我 CDN 410）。请再点一次播放或重新搜索后重试。"
-            .to_string(),
-    )
+    if !tried_any {
+        if let Some(e) = html_fetch_err {
+            warn!(
+                target: "pj-play",
+                "cache_preview_audio_file give_up sid={} reason=html_fetch err={}",
+                sid,
+                e
+            );
+            return Err(format!("无法下载试听：song 页请求失败 - {e}"));
+        }
+        warn!(
+            target: "pj-play",
+            "cache_preview_audio_file give_up sid={} reason=no_urls_parsed",
+            sid
+        );
+        return Err("无法下载试听：未从 song 页解析到试听直链，稍后再试".to_string());
+    }
+    warn!(
+        target: "pj-play",
+        "cache_preview_audio_file give_up sid={} last_err={}",
+        sid,
+        last_attempt_err
+    );
+    Err(format!(
+        "无法下载试听：站点返回的试听链暂时不可用（多为酷我 CDN 410/403）。最后一次失败：{last_attempt_err}"
+    ))
 }
 
 pub async fn fetch_preview_url(client: &reqwest::Client, song_id: &str) -> Result<Option<String>, String> {

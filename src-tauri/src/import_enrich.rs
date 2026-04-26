@@ -278,6 +278,46 @@ async fn enrich_song_page_and_album_search(
     Ok(())
 }
 
+/// 为缺少曲库 id 的单条导入记录尝试搜索并写库；已有 id 则直接返回该 id。
+/// 用于播放/批量下载前补全 `pjmp3_source_id`。
+pub async fn try_resolve_import_row_source_id(
+    app: &AppHandle,
+    client: &Client,
+    app_state: &AppState,
+    playlist_id: i64,
+    row_id: i64,
+) -> Result<Option<String>, String> {
+    if playlist_id <= 0 || row_id <= 0 {
+        return Ok(None);
+    }
+    let row = {
+        let db: tauri::State<'_, DbState> = app.state();
+        let conn = db.conn.lock().map_err(|e| e.to_string())?;
+        load_row(&conn, playlist_id, row_id).map_err(|e| e.to_string())?
+    };
+    let Some(row) = row else {
+        return Ok(None);
+    };
+    let existing = row.pjmp3_source_id.trim();
+    if !existing.is_empty() {
+        return Ok(Some(existing.to_string()));
+    }
+    apply_search_metadata(app, client, app_state, playlist_id, &row).await?;
+    let row2 = {
+        let db: tauri::State<'_, DbState> = app.state();
+        let conn = db.conn.lock().map_err(|e| e.to_string())?;
+        load_row(&conn, playlist_id, row_id).map_err(|e| e.to_string())?
+    };
+    Ok(row2.and_then(|r| {
+        let s = r.pjmp3_source_id.trim();
+        if s.is_empty() {
+            None
+        } else {
+            Some(s.to_string())
+        }
+    }))
+}
+
 pub fn spawn_playlist_enrich(app: AppHandle, playlist_id: i64) {
     if playlist_id <= 0 {
         return;

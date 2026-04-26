@@ -102,6 +102,7 @@ pub fn open_and_init() -> Result<Connection, rusqlite::Error> {
             completed_at INTEGER NOT NULL
         );
         CREATE INDEX IF NOT EXISTS idx_downloaded_completed ON downloaded_tracks(completed_at DESC);
+        CREATE INDEX IF NOT EXISTS idx_downloaded_source ON downloaded_tracks(pjmp3_source_id);
         "#,
     )?;
 
@@ -166,6 +167,32 @@ pub fn insert_downloaded_track(
     Ok(())
 }
 
+/// 同一曲库 id 可能有多条（不同音质等），按完成时间从新到旧；路径由调用方校验是否仍存在。
+pub fn downloaded_track_paths_by_source_id(
+    conn: &Connection,
+    source_id: &str,
+) -> rusqlite::Result<Vec<String>> {
+    let sid = source_id.trim();
+    if sid.is_empty() {
+        return Ok(Vec::new());
+    }
+    let mut stmt = conn.prepare(
+        r#"SELECT file_path FROM downloaded_tracks
+           WHERE TRIM(IFNULL(pjmp3_source_id,'')) = TRIM(?1)
+           ORDER BY completed_at DESC"#,
+    )?;
+    let mut out = Vec::new();
+    let mut rows = stmt.query([sid])?;
+    while let Some(row) = rows.next()? {
+        let fp: String = row.get(0)?;
+        let t = fp.trim();
+        if !t.is_empty() {
+            out.push(t.to_string());
+        }
+    }
+    Ok(out)
+}
+
 #[derive(Debug, serde::Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct DownloadedSongRow {
@@ -201,4 +228,25 @@ pub fn list_downloaded_tracks(conn: &Connection) -> rusqlite::Result<Vec<Downloa
         })
     })?;
     rows.collect()
+}
+
+/// 按路径删除「下载歌曲」库记录（条数 0 或 1）。
+pub fn delete_downloaded_track_by_path(conn: &Connection, file_path: &str) -> rusqlite::Result<usize> {
+    conn.execute("DELETE FROM downloaded_tracks WHERE file_path = ?1", [file_path])
+}
+
+/// 移除磁盘上已不存在的下载记录（用户在资源管理器删除文件后，下次列表刷新会同步）。
+pub fn prune_downloaded_tracks_missing_files(conn: &Connection) -> rusqlite::Result<usize> {
+    use std::path::Path;
+    let paths: Vec<String> = conn
+        .prepare("SELECT file_path FROM downloaded_tracks")?
+        .query_map([], |r| r.get(0))?
+        .collect::<Result<Vec<_>, _>>()?;
+    let mut total = 0usize;
+    for fp in paths {
+        if !Path::new(&fp).is_file() {
+            total += delete_downloaded_track_by_path(conn, &fp)?;
+        }
+    }
+    Ok(total)
 }

@@ -27,7 +27,7 @@
         overflow: hidden;
         background: transparent !important;
         border-radius: var(--ly-radius);
-        font-family: "Microsoft YaHei UI", "PingFang SC", "Segoe UI", sans-serif;
+        font-family: "Segoe UI", system-ui, "Microsoft YaHei UI", "PingFang SC", sans-serif;
         user-select: none;
         -webkit-user-select: none;
       }
@@ -40,7 +40,9 @@
         height: 100%;
         min-height: 100%;
         border-radius: var(--ly-radius);
-        overflow: hidden;
+        /* 仅裁切水平溢出；垂直方向可见，避免拉丁字母降部/大字号被拦腰截断 */
+        overflow-x: hidden;
+        overflow-y: visible;
         pointer-events: auto;
       }
       .wrap {
@@ -54,7 +56,8 @@
         padding: 10px 18px;
         gap: 6px;
         border-radius: var(--ly-radius);
-        overflow: hidden;
+        overflow-x: hidden;
+        overflow-y: visible;
         background: transparent;
         border: none;
         outline: none;
@@ -149,10 +152,14 @@
         pointer-events: none;
         font-size: var(--ly-pt);
         font-weight: 600;
-        line-height: 1.22;
+        line-height: 1.45;
+        min-height: 1.45em;
+        padding: 0.06em 0;
+        flex-shrink: 0;
         white-space: nowrap;
         text-overflow: ellipsis;
-        overflow: hidden;
+        overflow-x: hidden;
+        overflow-y: visible;
         max-width: 100%;
         user-select: none;
         -webkit-user-select: none;

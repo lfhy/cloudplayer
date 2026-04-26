@@ -4,6 +4,8 @@
 
 **快速跳转：** [项目简介](#sec-overview) · [核心特性](#sec-features) · [界面预览](#sec-preview) · [环境与依赖](#sec-deps) · [开发与构建](#sec-build) · [本地发布](#sec-release-local) · [GitHub Release](#sec-github-release) · [发布检查清单](#sec-checklist) · [致谢](#sec-ack)
 
+> **客户端下载：** 需要已打包的安装程序时，可在本仓库的 **GitHub Releases** 页面获取（在 GitHub 打开仓库主页后，从 **Releases** 入口进入即可下载对应版本的安装包）。
+
 <a id="sec-overview"></a>
 
 CloudPlayer 是一个基于 Tauri、Rust 与 Vite 构建的桌面音乐应用。项目围绕桌面端音乐检索、在线试听、多源歌词获取、本地曲库管理、下载队列与歌单导入等能力展开，适用于日常播放与本地整理场景。

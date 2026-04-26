@@ -1,6 +1,7 @@
 pub mod captcha_slider;
 mod commands;
 mod config;
+mod global_hotkeys;
 mod logging;
 mod db;
 mod download;
@@ -38,12 +39,40 @@ use tauri::menu::{MenuBuilder, MenuItem};
 #[cfg(desktop)]
 use tauri::tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent};
 
+#[cfg(desktop)]
+use crate::config::Settings;
+#[cfg(desktop)]
+use crate::global_hotkeys::{dispatch_shortcut, HotkeyShortcutMap};
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     logging::install_panic_hook();
-    tauri::Builder::default()
+
+    #[cfg(desktop)]
+    let hotkey_map = HotkeyShortcutMap::default();
+    #[cfg(desktop)]
+    let hotkey_for_handler = hotkey_map.clone();
+    #[cfg(desktop)]
+    let desktop_hotkey_state = Some(hotkey_map);
+    #[cfg(not(desktop))]
+    let desktop_hotkey_state: Option<HotkeyShortcutMap> = None;
+
+    let mut builder = tauri::Builder::default()
         .plugin(tauri_plugin_dialog::init())
-        .plugin(tauri_plugin_os::init())
+        .plugin(tauri_plugin_os::init());
+
+    #[cfg(desktop)]
+    {
+        builder = builder.plugin(
+            tauri_plugin_global_shortcut::Builder::new()
+                .with_handler(move |app, shortcut, event| {
+                    dispatch_shortcut(app, shortcut, event, &hotkey_for_handler);
+                })
+                .build(),
+        );
+    }
+
+    builder
         .on_window_event(|window, _event| {
             if window.label() != "main" {
                 return;
@@ -54,7 +83,7 @@ pub fn run() {
                 let _ = window.emit("main-close-requested", ());
             }
         })
-        .setup(|app| {
+        .setup(move |app| {
             #[cfg(target_os = "android")]
             {
                 init_android_storage(app)?;
@@ -94,6 +123,16 @@ pub fn run() {
                 limiter: Arc::new(rate_limiter::RateLimiter::new(45)),
                 download_tx,
             }));
+
+            if let Some(hm) = desktop_hotkey_state {
+                let cfg = Settings::load().global_hotkeys.clone();
+                let _ = crate::global_hotkeys::apply_global_hotkeys_runtime(
+                    app.handle(),
+                    &cfg,
+                    &hm,
+                );
+                app.manage(hm);
+            }
 
             #[cfg(desktop)]
             {
@@ -150,6 +189,10 @@ pub fn run() {
         })
         .invoke_handler(tauri::generate_handler![
             commands::get_settings,
+            commands::get_global_hotkeys,
+            commands::apply_global_hotkeys,
+            commands::validate_accelerator,
+            commands::get_default_download_dir,
             commands::set_desktop_lyrics_click_through,
             commands::hide_main_window,
             commands::show_main_window,
@@ -157,10 +200,13 @@ pub fn run() {
             commands::local_path_accessible,
             commands::save_settings,
             commands::db_status,
+            commands::get_app_log_path,
+            commands::read_file_bytes,
             commands::search_songs,
             commands::get_preview_url,
             commands::cache_preview_for_play,
             commands::resolve_online_play,
+            commands::log_play_event,
             commands::parse_import_text,
             commands::list_playlists,
             commands::list_playlists_summary,
@@ -172,6 +218,7 @@ pub fn run() {
             commands::replace_playlist_import_items,
             commands::append_playlist_import_items,
             commands::start_import_enrich,
+            commands::try_fill_playlist_item_source_id,
             commands::fetch_song_lrc,
             commands::fetch_song_lrc_enriched,
             commands::fetch_lrc_cx_cover,
@@ -180,6 +227,7 @@ pub fn run() {
             commands::fetch_share_playlist,
             commands::list_local_songs,
             commands::list_downloaded_songs,
+            commands::delete_downloaded_song,
             commands::scan_music_folder,
             commands::list_recent_plays,
             commands::record_recent_play,

@@ -4,6 +4,8 @@
 
 **Quick links:** [Overview](#sec-overview) · [Key features](#sec-features) · [Preview](#sec-preview) · [Environment and dependencies](#sec-deps) · [Development and build](#sec-build) · [Local release](#sec-release-local) · [GitHub Release](#sec-github-release) · [Release checklist](#sec-checklist) · [Acknowledgments](#sec-ack)
 
+> **Downloads:** Pre-built installers are published on **GitHub Releases**. Open the repository on GitHub and use the **Releases** entry in the header (or the releases link on the repo home page) to download assets for each version.
+
 <a id="sec-overview"></a>
 
 CloudPlayer is a desktop music application built with Tauri, Rust, and Vite. It focuses on music discovery and preview, multi-source lyric retrieval, local library management, download queue handling, and playlist import workflows for desktop use.
