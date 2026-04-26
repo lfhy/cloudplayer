@@ -306,6 +306,15 @@ body {
   transition: opacity 140ms ease, transform 140ms ease;
 }
 
+.sidebar-account__menu::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -14px;
+  height: 14px;
+}
+
 .sidebar-account:hover .sidebar-account__menu,
 .sidebar-account:focus-within .sidebar-account__menu {
   opacity: 1;
