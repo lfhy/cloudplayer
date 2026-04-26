@@ -1512,7 +1512,7 @@ body {
   align-items: center;
   justify-content: center;
   border-radius: 8px;
-  border: 1px solid var(--dock-edge);
+  border: 1px solid transparent;
   background: var(--dock-chip-bg);
   color: var(--dock-accent);
   font-size: 12px;
@@ -1565,6 +1565,7 @@ body {
   width: 30px;
   height: 30px;
   padding: 0;
+  border-color: transparent;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -1572,6 +1573,10 @@ body {
     background 0.15s ease,
     border-color 0.15s ease,
     transform 0.14s ease;
+}
+
+.dock-chip--icon:hover {
+  border-color: transparent;
 }
 
 .dock-chip--icon svg {
