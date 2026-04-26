@@ -2243,6 +2243,8 @@ body {
 .theme-mode-card__preview {
   width: 34px;
   height: 34px;
+  position: relative;
+  overflow: hidden;
   border-radius: 12px;
   flex: 0 0 34px;
   border: 1px solid rgba(15, 23, 42, 0.12);
@@ -2250,7 +2252,15 @@ body {
 }
 
 .theme-mode-card__preview--system {
-  background: linear-gradient(135deg, #f6f6f8 0 50%, #1f232a 50% 100%);
+  background: #1f232a;
+}
+
+.theme-mode-card__preview--system::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: #f6f6f8;
+  clip-path: polygon(0 0, 100% 0, 0 100%);
 }
 
 .theme-mode-card__preview--light {
