@@ -463,6 +463,13 @@ body {
   fill: none;
 }
 
+.sidebar-account__menu-icon--glyph {
+  font-size: 15px;
+  line-height: 1;
+  align-items: center;
+  justify-content: center;
+}
+
 .sidebar-pl-hint {
   font-size: 11px;
   color: var(--text-secondary);
