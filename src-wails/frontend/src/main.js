@@ -2682,10 +2682,7 @@ function renderSidebar() {
     const btn = document.createElement("button");
     btn.type = "button";
     btn.className = "sidebar-account__menu-item";
-    const iconHtml =
-      item.id === "settings"
-        ? `<span class="sidebar-account__menu-icon sidebar-account__menu-icon--glyph" aria-hidden="true">⚙</span>`
-        : `<span class="sidebar-account__menu-icon">${navIconSvg(item.icon)}</span>`;
+    const iconHtml = `<span class="sidebar-account__menu-icon">${navIconSvg(item.icon)}</span>`;
     btn.innerHTML = `${iconHtml}<span>${escapeHtml(item.label)}</span>`;
     btn.addEventListener("click", () => setPage(item.id));
     accountMenu.appendChild(btn);
