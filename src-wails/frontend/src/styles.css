@@ -558,6 +558,7 @@ body {
 
 /* 对齐 Py 版 NeonSearchBar：白底 + 横向青→品红→金渐变描边（未聚焦略淡，聚焦更亮） */
 .neon-search-wrap {
+  position: relative;
   display: block;
   width: 100%;
   max-width: 420px;
@@ -565,6 +566,8 @@ body {
   padding: 2px;
   border-radius: 9999px;
   box-sizing: border-box;
+  overflow: visible;
+  isolation: isolate;
   background: linear-gradient(
     90deg,
     rgba(92, 230, 240, 0.55) 0%,
@@ -572,6 +575,24 @@ body {
     rgba(255, 215, 100, 0.55) 100%
   );
   transition: background 0.2s ease, box-shadow 0.2s ease;
+}
+
+.neon-search-wrap::before {
+  content: "";
+  position: absolute;
+  inset: -4px;
+  border-radius: inherit;
+  background: linear-gradient(
+    90deg,
+    rgba(92, 230, 240, 0.14) 0%,
+    rgba(240, 92, 210, 0.12) 50%,
+    rgba(255, 215, 100, 0.14) 100%
+  );
+  filter: blur(10px);
+  opacity: 0.72;
+  z-index: -1;
+  pointer-events: none;
+  transition: opacity 0.2s ease, filter 0.2s ease;
 }
 
 .neon-search-inner {
@@ -592,8 +613,13 @@ body {
     rgb(255, 215, 100) 100%
   );
   box-shadow:
-    0 0 10px rgba(92, 230, 240, 0.35),
-    0 0 18px rgba(240, 92, 210, 0.22);
+    0 0 0 1px rgba(255, 255, 255, 0.04),
+    0 10px 24px rgba(15, 23, 42, 0.08);
+}
+
+.neon-search-wrap:focus-within::before {
+  opacity: 1;
+  filter: blur(12px);
 }
 
 .global-search {
