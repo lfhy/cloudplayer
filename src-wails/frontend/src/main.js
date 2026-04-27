@@ -54,6 +54,7 @@ import { createPlaylistController } from "./features/library/playlistController.
 import { createLyricsController } from "./features/lyrics/controller.js";
 import { createDockController } from "./features/player/dockController.js";
 import { createDockThemeHelpers } from "./features/player/dockTheme.js";
+import { createAudioEventsController } from "./features/player/audioEventsController.js";
 import { createPlayerChromeController } from "./features/player/chromeController.js";
 import { createPlayerHotkeyController } from "./features/player/hotkeysController.js";
 import { createPlaybackController } from "./features/player/playbackController.js";
@@ -469,6 +470,32 @@ const { setPlayerNavEnabled, syncSeekUi, updatePlayerChrome } = createPlayerChro
   playModeItems: PLAY_MODES,
 });
 
+const { wireAudio } = createAudioEventsController({
+  alertRequestFailed,
+  audioDiagPayload,
+  broadcastTrayPlayerState,
+  getAudioEl: audioEl,
+  getAudioProgressLogLastTs: () => audioProgressLogLastTs,
+  getAudioSourceGeneration: () => audioSourceGeneration,
+  getPlayIndex: () => playIndex,
+  getPlayLoadGeneration: () => playLoadGeneration,
+  getPlayModeIndex: () => playModeIndex,
+  getPlayQueue: () => playQueue,
+  logPlayEventDesktop,
+  messageRequestFailed: MSG_REQUEST_FAILED,
+  playFromQueueIndex: (...args) => playFromQueueIndex(...args),
+  playModeItems: PLAY_MODES,
+  randomNextIndex,
+  setAudioProgressLogLastTs: (value) => {
+    audioProgressLogLastTs = value;
+  },
+  setSeekDragging: (value) => {
+    seekDragging = value;
+  },
+  syncDesktopLyrics: () => syncDesktopLyrics(),
+  syncSeekUi,
+});
+
 // Settings are split into a controller so the runtime entry only keeps state bridges.
 const {
   getSettingsFormValues,
@@ -620,160 +647,6 @@ const { renderImportTable, wireImportPage } = createImportPageController({
 
 function audioEl() {
   return document.getElementById("audio-player");
-}
-
-function wireAudio() {
-  const a = audioEl();
-  const playBtn = document.getElementById("btn-player-play");
-  const seek = document.getElementById("seek");
-
-  a.addEventListener("timeupdate", () => {
-    syncSeekUi();
-    void syncDesktopLyrics();
-  });
-  a.addEventListener("loadedmetadata", () => {
-    syncSeekUi();
-    if (audioSourceGeneration === playLoadGeneration) {
-      void logPlayEventDesktop("audio_loadedmetadata", {
-        url: a.src || null,
-        extra: audioDiagPayload(a),
-      });
-    }
-  });
-  a.addEventListener("durationchange", () => syncSeekUi());
-  a.addEventListener("canplay", () => syncSeekUi());
-  a.addEventListener("progress", () => {
-    if (audioSourceGeneration !== playLoadGeneration) return;
-    const now = Date.now();
-    if (now - audioProgressLogLastTs < 1000) return;
-    audioProgressLogLastTs = now;
-    void logPlayEventDesktop("audio_progress", {
-      url: a.src || null,
-      extra: audioDiagPayload(a),
-    });
-  });
-  a.addEventListener("stalled", () => {
-    if (audioSourceGeneration !== playLoadGeneration) return;
-    void logPlayEventDesktop("audio_stalled", {
-      url: a.src || null,
-      extra: audioDiagPayload(a),
-    });
-  });
-  a.addEventListener("ended", () => {
-    if (audioSourceGeneration === playLoadGeneration) {
-      void logPlayEventDesktop("audio_ended", {
-        url: a.src || null,
-        extra: audioDiagPayload(a),
-      });
-    }
-    const n = playQueue.length;
-    const mode = PLAY_MODES[playModeIndex].key;
-    if (!n) {
-      syncSeekUi();
-      return;
-    }
-    if (mode === "one") {
-      a.currentTime = 0;
-      a.play().catch(() => {});
-      return;
-    }
-    if (mode === "loop_list") {
-      const nxt = (playIndex + 1) % n;
-      playFromQueueIndex(nxt);
-      return;
-    }
-    if (mode === "shuffle") {
-      playFromQueueIndex(randomNextIndex());
-      return;
-    }
-    if (playIndex < n - 1) {
-      playFromQueueIndex(playIndex + 1);
-    } else if (playBtn) {
-      playBtn.textContent = "▶";
-    }
-    syncSeekUi();
-  });
-  a.addEventListener("play", () => {
-    if (playBtn) playBtn.textContent = "⏸";
-    void broadcastTrayPlayerState();
-  });
-  a.addEventListener("pause", () => {
-    if (playBtn) playBtn.textContent = "▶";
-    void broadcastTrayPlayerState();
-  });
-  a.addEventListener("error", () => {
-    const err = a.error;
-    if (err && err.code === 1) return;
-    if (audioSourceGeneration !== playLoadGeneration) return;
-    void logPlayEventDesktop("audio_error", {
-      url: a.src || null,
-      error_code: err ? err.code : null,
-      message: err && err.message ? err.message : null,
-      extra: audioDiagPayload(a),
-    });
-    const sub = document.getElementById("dock-sub");
-    if (sub && err) {
-      sub.textContent = MSG_REQUEST_FAILED;
-    }
-    void broadcastTrayPlayerState();
-  });
-
-  if (seek) {
-    seek.addEventListener("pointerdown", () => {
-      seekDragging = true;
-    });
-    seek.addEventListener("pointerup", () => {
-      seekDragging = false;
-      syncSeekUi();
-    });
-    seek.addEventListener("input", () => {
-      const d = a.duration;
-      if (d && isFinite(d) && d > 0) {
-        a.currentTime = (Number(seek.value) / 1000) * d;
-      }
-    });
-  }
-
-  playBtn?.addEventListener("click", async () => {
-    if (!a.src) return;
-    try {
-      if (a.paused) {
-        await a.play();
-      } else {
-        a.pause();
-      }
-    } catch (err) {
-      alertRequestFailed(err, "audio play()");
-    }
-  });
-  document.getElementById("btn-player-prev")?.addEventListener("click", () => {
-    const n = playQueue.length;
-    if (!n) return;
-    const mode = PLAY_MODES[playModeIndex].key;
-    if (mode === "shuffle") {
-      playFromQueueIndex((playIndex - 1 + n) % n);
-      return;
-    }
-    if (mode === "loop_list" && playIndex === 0) {
-      playFromQueueIndex(n - 1);
-      return;
-    }
-    if (playIndex > 0) playFromQueueIndex(playIndex - 1);
-  });
-  document.getElementById("btn-player-next")?.addEventListener("click", () => {
-    const n = playQueue.length;
-    if (!n) return;
-    const mode = PLAY_MODES[playModeIndex].key;
-    if (mode === "shuffle") {
-      playFromQueueIndex(randomNextIndex());
-      return;
-    }
-    if (mode === "loop_list" && playIndex === n - 1) {
-      playFromQueueIndex(0);
-      return;
-    }
-    if (playIndex < n - 1) playFromQueueIndex(playIndex + 1);
-  });
 }
 
 function isEditableElement(el) {
