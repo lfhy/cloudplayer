@@ -2,43 +2,48 @@ import { convertFileSrc, invoke } from "./wails/tauri-core.js";
 import { open } from "./wails/tauri-plugin-dialog.js";
 import { emitTo, listen } from "./wails/tauri-event.js";
 import { WebviewWindow } from "./wails/tauri-webviewWindow.js";
+import {
+  LYRICS_REPLACE_TARGET,
+  LYRICS_WW_TARGET,
+  NAV,
+  PLAY_MODES,
+  QUALITY_LABELS,
+  QUICK_THEME_MODE_LABELS,
+  RECENT_SESSION_MAX,
+  SIDEBAR_MENU_NAV,
+  TRAY_PLAYER_TARGET,
+} from "./app/constants.js";
+import { MSG_REQUEST_FAILED, alertRequestFailed, warnRequestFailed } from "./app/helpers/errors.js";
+import {
+  appLogoMarkSvg,
+  dockLyricsLockIcon,
+  iconSvgByName,
+  importBackButtonIconSvg,
+  importMethodIconSvg,
+  navIconSvg,
+} from "./app/helpers/icons.js";
+import { loadLikedSet, saveLikedSet } from "./app/helpers/likedSet.js";
+import { audioDiagPayload, createPlayEventLogger } from "./app/helpers/playerDiagnostics.js";
+import {
+  applyAppTheme,
+  applyPlatformClassNames,
+  normalizeAccentHex,
+  normalizeAppTheme,
+  normalizeAppThemeMode,
+  normalizeCloseAction,
+  normalizeNetworkProxyMode,
+  normalizeNetworkProxyUrl,
+  normalizeSettingsTab,
+  resolveAppThemeMode,
+  setNetworkProxyModeSelection as applyNetworkProxyModeSelectionUi,
+  setSettingsTab as applySettingsTabUi,
+  setThemeCardSelection as applyThemeCardSelectionUi,
+  setThemeModeSelection as applyThemeModeSelectionUi,
+  systemDarkMedia,
+  themeAccentRgb,
+} from "./app/helpers/platformTheme.js";
+import { createImportFlowHelpers } from "./app/helpers/importFlow.js";
 import { renderMainShell } from "./layout/renderMainShell.js";
-import solarIcons from "@iconify-json/solar/icons.json";
-
-const NAV = [
-  { id: "home", label: "音乐首页", icon: "home" },
-  { id: "search", label: "音乐搜索", icon: "search" },
-  { id: "daily", label: "每日推荐", icon: "sparkles" },
-  { id: "recent", label: "最近播放", icon: "clock" },
-];
-
-const SIDEBAR_MENU_NAV = [
-  { id: "download", label: "下载管理", icon: "download" },
-  { id: "import", label: "导入歌单", icon: "library" },
-  { id: "settings", label: "偏好设置", icon: "settings" },
-];
-
-const APP_THEMES = {
-  coral: { accent: "#c62f2f", accentRgb: "198, 47, 47" },
-  ocean: { accent: "#1f6aa5", accentRgb: "31, 106, 165" },
-  forest: { accent: "#2f7d4b", accentRgb: "47, 125, 75" },
-  netease: { accent: "#d43c33", accentRgb: "212, 60, 51" },
-  kugou: { accent: "#1977ff", accentRgb: "25, 119, 255" },
-  qqmusic: { accent: "#31c27c", accentRgb: "49, 194, 124" },
-};
-
-const APP_THEME_MODES = new Set(["system", "light", "graphite", "midnight", "forestnight"]);
-const NETWORK_PROXY_MODES = new Set(["direct", "system", "custom"]);
-const SETTINGS_TABS = new Set(["appearance", "network", "source", "controls", "lyrics"]);
-const QUICK_THEME_MODE_LABELS = {
-  system: "跟随系统",
-  light: "浅色",
-  dark: "深色",
-};
-const systemDarkMedia =
-  typeof window !== "undefined" && typeof window.matchMedia === "function"
-    ? window.matchMedia("(prefers-color-scheme: dark)")
-    : null;
 
 /** @type {{ keyword: string, page: number, hasNext: boolean, results: any[], busy: boolean }} */
 const searchState = {
@@ -63,63 +68,8 @@ let audioSourceGeneration = 0;
 let audioProgressLogLastTs = 0;
 
 /** 不向用户展示后端/网络异常细节（仅控制台保留完整错误） */
-const MSG_REQUEST_FAILED = "请求失败";
-
-function warnRequestFailed(e, label) {
-  if (label) console.warn(label, e);
-  else console.warn(e);
-}
-
-function alertRequestFailed(e, label) {
-  warnRequestFailed(e, label);
-  alert(MSG_REQUEST_FAILED);
-}
-
-function audioDiagPayload(a) {
-  let bufferedEnd = null;
-  try {
-    if (a.buffered && a.buffered.length > 0) {
-      bufferedEnd = a.buffered.end(a.buffered.length - 1);
-    }
-  } catch {
-    /* ignore */
-  }
-  return {
-    currentTime: a.currentTime,
-    duration: a.duration,
-    readyState: a.readyState,
-    networkState: a.networkState,
-    bufferedEnd,
-  };
-}
-
-async function logPlayEventDesktop(
-  stage,
-  { url = null, error_code = null, message = null, extra = null } = {},
-) {
-  try {
-    await invoke("log_play_event", {
-      stage,
-      url,
-      error_code,
-      message,
-      extra: extra != null ? (typeof extra === "string" ? extra : JSON.stringify(extra)) : null,
-    });
-  } catch {
-    /* ignore */
-  }
-}
-
-/** 与 Py 版 PlayMode 对应：序 → 循 → 单 → 随 */
-const PLAY_MODES = [
-  { key: "sequential", icon: "playlist-minimalistic-2-bold", tip: "顺序播放（点击切换模式）" },
-  { key: "loop_list", icon: "repeat-bold", tip: "列表循环" },
-  { key: "one", icon: "repeat-one-bold", tip: "单曲循环" },
-  { key: "shuffle", icon: "shuffle-outline", tip: "随机播放" },
-];
+const logPlayEventDesktop = createPlayEventLogger(invoke);
 let playModeIndex = 0;
-
-const QUALITY_LABELS = { flac: "无损", "320": "HQ", "128": "标准" };
 let qualityPref = "128";
 
 /** 导入页已解析条目 @type {{ title: string, artist: string, album: string }[]} */
@@ -153,183 +103,13 @@ let neteaseCookieValue = "";
 let importMethod = "";
 let importDraftDirty = false;
 let dailyRecommendationRows = [];
+let syncNeteaseCookieUi = () => {};
+let setImportMethod = () => {};
+let showImportResultStage = () => {};
+let setImportStep = () => {};
+let resetImportFlow = () => {};
+let setImportDraft = () => {};
 
-function dockLyricsLockIcon(unlockAction) {
-  if (unlockAction) {
-    return `
-      <svg viewBox="0 0 24 24" aria-hidden="true">
-        <path d="M16 10V7.8a3.5 3.5 0 0 0-6-2.5"></path>
-        <rect x="6.5" y="10" width="11" height="9.5" rx="2.4"></rect>
-        <path d="M12 13.5v2.2"></path>
-      </svg>
-    `;
-  }
-  return `
-    <svg viewBox="0 0 24 24" aria-hidden="true">
-      <path d="M8.5 10V7.8a3.5 3.5 0 0 1 7 0V10"></path>
-      <rect x="6.5" y="10" width="11" height="9.5" rx="2.4"></rect>
-      <path d="M12 13.5v2.2"></path>
-    </svg>
-  `;
-}
-
-function appLogoMarkSvg() {
-  return `
-    <svg viewBox="0 0 120 72" aria-hidden="true" focusable="false">
-      <g fill="currentColor">
-        <rect x="4" y="34" width="6" height="8" rx="3"></rect>
-        <rect x="14" y="30" width="6" height="16" rx="3"></rect>
-        <rect x="24" y="24" width="6" height="28" rx="3"></rect>
-        <rect x="34" y="18" width="6" height="40" rx="3"></rect>
-        <rect x="44" y="12" width="6" height="52" rx="3"></rect>
-        <rect x="54" y="8" width="6" height="60" rx="3"></rect>
-        <rect x="64" y="12" width="6" height="52" rx="3"></rect>
-        <rect x="74" y="18" width="6" height="40" rx="3"></rect>
-        <rect x="84" y="24" width="6" height="28" rx="3"></rect>
-        <rect x="94" y="30" width="6" height="16" rx="3"></rect>
-        <rect x="104" y="34" width="6" height="8" rx="3"></rect>
-        <rect x="2" y="35" width="116" height="2.5" rx="1.25" opacity="0.92"></rect>
-      </g>
-    </svg>
-  `;
-}
-
-function navIconSvg(name) {
-  if (name === "appearance-system") {
-    return `
-      <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-        <path fill="currentColor" fill-rule="evenodd" d="M12 2C6.477 2 2 6.477 2 12s4.477 10 10 10s10-4.477 10-10S17.523 2 12 2m-.93 5.75a1 1 0 0 0-.93.63l-2.58 6.45a.75.75 0 1 0 1.392.557l.46-1.137h5.176l.46 1.137a.75.75 0 0 0 1.392-.557l-2.58-6.45a1 1 0 0 0-.93-.63zm.205 1.91L10.02 12.75h3.96l-1.255-3.09a12 12 0 0 1-.27-.721h-.04c-.085.267-.173.507-.27.72" clip-rule="evenodd"/>
-      </svg>
-    `;
-  }
-  const icons = {
-    home: "home-2-linear",
-    search: "magnifer-linear",
-    sparkles: "stars-line-duotone",
-    clock: "history-linear",
-    download: "download-linear",
-    library: "library-linear",
-    settings: "settings-linear",
-    playlist: "playlist-minimalistic-2-linear",
-    "chevron-up-down": "alt-arrow-up-line-duotone",
-    appearance: "moon-fog-linear",
-    "appearance-light": "sun-2-bold",
-    "appearance-dark": "moon-stars-bold",
-  };
-  const iconName = icons[name] || icons.playlist;
-  const icon = solarIcons.icons[iconName];
-  if (!icon) return "";
-  const width = icon.width || solarIcons.width || 24;
-  const height = icon.height || solarIcons.height || 24;
-  const rotate = name === "chevron-up-down" ? ' style="transform: rotate(180deg); transform-origin: center;"' : "";
-  return `<svg viewBox="0 0 ${width} ${height}" aria-hidden="true" focusable="false"${rotate}>${icon.body}</svg>`;
-}
-
-function iconSvgByName(iconName) {
-  const icon = solarIcons.icons[iconName];
-  if (!icon) return "";
-  const width = icon.width || solarIcons.width || 24;
-  const height = icon.height || solarIcons.height || 24;
-  return `<svg viewBox="0 0 ${width} ${height}" aria-hidden="true" focusable="false">${icon.body}</svg>`;
-}
-
-function importMethodIconSvg(method) {
-  const icons = {
-    local: "folder-2-bold",
-    share: "link-bold",
-    text: "document-text-bold",
-  };
-  return iconSvgByName(icons[method] || "folder-2-bold");
-}
-
-function importBackButtonIconSvg() {
-  return iconSvgByName("alt-arrow-left-line-duotone");
-}
-
-function syncNeteaseCookieUi() {
-  const chk = document.getElementById("opt-netease-cookie-enabled");
-  const inp = document.getElementById("opt-netease-cookie");
-  if (chk) chk.checked = !!neteaseCookieEnabled;
-  if (inp) {
-    inp.value = neteaseCookieValue || "";
-    inp.disabled = !neteaseCookieEnabled;
-  }
-}
-
-function setImportMethod(method = "", { syncStep = true } = {}) {
-  importMethod = method;
-  document.querySelectorAll("[data-import-method]").forEach((card) => {
-    card.classList.toggle("is-active", card.getAttribute("data-import-method") === method);
-  });
-  document.querySelectorAll(".import-panel").forEach((panel) => {
-    panel.hidden = panel.id !== `import-panel-${method}`;
-  });
-  const title = document.getElementById("import-config-title");
-  const desc = document.getElementById("import-config-desc");
-  const copy = {
-    local: ["导入本地目录", "选择一个音乐文件夹，扫描完成后会自动把结果带入歌单草稿。"],
-    share: ["导入分享链接", "粘贴歌单分享链接并解析，完成后可以直接保存或合并到已有歌单。"],
-    text: ["导入文本列表", "把歌单文本、CSV 或 JSON 粘贴进来，解析后统一进入保存步骤。"],
-  };
-  if (title) title.textContent = copy[method]?.[0] || "配置导入参数";
-  if (desc) desc.textContent = copy[method]?.[1] || "";
-  if (syncStep) setImportStep(method ? "config" : importTracks.length > 0 ? "result" : "choose");
-}
-
-function showImportResultStage(show = true) {
-  setImportStep(show ? "result" : importMethod ? "config" : "choose");
-}
-
-function setImportStep(step = "choose") {
-  const chooser = document.getElementById("import-method-stage");
-  const config = document.getElementById("import-config-stage");
-  const result = document.getElementById("import-result-stage");
-  if (chooser) chooser.hidden = step !== "choose";
-  if (config) config.hidden = step !== "config";
-  if (result) result.hidden = step !== "result";
-  const order = ["choose", "config", "result"];
-  const currentIndex = order.indexOf(step);
-  document.querySelectorAll("[data-import-step-nav]").forEach((el) => {
-    const idx = order.indexOf(el.getAttribute("data-import-step-nav") || "");
-    el.classList.toggle("is-active", idx === currentIndex);
-    el.classList.toggle("is-done", idx > -1 && idx < currentIndex);
-    const disabled = idx > currentIndex || (idx === 1 && !importMethod) || (idx === 2 && importTracks.length === 0);
-    el.disabled = disabled;
-  });
-}
-
-function resetImportFlow({ keepDraft = false } = {}) {
-  setImportMethod("");
-  showImportResultStage(keepDraft && importTracks.length > 0);
-  if (!keepDraft) {
-    importTracks = [];
-    importShareSuggestedName = "";
-    importDraftDirty = false;
-    renderImportTable();
-  }
-  const shareStatus = document.getElementById("import-share-status");
-  if (shareStatus) shareStatus.textContent = "";
-}
-
-function setImportDraft(tracks, { suggestedName = "", method = importMethod, statusText = "" } = {}) {
-  importTracks = Array.isArray(tracks) ? tracks : [];
-  importShareSuggestedName = suggestedName || "";
-  importDraftDirty = importTracks.length > 0;
-  const nameEl = document.getElementById("import-playlist-name");
-  if (nameEl) {
-    nameEl.value = importShareSuggestedName || (method === "local" ? "本地导入歌单" : "导入歌单");
-  }
-  const hintEl = document.getElementById("import-result-hint");
-  if (hintEl) {
-    hintEl.textContent =
-      statusText || `已整理 ${importTracks.length} 首歌曲。建议先保存为歌单，再继续调整或切换页面。`;
-  }
-  renderImportTable();
-  showImportResultStage(importTracks.length > 0);
-}
-
-/** 与 Py RecentPlaysPage：本会话内最近播放，最多 100 条 */
-const RECENT_SESSION_MAX = 100;
 /** @type {Array<{ source_id?: string, title: string, artist: string, cover_url?: string | null, local_path?: string }>} */
 let sessionRecentPlays = [];
 /** 下载队列展示：sourceId -> 最后一帧事件 */
@@ -337,36 +117,6 @@ const downloadTasksBySourceId = new Map();
 /** 本地曲库列表行缓存（双击播放） @type {any[]} */
 let localLibraryRows = [];
 let lastLibraryFolder = "";
-const TRAY_PLAYER_TARGET = { kind: "WebviewWindow", label: "tray-player" };
-const LYRICS_REPLACE_TARGET = { kind: "WebviewWindow", label: "lyrics-replace" };
-
-function isMacDesktop() {
-  const platform =
-    globalThis.navigator?.userAgentData?.platform || globalThis.navigator?.platform || "";
-  if (typeof platform === "string" && /mac/i.test(platform)) {
-    return true;
-  }
-  const os = globalThis.window?._wails?.environment?.OS;
-  return typeof os === "string" && os.toLowerCase() === "darwin";
-}
-
-function applyPlatformClassNames() {
-  document.documentElement.classList.toggle("platform-macos", isMacDesktop());
-}
-
-function loadLikedSet() {
-  try {
-    const raw = localStorage.getItem("cp_tauri_liked_ids");
-    if (!raw) return new Set();
-    const a = JSON.parse(raw);
-    return new Set(Array.isArray(a) ? a : []);
-  } catch {
-    return new Set();
-  }
-}
-function saveLikedSet(set) {
-  localStorage.setItem("cp_tauri_liked_ids", JSON.stringify([...set]));
-}
 let likedIds = loadLikedSet();
 
 function randomNextIndex() {
@@ -437,40 +187,6 @@ function toggleDockMenu(menuEl) {
   menuEl.hidden = !willOpen;
 }
 
-function normalizeCloseAction(value) {
-  const normalized = String(value || "ask").toLowerCase();
-  return normalized === "quit" || normalized === "tray" ? normalized : "ask";
-}
-
-function normalizeAppTheme(value) {
-  const normalized = String(value || "coral").trim().toLowerCase();
-  return normalized === "custom" || APP_THEMES[normalized] ? normalized : "coral";
-}
-
-function normalizeAppThemeMode(value) {
-  const normalized = String(value || "system").trim().toLowerCase();
-  return APP_THEME_MODES.has(normalized) ? normalized : "system";
-}
-
-function normalizeAccentHex(value, fallback = "#c62f2f") {
-  const normalized = String(value || "").trim().toLowerCase();
-  return /^#[0-9a-f]{6}$/.test(normalized) ? normalized : fallback;
-}
-
-function normalizeNetworkProxyMode(value) {
-  const normalized = String(value || "direct").trim().toLowerCase();
-  return NETWORK_PROXY_MODES.has(normalized) ? normalized : "direct";
-}
-
-function normalizeNetworkProxyUrl(value) {
-  return String(value ?? "").trim();
-}
-
-function normalizeSettingsTab(value) {
-  const normalized = String(value || "appearance").trim().toLowerCase();
-  return SETTINGS_TABS.has(normalized) ? normalized : "appearance";
-}
-
 function canSaveCustomProxyUrl(value) {
   const raw = normalizeNetworkProxyUrl(value);
   if (!raw) return false;
@@ -484,88 +200,32 @@ function canSaveCustomProxyUrl(value) {
   }
 }
 
-function themeAccentRgb(hex) {
-  const normalized = normalizeAccentHex(hex);
-  const r = parseInt(normalized.slice(1, 3), 16);
-  const g = parseInt(normalized.slice(3, 5), 16);
-  const b = parseInt(normalized.slice(5, 7), 16);
-  return `${r}, ${g}, ${b}`;
-}
-
-function resolveAppThemeMode(mode) {
-  const normalized = normalizeAppThemeMode(mode);
-  if (normalized === "system") return systemDarkMedia?.matches ? "dark" : "light";
-  return normalized === "light" ? "light" : "dark";
-}
-
-function applyAppTheme(theme, customAccent = "#c62f2f", mode = "system") {
-  const normalized = normalizeAppTheme(theme);
-  const normalizedMode = normalizeAppThemeMode(mode);
-  const resolvedMode = resolveAppThemeMode(normalizedMode);
-  const palette =
-    normalized === "custom"
-      ? { accent: normalizeAccentHex(customAccent), accentRgb: themeAccentRgb(customAccent) }
-      : APP_THEMES[normalized];
-  document.documentElement.style.setProperty("--accent", palette.accent);
-  document.documentElement.style.setProperty("--accent-rgb", palette.accentRgb);
-  document.documentElement.dataset.appTheme = normalized;
-  document.documentElement.dataset.themeMode = normalizedMode;
-  document.documentElement.dataset.themeModeResolved = resolvedMode;
-  return normalized;
-}
-
 function setThemeCardSelection(theme) {
   const normalized = normalizeAppTheme(theme);
   const hidden = document.getElementById("setting-app-theme");
-  const customWrap = document.getElementById("settings-custom-theme");
   if (hidden) hidden.value = normalized;
-  document.querySelectorAll("[data-theme-card]").forEach((card) => {
-    const active = card.getAttribute("data-theme-card") === normalized;
-    card.classList.toggle("is-active", active);
-    card.setAttribute("aria-checked", active ? "true" : "false");
-  });
-  if (customWrap) customWrap.hidden = normalized !== "custom";
+  applyThemeCardSelectionUi(normalized);
 }
 
 function setThemeModeSelection(mode) {
   const normalized = normalizeAppThemeMode(mode);
   const hidden = document.getElementById("setting-app-theme-mode");
   if (hidden) hidden.value = normalized;
-  document.querySelectorAll("[data-theme-mode-card]").forEach((card) => {
-    const active = card.getAttribute("data-theme-mode-card") === normalized;
-    card.classList.toggle("is-active", active);
-    card.setAttribute("aria-checked", active ? "true" : "false");
-  });
+  applyThemeModeSelectionUi(normalized);
   refreshQuickThemeModeUi(normalized);
 }
 
 function setNetworkProxyModeSelection(mode) {
   const normalized = normalizeNetworkProxyMode(mode);
   const hidden = document.getElementById("setting-network-proxy-mode");
-  const customWrap = document.getElementById("settings-network-proxy-custom");
   const urlInput = document.getElementById("setting-network-proxy-url");
   if (hidden) hidden.value = normalized;
-  if (customWrap) customWrap.hidden = normalized !== "custom";
   if (urlInput) urlInput.disabled = normalized !== "custom";
-  document.querySelectorAll("[data-network-proxy-mode-card]").forEach((card) => {
-    const active = card.getAttribute("data-network-proxy-mode-card") === normalized;
-    card.classList.toggle("is-active", active);
-    card.setAttribute("aria-checked", active ? "true" : "false");
-  });
+  applyNetworkProxyModeSelectionUi(normalized);
 }
 
 function setSettingsTab(tab) {
-  const normalized = normalizeSettingsTab(tab);
-  document.querySelectorAll("[data-settings-tab]").forEach((button) => {
-    const active = button.getAttribute("data-settings-tab") === normalized;
-    button.classList.toggle("is-active", active);
-    button.setAttribute("aria-selected", active ? "true" : "false");
-  });
-  document.querySelectorAll("[data-settings-panel]").forEach((panel) => {
-    const active = panel.getAttribute("data-settings-panel") === normalized;
-    panel.classList.toggle("is-active", active);
-    panel.hidden = !active;
-  });
+  applySettingsTabUi(normalizeSettingsTab(tab));
 }
 
 function effectiveQuickThemeMode(mode) {
@@ -1924,8 +1584,6 @@ function lyricDisplayForDesktop(ct) {
   };
 }
 
-const LYRICS_WW_TARGET = { kind: "WebviewWindow", label: "lyrics" };
-
 async function broadcastDesktopLyricsLock() {
   /** 同步锁定状态到歌词子窗 */
   if (desktopLyricsOpen) {
@@ -2705,6 +2363,35 @@ function renderImportTable() {
   const nOpt = sel && sel.options ? sel.options.length : 0;
   if (mergeBtn) mergeBtn.disabled = !has || !nOpt;
 }
+
+// Import flow keeps step transitions in a helper while main.js owns the mutable state.
+({
+  syncNeteaseCookieUi,
+  setImportMethod,
+  showImportResultStage,
+  setImportStep,
+  resetImportFlow,
+  setImportDraft,
+} = createImportFlowHelpers({
+  getImportMethod: () => importMethod,
+  setImportMethodValue: (value) => {
+    importMethod = value;
+  },
+  getImportTracks: () => importTracks,
+  setImportTracksValue: (tracks) => {
+    importTracks = Array.isArray(tracks) ? tracks : [];
+  },
+  setImportShareSuggestedName: (value) => {
+    importShareSuggestedName = value || "";
+  },
+  setImportDraftDirty: (dirty) => {
+    importDraftDirty = !!dirty;
+  },
+  getImportDraftDirty: () => importDraftDirty,
+  getNeteaseCookieEnabled: () => neteaseCookieEnabled,
+  getNeteaseCookieValue: () => neteaseCookieValue,
+  renderImportTable,
+}));
 
 function downloadBlob(filename, text, mime) {
   const a = document.createElement("a");
