@@ -568,27 +568,35 @@ body {
   box-sizing: border-box;
   overflow: visible;
   isolation: isolate;
-  background:
-    linear-gradient(
-      115deg,
-      rgba(92, 230, 240, 0.18) 8%,
-      rgba(92, 230, 240, 0.7) 18%,
-      rgba(240, 92, 210, 0.58) 38%,
-      rgba(255, 215, 100, 0.72) 52%,
-      rgba(240, 92, 210, 0.58) 68%,
-      rgba(92, 230, 240, 0.7) 82%,
-      rgba(92, 230, 240, 0.18) 92%
-    ),
-    linear-gradient(
-      90deg,
-      rgba(92, 230, 240, 0.42) 0%,
-      rgba(240, 92, 210, 0.48) 50%,
-      rgba(255, 215, 100, 0.44) 100%
-    );
-  background-size: 220% 100%, 180% 100%;
-  background-position: 0% 50%;
-  animation: search-glow-wave 4.2s linear infinite;
-  transition: background 0.2s ease, box-shadow 0.2s ease;
+  transition: box-shadow 0.2s ease;
+}
+
+.neon-search-wrap::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  padding: 2px;
+  border-radius: inherit;
+  background: conic-gradient(
+    from 0deg,
+    rgba(92, 230, 240, 0.16) 0deg,
+    rgba(92, 230, 240, 0.85) 42deg,
+    rgba(240, 92, 210, 0.72) 126deg,
+    rgba(255, 215, 100, 0.92) 188deg,
+    rgba(240, 92, 210, 0.72) 256deg,
+    rgba(92, 230, 240, 0.88) 318deg,
+    rgba(92, 230, 240, 0.16) 360deg
+  );
+  -webkit-mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  mask-composite: exclude;
+  pointer-events: none;
+  animation: search-glow-spin 2.8s linear infinite;
 }
 
 .neon-search-wrap::before {
@@ -596,31 +604,22 @@ body {
   position: absolute;
   inset: -6px;
   border-radius: inherit;
-  background:
-    linear-gradient(
-      115deg,
-      rgba(92, 230, 240, 0) 0%,
-      rgba(92, 230, 240, 0.14) 14%,
-      rgba(240, 92, 210, 0.13) 50%,
-      rgba(255, 215, 100, 0.14) 86%,
-      rgba(255, 215, 100, 0) 100%
-    ),
-    linear-gradient(
-      90deg,
-      rgba(92, 230, 240, 0) 0%,
-      rgba(92, 230, 240, 0.08) 20%,
-      rgba(240, 92, 210, 0.1) 50%,
-      rgba(255, 215, 100, 0.08) 80%,
-      rgba(255, 215, 100, 0) 100%
-    );
-  background-size: 240% 100%, 180% 100%;
-  background-position: 0% 50%;
+  background: conic-gradient(
+    from 0deg,
+    rgba(92, 230, 240, 0) 0deg,
+    rgba(92, 230, 240, 0.16) 48deg,
+    rgba(240, 92, 210, 0.14) 128deg,
+    rgba(255, 215, 100, 0.16) 190deg,
+    rgba(240, 92, 210, 0.14) 262deg,
+    rgba(92, 230, 240, 0.16) 322deg,
+    rgba(92, 230, 240, 0) 360deg
+  );
   filter: blur(10px);
   opacity: 0.72;
   z-index: -1;
   pointer-events: none;
-  animation: search-glow-wave 5.1s linear infinite reverse;
-  transition: opacity 0.2s ease, filter 0.2s ease;
+  animation: search-glow-spin 3.4s linear infinite reverse;
+  transition: opacity 0.2s ease, filter 0.2s ease, transform 0.2s ease;
 }
 
 .neon-search-inner {
@@ -634,45 +633,27 @@ body {
 }
 
 .neon-search-wrap:focus-within {
-  background:
-    linear-gradient(
-      115deg,
-      rgba(92, 230, 240, 0.24) 8%,
-      rgba(92, 230, 240, 1) 18%,
-      rgba(240, 92, 210, 0.82) 38%,
-      rgba(255, 215, 100, 1) 52%,
-      rgba(240, 92, 210, 0.82) 68%,
-      rgba(92, 230, 240, 1) 82%,
-      rgba(92, 230, 240, 0.24) 92%
-    ),
-    linear-gradient(
-      90deg,
-      rgb(92, 230, 240) 0%,
-      rgb(240, 92, 210) 50%,
-      rgb(255, 215, 100) 100%
-    );
   box-shadow:
     0 0 0 1px rgba(255, 255, 255, 0.04),
     0 10px 24px rgba(15, 23, 42, 0.08);
 }
 
+.neon-search-wrap:focus-within::after {
+  animation-duration: 2s;
+}
+
 .neon-search-wrap:focus-within::before {
   opacity: 1;
   filter: blur(12px);
+  animation-duration: 2.5s;
 }
 
-@keyframes search-glow-wave {
+@keyframes search-glow-spin {
   0% {
-    background-position: 0% 50%, 0% 50%;
-    background-size: 220% 100%, 180% 100%;
-  }
-  50% {
-    background-position: 100% 50%, 72% 50%;
-    background-size: 180% 100%, 220% 100%;
+    transform: rotate(0deg);
   }
   100% {
-    background-position: 0% 50%, 0% 50%;
-    background-size: 220% 100%, 180% 100%;
+    transform: rotate(360deg);
   }
 }
 
