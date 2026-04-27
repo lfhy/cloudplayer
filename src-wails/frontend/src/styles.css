@@ -574,6 +574,9 @@ body {
     rgba(240, 92, 210, 0.55) 50%,
     rgba(255, 215, 100, 0.55) 100%
   );
+  background-size: 200% 100%;
+  background-position: 0% 50%;
+  animation: search-glow-flow 8.5s linear infinite;
   transition: background 0.2s ease, box-shadow 0.2s ease;
 }
 
@@ -590,10 +593,13 @@ body {
     rgba(255, 215, 100, 0.12) 88%,
     rgba(255, 215, 100, 0) 100%
   );
+  background-size: 200% 100%;
+  background-position: 0% 50%;
   filter: blur(10px);
   opacity: 0.72;
   z-index: -1;
   pointer-events: none;
+  animation: search-glow-flow 10s linear infinite reverse;
   transition: opacity 0.2s ease, filter 0.2s ease;
 }
 
@@ -622,6 +628,18 @@ body {
 .neon-search-wrap:focus-within::before {
   opacity: 1;
   filter: blur(12px);
+}
+
+@keyframes search-glow-flow {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
 }
 
 .global-search {
