@@ -45,6 +45,7 @@ import {
   themeAccentRgb,
 } from "./app/helpers/platformTheme.js";
 import { createImportFlowHelpers } from "./app/helpers/importFlow.js";
+import { bootCloudPlayerApp } from "./app/runtime/bootstrap.js";
 import { createImportPageController } from "./features/import/controller.js";
 import { createContextMenuController } from "./features/contextMenu/controller.js";
 import { createDownloadController } from "./features/download/controller.js";
@@ -708,67 +709,52 @@ const { renderSidebar, setPage, toggleQueuePanel, wireQueueToggle } = createNavi
   sidebarMenuItems: SIDEBAR_MENU_NAV,
 });
 
-document.addEventListener("DOMContentLoaded", () => {
-  renderMainShell();
-  applyPlatformClassNames();
-  renderSidebar();
-  setPage("home");
-  document.getElementById("btn-home-search")?.addEventListener("click", () => setPage("search"));
-  document.getElementById("btn-home-import")?.addEventListener("click", () => setPage("import"));
-  document.getElementById("btn-home-open-recent")?.addEventListener("click", () => setPage("recent"));
-  document.getElementById("btn-home-open-daily")?.addEventListener("click", () => setPage("daily"));
-  document.getElementById("btn-refresh-daily")?.addEventListener("click", () => renderDailyTable());
-  wireQueueToggle();
-  wireDockBar();
-  wireDownloadPage();
-  wireImportPage();
-  wirePlaylistPage();
-  wireVolume();
-  wirePreferencesModals();
-  wireSearchPage();
-  wireGlobalHotkeyListener();
-  wireDiscoverToolbar();
-  wireAudio();
-  setSearchScope(searchState.scope);
-  updateSearchViewState();
-  renderSearchTable();
-  renderPlaylistSearchResults();
-  renderImportTable();
-  updateSearchToolbar();
-  renderQueuePanel();
-  refreshLyricsLockMenuLabel();
-  let enrichReloadTimer = null;
-  listen("import-enrich-item-done", (e) => {
-    const p = e.payload;
-    const pid = p?.playlistId ?? p?.playlist_id;
-    if (pid == null || pid !== selectedPlaylistId) return;
-    if (enrichReloadTimer) clearTimeout(enrichReloadTimer);
-    enrichReloadTimer = setTimeout(() => {
-      enrichReloadTimer = null;
-      void loadPlaylistDetail(selectedPlaylistId, selectedPlaylistName);
-    }, 450);
-  });
-  listen("import-enrich-finished", (e) => {
-    const p = e.payload;
-    const pid = p?.playlistId ?? p?.playlist_id;
-    if (pid == null || pid !== selectedPlaylistId) return;
-    void loadPlaylistDetail(selectedPlaylistId, selectedPlaylistName);
-  });
-  listen("desktop-lyrics-lock-sync", async (e) => {
-    const locked = e?.payload?.locked;
-    if (typeof locked !== "boolean") return;
+bootCloudPlayerApp({
+  alertRequestFailed,
+  applyAppTheme,
+  applyPlatformClassNames,
+  applyLyricsPayload,
+  broadcastDesktopLyricsLock,
+  broadcastTrayPlayerState,
+  emitTo,
+  ensureLrcLoadedForCurrentTrack,
+  getCurrentPlayableKey: currentPlayableKey,
+  getPlayIndex: () => playIndex,
+  getPlayLoadGeneration: () => playLoadGeneration,
+  getPlayQueue: () => playQueue,
+  getSelectedPlaylistId: () => selectedPlaylistId,
+  getSelectedPlaylistName: () => selectedPlaylistName,
+  getSettingsFormValues,
+  invoke,
+  listen,
+  loadPlaylistDetail,
+  loadRecentPlaysFromDb,
+  loadSettings,
+  lyricsReplaceTarget: LYRICS_REPLACE_TARGET,
+  mainWindowCloseAction: () => mainWindowCloseAction,
+  normalizeAppThemeMode,
+  onDownloadTaskChanged: (payload) => {
+    applyDownloadTaskChanged(payload);
+  },
+  onLyricsLockSync: (locked) => {
     desktopLyricsLocked = locked;
     refreshLyricsLockMenuLabel();
-  });
-  listen("desktop-lyrics-request-sync", async () => {
-    await ensureLrcLoadedForCurrentTrack(playLoadGeneration);
-    await syncDesktopLyricsState();
-  });
-  listen("tray-player-request-sync", async () => {
-    await broadcastTrayPlayerState();
-  });
-  listen("tray-player-command", async (e) => {
-    const action = e?.payload?.action;
+  },
+  onSystemThemeChange: () => {},
+  openCloseConfirmModal,
+  refreshLyricsLockMenuLabel,
+  renderDailyTable,
+  renderImportTable,
+  renderMainShell,
+  renderPlaylistSearchResults,
+  renderQueuePanel,
+  renderSearchTable,
+  renderSidebar,
+  searchState,
+  setPage,
+  setSearchScope,
+  syncDesktopLyricsState,
+  syncTrayCommand: async (action) => {
     if (action === "toggle") {
       document.getElementById("btn-player-play")?.click();
       return;
@@ -784,94 +770,23 @@ document.addEventListener("DOMContentLoaded", () => {
     if (action === "open-main") {
       try {
         await invoke("show_main_window");
-      } catch (err) {
-        console.warn("show_main_window from tray-player-command", err);
+      } catch (error) {
+        console.warn("show_main_window from tray-player-command", error);
       }
     }
-  });
-  listen("download-task-changed", (e) => {
-    applyDownloadTaskChanged(e?.payload);
-  });
-  listen("desktop-lyrics-request-lock", async (e) => {
-    const locked = e?.payload?.locked;
-    if (typeof locked !== "boolean") return;
-    desktopLyricsLocked = locked;
-    refreshLyricsLockMenuLabel();
-    try {
-      await invoke("save_settings", { patch: { desktop_lyrics_locked: locked } });
-    } catch (err) {
-      console.warn("save_settings desktop_lyrics_locked (request-lock)", err);
-    }
-    await broadcastDesktopLyricsLock();
-  });
-  listen("main-close-requested", async () => {
-    const action = mainWindowCloseAction;
-    if (action === "quit") {
-      try {
-        await invoke("quit_app");
-      } catch (e) {
-        alertRequestFailed(e, "close flow");
-      }
-      return;
-    }
-    if (action === "tray") {
-      try {
-        await invoke("hide_main_window");
-      } catch (e) {
-        alertRequestFailed(e, "close flow");
-      }
-      return;
-    }
-    openCloseConfirmModal();
-  });
-  listen("lyrics-replace-apply-request", async (e) => {
-    const requestId = String(e?.payload?.requestId || "").trim();
-    const replyTarget = String(e?.payload?.replyTarget || LYRICS_REPLACE_TARGET.label).trim();
-    if (!requestId) return;
-    const reply = async (ok, message = "") => {
-      try {
-        await emitTo({ kind: "WebviewWindow", label: replyTarget }, "lyrics-replace-apply-result", {
-          requestId,
-          ok,
-          message,
-        });
-      } catch (err) {
-        console.warn("lyrics-replace-apply-result", err);
-      }
-    };
-    const current = playQueue[playIndex] || null;
-    if (!current) {
-      await reply(false, "当前没有正在播放的曲目。");
-      return;
-    }
-    const expectedTrackKey = String(e?.payload?.trackKey || "").trim();
-    const currentTrackKey = currentPlayableKey(current);
-    if (expectedTrackKey && expectedTrackKey !== currentTrackKey) {
-      await reply(false, "当前播放曲目已变化，请重新打开“换歌词”窗口。");
-      return;
-    }
-    const raw = e?.payload?.lyricsPayload;
-    const lrcText = String(raw?.lrcText || "");
-    if (!lrcText.trim()) {
-      await reply(false, "当前候选没有可用歌词。");
-      return;
-    }
-    await applyLyricsPayload(raw);
-    await reply(true, "");
-  });
-  if (systemDarkMedia && typeof systemDarkMedia.addEventListener === "function") {
-    systemDarkMedia.addEventListener("change", () => {
-      const mode = normalizeAppThemeMode(
-        document.getElementById("setting-app-theme-mode")?.value ??
-          document.documentElement.dataset.themeMode ??
-          "system"
-      );
-      if (mode !== "system") return;
-      const current = getSettingsFormValues();
-      applyAppTheme(current.theme, current.customAccent, mode);
-    });
-  }
-  void loadRecentPlaysFromDb();
-  loadSettings();
-  void broadcastTrayPlayerState();
+  },
+  systemDarkMedia,
+  updateSearchToolbar,
+  updateSearchViewState,
+  wireAudio,
+  wireDiscoverToolbar,
+  wireDockBar,
+  wireDownloadPage,
+  wireGlobalHotkeyListener,
+  wireImportPage,
+  wirePlaylistPage,
+  wirePreferencesModals,
+  wireQueueToggle,
+  wireSearchPage,
+  wireVolume,
 });
