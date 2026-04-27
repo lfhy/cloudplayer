@@ -582,7 +582,7 @@ func (s *CloudPlayerService) StartImportEnrich(playlistID int64) error {
 	return nil
 }
 
-func (s *CloudPlayerService) FetchSongLRCEnriched(req lyrics.FetchRequest) (*string, error) {
+func (s *CloudPlayerService) FetchSongLRCEnriched(req lyrics.FetchRequest) (*lyrics.LyricsPayload, error) {
 	settings := config.LoadSettings()
 	s.state.RateLimiter.AcquireSlot()
 	return lyrics.FetchSongLRCEnriched(s.state.HTTP(), settings, req)

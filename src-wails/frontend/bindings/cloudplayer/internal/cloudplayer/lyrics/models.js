@@ -36,6 +36,13 @@ export class FetchRequest {
         if (/** @type {any} */(false)) {
             /**
              * @member
+             * @type {string | undefined}
+             */
+            this["album"] = undefined;
+        }
+        if (/** @type {any} */(false)) {
+            /**
+             * @member
              * @type {string | null | undefined}
              */
             this["localPath"] = undefined;
@@ -61,3 +68,136 @@ export class FetchRequest {
         return new FetchRequest(/** @type {Partial<FetchRequest>} */($$parsedSource));
     }
 }
+
+export class LyricsPayload {
+    /**
+     * Creates a new LyricsPayload instance.
+     * @param {Partial<LyricsPayload>} [$$source = {}] - The source object to create the LyricsPayload.
+     */
+    constructor($$source = {}) {
+        if (!("lrcText" in $$source)) {
+            /**
+             * @member
+             * @type {string}
+             */
+            this["lrcText"] = "";
+        }
+        if (/** @type {any} */(false)) {
+            /**
+             * @member
+             * @type {WordLine[] | undefined}
+             */
+            this["wordLines"] = undefined;
+        }
+
+        Object.assign(this, $$source);
+    }
+
+    /**
+     * Creates a new LyricsPayload instance from a string or object.
+     * @param {any} [$$source = {}]
+     * @returns {LyricsPayload}
+     */
+    static createFrom($$source = {}) {
+        const $$createField1_0 = $$createType1;
+        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
+        if ("wordLines" in $$parsedSource) {
+            $$parsedSource["wordLines"] = $$createField1_0($$parsedSource["wordLines"]);
+        }
+        return new LyricsPayload(/** @type {Partial<LyricsPayload>} */($$parsedSource));
+    }
+}
+
+export class WordLine {
+    /**
+     * Creates a new WordLine instance.
+     * @param {Partial<WordLine>} [$$source = {}] - The source object to create the WordLine.
+     */
+    constructor($$source = {}) {
+        if (!("startMs" in $$source)) {
+            /**
+             * @member
+             * @type {number}
+             */
+            this["startMs"] = 0;
+        }
+        if (!("endMs" in $$source)) {
+            /**
+             * @member
+             * @type {number}
+             */
+            this["endMs"] = 0;
+        }
+        if (!("words" in $$source)) {
+            /**
+             * @member
+             * @type {WordTiming[]}
+             */
+            this["words"] = [];
+        }
+
+        Object.assign(this, $$source);
+    }
+
+    /**
+     * Creates a new WordLine instance from a string or object.
+     * @param {any} [$$source = {}]
+     * @returns {WordLine}
+     */
+    static createFrom($$source = {}) {
+        const $$createField2_0 = $$createType3;
+        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
+        if ("words" in $$parsedSource) {
+            $$parsedSource["words"] = $$createField2_0($$parsedSource["words"]);
+        }
+        return new WordLine(/** @type {Partial<WordLine>} */($$parsedSource));
+    }
+}
+
+export class WordTiming {
+    /**
+     * Creates a new WordTiming instance.
+     * @param {Partial<WordTiming>} [$$source = {}] - The source object to create the WordTiming.
+     */
+    constructor($$source = {}) {
+        if (!("startMs" in $$source)) {
+            /**
+             * @member
+             * @type {number}
+             */
+            this["startMs"] = 0;
+        }
+        if (!("endMs" in $$source)) {
+            /**
+             * @member
+             * @type {number}
+             */
+            this["endMs"] = 0;
+        }
+        if (!("text" in $$source)) {
+            /**
+             * @member
+             * @type {string}
+             */
+            this["text"] = "";
+        }
+
+        Object.assign(this, $$source);
+    }
+
+    /**
+     * Creates a new WordTiming instance from a string or object.
+     * @param {any} [$$source = {}]
+     * @returns {WordTiming}
+     */
+    static createFrom($$source = {}) {
+        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
+        return new WordTiming(/** @type {Partial<WordTiming>} */($$parsedSource));
+    }
+}
+
+// Private type creation functions
+const $$createType0 = WordLine.createFrom;
+const $$createType1 = $Create.Array($$createType0);
+const $$createType2 = WordTiming.createFrom;
+const $$createType3 = $Create.Array($$createType2);

@@ -130,6 +130,9 @@ let desktopLyricsWindow = null;
 let desktopLyricsLocked = true;
 /** @type {{ t: number, text: string }[]} */
 let lrcEntries = [];
+/** 与 `lrcEntries` 同索引；逐字时间轴（毫秒），无则 null */
+/** @type {Array<{ startMs: number, endMs: number, words: Array<{ startMs: number, endMs: number, text: string }> }> | null} */
+let wordLines = null;
 /** @type {string | null} */
 let lrcCacheKey = null;
 
@@ -1836,21 +1839,26 @@ function parseLrc(text) {
     const ms = parseInt(frac, 10);
     const t = min * 60 + sec + ms / 1000;
     const rest = line.slice(m[0].length).trim();
-    if (rest) lines.push({ t, text: rest });
+    lines.push({ t, text: rest });
   }
   lines.sort((a, b) => a.t - b.t);
   return lines;
 }
 
-function lyricLinesAtTime(ct) {
+function lyricDisplayForDesktop(ct) {
   const cur = playQueue[playIndex];
   const t = Number(ct) || 0;
   if (!cur) {
     return {
       line1: "—",
       line2: "—",
+      activeSlot: 1,
       line1StartT: 0,
       line1EndT: 1,
+      line2StartT: 0,
+      line2EndT: 1,
+      line1Words: null,
+      line2Words: null,
       audioNow: t,
     };
   }
@@ -1858,8 +1866,13 @@ function lyricLinesAtTime(ct) {
     return {
       line1: cur.title || "—",
       line2: cur.artist || "在线试听",
+      activeSlot: 1,
       line1StartT: 0,
       line1EndT: 1,
+      line2StartT: 0,
+      line2EndT: 1,
+      line1Words: null,
+      line2Words: null,
       audioNow: t,
     };
   }
@@ -1869,12 +1882,38 @@ function lyricLinesAtTime(ct) {
     else break;
   }
   const curLine = lrcEntries[idx];
+  const prevLine = idx > 0 ? lrcEntries[idx - 1] : null;
   const nextLine = lrcEntries[idx + 1];
-  const line1 = curLine?.text || "—";
-  const line2 = nextLine?.text || "\u00a0";
-  const line1StartT = curLine?.t ?? 0;
-  const line1EndT = nextLine ? nextLine.t : line1StartT + 4;
-  return { line1, line2, line1StartT, line1EndT, audioNow: t };
+  const startT = curLine?.t ?? 0;
+  const endT = nextLine ? nextLine.t : startT + 4;
+  const wl = wordLines;
+
+  if (idx % 2 === 0) {
+    return {
+      line1: curLine?.text || "—",
+      line2: nextLine?.text || "\u00a0",
+      activeSlot: 1,
+      line1StartT: startT,
+      line1EndT: endT,
+      line2StartT: 0,
+      line2EndT: 0,
+      line1Words: wl?.[idx] ?? null,
+      line2Words: nextLine ? wl?.[idx + 1] ?? null : null,
+      audioNow: t,
+    };
+  }
+  return {
+    line1: prevLine?.text || "\u00a0",
+    line2: curLine?.text || "—",
+    activeSlot: 2,
+    line1StartT: 0,
+    line1EndT: 0,
+    line2StartT: startT,
+    line2EndT: endT,
+    line1Words: prevLine ? wl?.[idx - 1] ?? null : null,
+    line2Words: wl?.[idx] ?? null,
+    audioNow: t,
+  };
 }
 
 const LYRICS_WW_TARGET = { kind: "WebviewWindow", label: "lyrics" };
@@ -1924,8 +1963,13 @@ function refreshLyricsLockMenuLabel() {
 async function pushDesktopLyricsLines({
   line1,
   line2,
+  activeSlot = 1,
   line1StartT,
   line1EndT,
+  line2StartT,
+  line2EndT,
+  line1Words = null,
+  line2Words = null,
   audioNow,
 }) {
   if (!desktopLyricsOpen) return;
@@ -1935,8 +1979,13 @@ async function pushDesktopLyricsLines({
     await emitTo(LYRICS_WW_TARGET, "desktop-lyrics-lines", {
       line1: line1 || "—",
       line2: line2 || "—",
+      activeSlot: activeSlot === 2 ? 2 : 1,
       line1StartT: Number(line1StartT) || 0,
       line1EndT: Number(line1EndT) || 0,
+      line2StartT: Number(line2StartT) || 0,
+      line2EndT: Number(line2EndT) || 0,
+      line1Words: line1Words ?? null,
+      line2Words: line2Words ?? null,
       audioNow: Number(audioNow) || 0,
     });
   } catch (e) {
@@ -1945,6 +1994,14 @@ async function pushDesktopLyricsLines({
     desktopLyricsWindow = null;
     document.getElementById("btn-dock-lyrics")?.classList.remove("is-on");
   }
+}
+
+function isSamePlayableIdentity(a, b) {
+  if (!a || !b) return false;
+  return (
+    (a.local_path || "") === (b.local_path || "") &&
+    (a.source_id || "").trim() === (b.source_id || "").trim()
+  );
 }
 
 /**
@@ -1957,8 +2014,11 @@ async function ensureLrcLoadedForCurrentTrack(loadGen) {
     await pushDesktopLyricsLines({
       line1: "—",
       line2: "—",
+      activeSlot: 1,
       line1StartT: 0,
       line1EndT: 1,
+      line2StartT: 0,
+      line2EndT: 0,
       audioNow: a?.currentTime ?? 0,
     });
     return;
@@ -1975,45 +2035,48 @@ async function ensureLrcLoadedForCurrentTrack(loadGen) {
         pjmp3SourceId: cur.local_path ? null : (cur.source_id || "").trim() || null,
         title: cur.title || "",
         artist: cur.artist || "",
+        album: cur.album || "",
         localPath: cur.local_path || null,
         durationSeconds: dur,
       },
     });
     if (loadGen !== undefined && loadGen !== playLoadGeneration) return;
     const cur2 = playQueue[playIndex];
-    if (
-      !cur2 ||
-      (cur2.local_path || "") !== (cur.local_path || "") ||
-      (cur2.source_id || "").trim() !== (cur.source_id || "").trim()
-    ) {
-      return;
-    }
-    if (raw && typeof raw === "string") {
-      lrcCacheKey = cacheKey;
+    if (!isSamePlayableIdentity(cur2, cur)) return;
+    if (raw && typeof raw === "object" && raw.lrcText != null) {
+      const lrcText = String(raw.lrcText);
+      lrcEntries = parseLrc(lrcText);
+      wordLines = Array.isArray(raw.wordLines) ? raw.wordLines : null;
+      if (lrcEntries.length > 0) {
+        lrcCacheKey = cacheKey;
+      } else {
+        wordLines = null;
+      }
+    } else if (raw && typeof raw === "string") {
       lrcEntries = parseLrc(raw);
+      wordLines = null;
+      if (lrcEntries.length > 0) {
+        lrcCacheKey = cacheKey;
+      }
     } else {
       lrcCacheKey = cacheKey;
       lrcEntries = [];
+      wordLines = null;
     }
   } catch (e) {
     console.warn("fetch_song_lrc_enriched", e);
     if (loadGen !== undefined && loadGen !== playLoadGeneration) return;
     const cur2 = playQueue[playIndex];
-    if (
-      !cur2 ||
-      (cur2.local_path || "") !== (cur.local_path || "") ||
-      (cur2.source_id || "").trim() !== (cur.source_id || "").trim()
-    ) {
-      return;
-    }
+    if (!isSamePlayableIdentity(cur2, cur)) return;
     lrcCacheKey = cacheKey;
     lrcEntries = [];
+    wordLines = null;
   }
 }
 
 async function syncDesktopLyrics() {
   if (!desktopLyricsOpen) return;
-  await pushDesktopLyricsLines(lyricLinesAtTime(audioEl()?.currentTime ?? 0));
+  await pushDesktopLyricsLines(lyricDisplayForDesktop(audioEl()?.currentTime ?? 0));
 }
 
 async function syncDesktopLyricsState() {
@@ -3601,6 +3664,7 @@ async function playFromQueueIndex(idx) {
     renderQueuePanel();
     refreshFavButton();
     lrcCacheKey = null;
+    wordLines = null;
     if (desktopLyricsOpen) {
       void ensureLrcLoadedForCurrentTrack(generation).then(() => {
         if (generation !== playLoadGeneration) return;

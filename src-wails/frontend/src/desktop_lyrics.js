@@ -10,9 +10,10 @@ let scale = 1;
 let lyricsLocked = true;
 let persistTimer = null;
 
-/** @type {{ line1: string, line2: string, line1StartT: number, line1EndT: number, audioNow: number, receivedAtMs: number } | null} */
+/** @type {{ line1: string, line2: string, activeSlot: number, line1StartT: number, line1EndT: number, line2StartT: number, line2EndT: number, line1Words: object | null, line2Words: object | null, audioNow: number, receivedAtMs: number } | null} */
 let lyAnchor = null;
-let builtLine = "";
+let builtLine1 = "";
+let builtLine2 = "";
 
 let baseRgb = { r: 255, g: 255, b: 255 };
 let hiRgb = { r: 255, g: 183, b: 212 };
@@ -47,34 +48,129 @@ function charColor(progress) {
   return `rgb(${lerp255(baseRgb.r, hiRgb.r, progress)}, ${lerp255(baseRgb.g, hiRgb.g, progress)}, ${lerp255(baseRgb.b, hiRgb.b, progress)})`;
 }
 
-function rebuildLine1Spans(text) {
-  const line1El = document.getElementById("line1");
-  if (!line1El || builtLine === text) return;
-  builtLine = text;
-  line1El.replaceChildren();
+function wordsJoinForTiming(wordLine) {
+  if (!wordLine?.words?.length) return "";
+  return wordLine.words.map((word) => word.text ?? "").join("");
+}
+
+function rebuildLineSpans(lineElId, text, wordLine) {
+  const element = document.getElementById(lineElId);
+  if (!element) return;
+  const useWords = wordLine?.words?.length && wordsJoinForTiming(wordLine) === text;
+  const cacheKey = `${lineElId}::${text}::${useWords ? `W${wordLine.words.length}` : "plain"}`;
+  if (lineElId === "line1") {
+    if (builtLine1 === cacheKey) return;
+    builtLine1 = cacheKey;
+  } else {
+    if (builtLine2 === cacheKey) return;
+    builtLine2 = cacheKey;
+  }
+
+  element.replaceChildren();
+  if (useWords && wordLine) {
+    for (const word of wordLine.words) {
+      for (const ch of Array.from(word.text ?? "")) {
+        const span = document.createElement("span");
+        span.className = "ly-char";
+        span.textContent = ch;
+        element.appendChild(span);
+      }
+    }
+    return;
+  }
+
   for (const ch of Array.from(text)) {
     const span = document.createElement("span");
     span.className = "ly-char";
     span.textContent = ch;
-    line1El.appendChild(span);
+    element.appendChild(span);
+  }
+}
+
+function colorLineWords(lineElId, wordLine, currentTime) {
+  const element = document.getElementById(lineElId);
+  const spans = element?.children ?? [];
+  const words = wordLine?.words;
+  if (!words?.length) return false;
+
+  let offset = 0;
+  for (const word of words) {
+    const chars = Array.from(word.text ?? "");
+    const charCount = chars.length;
+    const startS = (word.startMs ?? 0) / 1000;
+    const endS = (word.endMs ?? 0) / 1000;
+    const duration = endS - startS;
+    const progress =
+      duration > 0
+        ? Math.min(1, Math.max(0, (currentTime - startS) / duration))
+        : currentTime >= endS
+          ? 1
+          : currentTime < startS
+            ? 0
+            : 1;
+    for (let index = 0; index < charCount; index += 1) {
+      const charProgress = Math.min(1, Math.max(0, progress * charCount - index));
+      if (spans[offset + index]) spans[offset + index].style.color = charColor(charProgress);
+      offset += 1;
+    }
+  }
+  return offset === spans.length;
+}
+
+function setSpansUniform(lineElId, progress) {
+  const element = document.getElementById(lineElId);
+  const spans = element?.children ?? [];
+  for (let index = 0; index < spans.length; index += 1) {
+    spans[index].style.color = charColor(progress);
   }
 }
 
 function animateLyrics() {
   if (lyAnchor) {
-    const { line1StartT, line1EndT, audioNow, receivedAtMs, line1 } = lyAnchor;
-    rebuildLine1Spans(line1);
-    const spans = document.getElementById("line1")?.children ?? [];
-    const total = spans.length;
-    if (total > 0) {
-      const elapsed = (Date.now() - receivedAtMs) / 1000;
-      const currentTime = audioNow + elapsed;
-      const duration = line1EndT - line1StartT;
-      const progress =
-        duration > 0 ? Math.min(1, Math.max(0, (currentTime - line1StartT) / duration)) : 1;
-      for (let index = 0; index < total; index += 1) {
-        const charProgress = Math.min(1, Math.max(0, progress * total - index));
-        spans[index].style.color = charColor(charProgress);
+    const {
+      line1,
+      line2,
+      activeSlot,
+      line1StartT,
+      line1EndT,
+      line2StartT,
+      line2EndT,
+      line1Words,
+      line2Words,
+      audioNow,
+      receivedAtMs,
+    } = lyAnchor;
+    const slot = activeSlot === 2 ? 2 : 1;
+    rebuildLineSpans("line1", line1, line1Words);
+    rebuildLineSpans("line2", line2, line2Words);
+    const elapsed = (Date.now() - receivedAtMs) / 1000;
+    const currentTime = audioNow + elapsed;
+
+    if (slot === 1) {
+      const useWords = line1Words?.words?.length && wordsJoinForTiming(line1Words) === line1;
+      if (!useWords || !colorLineWords("line1", line1Words, currentTime)) {
+        const duration = line1EndT - line1StartT;
+        const progress = duration > 0 ? Math.min(1, Math.max(0, (currentTime - line1StartT) / duration)) : 1;
+        const spans = document.getElementById("line1")?.children ?? [];
+        const total = spans.length;
+        for (let index = 0; index < total; index += 1) {
+          const charProgress = Math.min(1, Math.max(0, progress * total - index));
+          spans[index].style.color = charColor(charProgress);
+        }
+      }
+      setSpansUniform("line2", 0);
+    } else {
+      setSpansUniform("line1", 1);
+      const useWords = line2Words?.words?.length && wordsJoinForTiming(line2Words) === line2;
+      if (!useWords || !colorLineWords("line2", line2Words, currentTime)) {
+        const duration = line2EndT - line2StartT;
+        const progress = duration > 0 ? Math.min(1, Math.max(0, (currentTime - line2StartT) / duration)) : 1;
+        const spans = document.getElementById("line2")?.children ?? [];
+        const total = spans.length;
+        for (let index = 0; index < total; index += 1) {
+          const charProgress = Math.min(1, Math.max(0, progress * total - index));
+          spans[index].style.color = charColor(charProgress);
+        }
       }
     }
   }
@@ -186,16 +282,20 @@ async function initLyricsWindow() {
 
   await lyricsWin.listen("desktop-lyrics-lines", (e) => {
     const payload = e?.payload ?? {};
+    const activeSlot = Number(payload.activeSlot ?? payload.active_slot);
     lyAnchor = {
       line1: payload.line1 ?? "—",
       line2: payload.line2 ?? "—",
+      activeSlot: activeSlot === 2 ? 2 : 1,
       line1StartT: Number(payload.line1StartT ?? payload.line1_start_t) || 0,
       line1EndT: Number(payload.line1EndT ?? payload.line1_end_t) || 0,
+      line2StartT: Number(payload.line2StartT ?? payload.line2_start_t) || 0,
+      line2EndT: Number(payload.line2EndT ?? payload.line2_end_t) || 0,
+      line1Words: payload.line1Words ?? payload.line1_words ?? null,
+      line2Words: payload.line2Words ?? payload.line2_words ?? null,
       audioNow: Number(payload.audioNow ?? payload.audio_now) || 0,
       receivedAtMs: Date.now(),
     };
-    const line2El = document.getElementById("line2");
-    if (line2El) line2El.textContent = lyAnchor.line2;
   });
 
   await lyricsWin.listen("desktop-lyrics-lock", (e) => {
@@ -260,15 +360,15 @@ if (lockBtnEl) {
   lockBtnEl.addEventListener("click", async (event) => {
     event.preventDefault();
     event.stopPropagation();
+    if (lyricsLocked) return;
+    applyLyricsLockUi(true);
     try {
-      const nextLocked = !lyricsLocked;
-      applyLyricsLockUi(nextLocked);
-      await invoke("save_settings", { patch: { desktop_lyrics_locked: nextLocked } });
+      await invoke("save_settings", { patch: { desktop_lyrics_locked: true } });
     } catch (e) {
       console.warn("save_settings fail", e);
     }
     try {
-      await emitTo(MAIN_WW, "desktop-lyrics-lock-sync", { locked: lyricsLocked });
+      await emitTo(MAIN_WW, "desktop-lyrics-lock-sync", { locked: true });
     } catch (e) {
       console.warn("emitTo main fail", e);
     }

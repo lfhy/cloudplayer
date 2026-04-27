@@ -66,7 +66,7 @@ func DefaultSettings() Settings {
 		DesktopLyricsScale:          1.0,
 		LyricsLRCLibEnabled:         true,
 		NetworkProxyMode:            NetworkProxyModeDirect,
-		LyricsProviderOrder:         "pjmp3,netease,lrclib",
+		LyricsProviderOrder:         "qq,kugou,netease,lrclib",
 		MainWindowCloseAction:       "ask",
 		AppTheme:                    "coral",
 		AppThemeMode:                "system",
