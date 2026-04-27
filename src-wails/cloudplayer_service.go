@@ -588,6 +588,18 @@ func (s *CloudPlayerService) FetchSongLRCEnriched(req lyrics.FetchRequest) (*lyr
 	return lyrics.FetchSongLRCEnriched(s.state.HTTP(), settings, req)
 }
 
+func (s *CloudPlayerService) LyricsSearchCandidates(keyword string, durationMS *int64, sources []string) ([]lyrics.LyricCandidate, error) {
+	settings := config.LoadSettings()
+	s.state.RateLimiter.AcquireSlot()
+	return lyrics.SearchCandidates(s.state.HTTP(), settings, keyword, durationMS, sources)
+}
+
+func (s *CloudPlayerService) LyricsFetchCandidate(candidate lyrics.LyricCandidate) (lyrics.LyricsPayload, error) {
+	settings := config.LoadSettings()
+	s.state.RateLimiter.AcquireSlot()
+	return lyrics.FetchCandidate(s.state.HTTP(), settings, candidate)
+}
+
 func (s *CloudPlayerService) FetchSharePlaylist(rawURL string) (SharePlaylistResponse, error) {
 	trimmed := strings.TrimSpace(rawURL)
 	if trimmed == "" {

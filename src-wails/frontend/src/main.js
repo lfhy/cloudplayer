@@ -337,6 +337,7 @@ const downloadTasksBySourceId = new Map();
 let localLibraryRows = [];
 let lastLibraryFolder = "";
 const TRAY_PLAYER_TARGET = { kind: "WebviewWindow", label: "tray-player" };
+const LYRICS_REPLACE_TARGET = { kind: "WebviewWindow", label: "lyrics-replace" };
 
 function isMacDesktop() {
   const platform =
@@ -1289,7 +1290,7 @@ function wireDockBar() {
   document.getElementById("btn-dock-lyrics-replace")?.addEventListener("click", (e) => {
     e.stopPropagation();
     closeAllDockMenus();
-    alert("“换歌词”入口已补到播放器底栏。多源搜索与替换面板下一步接回 Wails。");
+    void openLyricsReplaceWindow();
   });
 
   document.getElementById("btn-dock-more")?.addEventListener("click", (e) => {
@@ -2010,6 +2011,28 @@ function isSamePlayableIdentity(a, b) {
   );
 }
 
+function currentPlayableKey(track) {
+  if (!track) return "";
+  if (track.local_path) return `local:${track.local_path}`;
+  return (track.source_id || "").trim();
+}
+
+function currentLyricsReplaceContext() {
+  const current = playQueue[playIndex] || null;
+  const a = audioEl();
+  const durationMs =
+    a && a.duration && isFinite(a.duration) && a.duration > 0
+      ? Math.round(a.duration * 1000)
+      : null;
+  return {
+    trackKey: currentPlayableKey(current),
+    title: current?.title || "",
+    artist: current?.artist || "",
+    album: current?.album || "",
+    durationMs,
+  };
+}
+
 /**
  * @param {number | undefined} loadGen 传入发起播放时的 `playLoadGeneration`，用于丢弃过期异步结果；省略则仅按当前队列校验
  */
@@ -2090,6 +2113,65 @@ async function syncDesktopLyricsState() {
   await syncDesktopLyrics();
   await broadcastDesktopLyricsLock();
   await broadcastDesktopLyricsColors();
+}
+
+async function centeredChildWindowBounds(width, height) {
+  let x = Math.round((window.screen.availWidth - width) / 2);
+  let y = Math.round((window.screen.availHeight - height) / 2);
+  try {
+    const currentWindow = WebviewWindow.getCurrent();
+    const factor = await currentWindow.scaleFactor();
+    const outerPos = await currentWindow.outerPosition();
+    const outerSize = await currentWindow.outerSize();
+    const logicalPos = outerPos.toLogical(factor);
+    const logicalSize = outerSize.toLogical(factor);
+    x = Math.round(logicalPos.x + (logicalSize.width - width) / 2);
+    y = Math.round(logicalPos.y + (logicalSize.height - height) / 2);
+  } catch (e) {
+    console.warn("centeredChildWindowBounds", e);
+  }
+  const maxX = Math.max(0, window.screen.availWidth - width);
+  const maxY = Math.max(0, window.screen.availHeight - height);
+  return {
+    x: Math.max(0, Math.min(x, maxX)),
+    y: Math.max(0, Math.min(y, maxY)),
+    width,
+    height,
+  };
+}
+
+async function openLyricsReplaceWindow() {
+  const ctx = currentLyricsReplaceContext();
+  const keyword = `${ctx.artist || ""} ${ctx.title || ""}`.trim();
+  const params = new URLSearchParams();
+  if (keyword) params.set("keyword", keyword);
+  if (ctx.title) params.set("title", ctx.title);
+  if (ctx.artist) params.set("artist", ctx.artist);
+  if (ctx.album) params.set("album", ctx.album);
+  if (ctx.trackKey) params.set("trackKey", ctx.trackKey);
+  if (Number.isFinite(ctx.durationMs) && ctx.durationMs > 0) {
+    params.set("durationMs", String(ctx.durationMs));
+  }
+  const bounds = await centeredChildWindowBounds(860, 620);
+  const win = new WebviewWindow("lyrics-replace", {
+    url: `/lyrics_replace.html?${params.toString()}`,
+    title: "替换歌词",
+    width: bounds.width,
+    height: bounds.height,
+    x: bounds.x,
+    y: bounds.y,
+    resizable: true,
+    alwaysOnTop: false,
+    decorations: false,
+    transparent: false,
+    shadow: true,
+    skipTaskbar: true,
+    focus: true,
+  });
+  win.once("tauri://error", (e) => {
+    console.error(e);
+    alert("无法打开歌词替换窗口。");
+  });
 }
 
 function scheduleDesktopLyricsStateSync(delays = [80, 260]) {
@@ -4201,6 +4283,44 @@ document.addEventListener("DOMContentLoaded", () => {
       return;
     }
     openCloseConfirmModal();
+  });
+  listen("lyrics-replace-apply-request", async (e) => {
+    const requestId = String(e?.payload?.requestId || "").trim();
+    const replyTarget = String(e?.payload?.replyTarget || LYRICS_REPLACE_TARGET.label).trim();
+    if (!requestId) return;
+    const reply = async (ok, message = "") => {
+      try {
+        await emitTo({ kind: "WebviewWindow", label: replyTarget }, "lyrics-replace-apply-result", {
+          requestId,
+          ok,
+          message,
+        });
+      } catch (err) {
+        console.warn("lyrics-replace-apply-result", err);
+      }
+    };
+    const current = playQueue[playIndex] || null;
+    if (!current) {
+      await reply(false, "当前没有正在播放的曲目。");
+      return;
+    }
+    const expectedTrackKey = String(e?.payload?.trackKey || "").trim();
+    const currentTrackKey = currentPlayableKey(current);
+    if (expectedTrackKey && expectedTrackKey !== currentTrackKey) {
+      await reply(false, "当前播放曲目已变化，请重新打开“换歌词”窗口。");
+      return;
+    }
+    const raw = e?.payload?.lyricsPayload;
+    const lrcText = String(raw?.lrcText || "");
+    if (!lrcText.trim()) {
+      await reply(false, "当前候选没有可用歌词。");
+      return;
+    }
+    lrcEntries = parseLrc(lrcText);
+    wordLines = Array.isArray(raw?.wordLines) ? raw.wordLines : null;
+    lrcCacheKey = currentTrackKey || null;
+    await syncDesktopLyrics();
+    await reply(true, "");
   });
   if (systemDarkMedia && typeof systemDarkMedia.addEventListener === "function") {
     systemDarkMedia.addEventListener("change", () => {

@@ -25,6 +25,9 @@ const invokeMap = {
   local_path_accessible: (args) => CloudPlayerService.LocalPathAccessible(args.path),
   log_play_event: (args) =>
     CloudPlayerService.LogPlayEvent(args.stage, args.url ?? null, args.error_code ?? null, args.message ?? null, args.extra ?? null),
+  lyrics_fetch_candidate: (args) => CloudPlayerService.LyricsFetchCandidate(args.candidate),
+  lyrics_search_candidates: (args) =>
+    CloudPlayerService.LyricsSearchCandidates(args.keyword, args.durationMs ?? null, args.sources ?? []),
   parse_import_text: (args) => CloudPlayerService.ParseImportText(args.text, args.fmt),
   cache_preview_for_play: (args) => CloudPlayerService.CachePreviewForPlay(args.songId),
   quit_app: () => CloudPlayerService.QuitApp(),
