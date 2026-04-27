@@ -568,15 +568,26 @@ body {
   box-sizing: border-box;
   overflow: visible;
   isolation: isolate;
-  background: linear-gradient(
-    90deg,
-    rgba(92, 230, 240, 0.55) 0%,
-    rgba(240, 92, 210, 0.55) 50%,
-    rgba(255, 215, 100, 0.55) 100%
-  );
-  background-size: 200% 100%;
+  background:
+    linear-gradient(
+      115deg,
+      rgba(92, 230, 240, 0.18) 8%,
+      rgba(92, 230, 240, 0.7) 18%,
+      rgba(240, 92, 210, 0.58) 38%,
+      rgba(255, 215, 100, 0.72) 52%,
+      rgba(240, 92, 210, 0.58) 68%,
+      rgba(92, 230, 240, 0.7) 82%,
+      rgba(92, 230, 240, 0.18) 92%
+    ),
+    linear-gradient(
+      90deg,
+      rgba(92, 230, 240, 0.42) 0%,
+      rgba(240, 92, 210, 0.48) 50%,
+      rgba(255, 215, 100, 0.44) 100%
+    );
+  background-size: 220% 100%, 180% 100%;
   background-position: 0% 50%;
-  animation: search-glow-flow 8.5s linear infinite;
+  animation: search-glow-wave 4.2s linear infinite;
   transition: background 0.2s ease, box-shadow 0.2s ease;
 }
 
@@ -585,21 +596,30 @@ body {
   position: absolute;
   inset: -6px;
   border-radius: inherit;
-  background: linear-gradient(
-    90deg,
-    rgba(92, 230, 240, 0) 0%,
-    rgba(92, 230, 240, 0.12) 12%,
-    rgba(240, 92, 210, 0.12) 50%,
-    rgba(255, 215, 100, 0.12) 88%,
-    rgba(255, 215, 100, 0) 100%
-  );
-  background-size: 200% 100%;
+  background:
+    linear-gradient(
+      115deg,
+      rgba(92, 230, 240, 0) 0%,
+      rgba(92, 230, 240, 0.14) 14%,
+      rgba(240, 92, 210, 0.13) 50%,
+      rgba(255, 215, 100, 0.14) 86%,
+      rgba(255, 215, 100, 0) 100%
+    ),
+    linear-gradient(
+      90deg,
+      rgba(92, 230, 240, 0) 0%,
+      rgba(92, 230, 240, 0.08) 20%,
+      rgba(240, 92, 210, 0.1) 50%,
+      rgba(255, 215, 100, 0.08) 80%,
+      rgba(255, 215, 100, 0) 100%
+    );
+  background-size: 240% 100%, 180% 100%;
   background-position: 0% 50%;
   filter: blur(10px);
   opacity: 0.72;
   z-index: -1;
   pointer-events: none;
-  animation: search-glow-flow 10s linear infinite reverse;
+  animation: search-glow-wave 5.1s linear infinite reverse;
   transition: opacity 0.2s ease, filter 0.2s ease;
 }
 
@@ -614,12 +634,23 @@ body {
 }
 
 .neon-search-wrap:focus-within {
-  background: linear-gradient(
-    90deg,
-    rgb(92, 230, 240) 0%,
-    rgb(240, 92, 210) 50%,
-    rgb(255, 215, 100) 100%
-  );
+  background:
+    linear-gradient(
+      115deg,
+      rgba(92, 230, 240, 0.24) 8%,
+      rgba(92, 230, 240, 1) 18%,
+      rgba(240, 92, 210, 0.82) 38%,
+      rgba(255, 215, 100, 1) 52%,
+      rgba(240, 92, 210, 0.82) 68%,
+      rgba(92, 230, 240, 1) 82%,
+      rgba(92, 230, 240, 0.24) 92%
+    ),
+    linear-gradient(
+      90deg,
+      rgb(92, 230, 240) 0%,
+      rgb(240, 92, 210) 50%,
+      rgb(255, 215, 100) 100%
+    );
   box-shadow:
     0 0 0 1px rgba(255, 255, 255, 0.04),
     0 10px 24px rgba(15, 23, 42, 0.08);
@@ -630,15 +661,18 @@ body {
   filter: blur(12px);
 }
 
-@keyframes search-glow-flow {
+@keyframes search-glow-wave {
   0% {
-    background-position: 0% 50%;
+    background-position: 0% 50%, 0% 50%;
+    background-size: 220% 100%, 180% 100%;
   }
   50% {
-    background-position: 100% 50%;
+    background-position: 100% 50%, 72% 50%;
+    background-size: 180% 100%, 220% 100%;
   }
   100% {
-    background-position: 0% 50%;
+    background-position: 0% 50%, 0% 50%;
+    background-size: 220% 100%, 180% 100%;
   }
 }
 
