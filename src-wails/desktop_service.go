@@ -1,5 +1,7 @@
 package main
 
+// DesktopService coordinates secondary desktop windows such as tray and lyrics overlays.
+
 import (
 	"fmt"
 

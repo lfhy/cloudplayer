@@ -6,6 +6,7 @@ import (
 	"strings"
 )
 
+// Embedded LRC parsing upgrades inline word-timed text into the shared LyricsPayload shape.
 var embeddedLRCTimestampRE = regexp.MustCompile(`\[(\d+):(\d{1,2})(?:[\.,](\d{1,3}))?\]`)
 
 func embeddedCapToMS(match []string) uint64 {

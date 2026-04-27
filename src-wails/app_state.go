@@ -1,5 +1,7 @@
 package main
 
+// AppState owns the shared backend services that are wired into the Wails app lifecycle.
+
 import (
 	"database/sql"
 	"net/http"

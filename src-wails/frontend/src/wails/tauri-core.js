@@ -1,3 +1,4 @@
+// Tauri compatibility wrappers map the legacy invoke calls onto Wails service bindings.
 import { CloudPlayerService } from "../../bindings/cloudplayer";
 
 const invokeMap = {

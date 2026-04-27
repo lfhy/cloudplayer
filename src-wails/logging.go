@@ -20,6 +20,7 @@ var (
 	logFilePath string
 )
 
+// InitAppLogging installs the shared desktop log sink before the runtime starts serving windows.
 func InitAppLogging() error {
 	logInitOnce.Do(func() {
 		path, err := appLogPath()

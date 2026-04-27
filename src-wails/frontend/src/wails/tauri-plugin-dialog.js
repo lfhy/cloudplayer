@@ -1,3 +1,4 @@
+// Dialog wrappers preserve the old Tauri-style API used by the migrated UI modules.
 import { Dialogs } from "@wailsio/runtime";
 
 export async function open(options = {}) {

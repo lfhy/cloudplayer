@@ -1,3 +1,4 @@
+// Vite wiring keeps Wails bindings aliases stable across the multi-window frontend build.
 import { defineConfig } from "vite";
 import wails from "@wailsio/runtime/plugins/vite";
 import { resolve } from "node:path";

@@ -6,6 +6,7 @@ import (
 	"strings"
 )
 
+// ImportedTrackDTO is the normalized playlist import item used across multiple import paths.
 type ImportedTrackDTO struct {
 	Title  string `json:"title"`
 	Artist string `json:"artist"`

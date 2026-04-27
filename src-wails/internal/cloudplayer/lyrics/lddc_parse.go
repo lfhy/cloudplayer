@@ -5,6 +5,7 @@ import (
 	"strings"
 )
 
+// Embedded lyric parsers handle the QQ/Kugou word-timed payloads normalized by LDDC sources.
 var (
 	qrcLyric1RE         = regexp.MustCompile(`<Lyric_1\s+LyricType="1"\s+LyricContent="(?s)(?P<c>.*?)"\s*/>`)
 	lineMSPairRE        = regexp.MustCompile(`^\[(\d+),(\d+)\](.*)$`)

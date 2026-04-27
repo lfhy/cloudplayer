@@ -8,6 +8,7 @@ import (
 	"cloudplayer/internal/cloudplayer/pjmp3"
 )
 
+// Source adapters translate the configured provider name into a concrete search implementation.
 const (
 	ProviderPJMP3      = "pjmp3"
 	DefaultProviderKey = ProviderPJMP3

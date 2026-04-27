@@ -3,17 +3,18 @@ package captcha
 import (
 	"bytes"
 	"encoding/base64"
+	_ "golang.org/x/image/webp"
 	"image"
 	_ "image/gif"
 	_ "image/jpeg"
 	_ "image/png"
 	"math"
 	"strings"
-
-	_ "golang.org/x/image/webp"
 )
 
 const minConfidence = 0.25
+
+// Captcha rendering keeps QR-code overlays and image composition logic together.
 
 type edgeImage struct {
 	width  int

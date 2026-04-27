@@ -5,6 +5,7 @@ import (
 	"time"
 )
 
+// Limiter applies a simple per-minute guard to noisy background jobs.
 type Limiter struct {
 	maxPerMinute int
 	mu           sync.Mutex

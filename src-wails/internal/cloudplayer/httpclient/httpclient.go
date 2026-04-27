@@ -11,6 +11,8 @@ import (
 	"cloudplayer/internal/cloudplayer/systemproxy"
 )
 
+// New constructs the shared HTTP client with timeout, cookie jar and proxy behavior applied.
+
 const requestTimeout = 45 * time.Second
 
 func NewJar() *cookiejar.Jar {

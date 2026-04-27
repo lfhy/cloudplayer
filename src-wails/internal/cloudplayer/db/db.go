@@ -10,6 +10,7 @@ import (
 	"cloudplayer/internal/cloudplayer/config"
 )
 
+// Path returns the SQLite database file path inside the app config directory.
 func Path() string {
 	return filepath.Join(config.ConfigDir(), "library.db")
 }

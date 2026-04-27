@@ -1,3 +1,4 @@
+// Event helpers keep the old per-window subscription contract on top of Wails events.
 import { Events } from "@wailsio/runtime";
 import { currentWindowLabel, isEventForCurrentWindow, normalizeTarget, unwrapPayload } from "./shared.js";
 
