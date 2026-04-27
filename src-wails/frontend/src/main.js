@@ -56,6 +56,7 @@ import { createDockController } from "./features/player/dockController.js";
 import { createDockThemeHelpers } from "./features/player/dockTheme.js";
 import { createPlayerChromeController } from "./features/player/chromeController.js";
 import { createPlayerHotkeyController } from "./features/player/hotkeysController.js";
+import { createPlaybackController } from "./features/player/playbackController.js";
 import { createTrayRecentController } from "./features/player/trayRecentController.js";
 import { createSearchController } from "./features/search/controller.js";
 import { createSettingsController } from "./features/settings/controller.js";
@@ -90,7 +91,7 @@ const {
 } = createSearchController({
   escapeHtml,
   invoke,
-  loadPlaylistDetail,
+  loadPlaylistDetail: (...args) => loadPlaylistDetail(...args),
   MSG_REQUEST_FAILED,
   openSearchRowContextMenu: (...args) => openSearchRowContextMenu(...args),
   playCatalogAll: (rows) => {
@@ -102,10 +103,10 @@ const {
     }));
     void playFromQueueIndex(0);
   },
-  playFromSearchRow,
-  searchLocalPlaylists,
+  playFromSearchRow: (...args) => playFromSearchRow(...args),
+  searchLocalPlaylists: (...args) => searchLocalPlaylists(...args),
   searchState,
-  setPage,
+  setPage: (...args) => setPage(...args),
   setSelectedPlaylist: (id, name) => {
     selectedPlaylistId = id;
     selectedPlaylistName = name;
@@ -209,7 +210,7 @@ const { renderDailyTable, renderHomePage } = createHomeController({
   getDownloadTaskCount: () => downloadTasksBySourceId.size,
   getSessionRecentPlays: () => sessionRecentPlays,
   invoke,
-  playFromRecentRow,
+  playFromRecentRow: (...args) => playFromRecentRow(...args),
   playSingleItem: (item) => {
     playQueue = item.local_path
       ? [{ title: item.title, artist: item.artist || "", local_path: item.local_path, cover_url: null }]
@@ -240,10 +241,10 @@ const {
   MSG_REQUEST_FAILED,
   openPlaylistDetailRowContextMenu: (...args) => openPlaylistDetailRowContextMenu(...args),
   openSidebarPlaylistContextMenu: (...args) => openSidebarPlaylistContextMenu(...args),
-  playFromQueueIndex,
+  playFromQueueIndex: (...args) => playFromQueueIndex(...args),
   renderHomePage,
-  renderQueuePanel,
-  setPage,
+  renderQueuePanel: (...args) => renderQueuePanel(...args),
+  setPage: (...args) => setPage(...args),
   setPlaylistDetailRows: (rows) => {
     playlistDetailRows = Array.isArray(rows) ? rows : [];
   },
@@ -273,12 +274,12 @@ const {
   getSelectedPlaylistName: () => selectedPlaylistName,
   invoke,
   loadPlaylistDetail,
-  playFromQueueIndex,
-  playFromSearchRow,
+  playFromQueueIndex: (...args) => playFromQueueIndex(...args),
+  playFromSearchRow: (...args) => playFromSearchRow(...args),
   refreshPlaylistSelect,
   refreshSidebarPlaylists,
-  renderQueuePanel,
-  setPage,
+  renderQueuePanel: (...args) => renderQueuePanel(...args),
+  setPage: (...args) => setPage(...args),
   setPlayQueue: (rows) => {
     playQueue = rows;
   },
@@ -366,13 +367,13 @@ const {
   invoke,
   nextQuickThemeMode,
   openLyricsReplaceWindow,
-  playFromQueueIndex,
+  playFromQueueIndex: (...args) => playFromQueueIndex(...args),
   playModeItems: PLAY_MODES,
   qualityLabels: QUALITY_LABELS,
   refreshLyricsLockMenuLabel,
   refreshQuickThemeModeUi,
-  removeCurrentFromQueue,
-  renderPlayerNav: setPlayerNavEnabled,
+  removeCurrentFromQueue: (...args) => removeCurrentFromQueue(...args),
+  renderPlayerNav: (...args) => setPlayerNavEnabled(...args),
   saveLikedIds: saveLikedSet,
   setDesktopLyricsLocked: (value) => {
     desktopLyricsLocked = value;
@@ -383,7 +384,7 @@ const {
   setQualityPref: (value) => {
     qualityPref = value;
   },
-  toggleQueuePanel,
+  toggleQueuePanel: (...args) => toggleQueuePanel(...args),
   toggleDesktopLyrics,
 });
 
@@ -422,8 +423,8 @@ const {
       renderDailyTable();
     }
   },
-  playFromQueueIndex,
-  renderQueuePanel,
+  playFromQueueIndex: (...args) => playFromQueueIndex(...args),
+  renderQueuePanel: (...args) => renderQueuePanel(...args),
   setPlayQueue: (rows) => {
     playQueue = rows;
   },
@@ -494,7 +495,7 @@ const {
     mainWindowCloseAction = value;
   },
   setNetworkProxyModeSelection,
-  setPage,
+  setPage: (...args) => setPage(...args),
   setSettingsTab,
   setThemeCardSelection,
   setThemeModeSelection,
@@ -514,28 +515,41 @@ const {
   },
 });
 
+const { playFromQueueIndex, playFromSearchRow, removeCurrentFromQueue } = createPlaybackController({
+  alertRequestFailed,
+  clearLyricsCache,
+  convertFileSrc,
+  ensureLrcLoadedForCurrentTrack,
+  getAudioEl: audioEl,
+  getDesktopLyricsOpen: () => desktopLyricsOpen,
+  getPlayIndex: () => playIndex,
+  getPlayLoadGeneration: () => playLoadGeneration,
+  getPlayQueue: () => playQueue,
+  getSearchState: () => searchState,
+  invoke,
+  logPlayEventDesktop,
+  messageRequestFailed: MSG_REQUEST_FAILED,
+  onAfterQueueChanged: () => pushSessionRecentFromCurrentTrack(),
+  onLyricsReady: () => syncDesktopLyrics(),
+  refreshFavButton,
+  renderQueuePanel,
+  setAudioSourceGeneration: (value) => {
+    audioSourceGeneration = value;
+  },
+  setPlayIndex: (value) => {
+    playIndex = value;
+  },
+  setPlayLoadGeneration: (value) => {
+    playLoadGeneration = value;
+  },
+  setPlayQueue: (rows) => {
+    playQueue = Array.isArray(rows) ? rows : [];
+  },
+  setPlayerNavEnabled,
+  syncSeekUi,
+  updatePlayerChrome,
+});
 
-function removeCurrentFromQueue() {
-  if (!playQueue.length) return;
-  playQueue.splice(playIndex, 1);
-  const a = audioEl();
-  if (!playQueue.length) {
-    playIndex = 0;
-    playLoadGeneration += 1;
-    if (a) {
-      a.pause();
-      a.removeAttribute("src");
-    }
-    updatePlayerChrome({ title: "未播放", sub: "队列已空", coverUrl: null });
-    document.getElementById("btn-player-play").textContent = "▶";
-  } else {
-    if (playIndex >= playQueue.length) playIndex = playQueue.length - 1;
-    playFromQueueIndex(playIndex);
-  }
-  renderQueuePanel();
-  setPlayerNavEnabled();
-  refreshFavButton();
-}
 
 /** ---------- 右键菜单（对齐 Py sidebar / import_track_context_menu） ---------- */
 
@@ -567,7 +581,7 @@ const { renderImportTable, wireImportPage } = createImportPageController({
     neteaseCookieEnabled = !!enabled;
     neteaseCookieValue = String(value || "");
   },
-  setPage,
+  setPage: (...args) => setPage(...args),
   setSelectedPlaylist: (id, name) => {
     selectedPlaylistId = id;
     selectedPlaylistName = name;
@@ -606,146 +620,6 @@ const { renderImportTable, wireImportPage } = createImportPageController({
 
 function audioEl() {
   return document.getElementById("audio-player");
-}
-
-async function playFromQueueIndex(idx) {
-  if (!playQueue.length || idx < 0 || idx >= playQueue.length) return;
-  const generation = ++playLoadGeneration;
-  playIndex = idx;
-  const item = playQueue[idx];
-  const subBase = item.local_path ? (item.artist ? `${item.artist}` : "本地音乐") : item.artist ? `${item.artist}` : "在线试听";
-  updatePlayerChrome({
-    title: item.title,
-    sub: `${subBase} · ${item.local_path ? "正在加载本地文件…" : "正在拉取音频…"}`,
-    touchCover: false,
-  });
-  const playBtn = document.getElementById("btn-player-play");
-  const a = audioEl();
-  try {
-    let assetUrl;
-    let onlineResolvedPlayUrl = null;
-    let playLogExtra = item.local_path ? { kind: "local" } : null;
-    if (item.local_path) {
-      let pathOk = false;
-      try {
-        pathOk = await invoke("local_path_accessible", { path: item.local_path });
-      } catch (e) {
-        console.warn("local_path_accessible", e);
-      }
-      if (!pathOk) {
-        if (generation !== playLoadGeneration) return;
-        updatePlayerChrome({
-          title: item.title,
-          sub: `${item.artist ? `${item.artist} · ` : ""}本地文件不可用`,
-          touchCover: false,
-        });
-        alert(`本地文件不存在或无法访问：\n${String(item.local_path || "").trim() || "（路径为空）"}`);
-        return;
-      }
-      assetUrl = convertFileSrc(item.local_path);
-    } else {
-      /** 后端顺序：已下载文件 → 试听缓存文件 → 拉取并缓存试听 → 直链 URL */
-      const resolveRetryBudgetMs = 5000;
-      const resolveRetryGapMs = 200;
-      const resolveT0 = Date.now();
-      let resolved = null;
-      let lastErr = null;
-      for (;;) {
-        if (generation !== playLoadGeneration) return;
-        if (Date.now() - resolveT0 >= resolveRetryBudgetMs) break;
-        try {
-          resolved = await invoke("resolve_online_play", {
-            songId: item.source_id,
-            title: item.title || "",
-            artist: item.artist || "",
-          });
-          lastErr = null;
-          break;
-        } catch (e) {
-          lastErr = e;
-          if (Date.now() - resolveT0 >= resolveRetryBudgetMs) break;
-          const wait = Math.min(resolveRetryGapMs, resolveRetryBudgetMs - (Date.now() - resolveT0));
-          if (wait > 0) {
-            await new Promise((r) => setTimeout(r, wait));
-          }
-        }
-      }
-      if (generation !== playLoadGeneration) return;
-      if (!resolved) throw lastErr ?? new Error("resolve_online_play failed");
-      if (resolved.kind === "url" && resolved.url) {
-        assetUrl = resolved.url;
-        onlineResolvedPlayUrl = resolved.url;
-      } else if (resolved.kind === "file" && resolved.path) {
-        assetUrl = convertFileSrc(resolved.path);
-      } else {
-        throw new Error("resolve_online_play: 无效结果");
-      }
-      playLogExtra = {
-        sid: item.source_id,
-        kind: resolved.kind,
-        via: resolved.via,
-      };
-    }
-    if (generation !== playLoadGeneration) return;
-    await logPlayEventDesktop("play_start", {
-      url: assetUrl,
-      extra: playLogExtra,
-    });
-    a.pause();
-    a.removeAttribute("src");
-    a.load();
-    a.src = assetUrl;
-    audioSourceGeneration = generation;
-    await a.play();
-    if (generation !== playLoadGeneration) return;
-    pushSessionRecentFromCurrentTrack(onlineResolvedPlayUrl);
-    updatePlayerChrome({
-      title: item.title,
-      sub: item.local_path
-        ? item.artist
-          ? `${item.artist} · 本地`
-          : "本地音乐"
-        : item.artist
-          ? `${item.artist} · 在线试听`
-          : "在线试听",
-      coverUrl: item.cover_url || null,
-    });
-    if (playBtn) {
-      playBtn.textContent = "⏸";
-      playBtn.disabled = false;
-    }
-    setPlayerNavEnabled();
-    syncSeekUi();
-    renderQueuePanel();
-    refreshFavButton();
-    clearLyricsCache();
-    if (desktopLyricsOpen) {
-      void ensureLrcLoadedForCurrentTrack(generation).then(() => {
-        if (generation !== playLoadGeneration) return;
-        void syncDesktopLyrics();
-      });
-    }
-  } catch (e) {
-    if (generation !== playLoadGeneration) return;
-    updatePlayerChrome({
-      title: item.title,
-      sub: MSG_REQUEST_FAILED,
-      touchCover: false,
-    });
-    alertRequestFailed(e, "playFromQueueIndex");
-  }
-}
-
-function playFromSearchRow(rowIdx) {
-  if (searchState.scope !== "catalog") return;
-  playQueue = searchState.results.map((r) => ({
-    source_id: r.source_id,
-    title: r.title,
-    artist: r.artist || "",
-    cover_url: r.cover_url || null,
-  }));
-  playFromQueueIndex(rowIdx);
-  renderQueuePanel();
 }
 
 function wireAudio() {
