@@ -46,6 +46,7 @@ const searchState = {
   scope: "catalog",
   busy: false,
   playlistResults: [],
+  view: "home",
 };
 
 let playQueue = [];
@@ -2843,9 +2844,43 @@ function setPage(pageId) {
   }
   if (pageId === "search") {
     queueMicrotask(() => {
-      document.getElementById("page-search")?.focus();
+      getActiveSearchInput()?.focus();
     });
   }
+}
+
+function getSearchInputs() {
+  return [document.getElementById("page-search"), document.getElementById("page-search-results")].filter(Boolean);
+}
+
+function getActiveSearchInput() {
+  return searchState.view === "results"
+    ? document.getElementById("page-search-results") || document.getElementById("page-search")
+    : document.getElementById("page-search") || document.getElementById("page-search-results");
+}
+
+function syncSearchInputs(value = searchState.keyword) {
+  getSearchInputs().forEach((input) => {
+    if (input.value !== value) input.value = value;
+  });
+}
+
+function setSearchView(view = "home") {
+  const nextView = view === "results" ? "results" : "home";
+  searchState.view = nextView;
+  const shell = document.querySelector('.page[data-page="search"] .search-shell');
+  const homeView = document.getElementById("search-home-view");
+  const resultsView = document.getElementById("search-results-view");
+  if (shell) shell.setAttribute("data-search-view", nextView);
+  if (homeView) {
+    homeView.hidden = nextView !== "home";
+    homeView.classList.toggle("is-active", nextView === "home");
+  }
+  if (resultsView) {
+    resultsView.hidden = nextView !== "results";
+    resultsView.classList.toggle("is-active", nextView === "results");
+  }
+  syncSearchInputs(searchState.keyword);
 }
 
 function setSearchScope(scope) {
@@ -2857,19 +2892,17 @@ function setSearchScope(scope) {
   });
   const catalogPanel = document.getElementById("search-results-catalog");
   const playlistPanel = document.getElementById("search-results-playlists");
-  if (catalogPanel) catalogPanel.hidden = searchState.scope !== "catalog";
-  if (playlistPanel) playlistPanel.hidden = searchState.scope !== "playlists";
-  updateSearchEmptyState();
+  if (catalogPanel) catalogPanel.hidden = searchState.view !== "results" || searchState.scope !== "catalog";
+  if (playlistPanel) playlistPanel.hidden = searchState.view !== "results" || searchState.scope !== "playlists";
+  updateSearchViewState();
   updateSearchToolbar();
 }
 
-function updateSearchEmptyState() {
-  const suggestions = document.getElementById("search-suggestions");
+function updateSearchViewState() {
   const catalogPanel = document.getElementById("search-results-catalog");
   const playlistPanel = document.getElementById("search-results-playlists");
   const hasKeyword = !!searchState.keyword.trim();
-  if (!suggestions) return;
-  suggestions.hidden = hasKeyword;
+  setSearchView(hasKeyword ? "results" : "home");
   if (catalogPanel) catalogPanel.hidden = !hasKeyword || searchState.scope !== "catalog";
   if (playlistPanel) playlistPanel.hidden = !hasKeyword || searchState.scope !== "playlists";
 }
@@ -2881,6 +2914,7 @@ function updateSearchToolbar() {
   const next = document.getElementById("btn-next-page");
   const playAll = document.getElementById("btn-play-all");
   const playlistInfo = document.getElementById("search-playlist-info");
+  const summary = document.getElementById("search-results-summary");
   if (info) {
     info.textContent =
       searchState.scope !== "catalog" || !searchState.keyword.trim()
@@ -2892,6 +2926,13 @@ function updateSearchToolbar() {
       searchState.scope !== "playlists" || !searchState.keyword.trim()
         ? ""
         : `找到 ${searchState.playlistResults.length} 张相关歌单`;
+  }
+  if (summary) {
+    summary.textContent = !searchState.keyword.trim()
+      ? ""
+      : searchState.scope === "catalog"
+        ? `搜索 “${searchState.keyword.trim()}”`
+        : `在本地歌单中搜索 “${searchState.keyword.trim()}”`;
   }
   if (prev) prev.disabled = searchState.scope !== "catalog" || searchState.page <= 1 || searchState.busy;
   if (next) next.disabled = searchState.scope !== "catalog" || !searchState.hasNext || searchState.busy;
@@ -3635,37 +3676,49 @@ function wireAudio() {
 }
 
 function submitPageSearch(seed = null) {
-  const input = document.getElementById("page-search");
+  const input = getActiveSearchInput();
   if (!input) return;
-  if (typeof seed === "string") input.value = seed;
+  if (typeof seed === "string") {
+    input.value = seed;
+    syncSearchInputs(seed);
+  }
   const value = input.value.trim();
   setPage("search");
-  updateSearchEmptyState();
   if (!value) {
     searchState.keyword = "";
     searchState.page = 1;
     searchState.results = [];
     searchState.playlistResults = [];
     searchState.hasNext = false;
+    syncSearchInputs("");
     renderSearchTable();
     renderPlaylistSearchResults();
+    updateSearchViewState();
     updateSearchToolbar();
     return;
   }
   searchState.keyword = value;
+  syncSearchInputs(value);
   searchState.page = 1;
+  updateSearchViewState();
   fetchSearchPage();
 }
 
 function wireSearchPage() {
-  const input = document.getElementById("page-search");
-  if (!input) return;
-  input.addEventListener("keydown", (e) => {
-    if (e.key !== "Enter") return;
-    e.preventDefault();
-    submitPageSearch();
+  const inputs = getSearchInputs();
+  if (!inputs.length) return;
+  inputs.forEach((input) => {
+    input.addEventListener("input", () => {
+      syncSearchInputs(input.value);
+    });
+    input.addEventListener("keydown", (e) => {
+      if (e.key !== "Enter") return;
+      e.preventDefault();
+      submitPageSearch();
+    });
   });
   document.getElementById("btn-page-search")?.addEventListener("click", () => submitPageSearch());
+  document.getElementById("btn-page-search-results")?.addEventListener("click", () => submitPageSearch());
   document.querySelectorAll("[data-search-scope]").forEach((button) => {
     button.addEventListener("click", () => {
       setSearchScope(button.getAttribute("data-search-scope") || "catalog");
@@ -3675,6 +3728,7 @@ function wireSearchPage() {
       } else {
         renderSearchTable();
         renderPlaylistSearchResults();
+        updateSearchViewState();
       }
     });
   });
@@ -3687,6 +3741,7 @@ function wireSearchPage() {
       submitPageSearch(seed);
     });
   });
+  updateSearchViewState();
 }
 
 function isEditableElement(el) {
@@ -3855,7 +3910,7 @@ document.addEventListener("DOMContentLoaded", () => {
   wireDiscoverToolbar();
   wireAudio();
   setSearchScope(searchState.scope);
-  updateSearchEmptyState();
+  updateSearchViewState();
   renderSearchTable();
   renderPlaylistSearchResults();
   renderImportTable();
