@@ -235,6 +235,10 @@ function importMethodIconSvg(method) {
   return iconSvgByName(icons[method] || "folder-2-bold");
 }
 
+function importBackButtonIconSvg() {
+  return iconSvgByName("alt-arrow-left-line-duotone");
+}
+
 function syncNeteaseCookieUi() {
   const chk = document.getElementById("opt-netease-cookie-enabled");
   const inp = document.getElementById("opt-netease-cookie");
@@ -2479,6 +2483,11 @@ function wireImportPage() {
     button.addEventListener("click", () => {
       setImportMethod(method);
     });
+  });
+
+  document.querySelectorAll("[data-import-back-button]").forEach((button) => {
+    const iconSlot = button.querySelector(".import-back-button__icon");
+    if (iconSlot) iconSlot.innerHTML = importBackButtonIconSvg();
   });
 
   document.querySelectorAll("[data-import-step-nav]").forEach((button) => {
