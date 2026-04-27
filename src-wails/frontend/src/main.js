@@ -54,6 +54,7 @@ import { createPlaylistController } from "./features/library/playlistController.
 import { createLyricsController } from "./features/lyrics/controller.js";
 import { createDockController } from "./features/player/dockController.js";
 import { createDockThemeHelpers } from "./features/player/dockTheme.js";
+import { createPlayerChromeController } from "./features/player/chromeController.js";
 import { createPlayerHotkeyController } from "./features/player/hotkeysController.js";
 import { createTrayRecentController } from "./features/player/trayRecentController.js";
 import { createSearchController } from "./features/search/controller.js";
@@ -456,6 +457,17 @@ const {
   warnRequestFailed,
 });
 
+const { setPlayerNavEnabled, syncSeekUi, updatePlayerChrome } = createPlayerChromeController({
+  broadcastTrayPlayerState,
+  formatTime,
+  getAudioEl: audioEl,
+  getPlayIndex: () => playIndex,
+  getPlayModeIndex: () => playModeIndex,
+  getPlayQueue: () => playQueue,
+  getSeekDragging: () => seekDragging,
+  playModeItems: PLAY_MODES,
+});
+
 // Settings are split into a controller so the runtime entry only keeps state bridges.
 const {
   getSettingsFormValues,
@@ -594,73 +606,6 @@ const { renderImportTable, wireImportPage } = createImportPageController({
 
 function audioEl() {
   return document.getElementById("audio-player");
-}
-
-/**
- * @param {{ title?: string, sub?: string, coverUrl?: string | null, touchCover?: boolean }} patch
- * touchCover 为 false 时不改封面（用于播放失败，避免错误条目替换当前正在播放的封面）
- */
-function updatePlayerChrome(patch = {}) {
-  const { title, sub, coverUrl, touchCover = true } = patch;
-  const tEl = document.getElementById("dock-title");
-  const sEl = document.getElementById("dock-sub");
-  const cov = document.getElementById("dock-cover");
-  if (title !== undefined && tEl) tEl.textContent = title;
-  if (sub !== undefined && sEl) sEl.textContent = sub;
-  if (touchCover && cov && coverUrl !== undefined && coverUrl) cov.src = coverUrl;
-  queueMicrotask(() => {
-    void broadcastTrayPlayerState();
-  });
-}
-
-function syncSeekUi() {
-  const a = audioEl();
-  const seek = document.getElementById("seek");
-  const cur = document.getElementById("time-current");
-  const tot = document.getElementById("time-total");
-  if (!a || !seek || !cur || !tot) return;
-  const d = a.duration;
-  if (d && isFinite(d) && d > 0) {
-    tot.textContent = formatTime(d);
-    if (!seekDragging) {
-      seek.value = String(Math.min(1000, Math.floor((a.currentTime / d) * 1000)));
-    }
-    cur.textContent = formatTime(a.currentTime);
-    seek.disabled = false;
-  } else {
-    cur.textContent = "0:00";
-    tot.textContent = "0:00";
-    seek.value = "0";
-    seek.disabled = !a.src;
-  }
-}
-
-function setPlayerNavEnabled() {
-  const prev = document.getElementById("btn-player-prev");
-  const next = document.getElementById("btn-player-next");
-  const n = playQueue.length;
-  const mode = PLAY_MODES[playModeIndex].key;
-  if (!n) {
-    if (prev) prev.disabled = true;
-    if (next) next.disabled = true;
-    return;
-  }
-  if (mode === "loop_list" || mode === "shuffle") {
-    if (prev) prev.disabled = false;
-    if (next) next.disabled = false;
-    return;
-  }
-  if (mode === "one") {
-    const dis = n <= 1;
-    if (prev) prev.disabled = dis;
-    if (next) next.disabled = dis;
-    return;
-  }
-  if (prev) prev.disabled = playIndex <= 0;
-  if (next) next.disabled = playIndex >= n - 1;
-  queueMicrotask(() => {
-    void broadcastTrayPlayerState();
-  });
 }
 
 async function playFromQueueIndex(idx) {
