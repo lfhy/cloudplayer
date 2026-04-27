@@ -483,29 +483,22 @@
             </section>
             <section class="page" data-page="settings" aria-label="偏好设置">
               <h1 class="page-title">偏好设置</h1>
-              <p class="page-hint muted">
-                关闭主窗口行为、网络代理、快捷键、网易云 API 根地址（可选）与桌面歌词颜色将保存到本地配置。播放页歌词固定为 QQ → 酷狗 → 网易云 → LRCLIB（与「换」歌词替换同源）。
-              </p>
               <div class="settings-form">
                 <div class="settings-layout">
                   <aside class="settings-tabs" role="tablist" aria-label="偏好设置分组">
                     <button type="button" class="settings-tab is-active" data-settings-tab="appearance" role="tab" aria-selected="true">
-                      <span class="settings-tab__eyebrow">Appearance</span>
                       <span class="settings-tab__title">外观</span>
                       <span class="settings-tab__desc">界面模式与主题色</span>
                     </button>
                     <button type="button" class="settings-tab" data-settings-tab="network" role="tab" aria-selected="false">
-                      <span class="settings-tab__eyebrow">Network</span>
                       <span class="settings-tab__title">网络</span>
                       <span class="settings-tab__desc">代理与歌词接口</span>
                     </button>
                     <button type="button" class="settings-tab" data-settings-tab="controls" role="tab" aria-selected="false">
-                      <span class="settings-tab__eyebrow">Controls</span>
                       <span class="settings-tab__title">控制</span>
                       <span class="settings-tab__desc">关闭行为与快捷键</span>
                     </button>
                     <button type="button" class="settings-tab" data-settings-tab="lyrics" role="tab" aria-selected="false">
-                      <span class="settings-tab__eyebrow">Lyrics</span>
                       <span class="settings-tab__title">歌词</span>
                       <span class="settings-tab__desc">桌面歌词颜色</span>
                     </button>
@@ -638,21 +631,15 @@
                         <div class="settings-field">
                           <span class="settings-field-label">网络代理</span>
                           <input type="hidden" id="setting-network-proxy-mode" value="direct" />
-                          <div class="settings-option-grid" role="radiogroup" aria-label="网络代理模式">
-                            <button type="button" class="settings-option-card" data-network-proxy-mode-card="direct" role="radio" aria-checked="false">
-                              <span class="settings-option-card__badge">Direct</span>
-                              <span class="settings-option-card__title">不使用代理</span>
-                              <span class="settings-option-card__desc">所有接口请求直接访问，适合本地网络可直连时使用。</span>
+                          <div class="settings-choice-group" role="radiogroup" aria-label="网络代理模式">
+                            <button type="button" class="settings-choice" data-network-proxy-mode-card="direct" role="radio" aria-checked="false">
+                              不使用代理
                             </button>
-                            <button type="button" class="settings-option-card" data-network-proxy-mode-card="system" role="radio" aria-checked="false">
-                              <span class="settings-option-card__badge">System</span>
-                              <span class="settings-option-card__title">使用系统代理</span>
-                              <span class="settings-option-card__desc">跟随 macOS 当前的 HTTP / HTTPS / SOCKS 代理配置。</span>
+                            <button type="button" class="settings-choice" data-network-proxy-mode-card="system" role="radio" aria-checked="false">
+                              使用系统代理
                             </button>
-                            <button type="button" class="settings-option-card" data-network-proxy-mode-card="custom" role="radio" aria-checked="false">
-                              <span class="settings-option-card__badge">Custom</span>
-                              <span class="settings-option-card__title">使用自定义代理</span>
-                              <span class="settings-option-card__desc">手动填写代理地址，适合多环境切换或单独测试接口连通性。</span>
+                            <button type="button" class="settings-choice" data-network-proxy-mode-card="custom" role="radio" aria-checked="false">
+                              使用自定义代理
                             </button>
                           </div>
                           <div class="settings-custom-theme" id="settings-network-proxy-custom" hidden>
