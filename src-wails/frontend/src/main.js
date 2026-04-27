@@ -46,6 +46,8 @@ import { createImportFlowHelpers } from "./app/helpers/importFlow.js";
 import { createImportPageController } from "./features/import/controller.js";
 import { createHomeController } from "./features/library/homeController.js";
 import { createPlaylistController } from "./features/library/playlistController.js";
+import { createDockController } from "./features/player/dockController.js";
+import { createDockThemeHelpers } from "./features/player/dockTheme.js";
 import { createSearchController } from "./features/search/controller.js";
 import { createSettingsController } from "./features/settings/controller.js";
 import { renderMainShell } from "./layout/renderMainShell.js";
@@ -217,74 +219,6 @@ const {
 });
 let likedIds = loadLikedSet();
 
-function randomNextIndex() {
-  const n = playQueue.length;
-  if (n <= 1) return 0;
-  let j = playIndex;
-  let guard = 0;
-  while (j === playIndex && guard++ < 12) {
-    j = Math.floor(Math.random() * n);
-  }
-  return j;
-}
-
-function renderQueuePanel() {
-  const ul = document.getElementById("queue-list");
-  if (!ul) return;
-  ul.innerHTML = "";
-  if (!playQueue.length) {
-    const li = document.createElement("li");
-    li.textContent = "（空）去「搜索」页找歌，或从导入歌单开始建立你的播放队列";
-    ul.appendChild(li);
-    return;
-  }
-  playQueue.forEach((it, i) => {
-    const li = document.createElement("li");
-    if (i === playIndex) li.classList.add("is-current");
-    const label = it.local_path
-      ? `${it.title}${it.artist ? ` — ${it.artist}` : ""}`
-      : it.artist
-        ? `${it.title} — ${it.artist}`
-        : it.title;
-    li.textContent = label;
-    li.title = it.local_path ? String(it.local_path) : `id=${it.source_id} · 双击播放`;
-    li.addEventListener("dblclick", () => playFromQueueIndex(i));
-    ul.appendChild(li);
-  });
-}
-
-function refreshFavButton() {
-  const btn = document.getElementById("btn-dock-fav");
-  if (!btn) return;
-  const cur = playQueue[playIndex];
-  if (!cur) {
-    btn.classList.remove("is-on");
-    btn.textContent = "♡";
-    btn.disabled = false;
-    btn.title = "喜欢";
-    return;
-  }
-  const sid = (cur.source_id || "").trim();
-  const canFav = !!sid && !cur.local_path;
-  btn.disabled = !canFav;
-  btn.title = canFav ? "喜欢" : "本地文件无曲库 id，不支持喜欢";
-  const on = canFav && likedIds.has(sid);
-  btn.classList.toggle("is-on", on);
-  btn.textContent = on ? "♥" : "♡";
-}
-
-function closeAllDockMenus() {
-  document.querySelectorAll(".dock-menu").forEach((el) => {
-    el.hidden = true;
-  });
-}
-
-function toggleDockMenu(menuEl) {
-  const willOpen = menuEl.hidden;
-  closeAllDockMenus();
-  menuEl.hidden = !willOpen;
-}
-
 function canSaveCustomProxyUrl(value) {
   const raw = normalizeNetworkProxyUrl(value);
   if (!raw) return false;
@@ -325,6 +259,63 @@ function setNetworkProxyModeSelection(mode) {
 function setSettingsTab(tab) {
   applySettingsTabUi(normalizeSettingsTab(tab));
 }
+
+const { applyQuickThemeMode, effectiveQuickThemeMode, nextQuickThemeMode, refreshQuickThemeModeUi } =
+  createDockThemeHelpers({
+    applyAppTheme,
+    getSettingsFormValues: () => getSettingsFormValues(),
+    labels: QUICK_THEME_MODE_LABELS,
+    navIconSvg,
+    normalizeAppThemeMode,
+    queueSettingsAutosave: (...args) => queueSettingsAutosave(...args),
+    setThemeModeSelection,
+  });
+
+const {
+  closeAllDockMenus,
+  randomNextIndex,
+  refreshFavButton,
+  renderQueuePanel,
+  toggleDockMenu,
+  wireDockBar,
+} = createDockController({
+  alertRequestFailed,
+  applyQuickThemeMode,
+  broadcastDesktopLyricsLock,
+  closeContextMenu,
+  effectiveQuickThemeMode,
+  getDesktopLyricsLocked: () => desktopLyricsLocked,
+  getDesktopLyricsOpen: () => desktopLyricsOpen,
+  enqueueDownloadForTrack,
+  getLikedIds: () => likedIds,
+  getPlayIndex: () => playIndex,
+  getPlayModeIndex: () => playModeIndex,
+  getPlayQueue: () => playQueue,
+  getQualityPref: () => qualityPref,
+  iconSvgByName,
+  invoke,
+  nextQuickThemeMode,
+  openLyricsReplaceWindow,
+  playFromQueueIndex,
+  playModeItems: PLAY_MODES,
+  qualityLabels: QUALITY_LABELS,
+  refreshLyricsLockMenuLabel,
+  refreshQuickThemeModeUi,
+  removeCurrentFromQueue,
+  renderPlayerNav: setPlayerNavEnabled,
+  saveLikedIds: saveLikedSet,
+  setDesktopLyricsLocked: (value) => {
+    desktopLyricsLocked = value;
+  },
+  setPlayModeIndex: (value) => {
+    playModeIndex = value;
+  },
+  setQualityPref: (value) => {
+    qualityPref = value;
+  },
+  toggleQueuePanel,
+  toggleDesktopLyrics,
+});
 
 // Settings are split into a controller so the runtime entry only keeps state bridges.
 const {
@@ -372,198 +363,6 @@ const {
   },
 });
 
-function effectiveQuickThemeMode(mode) {
-  const normalized = normalizeAppThemeMode(mode);
-  if (normalized === "system") return "system";
-  if (normalized === "light") return "light";
-  return "dark";
-}
-
-function refreshQuickThemeModeUi(mode = getSettingsFormValues().mode) {
-  const quickMode = effectiveQuickThemeMode(mode);
-  document.querySelectorAll("[data-quick-theme-mode]").forEach((el) => {
-    const active = el.getAttribute("data-quick-theme-mode") === quickMode;
-    el.classList.toggle("is-active", active);
-    if (el.classList.contains("dock-menu__item") || el.classList.contains("sidebar-account__menu-item")) {
-      el.setAttribute("aria-checked", active ? "true" : "false");
-    }
-  });
-  const dockBtn = document.getElementById("dock-theme-mode");
-  if (dockBtn) {
-    const iconName =
-      quickMode === "system" ? "appearance-system" : quickMode === "light" ? "appearance-light" : "appearance-dark";
-    dockBtn.innerHTML = navIconSvg(iconName);
-    dockBtn.dataset.quickThemeMode = quickMode;
-    dockBtn.title = `界面模式：${QUICK_THEME_MODE_LABELS[quickMode] || "外观"}（点击切换）`;
-    dockBtn.setAttribute("aria-label", dockBtn.title);
-  }
-}
-
-function nextQuickThemeMode(mode) {
-  if (mode === "system") return "light";
-  if (mode === "light") return "dark";
-  return "system";
-}
-
-function resolveDarkThemeModeFallback(mode) {
-  const normalized = normalizeAppThemeMode(mode);
-  return normalized !== "system" && normalized !== "light" ? normalized : "graphite";
-}
-
-function applyQuickThemeMode(nextQuickMode) {
-  const current = getSettingsFormValues();
-  let targetMode = "system";
-  if (nextQuickMode === "light") targetMode = "light";
-  else if (nextQuickMode === "dark") targetMode = resolveDarkThemeModeFallback(current.mode);
-  setThemeModeSelection(targetMode);
-  const updated = getSettingsFormValues();
-  applyAppTheme(updated.theme, updated.customAccent, updated.mode);
-  queueSettingsAutosave(true);
-}
-
-function wireDockBar() {
-  const modeBtn = document.getElementById("btn-play-mode");
-  if (modeBtn) {
-    const refreshPlayModeButton = () => {
-      const mode = PLAY_MODES[playModeIndex];
-      modeBtn.innerHTML = iconSvgByName(mode.icon);
-      modeBtn.title = mode.tip;
-      modeBtn.setAttribute("aria-label", mode.tip);
-      modeBtn.dataset.playMode = mode.key;
-    };
-    refreshPlayModeButton();
-    modeBtn.addEventListener("click", () => {
-      playModeIndex = (playModeIndex + 1) % PLAY_MODES.length;
-      modeBtn.classList.remove("is-switching");
-      void modeBtn.offsetWidth;
-      modeBtn.classList.add("is-switching");
-      refreshPlayModeButton();
-      window.setTimeout(() => modeBtn.classList.remove("is-switching"), 220);
-      setPlayerNavEnabled();
-    });
-  }
-
-  const qBtn = document.getElementById("dock-quality");
-  const qPop = document.getElementById("popover-quality");
-  if (qBtn && qPop) {
-    qBtn.textContent = QUALITY_LABELS[qualityPref] || "标准";
-    qBtn.addEventListener("click", (e) => {
-      e.stopPropagation();
-      toggleDockMenu(qPop);
-    });
-    qPop.querySelectorAll("[data-quality]").forEach((b) => {
-      b.addEventListener("click", (e) => {
-        e.stopPropagation();
-        qualityPref = b.getAttribute("data-quality") || "128";
-        qBtn.textContent = QUALITY_LABELS[qualityPref] || "标准";
-        closeAllDockMenus();
-      });
-    });
-  }
-
-  const themeBtn = document.getElementById("dock-theme-mode");
-  if (themeBtn) {
-    refreshQuickThemeModeUi();
-    themeBtn.addEventListener("click", () => {
-      const currentMode = themeBtn.dataset.quickThemeMode || effectiveQuickThemeMode();
-      const nextMode = nextQuickThemeMode(currentMode);
-      themeBtn.classList.remove("is-switching");
-      void themeBtn.offsetWidth;
-      themeBtn.classList.add("is-switching");
-      applyQuickThemeMode(nextMode);
-      window.setTimeout(() => themeBtn.classList.remove("is-switching"), 220);
-    });
-  }
-
-  document.getElementById("btn-dock-fav")?.addEventListener("click", (e) => {
-    e.stopPropagation();
-    const cur = playQueue[playIndex];
-    if (!cur) return;
-    const sid = (cur.source_id || "").trim();
-    if (!sid || cur.local_path) {
-      alert("仅在线试听曲目支持「喜欢」（需曲库 id）。");
-      return;
-    }
-    if (likedIds.has(sid)) likedIds.delete(sid);
-    else likedIds.add(sid);
-    saveLikedSet(likedIds);
-    refreshFavButton();
-  });
-
-  document.getElementById("btn-dock-dl")?.addEventListener("click", (e) => {
-    e.stopPropagation();
-    toggleDockMenu(document.getElementById("popover-dl"));
-  });
-  document.getElementById("popover-dl")?.querySelectorAll("[data-dlq]").forEach((b) => {
-    b.addEventListener("click", (e) => {
-      e.stopPropagation();
-      const q = b.getAttribute("data-dlq") || "128";
-      closeAllDockMenus();
-      const cur = playQueue[playIndex];
-      if (!cur) {
-        alert("当前没有播放曲目。");
-        return;
-      }
-      void enqueueDownloadForTrack(
-        { sourceId: cur.source_id, title: cur.title, artist: cur.artist },
-        q
-      );
-    });
-  });
-
-  document.getElementById("btn-dock-lyrics-replace")?.addEventListener("click", (e) => {
-    e.stopPropagation();
-    closeAllDockMenus();
-    void openLyricsReplaceWindow();
-  });
-
-  document.getElementById("btn-dock-more")?.addEventListener("click", (e) => {
-    e.stopPropagation();
-    toggleDockMenu(document.getElementById("popover-more"));
-  });
-  document.querySelector('[data-more="add-pl"]')?.addEventListener("click", (e) => {
-    e.stopPropagation();
-    closeAllDockMenus();
-    alert("添加到歌单：待接入数据库与歌单页。");
-  });
-  document.querySelector('[data-more="rm-queue"]')?.addEventListener("click", (e) => {
-    e.stopPropagation();
-    closeAllDockMenus();
-    removeCurrentFromQueue();
-  });
-
-  document.getElementById("btn-dock-lyrics")?.addEventListener("click", async (e) => {
-    e.stopPropagation();
-    try {
-      await toggleDesktopLyrics();
-    } catch (err) {
-      alertRequestFailed(err, "toggleDesktopLyrics");
-    }
-  });
-
-  document.getElementById("btn-dock-lyrics-lock")?.addEventListener("click", async (e) => {
-    e.stopPropagation();
-    if (!desktopLyricsOpen) return;
-    desktopLyricsLocked = !desktopLyricsLocked;
-    refreshLyricsLockMenuLabel();
-    try {
-      await invoke("save_settings", { patch: { desktop_lyrics_locked: desktopLyricsLocked } });
-    } catch (err) {
-      console.warn("save_settings desktop_lyrics_locked", err);
-    }
-    await broadcastDesktopLyricsLock();
-  });
-
-  document.getElementById("btn-dock-queue")?.addEventListener("click", (e) => {
-    e.stopPropagation();
-    toggleQueuePanel();
-  });
-
-  document.addEventListener("click", (e) => {
-    if (e.target.closest(".dock-menu-anchor") || e.target.closest(".dock-menu")) return;
-    closeAllDockMenus();
-  });
-}
 
 function removeCurrentFromQueue() {
   if (!playQueue.length) return;
