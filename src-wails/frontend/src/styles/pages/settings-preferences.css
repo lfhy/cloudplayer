@@ -1,0 +1,118 @@
+/* Settings choice chips, source summary and color fields. */
+.settings-custom-theme {
+  margin-top: 12px;
+}
+
+.settings-choice-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  max-width: 860px;
+}
+
+.settings-choice {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 38px;
+  padding: 0 14px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--bg-card);
+  color: var(--text-secondary);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition:
+    border-color 120ms ease,
+    background-color 120ms ease,
+    color 120ms ease;
+}
+
+.settings-choice:hover {
+  border-color: rgba(var(--accent-rgb), 0.22);
+  color: var(--text);
+}
+
+.settings-choice.is-active {
+  border-color: rgba(var(--accent-rgb), 0.36);
+  background: rgba(var(--accent-rgb), 0.11);
+  color: var(--accent);
+}
+
+.settings-source-summary {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  padding: 14px 16px;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: linear-gradient(180deg, rgba(var(--accent-rgb), 0.05) 0%, transparent 100%), var(--bg-card);
+  max-width: 640px;
+}
+
+.settings-source-summary__badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 24px;
+  padding: 0 10px;
+  border-radius: 999px;
+  background: rgba(var(--accent-rgb), 0.14);
+  color: var(--accent);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.settings-source-summary__title {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.settings-source-summary__desc {
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+.settings-colors-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  align-items: center;
+}
+
+.settings-color-lab {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--text);
+  cursor: pointer;
+}
+
+.settings-color-lab--accent {
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--bg-card);
+}
+
+.settings-color-lab input[type="color"] {
+  width: 40px;
+  height: 32px;
+  padding: 2px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--bg-card);
+  cursor: pointer;
+}
+
+.settings-color-code {
+  font-family: ui-monospace, "SFMono-Regular", Consolas, monospace;
+  font-size: 12px;
+  color: var(--text-secondary);
+}

@@ -1,0 +1,75 @@
+/* Reusable table presentation for list pages. */
+/* 表格随内容增高，仅 .stack 滚动；与页面背景融合（导入页 .import-table-wrap 保留卡片样式） */
+.table-wrap {
+  overflow: visible;
+}
+
+.table-wrap:not(.import-table-wrap) {
+  border: none;
+  background: transparent;
+  border-radius: 0;
+}
+
+.search-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.search-table th,
+.search-table td {
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--border);
+  text-align: left;
+  vertical-align: middle;
+}
+
+.search-table thead th {
+  color: var(--text-secondary);
+  font-weight: 600;
+  font-size: 12px;
+  background: rgba(0, 0, 0, 0.02);
+}
+
+.table-wrap:not(.import-table-wrap) .search-table thead th {
+  background: transparent;
+}
+
+.search-table tbody tr:hover {
+  background: rgba(var(--accent-rgb), 0.06);
+}
+
+.col-idx {
+  width: 36px;
+  color: var(--text-secondary);
+}
+
+.col-cover {
+  width: 52px;
+}
+
+.col-dur {
+  width: 56px;
+  text-align: right;
+}
+
+.row-cover {
+  width: 40px;
+  height: 40px;
+  border-radius: 4px;
+  object-fit: cover;
+  display: block;
+  background: var(--bg-main);
+}
+
+.row-cover-ph {
+  width: 40px;
+  height: 40px;
+  border-radius: 4px;
+  background: var(--cover-placeholder-grad);
+}
+
+.col-like {
+  width: 52px;
+  text-align: center;
+}
