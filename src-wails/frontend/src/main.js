@@ -47,6 +47,7 @@ import {
 import { createImportFlowHelpers } from "./app/helpers/importFlow.js";
 import { createImportPageController } from "./features/import/controller.js";
 import { createContextMenuController } from "./features/contextMenu/controller.js";
+import { createNavigationController } from "./features/layout/navigationController.js";
 import { createHomeController } from "./features/library/homeController.js";
 import { createPlaylistController } from "./features/library/playlistController.js";
 import { createLyricsController } from "./features/lyrics/controller.js";
@@ -529,156 +530,6 @@ const { renderImportTable, wireImportPage } = createImportPageController({
 
 function audioEl() {
   return document.getElementById("audio-player");
-}
-
-function renderSidebar() {
-  const el = document.getElementById("sidebar");
-  el.innerHTML = "";
-  for (const item of NAV) {
-    const btn = document.createElement("button");
-    btn.type = "button";
-    btn.className = "nav-item";
-    btn.dataset.page = item.id;
-    btn.innerHTML = `<span class="nav-item__icon">${navIconSvg(item.icon)}</span><span class="nav-item__label">${escapeHtml(item.label)}</span>`;
-    btn.addEventListener("click", () => setPage(item.id));
-    el.appendChild(btn);
-  }
-  const div = document.createElement("div");
-  div.className = "sidebar-divider";
-  el.appendChild(div);
-  const plWrap = document.createElement("div");
-  plWrap.className = "sidebar-playlist-section";
-  const plHead = document.createElement("div");
-  plHead.className = "sidebar-playlist-header";
-  const plTitle = document.createElement("div");
-  plTitle.className = "sidebar-playlist-title";
-  plTitle.textContent = "我的歌单";
-  const btnAdd = document.createElement("button");
-  btnAdd.type = "button";
-  btnAdd.id = "btn-sidebar-new-playlist";
-  btnAdd.className = "sidebar-pl-add";
-  btnAdd.title = "新建歌单";
-  btnAdd.setAttribute("aria-label", "新建歌单");
-  btnAdd.innerHTML = navIconSvg("playlist");
-  btnAdd.addEventListener("click", async (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    const name = window.prompt("新歌单名称", "新歌单");
-    if (name == null || !String(name).trim()) return;
-    try {
-      await invoke("create_playlist", { name: name.trim() });
-      await refreshSidebarPlaylists();
-    } catch (err) {
-      alertRequestFailed(err, "create_playlist sidebar");
-    }
-  });
-  plHead.appendChild(plTitle);
-  plHead.appendChild(btnAdd);
-  const ul = document.createElement("ul");
-  ul.id = "sidebar-playlist-list";
-  ul.className = "sidebar-playlist-list";
-  plWrap.appendChild(plHead);
-  plWrap.appendChild(ul);
-  el.appendChild(plWrap);
-
-  const accountWrap = document.createElement("div");
-  accountWrap.className = "sidebar-account";
-  const accountButton = document.createElement("button");
-  accountButton.type = "button";
-  accountButton.className = "sidebar-account__button";
-  accountButton.setAttribute("aria-label", "CloudPlayer 菜单");
-  accountButton.innerHTML = `
-    <span class="sidebar-account__mark" aria-hidden="true">${appLogoMarkSvg()}</span>
-    <span class="sidebar-account__meta">
-      <strong>CloudPlayer</strong>
-    </span>
-    <span class="sidebar-account__chevron" aria-hidden="true">${navIconSvg("chevron-up-down")}</span>
-  `;
-
-  const accountMenu = document.createElement("div");
-  accountMenu.className = "sidebar-account__menu";
-  SIDEBAR_MENU_NAV.forEach((item) => {
-    const btn = document.createElement("button");
-    btn.type = "button";
-    btn.className = "sidebar-account__menu-item";
-    const iconHtml = `<span class="sidebar-account__menu-icon">${navIconSvg(item.icon)}</span>`;
-    btn.innerHTML = `${iconHtml}<span class="sidebar-account__menu-text">${escapeHtml(item.label)}</span>`;
-    btn.addEventListener("click", () => setPage(item.id));
-    accountMenu.appendChild(btn);
-  });
-
-  const modeSection = document.createElement("div");
-  modeSection.className = "sidebar-account__menu-section";
-  modeSection.innerHTML = `
-    <div class="sidebar-account__submenu-row">
-      <button type="button" class="sidebar-account__menu-item sidebar-account__menu-item--fly" aria-haspopup="menu" aria-expanded="false">
-        <span class="sidebar-account__menu-icon">${navIconSvg("appearance")}</span>
-        <span class="sidebar-account__menu-text">外观模式</span>
-      </button>
-      <div class="sidebar-account__submenu-panel">
-        <button type="button" class="sidebar-account__menu-item" data-quick-theme-mode="system">跟随系统</button>
-        <button type="button" class="sidebar-account__menu-item" data-quick-theme-mode="light">浅色</button>
-        <button type="button" class="sidebar-account__menu-item" data-quick-theme-mode="dark">深色</button>
-      </div>
-    </div>
-  `;
-  modeSection.querySelectorAll("[data-quick-theme-mode]").forEach((btn) => {
-    btn.addEventListener("click", (event) => {
-      event.stopPropagation();
-      const quickMode = btn.getAttribute("data-quick-theme-mode") || "system";
-      applyQuickThemeMode(quickMode);
-    });
-  });
-  accountMenu.appendChild(modeSection);
-
-  accountWrap.appendChild(accountButton);
-  accountWrap.appendChild(accountMenu);
-  el.appendChild(accountWrap);
-  refreshQuickThemeModeUi();
-  void refreshSidebarPlaylists();
-}
-
-function setPage(pageId) {
-  document.querySelectorAll(".nav-item").forEach((b) => {
-    b.classList.toggle("active", b.dataset.page === pageId);
-  });
-  document.querySelectorAll(".page").forEach((p) => {
-    p.classList.toggle("page-active", p.dataset.page === pageId);
-  });
-  if (pageId === "home") {
-    renderHomePage();
-  }
-  if (pageId === "daily") {
-    renderDailyTable();
-  }
-  if (pageId === "recent") {
-    renderRecentPlaysTable();
-  }
-  if (pageId === "download") {
-    renderDownloadQueueTable();
-  }
-  if (pageId === "import") {
-    if (!importMethod && !importTracks.length) {
-      resetImportFlow();
-    }
-    void refreshPlaylistSelect();
-  }
-  if (pageId === "playlist") {
-    if (selectedPlaylistId == null) {
-      selectedPlaylistName = "";
-      const titleEl = document.getElementById("playlist-page-title");
-      if (titleEl) titleEl.textContent = "歌单";
-      playlistDetailRows = [];
-      renderPlaylistDetailTable();
-    } else {
-      void loadPlaylistDetail(selectedPlaylistId, selectedPlaylistName);
-    }
-  }
-  if (pageId === "search") {
-    queueMicrotask(() => {
-      getActiveSearchInput()?.focus();
-    });
-  }
 }
 
 /**
@@ -1291,17 +1142,44 @@ function shouldIgnoreGlobalHotkeyAction() {
   return isEditableElement(document.activeElement);
 }
 
-function toggleQueuePanel() {
-  const panel = document.getElementById("queue-panel");
-  const btn = document.getElementById("queue-toggle");
-  panel.classList.toggle("collapsed");
-  btn.textContent = panel.classList.contains("collapsed") ? "展开" : "收起";
-  renderQueuePanel();
-}
-
-function wireQueueToggle() {
-  document.getElementById("queue-toggle").addEventListener("click", () => toggleQueuePanel());
-}
+const { renderSidebar, setPage, toggleQueuePanel, wireQueueToggle } = createNavigationController({
+  alertRequestFailed,
+  appLogoMarkSvg,
+  applyQuickThemeMode,
+  escapeHtml,
+  getActiveSearchInput,
+  invoke,
+  navIconSvg,
+  navItems: NAV,
+  onDailyPage: () => renderDailyTable(),
+  onDownloadPage: () => renderDownloadQueueTable(),
+  onHomePage: () => renderHomePage(),
+  onImportPage: () => {
+    if (!importMethod && !importTracks.length) resetImportFlow();
+    void refreshPlaylistSelect();
+  },
+  onPlaylistPage: () => {
+    if (selectedPlaylistId == null) {
+      selectedPlaylistName = "";
+      const titleEl = document.getElementById("playlist-page-title");
+      if (titleEl) titleEl.textContent = "歌单";
+      playlistDetailRows = [];
+      renderPlaylistDetailTable();
+      return;
+    }
+    void loadPlaylistDetail(selectedPlaylistId, selectedPlaylistName);
+  },
+  onRecentPage: () => renderRecentPlaysTable(),
+  onSearchPage: () => {
+    queueMicrotask(() => {
+      getActiveSearchInput()?.focus();
+    });
+  },
+  refreshQuickThemeModeUi,
+  refreshSidebarPlaylists,
+  renderQueuePanel,
+  sidebarMenuItems: SIDEBAR_MENU_NAV,
+});
 
 document.addEventListener("DOMContentLoaded", () => {
   renderMainShell();
