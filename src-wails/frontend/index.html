@@ -275,6 +275,31 @@
                 </div>
               </div>
               <div class="import-shell">
+                <nav class="import-progress" aria-label="导入步骤">
+                  <button type="button" class="import-progress__step" data-import-step-nav="choose">
+                    <span class="import-progress__index">1</span>
+                    <span class="import-progress__meta">
+                      <strong>选择方式</strong>
+                      <span>本地 / 链接 / 文本</span>
+                    </span>
+                  </button>
+                  <span class="import-progress__line" aria-hidden="true"></span>
+                  <button type="button" class="import-progress__step" data-import-step-nav="config">
+                    <span class="import-progress__index">2</span>
+                    <span class="import-progress__meta">
+                      <strong>配置参数</strong>
+                      <span>填写并执行导入</span>
+                    </span>
+                  </button>
+                  <span class="import-progress__line" aria-hidden="true"></span>
+                  <button type="button" class="import-progress__step" data-import-step-nav="result">
+                    <span class="import-progress__index">3</span>
+                    <span class="import-progress__meta">
+                      <strong>整理保存</strong>
+                      <span>确认列表并保存歌单</span>
+                    </span>
+                  </button>
+                </nav>
                 <section class="import-stage import-stage--chooser" id="import-method-stage">
                   <div class="import-stage__intro">
                     <p class="import-stage__eyebrow">步骤 1</p>
@@ -307,65 +332,59 @@
                       <h2 id="import-config-title">配置导入参数</h2>
                       <p id="import-config-desc" class="muted"></p>
                     </div>
-                    <button type="button" id="btn-import-cancel" class="btn-outline">取消</button>
+                    <button type="button" id="btn-import-back" class="btn-outline">上一步</button>
                   </div>
 
                   <div id="import-panel-local" class="import-panel" hidden>
-                    <div class="import-soft-card">
-                      <h3>选择本地音乐目录</h3>
-                      <p class="muted">扫描完成后会把歌曲标题、歌手和文件路径整理到导入草稿。</p>
-                      <div class="local-lib-toolbar">
-                        <button type="button" id="btn-scan-library-folder" class="btn-accent">选择文件夹并扫描</button>
-                        <span id="local-library-status" class="muted" aria-live="polite"></span>
-                      </div>
+                    <h3>选择本地音乐目录</h3>
+                    <p class="muted">扫描完成后会把歌曲标题、歌手和文件路径整理到导入草稿。</p>
+                    <div class="local-lib-toolbar">
+                      <button type="button" id="btn-scan-library-folder" class="btn-accent">选择文件夹并扫描</button>
+                      <span id="local-library-status" class="muted" aria-live="polite"></span>
                     </div>
                   </div>
 
                   <div id="import-panel-share" class="import-panel" hidden>
-                    <div class="import-soft-card">
-                      <h3>粘贴歌单分享链接</h3>
-                      <div class="import-share-row">
-                        <input
-                          id="import-share-url"
-                          type="url"
-                          class="import-link-input"
-                          placeholder="music.163.com / y.qq.com / c6.y.qq.com …"
-                          autocomplete="off"
-                        />
-                        <button type="button" id="btn-import-share" class="btn-accent">解析链接</button>
-                      </div>
-                      <div class="import-share-cookie-row" hidden>
-                        <label>
-                          <input type="checkbox" id="opt-netease-cookie-enabled" />
-                          网易云 Cookie 登录态请求（可选）
-                        </label>
-                        <input
-                          id="opt-netease-cookie"
-                          type="text"
-                          class="import-link-input"
-                          placeholder="MUSIC_U=...; __csrf=...（仅本机保存到 settings.json）"
-                          autocomplete="off"
-                        />
-                      </div>
-                      <p id="import-share-status" class="import-share-status muted" aria-live="polite"></p>
+                    <h3>粘贴歌单分享链接</h3>
+                    <div class="import-share-row">
+                      <input
+                        id="import-share-url"
+                        type="url"
+                        class="import-link-input"
+                        placeholder="music.163.com / y.qq.com / c6.y.qq.com …"
+                        autocomplete="off"
+                      />
+                      <button type="button" id="btn-import-share" class="btn-accent">解析链接</button>
                     </div>
+                    <div class="import-share-cookie-row" hidden>
+                      <label>
+                        <input type="checkbox" id="opt-netease-cookie-enabled" />
+                        网易云 Cookie 登录态请求（可选）
+                      </label>
+                      <input
+                        id="opt-netease-cookie"
+                        type="text"
+                        class="import-link-input"
+                        placeholder="MUSIC_U=...; __csrf=...（仅本机保存到 settings.json）"
+                        autocomplete="off"
+                      />
+                    </div>
+                    <p id="import-share-status" class="import-share-status muted" aria-live="polite"></p>
                   </div>
 
                   <div id="import-panel-text" class="import-panel" hidden>
-                    <div class="import-soft-card">
-                      <h3>粘贴文本列表</h3>
-                      <div class="import-toolbar">
-                        <label class="import-label">格式</label>
-                        <select id="import-fmt" class="import-select">
-                          <option value="auto">自动检测</option>
-                          <option value="text">纯文本</option>
-                          <option value="csv">CSV</option>
-                          <option value="json">JSON</option>
-                        </select>
-                        <button type="button" id="btn-import-parse" class="btn-accent">解析文本</button>
-                      </div>
-                      <textarea id="import-text" class="import-textarea" rows="10" placeholder="示例：&#10;晴天 - 周杰伦&#10;七里香 - 周杰伦"></textarea>
+                    <h3>粘贴文本列表</h3>
+                    <div class="import-toolbar">
+                      <label class="import-label">格式</label>
+                      <select id="import-fmt" class="import-select">
+                        <option value="auto">自动检测</option>
+                        <option value="text">纯文本</option>
+                        <option value="csv">CSV</option>
+                        <option value="json">JSON</option>
+                      </select>
+                      <button type="button" id="btn-import-parse" class="btn-accent">解析文本</button>
                     </div>
+                    <textarea id="import-text" class="import-textarea" rows="10" placeholder="示例：&#10;晴天 - 周杰伦&#10;七里香 - 周杰伦"></textarea>
                   </div>
                 </section>
 
@@ -376,6 +395,7 @@
                       <h2>整理结果并保存歌单</h2>
                       <p class="muted">如果列表已经出来，建议先保存为歌单，避免切页或误操作丢失数据。</p>
                     </div>
+                    <button type="button" id="btn-import-result-back" class="btn-outline">上一步</button>
                   </div>
                   <div class="import-save-bar">
                     <label class="import-name-field">

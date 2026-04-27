@@ -241,10 +241,6 @@ function setImportMethod(method = "") {
   document.querySelectorAll("[data-import-method]").forEach((card) => {
     card.classList.toggle("is-active", card.getAttribute("data-import-method") === method);
   });
-  const chooser = document.getElementById("import-method-stage");
-  const config = document.getElementById("import-config-stage");
-  if (chooser) chooser.hidden = method !== "";
-  if (config) config.hidden = method === "";
   document.querySelectorAll(".import-panel").forEach((panel) => {
     panel.hidden = panel.id !== `import-panel-${method}`;
   });
@@ -257,11 +253,29 @@ function setImportMethod(method = "") {
   };
   if (title) title.textContent = copy[method]?.[0] || "配置导入参数";
   if (desc) desc.textContent = copy[method]?.[1] || "";
+  setImportStep(method ? "config" : importTracks.length > 0 ? "result" : "choose");
 }
 
 function showImportResultStage(show = true) {
-  const stage = document.getElementById("import-result-stage");
-  if (stage) stage.hidden = !show;
+  setImportStep(show ? "result" : importMethod ? "config" : "choose");
+}
+
+function setImportStep(step = "choose") {
+  const chooser = document.getElementById("import-method-stage");
+  const config = document.getElementById("import-config-stage");
+  const result = document.getElementById("import-result-stage");
+  if (chooser) chooser.hidden = step !== "choose";
+  if (config) config.hidden = step !== "config";
+  if (result) result.hidden = step !== "result";
+  const order = ["choose", "config", "result"];
+  const currentIndex = order.indexOf(step);
+  document.querySelectorAll("[data-import-step-nav]").forEach((el) => {
+    const idx = order.indexOf(el.getAttribute("data-import-step-nav") || "");
+    el.classList.toggle("is-active", idx === currentIndex);
+    el.classList.toggle("is-done", idx > -1 && idx < currentIndex);
+    const disabled = idx > currentIndex || (idx === 1 && !importMethod) || (idx === 2 && importTracks.length === 0);
+    el.disabled = disabled;
+  });
 }
 
 function resetImportFlow({ keepDraft = false } = {}) {
@@ -2455,8 +2469,21 @@ function wireImportPage() {
     });
   });
 
-  document.getElementById("btn-import-cancel")?.addEventListener("click", () => {
-    resetImportFlow({ keepDraft: importTracks.length > 0 });
+  document.querySelectorAll("[data-import-step-nav]").forEach((button) => {
+    button.addEventListener("click", () => {
+      const step = button.getAttribute("data-import-step-nav") || "choose";
+      if (step === "choose") setImportStep("choose");
+      if (step === "config" && importMethod) setImportStep("config");
+      if (step === "result" && importTracks.length > 0) setImportStep("result");
+    });
+  });
+
+  document.getElementById("btn-import-back")?.addEventListener("click", () => {
+    setImportStep("choose");
+  });
+
+  document.getElementById("btn-import-result-back")?.addEventListener("click", () => {
+    setImportStep(importMethod ? "config" : "choose");
   });
 
   document.getElementById("btn-scan-library-folder")?.addEventListener("click", async () => {
