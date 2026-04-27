@@ -2,791 +2,116 @@ import { convertFileSrc, invoke } from "./wails/tauri-core.js";
 import { open } from "./wails/tauri-plugin-dialog.js";
 import { emitTo, listen } from "./wails/tauri-event.js";
 import { WebviewWindow } from "./wails/tauri-webviewWindow.js";
-import {
-  LYRICS_REPLACE_TARGET,
-  LYRICS_WW_TARGET,
-  NAV,
-  PLAY_MODES,
-  QUALITY_LABELS,
-  QUICK_THEME_MODE_LABELS,
-  RECENT_SESSION_MAX,
-  SIDEBAR_MENU_NAV,
-  TRAY_PLAYER_TARGET,
-} from "./app/constants.js";
+import { LYRICS_REPLACE_TARGET, NAV, PLAY_MODES, QUALITY_LABELS, QUICK_THEME_MODE_LABELS, RECENT_SESSION_MAX, SIDEBAR_MENU_NAV, TRAY_PLAYER_TARGET } from "./app/constants.js";
 import { MSG_REQUEST_FAILED, alertRequestFailed, warnRequestFailed } from "./app/helpers/errors.js";
-import {
-  appLogoMarkSvg,
-  dockLyricsLockIcon,
-  iconSvgByName,
-  importBackButtonIconSvg,
-  importMethodIconSvg,
-  navIconSvg,
-} from "./app/helpers/icons.js";
+import { appLogoMarkSvg, dockLyricsLockIcon, iconSvgByName, importBackButtonIconSvg, importMethodIconSvg, navIconSvg } from "./app/helpers/icons.js";
 import { loadLikedSet, saveLikedSet } from "./app/helpers/likedSet.js";
 import { audioDiagPayload, createPlayEventLogger } from "./app/helpers/playerDiagnostics.js";
 import { escapeHtml, setTableMutedMessage } from "./app/helpers/text.js";
 import { formatDurationMs, formatTime } from "./app/helpers/time.js";
-import {
-  applyAppTheme,
-  applyPlatformClassNames,
-  normalizeAccentHex,
-  normalizeAppTheme,
-  normalizeAppThemeMode,
-  normalizeCloseAction,
-  normalizeNetworkProxyMode,
-  normalizeNetworkProxyUrl,
-  normalizeSettingsTab,
-  resolveAppThemeMode,
-  setNetworkProxyModeSelection as applyNetworkProxyModeSelectionUi,
-  setSettingsTab as applySettingsTabUi,
-  setThemeCardSelection as applyThemeCardSelectionUi,
-  setThemeModeSelection as applyThemeModeSelectionUi,
-  systemDarkMedia,
-  themeAccentRgb,
-} from "./app/helpers/platformTheme.js";
-import { createImportFlowHelpers } from "./app/helpers/importFlow.js";
-import { bootCloudPlayerApp } from "./app/runtime/bootstrap.js";
-import { createImportPageController } from "./features/import/controller.js";
-import { createContextMenuController } from "./features/contextMenu/controller.js";
-import { createDownloadController } from "./features/download/controller.js";
-import { createNavigationController } from "./features/layout/navigationController.js";
-import { createHomeController } from "./features/library/homeController.js";
-import { createPlaylistController } from "./features/library/playlistController.js";
-import { createLyricsController } from "./features/lyrics/controller.js";
-import { createDockController } from "./features/player/dockController.js";
-import { createDockThemeHelpers } from "./features/player/dockTheme.js";
-import { createAudioEventsController } from "./features/player/audioEventsController.js";
-import { createPlayerChromeController } from "./features/player/chromeController.js";
-import { createPlayerHotkeyController } from "./features/player/hotkeysController.js";
-import { createPlaybackController } from "./features/player/playbackController.js";
-import { createTrayRecentController } from "./features/player/trayRecentController.js";
-import { createSearchController } from "./features/search/controller.js";
-import { createSettingsController } from "./features/settings/controller.js";
+import { applyAppTheme, applyPlatformClassNames, normalizeAccentHex, normalizeAppTheme, normalizeAppThemeMode, normalizeCloseAction, normalizeNetworkProxyMode, normalizeNetworkProxyUrl, normalizeSettingsTab, setNetworkProxyModeSelection as applyNetworkProxyModeSelectionUi, setSettingsTab as applySettingsTabUi, setThemeCardSelection as applyThemeCardSelectionUi, setThemeModeSelection as applyThemeModeSelectionUi, systemDarkMedia } from "./app/helpers/platformTheme.js";
+import { createBasePlayerRuntime } from "./app/runtime/basePlayerRuntime.js";
+import { createDockRuntime } from "./app/runtime/dockRuntime.js";
+import { createPageRuntime } from "./app/runtime/pageRuntime.js";
+import { createSettingsRuntime } from "./app/runtime/settingsRuntime.js";
+import { startDesktopRuntime } from "./app/runtime/startupRuntime.js";
 import { renderMainShell } from "./layout/renderMainShell.js";
 
-/** @type {{ keyword: string, page: number, hasNext: boolean, results: any[], busy: boolean }} */
-const searchState = {
-  keyword: "",
-  page: 1,
-  hasNext: false,
-  results: [],
-  scope: "catalog",
-  busy: false,
-  playlistResults: [],
-  view: "home",
-};
+// Composition root: only shared mutable state and runtime assembly stay here.
+const searchState = { keyword: "", page: 1, hasNext: false, results: [], scope: "catalog", busy: false, playlistResults: [], view: "home" };
+let playQueue = [], playIndex = 0, seekDragging = false, playLoadGeneration = 0, audioSourceGeneration = 0, audioProgressLogLastTs = 0;
+let playModeIndex = 0, qualityPref = "128", importTracks = [], desktopLyricsOpen = false, desktopLyricsWindow = null, desktopLyricsLocked = true;
+let mainWindowCloseAction = "ask", selectedPlaylistId = null, selectedPlaylistName = "", playlistDetailRows = [], importShareSuggestedName = "";
+let neteaseCookieEnabled = false, neteaseCookieValue = "", importMethod = "", importDraftDirty = false, sessionRecentPlays = [], localLibraryRows = [], lastLibraryFolder = "";
+const downloadTasksBySourceId = new Map(), logPlayEventDesktop = createPlayEventLogger(invoke);
+let likedIds = loadLikedSet(), setPage = () => {}, renderHomePage = () => {}, renderDailyTable = () => {}, renderRecentPlaysTable = () => {};
+let renderQueuePanel = () => {}, refreshFavButton = () => {}, randomNextIndex = () => 0, refreshQuickThemeModeUi = () => {}, renderImportTable = () => {}, loadPlaylistDetail = async () => {};
 
-const {
-  fetchSearchPage,
-  getActiveSearchInput,
-  getSearchInputs,
-  renderPlaylistSearchResults,
-  renderSearchTable,
-  setSearchScope,
-  setSearchView,
-  submitPageSearch,
-  syncSearchInputs,
-  updateSearchToolbar,
-  updateSearchViewState,
-  wireDiscoverToolbar,
-  wireSearchPage,
-} = createSearchController({
-  escapeHtml,
-  invoke,
-  loadPlaylistDetail: (...args) => loadPlaylistDetail(...args),
-  MSG_REQUEST_FAILED,
-  openSearchRowContextMenu: (...args) => openSearchRowContextMenu(...args),
-  playCatalogAll: (rows) => {
-    playQueue = rows.map((row) => ({
-      source_id: row.source_id,
-      title: row.title,
-      artist: row.artist || "",
-      cover_url: row.cover_url || null,
-    }));
-    void playFromQueueIndex(0);
-  },
-  playFromSearchRow: (...args) => playFromSearchRow(...args),
-  searchLocalPlaylists: (...args) => searchLocalPlaylists(...args),
-  searchState,
-  setPage: (...args) => setPage(...args),
-  setSelectedPlaylist: (id, name) => {
-    selectedPlaylistId = id;
-    selectedPlaylistName = name;
-  },
-  setTableMutedMessage,
-  warnRequestFailed,
-});
-
-let playQueue = [];
-let playIndex = 0;
-let seekDragging = false;
-/** 每次发起「加载并播放」递增，用于丢弃过期的异步结果与 audio error（避免 A 失败覆盖 B 的封面/文案） */
-let playLoadGeneration = 0;
-/** 当前 audio 元素对应的加载世代（在成功写入 src 后赋值） */
-let audioSourceGeneration = 0;
-/** `progress` 上报节流：最多每秒一条 */
-let audioProgressLogLastTs = 0;
-
-/** 不向用户展示后端/网络异常细节（仅控制台保留完整错误） */
-const logPlayEventDesktop = createPlayEventLogger(invoke);
-let playModeIndex = 0;
-let qualityPref = "128";
-
-/** 导入页已解析条目 @type {{ title: string, artist: string, album: string }[]} */
-let importTracks = [];
-
-/** 桌面歌词独立窗口是否处于显示状态（隐藏/关闭后为 false） */
-let desktopLyricsOpen = false;
-let desktopLyricsWindow = null;
-let desktopLyricsLocked = true;
-
-/** 主窗口关闭：`ask` | `quit` | `tray`（与 settings 同步） */
-let mainWindowCloseAction = "ask";
-
-/** @type {number | null} */
-let selectedPlaylistId = null;
-let selectedPlaylistName = "";
-/** @type {any[]} */
-let playlistDetailRows = [];
-
-/** 分享链接拉取成功后建议的歌单名（网易云 / QQ 返回） */
-let importShareSuggestedName = "";
-let neteaseCookieEnabled = false;
-let neteaseCookieValue = "";
-let importMethod = "";
-let importDraftDirty = false;
-let syncNeteaseCookieUi = () => {};
-let setImportMethod = () => {};
-let showImportResultStage = () => {};
-let setImportStep = () => {};
-let resetImportFlow = () => {};
-let setImportDraft = () => {};
-
-/** @type {Array<{ source_id?: string, title: string, artist: string, cover_url?: string | null, local_path?: string }>} */
-let sessionRecentPlays = [];
-/** 下载队列展示：sourceId -> 最后一帧事件 */
-const downloadTasksBySourceId = new Map();
-/** 本地曲库列表行缓存（双击播放） @type {any[]} */
-let localLibraryRows = [];
-let lastLibraryFolder = "";
-
-const {
-  applyLyricsPayload,
-  broadcastDesktopLyricsColors,
-  broadcastDesktopLyricsLock,
-  clearLyricsCache,
-  currentPlayableKey,
-  ensureLrcLoadedForCurrentTrack,
-  openDesktopLyricsFromSettingsIfNeeded,
-  openLyricsReplaceWindow,
-  refreshLyricsLockMenuLabel,
-  scheduleDesktopLyricsStateSync,
-  syncDesktopLyrics,
-  syncDesktopLyricsState,
-  toggleDesktopLyrics,
-} = createLyricsController({
-  dockLyricsLockIcon,
-  emitTo,
-  getAudioEl: audioEl,
-  getDesktopLyricsLocked: () => desktopLyricsLocked,
-  getDesktopLyricsOpen: () => desktopLyricsOpen,
-  getDesktopLyricsWindow: () => desktopLyricsWindow,
-  getPlayIndex: () => playIndex,
-  getPlayLoadGeneration: () => playLoadGeneration,
-  getPlayQueue: () => playQueue,
-  invoke,
-  setDesktopLyricsLocked: (value) => {
-    desktopLyricsLocked = value;
-  },
-  setDesktopLyricsOpen: (value) => {
-    desktopLyricsOpen = value;
-  },
-  setDesktopLyricsWindow: (value) => {
-    desktopLyricsWindow = value;
-  },
-  WebviewWindow,
-});
-
-const { renderDailyTable, renderHomePage } = createHomeController({
-  escapeHtml,
-  getDownloadTaskCount: () => downloadTasksBySourceId.size,
-  getSessionRecentPlays: () => sessionRecentPlays,
-  invoke,
-  playFromRecentRow: (...args) => playFromRecentRow(...args),
-  playSingleItem: (item) => {
-    playQueue = item.local_path
-      ? [{ title: item.title, artist: item.artist || "", local_path: item.local_path, cover_url: null }]
-      : [{ source_id: item.source_id, title: item.title, artist: item.artist || "", cover_url: item.cover_url || null }];
-    void playFromQueueIndex(0);
-    renderQueuePanel();
-  },
-});
-
-const {
-  loadPlaylistDetail,
-  playFromPlaylistRow,
-  refreshPlaylistSelect,
-  refreshSidebarPlaylists,
-  renderPlaylistDetailTable,
-  searchLocalPlaylists,
-  wirePlaylistPage,
-} = createPlaylistController({
-  alertRequestFailed,
-  escapeHtml,
-  formatDurationMs,
-  getImportTracks: () => importTracks,
-  getLikedIds: () => likedIds,
-  getPlaylistDetailRows: () => playlistDetailRows,
-  getSelectedPlaylistId: () => selectedPlaylistId,
-  getSelectedPlaylistName: () => selectedPlaylistName,
-  invoke,
-  MSG_REQUEST_FAILED,
-  openPlaylistDetailRowContextMenu: (...args) => openPlaylistDetailRowContextMenu(...args),
-  openSidebarPlaylistContextMenu: (...args) => openSidebarPlaylistContextMenu(...args),
-  playFromQueueIndex: (...args) => playFromQueueIndex(...args),
-  renderHomePage,
-  renderQueuePanel: (...args) => renderQueuePanel(...args),
-  setPage: (...args) => setPage(...args),
-  setPlaylistDetailRows: (rows) => {
-    playlistDetailRows = Array.isArray(rows) ? rows : [];
-  },
-  setPlayQueue: (rows) => {
-    playQueue = rows;
-  },
-  setSelectedPlaylist: (id, name) => {
-    selectedPlaylistId = id;
-    selectedPlaylistName = name;
-  },
-  warnRequestFailed,
-});
-
-const {
-  closeContextMenu,
-  enqueueDownloadForTrack,
-  openPlaylistDetailRowContextMenu,
-  openSearchRowContextMenu,
-  openSidebarPlaylistContextMenu,
-} = createContextMenuController({
-  alertRequestFailed,
-  getPlayIndex: () => playIndex,
-  getPlayQueue: () => playQueue,
-  getPlaylistDetailRows: () => playlistDetailRows,
-  getSearchResults: () => searchState.results,
-  getSelectedPlaylistId: () => selectedPlaylistId,
-  getSelectedPlaylistName: () => selectedPlaylistName,
-  invoke,
-  loadPlaylistDetail,
-  playFromQueueIndex: (...args) => playFromQueueIndex(...args),
-  playFromSearchRow: (...args) => playFromSearchRow(...args),
-  refreshPlaylistSelect,
-  refreshSidebarPlaylists,
-  renderQueuePanel: (...args) => renderQueuePanel(...args),
-  setPage: (...args) => setPage(...args),
-  setPlayQueue: (rows) => {
-    playQueue = rows;
-  },
-  setSelectedPlaylist: (id, name) => {
-    selectedPlaylistId = id;
-    selectedPlaylistName = name;
-  },
-});
-let likedIds = loadLikedSet();
-
-function canSaveCustomProxyUrl(value) {
-  const raw = normalizeNetworkProxyUrl(value);
-  if (!raw) return false;
-  const candidate = raw.includes("://") ? raw : `http://${raw}`;
-  try {
-    const url = new URL(candidate);
-    const scheme = url.protocol.replace(/:$/, "").toLowerCase();
-    return ["http", "https", "socks", "socks5", "socks5h"].includes(scheme) && !!url.host;
-  } catch {
-    return false;
-  }
-}
-
-function setThemeCardSelection(theme) {
-  const normalized = normalizeAppTheme(theme);
-  const hidden = document.getElementById("setting-app-theme");
-  if (hidden) hidden.value = normalized;
-  applyThemeCardSelectionUi(normalized);
-}
-
-function setThemeModeSelection(mode) {
-  const normalized = normalizeAppThemeMode(mode);
-  const hidden = document.getElementById("setting-app-theme-mode");
-  if (hidden) hidden.value = normalized;
-  applyThemeModeSelectionUi(normalized);
-  refreshQuickThemeModeUi(normalized);
-}
-
-function setNetworkProxyModeSelection(mode) {
-  const normalized = normalizeNetworkProxyMode(mode);
-  const hidden = document.getElementById("setting-network-proxy-mode");
-  const urlInput = document.getElementById("setting-network-proxy-url");
-  if (hidden) hidden.value = normalized;
-  if (urlInput) urlInput.disabled = normalized !== "custom";
-  applyNetworkProxyModeSelectionUi(normalized);
-}
-
-function setSettingsTab(tab) {
-  applySettingsTabUi(normalizeSettingsTab(tab));
-}
-
-const { applyQuickThemeMode, effectiveQuickThemeMode, nextQuickThemeMode, refreshQuickThemeModeUi } =
-  createDockThemeHelpers({
-    applyAppTheme,
-    getSettingsFormValues: () => getSettingsFormValues(),
-    labels: QUICK_THEME_MODE_LABELS,
-    navIconSvg,
-    normalizeAppThemeMode,
-    queueSettingsAutosave: (...args) => queueSettingsAutosave(...args),
-    setThemeModeSelection,
-  });
-
-const {
-  closeAllDockMenus,
-  randomNextIndex,
-  refreshFavButton,
-  renderQueuePanel,
-  toggleDockMenu,
-  wireDockBar,
-} = createDockController({
-  alertRequestFailed,
-  applyQuickThemeMode,
-  broadcastDesktopLyricsLock,
-  closeContextMenu,
-  effectiveQuickThemeMode,
-  getDesktopLyricsLocked: () => desktopLyricsLocked,
-  getDesktopLyricsOpen: () => desktopLyricsOpen,
-  enqueueDownloadForTrack,
-  getLikedIds: () => likedIds,
-  getPlayIndex: () => playIndex,
-  getPlayModeIndex: () => playModeIndex,
-  getPlayQueue: () => playQueue,
-  getQualityPref: () => qualityPref,
-  iconSvgByName,
-  invoke,
-  nextQuickThemeMode,
-  openLyricsReplaceWindow,
-  playFromQueueIndex: (...args) => playFromQueueIndex(...args),
-  playModeItems: PLAY_MODES,
-  qualityLabels: QUALITY_LABELS,
-  refreshLyricsLockMenuLabel,
-  refreshQuickThemeModeUi,
-  removeCurrentFromQueue: (...args) => removeCurrentFromQueue(...args),
-  renderPlayerNav: (...args) => setPlayerNavEnabled(...args),
-  saveLikedIds: saveLikedSet,
-  setDesktopLyricsLocked: (value) => {
-    desktopLyricsLocked = value;
-  },
-  setPlayModeIndex: (value) => {
-    playModeIndex = value;
-  },
-  setQualityPref: (value) => {
-    qualityPref = value;
-  },
-  toggleQueuePanel: (...args) => toggleQueuePanel(...args),
-  toggleDesktopLyrics,
-});
-
-const { wireGlobalHotkeyListener, wireVolume } = createPlayerHotkeyController({
-  getAudioEl: audioEl,
-  invoke,
-  listen,
-  shouldIgnoreGlobalHotkeyAction: () => shouldIgnoreGlobalHotkeyAction(),
-  warnRequestFailed,
-});
-
-const {
-  broadcastTrayPlayerState,
-  currentTrayPlayerState,
-  loadRecentPlaysFromDb,
-  playFromRecentRow,
-  pushSessionRecentFromCurrentTrack,
-  renderRecentPlaysTable,
-} = createTrayRecentController({
-  emitTo,
-  escapeHtml,
-  getAudioEl: audioEl,
-  getPlayIndex: () => playIndex,
-  getPlayQueue: () => playQueue,
-  getSessionRecentPlays: () => sessionRecentPlays,
-  invoke,
-  maxSessionRecent: RECENT_SESSION_MAX,
-  onRecentChanged: () => {
-    if (document.querySelector('.page[data-page="recent"]')?.classList.contains("page-active")) {
-      renderRecentPlaysTable();
-    }
-    if (document.querySelector('.page[data-page="home"]')?.classList.contains("page-active")) {
-      renderHomePage();
-    }
-    if (document.querySelector('.page[data-page="daily"]')?.classList.contains("page-active")) {
-      renderDailyTable();
-    }
-  },
-  playFromQueueIndex: (...args) => playFromQueueIndex(...args),
-  renderQueuePanel: (...args) => renderQueuePanel(...args),
-  setPlayQueue: (rows) => {
-    playQueue = rows;
-  },
-  setSessionRecentPlays: (rows) => {
-    sessionRecentPlays = Array.isArray(rows) ? rows : [];
-  },
-  trayPlayerTarget: TRAY_PLAYER_TARGET,
-});
-
-const {
-  applyDownloadTaskChanged,
-  refreshLocalLibraryTable,
-  renderDownloadQueueTable,
-  updateDownloadFolderHint,
-  wireDownloadPage,
-} = createDownloadController({
-  alertRequestFailed,
-  escapeHtml,
-  getDownloadTasks: () => downloadTasksBySourceId,
-  invoke,
-  messageRequestFailed: MSG_REQUEST_FAILED,
-  open,
-  setLocalLibraryRows: (rows) => {
-    localLibraryRows = Array.isArray(rows) ? rows : [];
-  },
-  updateHomeAfterQueueChange: () => {
-    if (document.querySelector('.page[data-page="home"]')?.classList.contains("page-active")) {
-      renderHomePage();
-    }
-  },
-  warnRequestFailed,
-});
-
-const { setPlayerNavEnabled, syncSeekUi, updatePlayerChrome } = createPlayerChromeController({
-  broadcastTrayPlayerState,
-  formatTime,
-  getAudioEl: audioEl,
-  getPlayIndex: () => playIndex,
-  getPlayModeIndex: () => playModeIndex,
-  getPlayQueue: () => playQueue,
-  getSeekDragging: () => seekDragging,
-  playModeItems: PLAY_MODES,
-});
-
-const { wireAudio } = createAudioEventsController({
-  alertRequestFailed,
-  audioDiagPayload,
-  broadcastTrayPlayerState,
-  getAudioEl: audioEl,
-  getAudioProgressLogLastTs: () => audioProgressLogLastTs,
-  getAudioSourceGeneration: () => audioSourceGeneration,
-  getPlayIndex: () => playIndex,
-  getPlayLoadGeneration: () => playLoadGeneration,
-  getPlayModeIndex: () => playModeIndex,
-  getPlayQueue: () => playQueue,
-  logPlayEventDesktop,
-  messageRequestFailed: MSG_REQUEST_FAILED,
-  playFromQueueIndex: (...args) => playFromQueueIndex(...args),
-  playModeItems: PLAY_MODES,
-  randomNextIndex,
-  setAudioProgressLogLastTs: (value) => {
-    audioProgressLogLastTs = value;
-  },
-  setSeekDragging: (value) => {
-    seekDragging = value;
-  },
-  syncDesktopLyrics: () => syncDesktopLyrics(),
-  syncSeekUi,
-});
-
-// Settings are split into a controller so the runtime entry only keeps state bridges.
-const {
-  getSettingsFormValues,
-  loadSettings,
-  openCloseConfirmModal,
-  queueSettingsAutosave,
-  wirePreferencesModals,
-} = createSettingsController({
-  alertRequestFailed,
-  applyAppTheme,
-  audioEl,
-  broadcastDesktopLyricsColors,
-  broadcastDesktopLyricsLock,
-  invoke,
-  normalizeAccentHex,
-  normalizeAppTheme,
-  normalizeAppThemeMode,
-  normalizeCloseAction,
-  normalizeNetworkProxyMode,
-  normalizeNetworkProxyUrl,
-  openDesktopLyricsFromSettingsIfNeeded,
-  refreshLyricsLockMenuLabel,
-  setMainWindowCloseAction: (value) => {
-    mainWindowCloseAction = value;
-  },
-  setNetworkProxyModeSelection,
-  setPage: (...args) => setPage(...args),
-  setSettingsTab,
-  setThemeCardSelection,
-  setThemeModeSelection,
-  updateDownloadFolderHint,
-  warnRequestFailed,
-  syncNeteaseCookieUi: () => syncNeteaseCookieUi(),
-  setDesktopLyricsLocked: (value) => {
-    desktopLyricsLocked = value;
-  },
-  getDesktopLyricsOpen: () => desktopLyricsOpen,
-  setLastLibraryFolder: (value) => {
-    lastLibraryFolder = value;
-  },
-  setNeteaseCookieState: ({ enabled, value }) => {
-    neteaseCookieEnabled = !!enabled;
-    neteaseCookieValue = String(value || "");
-  },
-});
-
-const { playFromQueueIndex, playFromSearchRow, removeCurrentFromQueue } = createPlaybackController({
-  alertRequestFailed,
-  clearLyricsCache,
-  convertFileSrc,
-  ensureLrcLoadedForCurrentTrack,
-  getAudioEl: audioEl,
-  getDesktopLyricsOpen: () => desktopLyricsOpen,
-  getPlayIndex: () => playIndex,
-  getPlayLoadGeneration: () => playLoadGeneration,
-  getPlayQueue: () => playQueue,
-  getSearchState: () => searchState,
-  invoke,
-  logPlayEventDesktop,
-  messageRequestFailed: MSG_REQUEST_FAILED,
-  onAfterQueueChanged: () => pushSessionRecentFromCurrentTrack(),
-  onLyricsReady: () => syncDesktopLyrics(),
-  refreshFavButton,
-  renderQueuePanel,
-  setAudioSourceGeneration: (value) => {
-    audioSourceGeneration = value;
-  },
-  setPlayIndex: (value) => {
-    playIndex = value;
-  },
-  setPlayLoadGeneration: (value) => {
-    playLoadGeneration = value;
-  },
-  setPlayQueue: (rows) => {
-    playQueue = Array.isArray(rows) ? rows : [];
-  },
-  setPlayerNavEnabled,
-  syncSeekUi,
-  updatePlayerChrome,
-});
-
-
-/** ---------- 右键菜单（对齐 Py sidebar / import_track_context_menu） ---------- */
-
-
-const { renderImportTable, wireImportPage } = createImportPageController({
-  alertRequestFailed,
-  escapeHtml,
-  getImportMethod: () => importMethod,
-  getImportShareSuggestedName: () => importShareSuggestedName,
-  getImportTracks: () => importTracks,
-  getLastLibraryFolder: () => lastLibraryFolder,
-  getNeteaseCookieState: () => ({ enabled: neteaseCookieEnabled, value: neteaseCookieValue }),
-  importBackButtonIconSvg,
-  importMethodIconSvg,
-  invoke,
-  loadPlaylistDetail,
-  MSG_REQUEST_FAILED,
-  open,
-  refreshLocalLibraryTable,
-  refreshPlaylistSelect,
-  refreshSidebarPlaylists,
-  setImportDraft: (...args) => setImportDraft(...args),
-  setImportMethod: (...args) => setImportMethod(...args),
-  setImportStep: (...args) => setImportStep(...args),
-  setLastLibraryFolder: (value) => {
-    lastLibraryFolder = value;
-  },
-  setNeteaseCookieState: ({ enabled, value }) => {
-    neteaseCookieEnabled = !!enabled;
-    neteaseCookieValue = String(value || "");
-  },
-  setPage: (...args) => setPage(...args),
-  setSelectedPlaylist: (id, name) => {
-    selectedPlaylistId = id;
-    selectedPlaylistName = name;
-  },
-  syncNeteaseCookieUi: () => syncNeteaseCookieUi(),
-});
-
-// Import flow keeps step transitions in a helper while main.js owns the mutable state.
-({
-  syncNeteaseCookieUi,
-  setImportMethod,
-  showImportResultStage,
-  setImportStep,
-  resetImportFlow,
-  setImportDraft,
-} = createImportFlowHelpers({
-  getImportMethod: () => importMethod,
-  setImportMethodValue: (value) => {
-    importMethod = value;
-  },
-  getImportTracks: () => importTracks,
-  setImportTracksValue: (tracks) => {
-    importTracks = Array.isArray(tracks) ? tracks : [];
-  },
-  setImportShareSuggestedName: (value) => {
-    importShareSuggestedName = value || "";
-  },
-  setImportDraftDirty: (dirty) => {
-    importDraftDirty = !!dirty;
-  },
-  getImportDraftDirty: () => importDraftDirty,
-  getNeteaseCookieEnabled: () => neteaseCookieEnabled,
-  getNeteaseCookieValue: () => neteaseCookieValue,
-  renderImportTable,
-}));
-
-function audioEl() {
-  return document.getElementById("audio-player");
-}
-
-function isEditableElement(el) {
-  if (!el || !(el instanceof Element)) return false;
-  if (el instanceof HTMLInputElement || el instanceof HTMLTextAreaElement) {
-    return !el.disabled && !el.readOnly;
-  }
-  if (el instanceof HTMLElement && el.isContentEditable) {
-    return true;
-  }
-  const owner = el.closest('input, textarea, [contenteditable="true"]');
-  if (!owner) return false;
-  if (owner instanceof HTMLInputElement || owner instanceof HTMLTextAreaElement) {
-    return !owner.disabled && !owner.readOnly;
-  }
-  return owner instanceof HTMLElement;
-}
+function audioEl() { return document.getElementById("audio-player"); }
 
 function shouldIgnoreGlobalHotkeyAction() {
-  return isEditableElement(document.activeElement);
+  const active = document.activeElement;
+  if (!active || !(active instanceof Element)) return false;
+  if (active instanceof HTMLInputElement || active instanceof HTMLTextAreaElement) return !active.disabled && !active.readOnly;
+  if (active instanceof HTMLElement && active.isContentEditable) return true;
+  const owner = active.closest('input, textarea, [contenteditable="true"]');
+  if (!owner) return false;
+  return owner instanceof HTMLInputElement || owner instanceof HTMLTextAreaElement ? !owner.disabled && !owner.readOnly : owner instanceof HTMLElement;
 }
 
-const { renderSidebar, setPage, toggleQueuePanel, wireQueueToggle } = createNavigationController({
-  alertRequestFailed,
-  appLogoMarkSvg,
-  applyQuickThemeMode,
-  escapeHtml,
-  getActiveSearchInput,
-  invoke,
-  navIconSvg,
-  navItems: NAV,
-  onDailyPage: () => renderDailyTable(),
-  onDownloadPage: () => renderDownloadQueueTable(),
-  onHomePage: () => renderHomePage(),
-  onImportPage: () => {
-    if (!importMethod && !importTracks.length) resetImportFlow();
-    void refreshPlaylistSelect();
-  },
-  onPlaylistPage: () => {
-    if (selectedPlaylistId == null) {
-      selectedPlaylistName = "";
-      const titleEl = document.getElementById("playlist-page-title");
-      if (titleEl) titleEl.textContent = "歌单";
-      playlistDetailRows = [];
-      renderPlaylistDetailTable();
-      return;
-    }
-    void loadPlaylistDetail(selectedPlaylistId, selectedPlaylistName);
-  },
-  onRecentPage: () => renderRecentPlaysTable(),
-  onSearchPage: () => {
-    queueMicrotask(() => {
-      getActiveSearchInput()?.focus();
-    });
-  },
-  refreshQuickThemeModeUi,
-  refreshSidebarPlaylists,
-  renderQueuePanel,
-  sidebarMenuItems: SIDEBAR_MENU_NAV,
+const settings = createSettingsRuntime({
+  alertRequestFailed, applyAppTheme, applyNetworkProxyModeSelectionUi, applySettingsTabUi, applyThemeCardSelectionUi, applyThemeModeSelectionUi, audioEl, invoke,
+  broadcastDesktopLyricsColors: (...args) => player.broadcastDesktopLyricsColors(...args), broadcastDesktopLyricsLock: (...args) => player.broadcastDesktopLyricsLock(...args),
+  getDesktopLyricsOpen: () => desktopLyricsOpen, getImportDraftDirty: () => importDraftDirty, getImportMethod: () => importMethod, getImportTracks: () => importTracks,
+  getNeteaseCookieEnabled: () => neteaseCookieEnabled, getNeteaseCookieValue: () => neteaseCookieValue, normalizeAccentHex, normalizeAppTheme, normalizeAppThemeMode,
+  normalizeCloseAction, normalizeNetworkProxyMode, normalizeNetworkProxyUrl, normalizeSettingsTab,
+  openDesktopLyricsFromSettingsIfNeeded: (...args) => player.openDesktopLyricsFromSettingsIfNeeded(...args), queueQuickThemeRefresh: (...args) => refreshQuickThemeModeUi(...args),
+  refreshLyricsLockMenuLabel: (...args) => player.refreshLyricsLockMenuLabel(...args), renderImportTable: (...args) => renderImportTable(...args),
+  setDesktopLyricsLocked: (value) => { desktopLyricsLocked = value; }, setImportDraftDirty: (value) => { importDraftDirty = value; }, setImportMethodValue: (value) => { importMethod = value; },
+  setImportShareSuggestedName: (value) => { importShareSuggestedName = value || ""; }, setImportTracksValue: (rows) => { importTracks = Array.isArray(rows) ? rows : []; },
+  setLastLibraryFolder: (value) => { lastLibraryFolder = value; }, setMainWindowCloseAction: (value) => { mainWindowCloseAction = value; },
+  setNeteaseCookieState: ({ enabled, value }) => { neteaseCookieEnabled = !!enabled; neteaseCookieValue = String(value || ""); }, setPage: (...args) => setPage(...args),
+  updateDownloadFolderHint: (...args) => player.updateDownloadFolderHint(...args), warnRequestFailed,
 });
 
-bootCloudPlayerApp({
-  alertRequestFailed,
-  applyAppTheme,
-  applyPlatformClassNames,
-  applyLyricsPayload,
-  broadcastDesktopLyricsLock,
-  broadcastTrayPlayerState,
-  emitTo,
-  ensureLrcLoadedForCurrentTrack,
-  getCurrentPlayableKey: currentPlayableKey,
-  getPlayIndex: () => playIndex,
-  getPlayLoadGeneration: () => playLoadGeneration,
-  getPlayQueue: () => playQueue,
-  getSelectedPlaylistId: () => selectedPlaylistId,
-  getSelectedPlaylistName: () => selectedPlaylistName,
-  getSettingsFormValues,
-  invoke,
-  listen,
-  loadPlaylistDetail,
-  loadRecentPlaysFromDb,
-  loadSettings,
-  lyricsReplaceTarget: LYRICS_REPLACE_TARGET,
-  mainWindowCloseAction: () => mainWindowCloseAction,
-  normalizeAppThemeMode,
-  onDownloadTaskChanged: (payload) => {
-    applyDownloadTaskChanged(payload);
+const player = createBasePlayerRuntime({
+  alertRequestFailed, audioDiagPayload, convertFileSrc, dockLyricsLockIcon, emitTo, escapeHtml, formatTime, getAudioEl: audioEl, invoke, logPlayEventDesktop,
+  getAudioProgressLogLastTs: () => audioProgressLogLastTs, getAudioSourceGeneration: () => audioSourceGeneration, getDesktopLyricsLocked: () => desktopLyricsLocked,
+  getDesktopLyricsOpen: () => desktopLyricsOpen, getDesktopLyricsWindow: () => desktopLyricsWindow, getDownloadTasks: () => downloadTasksBySourceId, getPlayIndex: () => playIndex,
+  getPlayLoadGeneration: () => playLoadGeneration, getPlayModeIndex: () => playModeIndex, getPlayQueue: () => playQueue, getSearchState: () => searchState,
+  getSeekDragging: () => seekDragging, getSessionRecentPlays: () => sessionRecentPlays, maxSessionRecent: RECENT_SESSION_MAX, messageRequestFailed: MSG_REQUEST_FAILED,
+  onHomeQueueChanged: () => { if (document.querySelector('.page[data-page="home"]')?.classList.contains("page-active")) renderHomePage(); },
+  onRecentChanged: () => {
+    if (document.querySelector('.page[data-page="recent"]')?.classList.contains("page-active")) renderRecentPlaysTable();
+    if (document.querySelector('.page[data-page="home"]')?.classList.contains("page-active")) renderHomePage();
+    if (document.querySelector('.page[data-page="daily"]')?.classList.contains("page-active")) renderDailyTable();
   },
-  onLyricsLockSync: (locked) => {
-    desktopLyricsLocked = locked;
-    refreshLyricsLockMenuLabel();
-  },
-  onSystemThemeChange: () => {},
-  openCloseConfirmModal,
-  refreshLyricsLockMenuLabel,
-  renderDailyTable,
-  renderImportTable,
-  renderMainShell,
-  renderPlaylistSearchResults,
-  renderQueuePanel,
-  renderSearchTable,
-  renderSidebar,
-  searchState,
-  setPage,
-  setSearchScope,
-  syncDesktopLyricsState,
+  open, playModeItems: PLAY_MODES, randomNextIndex: (...args) => randomNextIndex(...args), refreshFavButton: (...args) => refreshFavButton(...args), renderQueuePanel: (...args) => renderQueuePanel(...args),
+  setAudioProgressLogLastTs: (value) => { audioProgressLogLastTs = value; }, setAudioSourceGeneration: (value) => { audioSourceGeneration = value; },
+  setDesktopLyricsLocked: (value) => { desktopLyricsLocked = value; }, setDesktopLyricsOpen: (value) => { desktopLyricsOpen = value; }, setDesktopLyricsWindow: (value) => { desktopLyricsWindow = value; },
+  setLocalLibraryRows: (rows) => { localLibraryRows = Array.isArray(rows) ? rows : []; }, setPlayIndex: (value) => { playIndex = value; }, setPlayLoadGeneration: (value) => { playLoadGeneration = value; },
+  setPlayQueue: (rows) => { playQueue = Array.isArray(rows) ? rows : []; }, setSeekDragging: (value) => { seekDragging = value; }, setSessionRecentPlays: (rows) => { sessionRecentPlays = Array.isArray(rows) ? rows : []; },
+  trayPlayerTarget: TRAY_PLAYER_TARGET, warnRequestFailed, WebviewWindow,
+});
+
+const pages = createPageRuntime({
+  alertRequestFailed, appLogoMarkSvg, applyQuickThemeMode: (...args) => dockTheme.applyQuickThemeMode(...args), escapeHtml, formatDurationMs, invoke, messageRequestFailed: MSG_REQUEST_FAILED,
+  getDownloadTaskCount: () => downloadTasksBySourceId.size, getImportMethod: () => importMethod, getImportShareSuggestedName: () => importShareSuggestedName, getImportTracks: () => importTracks,
+  getLastLibraryFolder: () => lastLibraryFolder, getLikedIds: () => likedIds, getNeteaseCookieState: () => ({ enabled: neteaseCookieEnabled, value: neteaseCookieValue }),
+  getPlayIndex: () => playIndex, getPlayQueue: () => playQueue, getPlaylistDetailRows: () => playlistDetailRows, getSelectedPlaylistId: () => selectedPlaylistId, getSelectedPlaylistName: () => selectedPlaylistName,
+  getSessionRecentPlays: () => sessionRecentPlays, importBackButtonIconSvg, importMethodIconSvg, navIconSvg, navItems: NAV, open,
+  playFromQueueIndex: (...args) => player.playFromQueueIndex(...args), playFromRecentRow: (...args) => player.playFromRecentRow(...args), playFromSearchRow: (...args) => player.playFromSearchRow(...args),
+  refreshLocalLibraryTable: (...args) => player.refreshLocalLibraryTable(...args), refreshQuickThemeModeUi: (...args) => refreshQuickThemeModeUi(...args), renderDownloadQueueTable: (...args) => player.renderDownloadQueueTable(...args),
+  renderQueuePanel: (...args) => renderQueuePanel(...args), renderRecentPlaysTable: (...args) => renderRecentPlaysTable(...args), resetImportFlow: settings.resetImportFlow, searchState,
+  setImportDraft: settings.setImportDraft, setImportMethod: settings.setImportMethod, setImportStep: settings.setImportStep, setLastLibraryFolder: (value) => { lastLibraryFolder = value; },
+  setNeteaseCookieState: ({ enabled, value }) => { neteaseCookieEnabled = !!enabled; neteaseCookieValue = String(value || ""); }, setPlayQueue: (rows) => { playQueue = Array.isArray(rows) ? rows : []; },
+  setPlaylistDetailRows: (rows) => { playlistDetailRows = Array.isArray(rows) ? rows : []; }, setSelectedPlaylist: (id, name) => { selectedPlaylistId = id; selectedPlaylistName = name || ""; },
+  sidebarMenuItems: SIDEBAR_MENU_NAV, syncNeteaseCookieUi: settings.syncNeteaseCookieUi, warnRequestFailed,
+});
+setPage = pages.setPage; renderHomePage = pages.renderHomePage; renderDailyTable = pages.renderDailyTable; renderRecentPlaysTable = player.renderRecentPlaysTable; renderImportTable = pages.renderImportTable; loadPlaylistDetail = pages.loadPlaylistDetail;
+
+const { dock, dockTheme, hotkeys } = createDockRuntime({
+  alertRequestFailed, applyAppTheme, getAudioEl: audioEl, getDesktopLyricsLocked: () => desktopLyricsLocked, getDesktopLyricsOpen: () => desktopLyricsOpen, getLikedIds: () => likedIds,
+  getPlayIndex: () => playIndex, getPlayModeIndex: () => playModeIndex, getPlayQueue: () => playQueue, getQualityPref: () => qualityPref, getSettingsFormValues: () => settings.getSettingsFormValues(),
+  invoke, listen, navIconSvg, normalizeAppThemeMode, iconSvgByName, playModeItems: PLAY_MODES, qualityLabels: QUALITY_LABELS, quickThemeModeLabels: QUICK_THEME_MODE_LABELS,
+  queueSettingsAutosave: (...args) => settings.queueSettingsAutosave(...args), setThemeModeSelection: settings.setThemeModeSelection, saveLikedIds: saveLikedSet, shouldIgnoreGlobalHotkeyAction, warnRequestFailed,
+  broadcastDesktopLyricsLock: (...args) => player.broadcastDesktopLyricsLock(...args), closeContextMenu: (...args) => pages.closeContextMenu(...args), enqueueDownloadForTrack: (...args) => pages.enqueueDownloadForTrack(...args),
+  openLyricsReplaceWindow: (...args) => player.openLyricsReplaceWindow(...args), playFromQueueIndex: (...args) => player.playFromQueueIndex(...args), refreshLyricsLockMenuLabel: (...args) => player.refreshLyricsLockMenuLabel(...args),
+  removeCurrentFromQueue: (...args) => player.removeCurrentFromQueue(...args), renderPlayerNav: (...args) => player.setPlayerNavEnabled(...args), toggleDesktopLyrics: (...args) => player.toggleDesktopLyrics(...args),
+  toggleQueuePanel: (...args) => pages.toggleQueuePanel(...args), setDesktopLyricsLocked: (value) => { desktopLyricsLocked = value; }, setPlayModeIndex: (value) => { playModeIndex = value; }, setQualityPref: (value) => { qualityPref = value; },
+});
+refreshQuickThemeModeUi = dockTheme.refreshQuickThemeModeUi; renderQueuePanel = dock.renderQueuePanel; refreshFavButton = dock.refreshFavButton; randomNextIndex = dock.randomNextIndex;
+
+startDesktopRuntime({
+  alertRequestFailed, applyAppTheme, applyPlatformClassNames, dock, emitTo, getMainWindowCloseAction: () => mainWindowCloseAction, getPlayIndex: () => playIndex, getPlayLoadGeneration: () => playLoadGeneration,
+  getPlayQueue: () => playQueue, getSelectedPlaylistId: () => selectedPlaylistId, getSelectedPlaylistName: () => selectedPlaylistName, hotkeys, invoke, listen, loadPlaylistDetail,
+  lyricsReplaceTarget: LYRICS_REPLACE_TARGET, normalizeAppThemeMode,
+  onLyricsLockSync: (locked) => { desktopLyricsLocked = locked; player.refreshLyricsLockMenuLabel(); },
+  pages, player, renderDailyTable, renderImportTable, renderMainShell, renderQueuePanel: (...args) => renderQueuePanel(...args), searchState, setPage: (...args) => setPage(...args), settings, systemDarkMedia,
   syncTrayCommand: async (action) => {
-    if (action === "toggle") {
-      document.getElementById("btn-player-play")?.click();
-      return;
-    }
-    if (action === "prev") {
-      document.getElementById("btn-player-prev")?.click();
-      return;
-    }
-    if (action === "next") {
-      document.getElementById("btn-player-next")?.click();
-      return;
-    }
-    if (action === "open-main") {
-      try {
-        await invoke("show_main_window");
-      } catch (error) {
-        console.warn("show_main_window from tray-player-command", error);
-      }
-    }
+    if (action === "toggle") document.getElementById("btn-player-play")?.click();
+    else if (action === "prev") document.getElementById("btn-player-prev")?.click();
+    else if (action === "next") document.getElementById("btn-player-next")?.click();
+    else if (action === "open-main") await invoke("show_main_window").catch((error) => console.warn("show_main_window from tray-player-command", error));
   },
-  systemDarkMedia,
-  updateSearchToolbar,
-  updateSearchViewState,
-  wireAudio,
-  wireDiscoverToolbar,
-  wireDockBar,
-  wireDownloadPage,
-  wireGlobalHotkeyListener,
-  wireImportPage,
-  wirePlaylistPage,
-  wirePreferencesModals,
-  wireQueueToggle,
-  wireSearchPage,
-  wireVolume,
 });
