@@ -50,6 +50,7 @@ import { createPlaylistController } from "./features/library/playlistController.
 import { createLyricsController } from "./features/lyrics/controller.js";
 import { createDockController } from "./features/player/dockController.js";
 import { createDockThemeHelpers } from "./features/player/dockTheme.js";
+import { createPlayerHotkeyController } from "./features/player/hotkeysController.js";
 import { createSearchController } from "./features/search/controller.js";
 import { createSettingsController } from "./features/settings/controller.js";
 import { renderMainShell } from "./layout/renderMainShell.js";
@@ -378,6 +379,14 @@ const {
   },
   toggleQueuePanel,
   toggleDesktopLyrics,
+});
+
+const { wireGlobalHotkeyListener, wireVolume } = createPlayerHotkeyController({
+  getAudioEl: audioEl,
+  invoke,
+  listen,
+  shouldIgnoreGlobalHotkeyAction: () => shouldIgnoreGlobalHotkeyAction(),
+  warnRequestFailed,
 });
 
 // Settings are split into a controller so the runtime entry only keeps state bridges.
@@ -1309,44 +1318,6 @@ function shouldIgnoreGlobalHotkeyAction() {
   return isEditableElement(document.activeElement);
 }
 
-async function togglePlayPauseFromHotkey() {
-  const a = audioEl();
-  if (!a || !a.src) return;
-  try {
-    if (a.paused) await a.play();
-    else a.pause();
-  } catch (e) {
-    warnRequestFailed(e, "togglePlayPauseFromHotkey");
-  }
-}
-
-async function adjustPlayerVolumeDelta(delta) {
-  const vol = document.getElementById("volume");
-  if (!vol) return;
-  let next = Number(vol.value) / 100 + delta;
-  next = Math.min(1, Math.max(0, next));
-  vol.value = String(Math.round(next * 100));
-  const a = audioEl();
-  if (a) a.volume = next;
-  try {
-    await invoke("save_settings", { patch: { volume: next } });
-  } catch (e) {
-    console.warn("save_settings volume (hotkey)", e);
-  }
-}
-
-function wireGlobalHotkeyListener() {
-  void listen("global-hotkey", (e) => {
-    if (shouldIgnoreGlobalHotkeyAction()) return;
-    const action = e?.payload;
-    if (action === "play_pause") void togglePlayPauseFromHotkey();
-    else if (action === "prev") document.getElementById("btn-player-prev")?.click();
-    else if (action === "next") document.getElementById("btn-player-next")?.click();
-    else if (action === "volume_up") void adjustPlayerVolumeDelta(0.05);
-    else if (action === "volume_down") void adjustPlayerVolumeDelta(-0.05);
-  });
-}
-
 function toggleQueuePanel() {
   const panel = document.getElementById("queue-panel");
   const btn = document.getElementById("queue-toggle");
@@ -1357,24 +1328,6 @@ function toggleQueuePanel() {
 
 function wireQueueToggle() {
   document.getElementById("queue-toggle").addEventListener("click", () => toggleQueuePanel());
-}
-
-function wireVolume() {
-  const vol = document.getElementById("volume");
-  const persist = async () => {
-    const v = Number(vol.value) / 100;
-    try {
-      await invoke("save_settings", { patch: { volume: v } });
-    } catch (e) {
-      console.warn("save_settings", e);
-    }
-  };
-  vol.addEventListener("input", () => {
-    const v = Number(vol.value) / 100;
-    const a = audioEl();
-    if (a) a.volume = v;
-  });
-  vol.addEventListener("change", persist);
 }
 
 document.addEventListener("DOMContentLoaded", () => {
