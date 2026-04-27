@@ -487,229 +487,284 @@
                 关闭主窗口行为、网络代理、快捷键、网易云 API 根地址（可选）与桌面歌词颜色将保存到本地配置。播放页歌词固定为 QQ → 酷狗 → 网易云 → LRCLIB（与「换」歌词替换同源）。
               </p>
               <div class="settings-form">
-                <div class="settings-field">
-                  <span class="settings-field-label">界面模式</span>
-                  <input type="hidden" id="setting-app-theme-mode" value="system" />
-                  <div class="theme-mode-grid" role="radiogroup" aria-label="界面模式">
-                    <button type="button" class="theme-mode-card" data-theme-mode-card="system" role="radio" aria-checked="false">
-                      <span class="theme-mode-card__preview theme-mode-card__preview--system"></span>
-                      <span class="theme-card__meta">
-                        <span class="theme-card__title">跟随系统</span>
-                        <span class="theme-card__desc">自动匹配 macOS 亮暗模式</span>
-                      </span>
+                <div class="settings-layout">
+                  <aside class="settings-tabs" role="tablist" aria-label="偏好设置分组">
+                    <button type="button" class="settings-tab is-active" data-settings-tab="appearance" role="tab" aria-selected="true">
+                      <span class="settings-tab__eyebrow">Appearance</span>
+                      <span class="settings-tab__title">外观</span>
+                      <span class="settings-tab__desc">界面模式与主题色</span>
                     </button>
-                    <button type="button" class="theme-mode-card" data-theme-mode-card="light" role="radio" aria-checked="false">
-                      <span class="theme-mode-card__preview theme-mode-card__preview--light"></span>
-                      <span class="theme-card__meta">
-                        <span class="theme-card__title">浅色</span>
-                        <span class="theme-card__desc">明亮干净的主界面</span>
-                      </span>
+                    <button type="button" class="settings-tab" data-settings-tab="network" role="tab" aria-selected="false">
+                      <span class="settings-tab__eyebrow">Network</span>
+                      <span class="settings-tab__title">网络</span>
+                      <span class="settings-tab__desc">代理与歌词接口</span>
                     </button>
-                    <button type="button" class="theme-mode-card" data-theme-mode-card="graphite" role="radio" aria-checked="false">
-                      <span class="theme-mode-card__preview theme-mode-card__preview--graphite"></span>
-                      <span class="theme-card__meta">
-                        <span class="theme-card__title">石墨夜</span>
-                        <span class="theme-card__desc">偏中性的深灰暗色</span>
-                      </span>
+                    <button type="button" class="settings-tab" data-settings-tab="controls" role="tab" aria-selected="false">
+                      <span class="settings-tab__eyebrow">Controls</span>
+                      <span class="settings-tab__title">控制</span>
+                      <span class="settings-tab__desc">关闭行为与快捷键</span>
                     </button>
-                    <button type="button" class="theme-mode-card" data-theme-mode-card="midnight" role="radio" aria-checked="false">
-                      <span class="theme-mode-card__preview theme-mode-card__preview--midnight"></span>
-                      <span class="theme-card__meta">
-                        <span class="theme-card__title">深海夜</span>
-                        <span class="theme-card__desc">偏蓝的夜间界面</span>
-                      </span>
+                    <button type="button" class="settings-tab" data-settings-tab="lyrics" role="tab" aria-selected="false">
+                      <span class="settings-tab__eyebrow">Lyrics</span>
+                      <span class="settings-tab__title">歌词</span>
+                      <span class="settings-tab__desc">桌面歌词颜色</span>
                     </button>
-                    <button type="button" class="theme-mode-card" data-theme-mode-card="forestnight" role="radio" aria-checked="false">
-                      <span class="theme-mode-card__preview theme-mode-card__preview--forestnight"></span>
-                      <span class="theme-card__meta">
-                        <span class="theme-card__title">森林夜</span>
-                        <span class="theme-card__desc">偏绿的柔和暗色</span>
-                      </span>
-                    </button>
-                  </div>
-                  <p class="settings-field-hint muted">
-                    亮暗模式与主题色分开保存。选择「跟随系统」后，会随着 macOS 外观实时切换。
-                  </p>
-                </div>
-                <div class="settings-field">
-                  <span class="settings-field-label">应用主题</span>
-                  <input type="hidden" id="setting-app-theme" value="coral" />
-                  <div class="theme-card-grid" role="radiogroup" aria-label="应用主题">
-                    <button type="button" class="theme-card" data-theme-card="coral" role="radio" aria-checked="false">
-                      <span class="theme-card__swatch" style="--theme-card-accent: #c62f2f"></span>
-                      <span class="theme-card__meta">
-                        <span class="theme-card__title">珊瑚红</span>
-                        <span class="theme-card__desc">经典暖调</span>
-                      </span>
-                    </button>
-                    <button type="button" class="theme-card" data-theme-card="ocean" role="radio" aria-checked="false">
-                      <span class="theme-card__swatch" style="--theme-card-accent: #1f6aa5"></span>
-                      <span class="theme-card__meta">
-                        <span class="theme-card__title">海蓝</span>
-                        <span class="theme-card__desc">冷静清透</span>
-                      </span>
-                    </button>
-                    <button type="button" class="theme-card" data-theme-card="forest" role="radio" aria-checked="false">
-                      <span class="theme-card__swatch" style="--theme-card-accent: #2f7d4b"></span>
-                      <span class="theme-card__meta">
-                        <span class="theme-card__title">松绿</span>
-                        <span class="theme-card__desc">低饱和自然感</span>
-                      </span>
-                    </button>
-                    <button type="button" class="theme-card" data-theme-card="netease" role="radio" aria-checked="false">
-                      <span class="theme-card__swatch" style="--theme-card-accent: #d43c33"></span>
-                      <span class="theme-card__meta">
-                        <span class="theme-card__title">网易云红</span>
-                        <span class="theme-card__desc">更偏品牌化</span>
-                      </span>
-                    </button>
-                    <button type="button" class="theme-card" data-theme-card="kugou" role="radio" aria-checked="false">
-                      <span class="theme-card__swatch" style="--theme-card-accent: #1977ff"></span>
-                      <span class="theme-card__meta">
-                        <span class="theme-card__title">酷狗蓝</span>
-                        <span class="theme-card__desc">更亮更锐</span>
-                      </span>
-                    </button>
-                    <button type="button" class="theme-card" data-theme-card="qqmusic" role="radio" aria-checked="false">
-                      <span class="theme-card__swatch" style="--theme-card-accent: #31c27c"></span>
-                      <span class="theme-card__meta">
-                        <span class="theme-card__title">QQ 音乐绿</span>
-                        <span class="theme-card__desc">鲜明品牌绿</span>
-                      </span>
-                    </button>
-                    <button type="button" class="theme-card theme-card--custom" data-theme-card="custom" role="radio" aria-checked="false">
-                      <span class="theme-card__swatch theme-card__swatch--custom"></span>
-                      <span class="theme-card__meta">
-                        <span class="theme-card__title">自定义颜色</span>
-                        <span class="theme-card__desc">自己选强调色</span>
-                      </span>
-                    </button>
-                  </div>
-                  <div class="settings-custom-theme" id="settings-custom-theme" hidden>
-                    <label class="settings-color-lab settings-color-lab--accent" for="setting-app-theme-custom-accent">
-                      主题强调色
-                      <input type="color" id="setting-app-theme-custom-accent" value="#c62f2f" title="自定义主题强调色" />
-                      <span class="settings-color-code" id="setting-app-theme-custom-accent-code">#c62f2f</span>
-                    </label>
-                  </div>
-                  <p class="settings-field-hint muted">
-                    预设共 6 种，再加 1 个自定义颜色模式。切换后主界面强调色与 macOS Dock 图标都会同步更新；菜单栏图标保持模板白色。
-                  </p>
-                </div>
-                <div class="settings-field">
-                  <span class="settings-field-label">网络代理</span>
-                  <input type="hidden" id="setting-network-proxy-mode" value="direct" />
-                  <div class="theme-mode-grid" role="radiogroup" aria-label="网络代理模式">
-                    <button type="button" class="theme-mode-card" data-network-proxy-mode-card="direct" role="radio" aria-checked="false">
-                      <span class="theme-mode-card__preview theme-mode-card__preview--light"></span>
-                      <span class="theme-card__meta">
-                        <span class="theme-card__title">不使用代理</span>
-                        <span class="theme-card__desc">所有接口请求直接访问</span>
-                      </span>
-                    </button>
-                    <button type="button" class="theme-mode-card" data-network-proxy-mode-card="system" role="radio" aria-checked="false">
-                      <span class="theme-mode-card__preview theme-mode-card__preview--system"></span>
-                      <span class="theme-card__meta">
-                        <span class="theme-card__title">使用系统代理</span>
-                        <span class="theme-card__desc">读取 macOS 当前网络代理设置</span>
-                      </span>
-                    </button>
-                    <button type="button" class="theme-mode-card" data-network-proxy-mode-card="custom" role="radio" aria-checked="false">
-                      <span class="theme-mode-card__preview theme-mode-card__preview--graphite"></span>
-                      <span class="theme-card__meta">
-                        <span class="theme-card__title">使用自定义代理</span>
-                        <span class="theme-card__desc">手动填写 HTTP / SOCKS 代理地址</span>
-                      </span>
-                    </button>
-                  </div>
-                  <div class="settings-custom-theme" id="settings-network-proxy-custom" hidden>
-                    <label for="setting-network-proxy-url" class="settings-field-label">自定义代理地址</label>
-                    <input
-                      type="text"
-                      id="setting-network-proxy-url"
-                      class="import-link-input settings-field-control settings-field-control--text"
-                      spellcheck="false"
-                      autocomplete="off"
-                      placeholder="http://127.0.0.1:7890 或 socks5://127.0.0.1:7891"
-                    />
-                  </div>
-                  <p class="settings-field-hint muted">
-                    支持 <code>http://</code>、<code>https://</code>、<code>socks5://</code>、<code>socks5h://</code>。选「系统代理」时会跟随 macOS 当前的 HTTP / HTTPS / SOCKS 代理配置；选「自定义代理」时，地址填写完整后立即生效。
-                  </p>
-                </div>
-                <div class="settings-field">
-                  <label for="setting-netease-api-base" class="settings-field-label">网易云 API 根地址（可选）</label>
-                  <input
-                    type="url"
-                    id="setting-netease-api-base"
-                    class="settings-field-control settings-field-control--text"
-                    spellcheck="false"
-                    autocomplete="off"
-                    placeholder="https://example.com"
-                    aria-describedby="setting-netease-api-base-hint"
-                  />
-                  <p id="setting-netease-api-base-hint" class="settings-field-hint muted">
-                    自托管 <a href="https://github.com/Binaryify/NeteaseCloudMusicApi" target="_blank" rel="noopener noreferrer">NeteaseCloudMusicApi</a> 或兼容服务的根 URL（无尾斜杠亦可）。填写后「netease」源将优先请求 <code>/lyric/new</code> 获取 YRC 逐字歌词；留空则仅用网易云网页门户的行级 LRC。
-                  </p>
-                </div>
-                <div class="settings-field">
-                  <label for="setting-close-action" class="settings-field-label">关闭主窗口时</label>
-                  <select id="setting-close-action" class="import-select import-select--wide settings-field-control">
-                    <option value="ask">每次询问</option>
-                    <option value="tray">最小化到系统托盘</option>
-                    <option value="quit">退出应用</option>
-                  </select>
-                </div>
-                <div class="settings-field settings-field--hotkeys">
-                  <label class="settings-hotkeys-master">
-                    <input type="checkbox" id="setting-hotkeys-enabled" checked />
-                    <span>启用全局快捷键</span>
-                  </label>
-                  <p class="settings-field-hint muted">
-                    后台也能响应；默认使用 Ctrl+Alt+ 组合以避免中文输入法占用 Ctrl+Space。点击快捷键框后按下新组合即可替换，Esc 取消、Backspace 清除；修改后自动生效。
-                  </p>
-                  <div class="hotkeys-panel">
-                    <span class="hotkeys-panel__group" aria-hidden="true">播放控制</span>
-                    <div class="hotkeys-table" role="group" aria-label="播放控制快捷键">
-                      <div class="hotkeys-row" data-action="play_pause">
-                        <span class="hotkeys-row__name">播放/暂停</span>
-                        <button type="button" class="hotkeys-input" id="hk-play-pause" aria-label="录制 播放/暂停 快捷键"></button>
-                        <span class="hotkeys-status" data-status="ok" id="hk-status-play-pause">正常</span>
+                  </aside>
+                  <div class="settings-panels">
+                    <section class="settings-panel is-active" data-settings-panel="appearance" role="tabpanel">
+                      <div class="settings-panel__head">
+                        <h2 class="settings-panel__title">外观</h2>
+                        <p class="settings-panel__desc muted">亮暗模式与主题色分组管理，方便集中调整界面观感。</p>
                       </div>
-                      <div class="hotkeys-row" data-action="prev">
-                        <span class="hotkeys-row__name">上一首</span>
-                        <button type="button" class="hotkeys-input" id="hk-prev" aria-label="录制 上一首 快捷键"></button>
-                        <span class="hotkeys-status" data-status="ok" id="hk-status-prev">正常</span>
+                      <div class="settings-panel__body">
+                        <div class="settings-field">
+                          <span class="settings-field-label">界面模式</span>
+                          <input type="hidden" id="setting-app-theme-mode" value="system" />
+                          <div class="theme-mode-grid" role="radiogroup" aria-label="界面模式">
+                            <button type="button" class="theme-mode-card" data-theme-mode-card="system" role="radio" aria-checked="false">
+                              <span class="theme-mode-card__preview theme-mode-card__preview--system"></span>
+                              <span class="theme-card__meta">
+                                <span class="theme-card__title">跟随系统</span>
+                                <span class="theme-card__desc">自动匹配 macOS 亮暗模式</span>
+                              </span>
+                            </button>
+                            <button type="button" class="theme-mode-card" data-theme-mode-card="light" role="radio" aria-checked="false">
+                              <span class="theme-mode-card__preview theme-mode-card__preview--light"></span>
+                              <span class="theme-card__meta">
+                                <span class="theme-card__title">浅色</span>
+                                <span class="theme-card__desc">明亮干净的主界面</span>
+                              </span>
+                            </button>
+                            <button type="button" class="theme-mode-card" data-theme-mode-card="graphite" role="radio" aria-checked="false">
+                              <span class="theme-mode-card__preview theme-mode-card__preview--graphite"></span>
+                              <span class="theme-card__meta">
+                                <span class="theme-card__title">石墨夜</span>
+                                <span class="theme-card__desc">偏中性的深灰暗色</span>
+                              </span>
+                            </button>
+                            <button type="button" class="theme-mode-card" data-theme-mode-card="midnight" role="radio" aria-checked="false">
+                              <span class="theme-mode-card__preview theme-mode-card__preview--midnight"></span>
+                              <span class="theme-card__meta">
+                                <span class="theme-card__title">深海夜</span>
+                                <span class="theme-card__desc">偏蓝的夜间界面</span>
+                              </span>
+                            </button>
+                            <button type="button" class="theme-mode-card" data-theme-mode-card="forestnight" role="radio" aria-checked="false">
+                              <span class="theme-mode-card__preview theme-mode-card__preview--forestnight"></span>
+                              <span class="theme-card__meta">
+                                <span class="theme-card__title">森林夜</span>
+                                <span class="theme-card__desc">偏绿的柔和暗色</span>
+                              </span>
+                            </button>
+                          </div>
+                          <p class="settings-field-hint muted">
+                            选择「跟随系统」后，会随着 macOS 外观实时切换。
+                          </p>
+                        </div>
+                        <div class="settings-field">
+                          <span class="settings-field-label">应用主题</span>
+                          <input type="hidden" id="setting-app-theme" value="coral" />
+                          <div class="theme-card-grid" role="radiogroup" aria-label="应用主题">
+                            <button type="button" class="theme-card" data-theme-card="coral" role="radio" aria-checked="false">
+                              <span class="theme-card__swatch" style="--theme-card-accent: #c62f2f"></span>
+                              <span class="theme-card__meta">
+                                <span class="theme-card__title">珊瑚红</span>
+                                <span class="theme-card__desc">经典暖调</span>
+                              </span>
+                            </button>
+                            <button type="button" class="theme-card" data-theme-card="ocean" role="radio" aria-checked="false">
+                              <span class="theme-card__swatch" style="--theme-card-accent: #1f6aa5"></span>
+                              <span class="theme-card__meta">
+                                <span class="theme-card__title">海蓝</span>
+                                <span class="theme-card__desc">冷静清透</span>
+                              </span>
+                            </button>
+                            <button type="button" class="theme-card" data-theme-card="forest" role="radio" aria-checked="false">
+                              <span class="theme-card__swatch" style="--theme-card-accent: #2f7d4b"></span>
+                              <span class="theme-card__meta">
+                                <span class="theme-card__title">松绿</span>
+                                <span class="theme-card__desc">低饱和自然感</span>
+                              </span>
+                            </button>
+                            <button type="button" class="theme-card" data-theme-card="netease" role="radio" aria-checked="false">
+                              <span class="theme-card__swatch" style="--theme-card-accent: #d43c33"></span>
+                              <span class="theme-card__meta">
+                                <span class="theme-card__title">网易云红</span>
+                                <span class="theme-card__desc">更偏品牌化</span>
+                              </span>
+                            </button>
+                            <button type="button" class="theme-card" data-theme-card="kugou" role="radio" aria-checked="false">
+                              <span class="theme-card__swatch" style="--theme-card-accent: #1977ff"></span>
+                              <span class="theme-card__meta">
+                                <span class="theme-card__title">酷狗蓝</span>
+                                <span class="theme-card__desc">更亮更锐</span>
+                              </span>
+                            </button>
+                            <button type="button" class="theme-card" data-theme-card="qqmusic" role="radio" aria-checked="false">
+                              <span class="theme-card__swatch" style="--theme-card-accent: #31c27c"></span>
+                              <span class="theme-card__meta">
+                                <span class="theme-card__title">QQ 音乐绿</span>
+                                <span class="theme-card__desc">鲜明品牌绿</span>
+                              </span>
+                            </button>
+                            <button type="button" class="theme-card theme-card--custom" data-theme-card="custom" role="radio" aria-checked="false">
+                              <span class="theme-card__swatch theme-card__swatch--custom"></span>
+                              <span class="theme-card__meta">
+                                <span class="theme-card__title">自定义颜色</span>
+                                <span class="theme-card__desc">自己选强调色</span>
+                              </span>
+                            </button>
+                          </div>
+                          <div class="settings-custom-theme" id="settings-custom-theme" hidden>
+                            <label class="settings-color-lab settings-color-lab--accent" for="setting-app-theme-custom-accent">
+                              主题强调色
+                              <input type="color" id="setting-app-theme-custom-accent" value="#c62f2f" title="自定义主题强调色" />
+                              <span class="settings-color-code" id="setting-app-theme-custom-accent-code">#c62f2f</span>
+                            </label>
+                          </div>
+                          <p class="settings-field-hint muted">
+                            预设共 6 种，再加 1 个自定义颜色模式。切换后主界面强调色与 macOS Dock 图标都会同步更新；菜单栏图标保持模板白色。
+                          </p>
+                        </div>
                       </div>
-                      <div class="hotkeys-row" data-action="next">
-                        <span class="hotkeys-row__name">下一首</span>
-                        <button type="button" class="hotkeys-input" id="hk-next" aria-label="录制 下一首 快捷键"></button>
-                        <span class="hotkeys-status" data-status="ok" id="hk-status-next">正常</span>
+                    </section>
+
+                    <section class="settings-panel" data-settings-panel="network" role="tabpanel" hidden>
+                      <div class="settings-panel__head">
+                        <h2 class="settings-panel__title">网络</h2>
+                        <p class="settings-panel__desc muted">把接口访问和歌词源放在一组，避免和主题选择混在一起。</p>
                       </div>
-                      <div class="hotkeys-row" data-action="volume_up">
-                        <span class="hotkeys-row__name">增大音量</span>
-                        <button type="button" class="hotkeys-input" id="hk-vol-up" aria-label="录制 增大音量 快捷键"></button>
-                        <span class="hotkeys-status" data-status="ok" id="hk-status-vol-up">正常</span>
+                      <div class="settings-panel__body">
+                        <div class="settings-field">
+                          <span class="settings-field-label">网络代理</span>
+                          <input type="hidden" id="setting-network-proxy-mode" value="direct" />
+                          <div class="settings-option-grid" role="radiogroup" aria-label="网络代理模式">
+                            <button type="button" class="settings-option-card" data-network-proxy-mode-card="direct" role="radio" aria-checked="false">
+                              <span class="settings-option-card__badge">Direct</span>
+                              <span class="settings-option-card__title">不使用代理</span>
+                              <span class="settings-option-card__desc">所有接口请求直接访问，适合本地网络可直连时使用。</span>
+                            </button>
+                            <button type="button" class="settings-option-card" data-network-proxy-mode-card="system" role="radio" aria-checked="false">
+                              <span class="settings-option-card__badge">System</span>
+                              <span class="settings-option-card__title">使用系统代理</span>
+                              <span class="settings-option-card__desc">跟随 macOS 当前的 HTTP / HTTPS / SOCKS 代理配置。</span>
+                            </button>
+                            <button type="button" class="settings-option-card" data-network-proxy-mode-card="custom" role="radio" aria-checked="false">
+                              <span class="settings-option-card__badge">Custom</span>
+                              <span class="settings-option-card__title">使用自定义代理</span>
+                              <span class="settings-option-card__desc">手动填写代理地址，适合多环境切换或单独测试接口连通性。</span>
+                            </button>
+                          </div>
+                          <div class="settings-custom-theme" id="settings-network-proxy-custom" hidden>
+                            <label for="setting-network-proxy-url" class="settings-field-label">自定义代理地址</label>
+                            <input
+                              type="text"
+                              id="setting-network-proxy-url"
+                              class="import-link-input settings-field-control settings-field-control--text"
+                              spellcheck="false"
+                              autocomplete="off"
+                              placeholder="http://127.0.0.1:7890 或 socks5://127.0.0.1:7891"
+                            />
+                          </div>
+                          <p class="settings-field-hint muted">
+                            支持 <code>http://</code>、<code>https://</code>、<code>socks5://</code>、<code>socks5h://</code>。选「系统代理」时会跟随 macOS 当前的 HTTP / HTTPS / SOCKS 代理配置；选「自定义代理」时，地址填写完整后立即生效。
+                          </p>
+                        </div>
+                        <div class="settings-field">
+                          <label for="setting-netease-api-base" class="settings-field-label">网易云 API 根地址（可选）</label>
+                          <input
+                            type="url"
+                            id="setting-netease-api-base"
+                            class="settings-field-control settings-field-control--text"
+                            spellcheck="false"
+                            autocomplete="off"
+                            placeholder="https://example.com"
+                            aria-describedby="setting-netease-api-base-hint"
+                          />
+                          <p id="setting-netease-api-base-hint" class="settings-field-hint muted">
+                            自托管 <a href="https://github.com/Binaryify/NeteaseCloudMusicApi" target="_blank" rel="noopener noreferrer">NeteaseCloudMusicApi</a> 或兼容服务的根 URL（无尾斜杠亦可）。填写后「netease」源将优先请求 <code>/lyric/new</code> 获取 YRC 逐字歌词；留空则仅用网易云网页门户的行级 LRC。
+                          </p>
+                        </div>
                       </div>
-                      <div class="hotkeys-row" data-action="volume_down">
-                        <span class="hotkeys-row__name">减少音量</span>
-                        <button type="button" class="hotkeys-input" id="hk-vol-down" aria-label="录制 减少音量 快捷键"></button>
-                        <span class="hotkeys-status" data-status="ok" id="hk-status-vol-down">正常</span>
+                    </section>
+
+                    <section class="settings-panel" data-settings-panel="controls" role="tabpanel" hidden>
+                      <div class="settings-panel__head">
+                        <h2 class="settings-panel__title">控制</h2>
+                        <p class="settings-panel__desc muted">把窗口行为和全局快捷键放到一起，便于集中处理交互习惯。</p>
                       </div>
-                    </div>
-                  </div>
-                </div>
-                <div class="settings-field">
-                  <span class="settings-field-label">桌面歌词字色</span>
-                  <div class="settings-colors-row">
-                    <label class="settings-color-lab">
-                      未唱
-                      <input type="color" id="setting-ly-base" value="#ffffff" title="未唱字色" />
-                    </label>
-                    <label class="settings-color-lab">
-                      已唱
-                      <input type="color" id="setting-ly-highlight" value="#ffb7d4" title="已唱字色" />
-                    </label>
+                      <div class="settings-panel__body">
+                        <div class="settings-field">
+                          <label for="setting-close-action" class="settings-field-label">关闭主窗口时</label>
+                          <select id="setting-close-action" class="import-select import-select--wide settings-field-control">
+                            <option value="ask">每次询问</option>
+                            <option value="tray">最小化到系统托盘</option>
+                            <option value="quit">退出应用</option>
+                          </select>
+                        </div>
+                        <div class="settings-field settings-field--hotkeys">
+                          <label class="settings-hotkeys-master">
+                            <input type="checkbox" id="setting-hotkeys-enabled" checked />
+                            <span>启用全局快捷键</span>
+                          </label>
+                          <p class="settings-field-hint muted">
+                            后台也能响应；默认使用 Ctrl+Alt+ 组合以避免中文输入法占用 Ctrl+Space。点击快捷键框后按下新组合即可替换，Esc 取消、Backspace 清除；修改后自动生效。
+                          </p>
+                          <div class="hotkeys-panel">
+                            <span class="hotkeys-panel__group" aria-hidden="true">播放控制</span>
+                            <div class="hotkeys-table" role="group" aria-label="播放控制快捷键">
+                              <div class="hotkeys-row" data-action="play_pause">
+                                <span class="hotkeys-row__name">播放/暂停</span>
+                                <button type="button" class="hotkeys-input" id="hk-play-pause" aria-label="录制 播放/暂停 快捷键"></button>
+                                <span class="hotkeys-status" data-status="ok" id="hk-status-play-pause">正常</span>
+                              </div>
+                              <div class="hotkeys-row" data-action="prev">
+                                <span class="hotkeys-row__name">上一首</span>
+                                <button type="button" class="hotkeys-input" id="hk-prev" aria-label="录制 上一首 快捷键"></button>
+                                <span class="hotkeys-status" data-status="ok" id="hk-status-prev">正常</span>
+                              </div>
+                              <div class="hotkeys-row" data-action="next">
+                                <span class="hotkeys-row__name">下一首</span>
+                                <button type="button" class="hotkeys-input" id="hk-next" aria-label="录制 下一首 快捷键"></button>
+                                <span class="hotkeys-status" data-status="ok" id="hk-status-next">正常</span>
+                              </div>
+                              <div class="hotkeys-row" data-action="volume_up">
+                                <span class="hotkeys-row__name">增大音量</span>
+                                <button type="button" class="hotkeys-input" id="hk-vol-up" aria-label="录制 增大音量 快捷键"></button>
+                                <span class="hotkeys-status" data-status="ok" id="hk-status-vol-up">正常</span>
+                              </div>
+                              <div class="hotkeys-row" data-action="volume_down">
+                                <span class="hotkeys-row__name">减少音量</span>
+                                <button type="button" class="hotkeys-input" id="hk-vol-down" aria-label="录制 减少音量 快捷键"></button>
+                                <span class="hotkeys-status" data-status="ok" id="hk-status-vol-down">正常</span>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </section>
+
+                    <section class="settings-panel" data-settings-panel="lyrics" role="tabpanel" hidden>
+                      <div class="settings-panel__head">
+                        <h2 class="settings-panel__title">歌词</h2>
+                        <p class="settings-panel__desc muted">这里单独处理桌面歌词的视觉表现，避免和主界面外观设置混淆。</p>
+                      </div>
+                      <div class="settings-panel__body">
+                        <div class="settings-field">
+                          <span class="settings-field-label">桌面歌词字色</span>
+                          <div class="settings-colors-row">
+                            <label class="settings-color-lab">
+                              未唱
+                              <input type="color" id="setting-ly-base" value="#ffffff" title="未唱字色" />
+                            </label>
+                            <label class="settings-color-lab">
+                              已唱
+                              <input type="color" id="setting-ly-highlight" value="#ffb7d4" title="已唱字色" />
+                            </label>
+                          </div>
+                        </div>
+                      </div>
+                    </section>
                   </div>
                 </div>
               </div>

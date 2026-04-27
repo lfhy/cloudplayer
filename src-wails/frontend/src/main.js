@@ -28,6 +28,7 @@ const APP_THEMES = {
 
 const APP_THEME_MODES = new Set(["system", "light", "graphite", "midnight", "forestnight"]);
 const NETWORK_PROXY_MODES = new Set(["direct", "system", "custom"]);
+const SETTINGS_TABS = new Set(["appearance", "network", "controls", "lyrics"]);
 const QUICK_THEME_MODE_LABELS = {
   system: "跟随系统",
   light: "浅色",
@@ -460,6 +461,11 @@ function normalizeNetworkProxyUrl(value) {
   return String(value ?? "").trim();
 }
 
+function normalizeSettingsTab(value) {
+  const normalized = String(value || "appearance").trim().toLowerCase();
+  return SETTINGS_TABS.has(normalized) ? normalized : "appearance";
+}
+
 function canSaveCustomProxyUrl(value) {
   const raw = normalizeNetworkProxyUrl(value);
   if (!raw) return false;
@@ -540,6 +546,20 @@ function setNetworkProxyModeSelection(mode) {
     const active = card.getAttribute("data-network-proxy-mode-card") === normalized;
     card.classList.toggle("is-active", active);
     card.setAttribute("aria-checked", active ? "true" : "false");
+  });
+}
+
+function setSettingsTab(tab) {
+  const normalized = normalizeSettingsTab(tab);
+  document.querySelectorAll("[data-settings-tab]").forEach((button) => {
+    const active = button.getAttribute("data-settings-tab") === normalized;
+    button.classList.toggle("is-active", active);
+    button.setAttribute("aria-selected", active ? "true" : "false");
+  });
+  document.querySelectorAll("[data-settings-panel]").forEach((panel) => {
+    const active = panel.getAttribute("data-settings-panel") === normalized;
+    panel.classList.toggle("is-active", active);
+    panel.hidden = !active;
   });
 }
 
@@ -1142,8 +1162,18 @@ function wireNetworkProxyModeCards() {
   });
 }
 
+function wireSettingsTabs() {
+  document.querySelectorAll("[data-settings-tab]").forEach((button) => {
+    button.addEventListener("click", () => {
+      setSettingsTab(button.getAttribute("data-settings-tab") || "appearance");
+    });
+  });
+  setSettingsTab("appearance");
+}
+
 function wirePreferencesModals() {
   document.getElementById("btn-dock-settings")?.addEventListener("click", () => setPage("settings"));
+  wireSettingsTabs();
   wireSettingsFormDirtyTracking();
   wireThemeModeCards();
   wireThemeCards();
