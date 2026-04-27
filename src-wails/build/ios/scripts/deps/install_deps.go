@@ -10,22 +10,11 @@
 package main
 
 import (
-	"bufio"
 	"fmt"
 	"os"
 	"os/exec"
 	"strings"
 )
-
-type Dependency struct {
-	Name       string
-	CheckFunc  func() (bool, string) // Returns (success, details)
-	Required   bool
-	InstallCmd []string
-	InstallMsg string
-	SuccessMsg string
-	FailureMsg string
-}
 
 func main() {
 	fmt.Println("Checking iOS development dependencies...")
@@ -286,34 +275,4 @@ func main() {
 		fmt.Println("✅ All required dependencies are installed!")
 		fmt.Println("   You're ready for iOS development with Wails!")
 	}
-}
-
-func checkCommand(args []string) bool {
-	if len(args) == 0 {
-		return false
-	}
-	cmd := exec.Command(args[0], args[1:]...)
-	cmd.Stdout = nil
-	cmd.Stderr = nil
-	err := cmd.Run()
-	return err == nil
-}
-
-func promptUser(question string) bool {
-	// Check if we're in a non-interactive environment
-	if os.Getenv("CI") != "" || os.Getenv("TASK_FORCE_YES") == "true" {
-		fmt.Printf("%s [y/N]: y (auto-accepted)\n", question)
-		return true
-	}
-
-	reader := bufio.NewReader(os.Stdin)
-	fmt.Printf("%s [y/N]: ", question)
-
-	response, err := reader.ReadString('\n')
-	if err != nil {
-		return false
-	}
-
-	response = strings.ToLower(strings.TrimSpace(response))
-	return response == "y" || response == "yes"
 }
