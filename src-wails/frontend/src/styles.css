@@ -607,10 +607,12 @@ body {
   background: conic-gradient(
     from 0deg,
     rgba(92, 230, 240, 0) 0deg,
-    rgba(92, 230, 240, 0) 300deg,
-    rgba(92, 230, 240, 0.88) 322deg,
-    rgba(240, 92, 210, 0.98) 338deg,
-    rgba(255, 215, 100, 1) 352deg,
+    rgba(92, 230, 240, 0) 252deg,
+    rgba(92, 230, 240, 0.34) 286deg,
+    rgba(92, 230, 240, 0.76) 314deg,
+    rgba(240, 92, 210, 0.84) 334deg,
+    rgba(255, 215, 100, 0.88) 350deg,
+    rgba(255, 215, 100, 0.42) 358deg,
     rgba(92, 230, 240, 0) 360deg
   );
   -webkit-mask:
@@ -621,11 +623,11 @@ body {
     linear-gradient(#000 0 0) content-box,
     linear-gradient(#000 0 0);
   mask-composite: exclude;
-  filter: blur(3px);
-  opacity: 0.96;
+  filter: blur(3.5px);
+  opacity: 0.9;
   z-index: 1;
   pointer-events: none;
-  animation: search-glow-spin 1.65s linear infinite;
+  animation: search-glow-spin 1.95s linear infinite;
   transition: opacity 0.2s ease, filter 0.2s ease;
 }
 
@@ -661,7 +663,7 @@ body {
 .neon-search-wrap:focus-within::before {
   opacity: 1;
   filter: blur(4px);
-  animation-duration: 1.15s;
+  animation-duration: 1.35s;
 }
 
 @keyframes search-glow-spin {
