@@ -1286,6 +1286,12 @@ function wireDockBar() {
     });
   });
 
+  document.getElementById("btn-dock-lyrics-replace")?.addEventListener("click", (e) => {
+    e.stopPropagation();
+    closeAllDockMenus();
+    alert("“换歌词”入口已补到播放器底栏。多源搜索与替换面板下一步接回 Wails。");
+  });
+
   document.getElementById("btn-dock-more")?.addEventListener("click", (e) => {
     e.stopPropagation();
     toggleDockMenu(document.getElementById("popover-more"));
