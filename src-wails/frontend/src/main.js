@@ -43,6 +43,7 @@ import {
   themeAccentRgb,
 } from "./app/helpers/platformTheme.js";
 import { createImportFlowHelpers } from "./app/helpers/importFlow.js";
+import { createSettingsController } from "./features/settings/controller.js";
 import { renderMainShell } from "./layout/renderMainShell.js";
 
 /** @type {{ keyword: string, page: number, hasNext: boolean, results: any[], busy: boolean }} */
@@ -228,6 +229,52 @@ function setSettingsTab(tab) {
   applySettingsTabUi(normalizeSettingsTab(tab));
 }
 
+// Settings are split into a controller so the runtime entry only keeps state bridges.
+const {
+  getSettingsFormValues,
+  loadSettings,
+  openCloseConfirmModal,
+  queueSettingsAutosave,
+  wirePreferencesModals,
+} = createSettingsController({
+  alertRequestFailed,
+  applyAppTheme,
+  audioEl,
+  broadcastDesktopLyricsColors,
+  broadcastDesktopLyricsLock,
+  invoke,
+  normalizeAccentHex,
+  normalizeAppTheme,
+  normalizeAppThemeMode,
+  normalizeCloseAction,
+  normalizeNetworkProxyMode,
+  normalizeNetworkProxyUrl,
+  openDesktopLyricsFromSettingsIfNeeded,
+  refreshLyricsLockMenuLabel,
+  setMainWindowCloseAction: (value) => {
+    mainWindowCloseAction = value;
+  },
+  setNetworkProxyModeSelection,
+  setPage,
+  setSettingsTab,
+  setThemeCardSelection,
+  setThemeModeSelection,
+  updateDownloadFolderHint,
+  warnRequestFailed,
+  syncNeteaseCookieUi: () => syncNeteaseCookieUi(),
+  setDesktopLyricsLocked: (value) => {
+    desktopLyricsLocked = value;
+  },
+  getDesktopLyricsOpen: () => desktopLyricsOpen,
+  setLastLibraryFolder: (value) => {
+    lastLibraryFolder = value;
+  },
+  setNeteaseCookieState: ({ enabled, value }) => {
+    neteaseCookieEnabled = !!enabled;
+    neteaseCookieValue = String(value || "");
+  },
+});
+
 function effectiveQuickThemeMode(mode) {
   const normalized = normalizeAppThemeMode(mode);
   if (normalized === "system") return "system";
@@ -275,587 +322,6 @@ function applyQuickThemeMode(nextQuickMode) {
   const updated = getSettingsFormValues();
   applyAppTheme(updated.theme, updated.customAccent, updated.mode);
   queueSettingsAutosave(true);
-}
-
-let settingsFormBaseline = {
-  theme: "coral",
-  mode: "system",
-  customAccent: "#c62f2f",
-  proxyMode: "direct",
-  proxyURL: "",
-  action: "ask",
-  base: "#ffffff",
-  highlight: "#ffb7d4",
-  neteaseApiBase: "",
-  hotkeysSig: "",
-};
-let settingsSaveTimer = null;
-let settingsSaveInFlight = false;
-let settingsSaveQueued = false;
-let suppressSettingsAutoSave = false;
-
-function normalizeLyricHexInput(value, fallback) {
-  const normalized = (value || "").trim();
-  return /^#[0-9a-fA-F]{6}$/.test(normalized) ? normalized.toLowerCase() : fallback;
-}
-
-function normalizeNeteaseApiBase(raw) {
-  return String(raw ?? "").trim();
-}
-
-function getGlobalHotkeysPayloadFromDom() {
-  const enabledEl = document.getElementById("setting-hotkeys-enabled");
-  return {
-    play_pause: (document.getElementById("hk-play-pause")?.dataset.accel || "").trim(),
-    prev: (document.getElementById("hk-prev")?.dataset.accel || "").trim(),
-    next: (document.getElementById("hk-next")?.dataset.accel || "").trim(),
-    volume_up: (document.getElementById("hk-vol-up")?.dataset.accel || "").trim(),
-    volume_down: (document.getElementById("hk-vol-down")?.dataset.accel || "").trim(),
-    enabled: !!enabledEl?.checked,
-  };
-}
-
-function codeToHotkeyMainKey(code) {
-  if (!code) return null;
-  if (code.startsWith("Key") && code.length === 4) return code.slice(3).toLowerCase();
-  if (code.startsWith("Digit")) return code.slice(5);
-  const map = {
-    Space: "space",
-    ArrowLeft: "left",
-    ArrowRight: "right",
-    ArrowUp: "up",
-    ArrowDown: "down",
-    Escape: "escape",
-    Tab: "tab",
-    Enter: "enter",
-    Backspace: "backspace",
-    Delete: "delete",
-  };
-  if (map[code]) return map[code];
-  if (code.startsWith("F") && /^F\d+$/.test(code)) return code.toLowerCase();
-  return null;
-}
-
-function accelFromKeyboardEvent(ev) {
-  const key = codeToHotkeyMainKey(ev.code);
-  if (!key || key === "escape") return null;
-  const mods = [];
-  if (ev.shiftKey) mods.push("shift");
-  if (ev.ctrlKey) mods.push("control");
-  if (ev.altKey) mods.push("alt");
-  if (ev.metaKey) mods.push("super");
-  if (mods.length === 0 && key === "backspace") return "__clear__";
-  if (mods.length === 0) return null;
-  mods.push(key);
-  return mods.join("+");
-}
-
-function formatAccelDisplay(value) {
-  if (!value || !String(value).trim()) return "未设置";
-  return String(value)
-    .split("+")
-    .map((raw) => {
-      const token = raw.trim().toLowerCase();
-      if (token === "control" || token === "ctrl") return "Ctrl";
-      if (token === "alt") return "Alt";
-      if (token === "shift") return "Shift";
-      if (token === "super" || token === "command" || token === "cmd") return "Meta";
-      if (token === "left") return "Left";
-      if (token === "right") return "Right";
-      if (token === "up") return "Up";
-      if (token === "down") return "Down";
-      if (token === "space") return "Space";
-      if (token.length === 1) return raw.trim().toUpperCase();
-      return raw.trim().length ? raw.trim().charAt(0).toUpperCase() + raw.slice(1).toLowerCase() : "";
-    })
-    .filter(Boolean)
-    .join(" + ");
-}
-
-function syncHotkeyButtonUi(button) {
-  const accel = (button.dataset.accel || "").trim();
-  button.textContent = accel ? formatAccelDisplay(accel) : "未设置";
-  button.classList.toggle("hotkeys-input--empty", !accel);
-}
-
-let hotkeyCaptureButton = null;
-let hotkeyCapturePrevAccel = "";
-
-function stopHotkeyCapture(restore) {
-  if (!hotkeyCaptureButton) return;
-  const button = hotkeyCaptureButton;
-  hotkeyCaptureButton = null;
-  button.classList.remove("hotkeys-input--capturing");
-  document.removeEventListener("keydown", onHotkeyCaptureKeydown, true);
-  if (restore) {
-    button.dataset.accel = hotkeyCapturePrevAccel;
-    syncHotkeyButtonUi(button);
-  }
-  hotkeyCapturePrevAccel = "";
-}
-
-function onHotkeyCaptureKeydown(ev) {
-  if (!hotkeyCaptureButton) return;
-  if (ev.key === "Escape") {
-    ev.preventDefault();
-    stopHotkeyCapture(true);
-    updateSettingsSaveButtonState();
-    return;
-  }
-  const raw = accelFromKeyboardEvent(ev);
-  if (!raw) {
-    ev.preventDefault();
-    return;
-  }
-  if (raw === "__clear__") {
-    ev.preventDefault();
-    hotkeyCaptureButton.dataset.accel = "";
-    syncHotkeyButtonUi(hotkeyCaptureButton);
-    stopHotkeyCapture(false);
-    queueSettingsAutosave(true);
-    return;
-  }
-  ev.preventDefault();
-  ev.stopPropagation();
-  void (async () => {
-    try {
-      await invoke("validate_accelerator", { s: raw });
-    } catch (err) {
-      warnRequestFailed(err, "validate_accelerator");
-      return;
-    }
-    hotkeyCaptureButton.dataset.accel = raw;
-    syncHotkeyButtonUi(hotkeyCaptureButton);
-    stopHotkeyCapture(false);
-    queueSettingsAutosave(true);
-  })();
-}
-
-function startHotkeyCapture(button) {
-  if (hotkeyCaptureButton && hotkeyCaptureButton !== button) {
-    stopHotkeyCapture(true);
-  }
-  hotkeyCaptureButton = button;
-  hotkeyCapturePrevAccel = (button.dataset.accel || "").trim();
-  button.classList.add("hotkeys-input--capturing");
-  button.textContent = "按下组合键…";
-  document.addEventListener("keydown", onHotkeyCaptureKeydown, true);
-}
-
-function wireHotkeySettingsUi() {
-  document.querySelectorAll(".hotkeys-input").forEach((button) => {
-    button.addEventListener("click", (event) => {
-      event.preventDefault();
-      startHotkeyCapture(button);
-    });
-  });
-}
-
-function hotkeyFieldLabel(fieldKey) {
-  const map = {
-    play_pause: "播放/暂停",
-    prev: "上一首",
-    next: "下一首",
-    volume_up: "增大音量",
-    volume_down: "减少音量",
-  };
-  return map[fieldKey] || fieldKey;
-}
-
-function hotkeyStatusSetConflict(fieldKey, title) {
-  const idMap = {
-    play_pause: "hk-status-play-pause",
-    prev: "hk-status-prev",
-    next: "hk-status-next",
-    volume_up: "hk-status-vol-up",
-    volume_down: "hk-status-vol-down",
-  };
-  const el = document.getElementById(idMap[fieldKey]);
-  if (!el) return;
-  el.dataset.status = "conflict";
-  el.textContent = "冲突";
-  if (title) el.title = title;
-}
-
-function renderHotkeyStatusOk() {
-  [
-    "hk-status-play-pause",
-    "hk-status-prev",
-    "hk-status-next",
-    "hk-status-vol-up",
-    "hk-status-vol-down",
-  ].forEach((id) => {
-    const el = document.getElementById(id);
-    if (!el) return;
-    el.dataset.status = "ok";
-    el.textContent = "正常";
-    el.removeAttribute("title");
-  });
-}
-
-function renderHotkeyStatusFromReport(report) {
-  [
-    ["hk-status-play-pause", report.play_pause],
-    ["hk-status-prev", report.prev],
-    ["hk-status-next", report.next],
-    ["hk-status-vol-up", report.volume_up],
-    ["hk-status-vol-down", report.volume_down],
-  ].forEach(([id, status]) => {
-    const el = document.getElementById(id);
-    if (!el || !status) return;
-    if (status.ok) {
-      el.dataset.status = "ok";
-      el.textContent = "正常";
-      el.removeAttribute("title");
-      return;
-    }
-    el.dataset.status = "conflict";
-    el.textContent = "冲突";
-    if (status.error) el.title = status.error;
-  });
-}
-
-function fillHotkeysFormFromSettings(settings) {
-  const hotkeys =
-    settings?.global_hotkeys ??
-    settings?.globalHotkeys ?? {
-      play_pause: "ctrl+alt+space",
-      prev: "ctrl+alt+left",
-      next: "ctrl+alt+right",
-      volume_up: "ctrl+alt+up",
-      volume_down: "ctrl+alt+down",
-      enabled: true,
-    };
-  const enabledEl = document.getElementById("setting-hotkeys-enabled");
-  if (enabledEl) enabledEl.checked = hotkeys.enabled !== false;
-  [
-    ["hk-play-pause", hotkeys.play_pause ?? hotkeys.playPause],
-    ["hk-prev", hotkeys.prev],
-    ["hk-next", hotkeys.next],
-    ["hk-vol-up", hotkeys.volume_up ?? hotkeys.volumeUp],
-    ["hk-vol-down", hotkeys.volume_down ?? hotkeys.volumeDown],
-  ].forEach(([id, value]) => {
-    const button = document.getElementById(id);
-    if (!button) return;
-    button.dataset.accel = String(value || "").trim().toLowerCase();
-    syncHotkeyButtonUi(button);
-  });
-  renderHotkeyStatusOk();
-}
-
-function getSettingsFormValues() {
-  const themeEl = document.getElementById("setting-app-theme");
-  const themeModeEl = document.getElementById("setting-app-theme-mode");
-  const customAccentEl = document.getElementById("setting-app-theme-custom-accent");
-  const networkProxyModeEl = document.getElementById("setting-network-proxy-mode");
-  const networkProxyUrlEl = document.getElementById("setting-network-proxy-url");
-  const closeActionEl = document.getElementById("setting-close-action");
-  const baseEl = document.getElementById("setting-ly-base");
-  const highlightEl = document.getElementById("setting-ly-highlight");
-  const neteaseApiBaseEl = document.getElementById("setting-netease-api-base");
-  const globalHotkeys = getGlobalHotkeysPayloadFromDom();
-  return {
-    theme: normalizeAppTheme(themeEl?.value),
-    mode: normalizeAppThemeMode(themeModeEl?.value),
-    customAccent: normalizeAccentHex(customAccentEl?.value, "#c62f2f"),
-    proxyMode: normalizeNetworkProxyMode(networkProxyModeEl?.value),
-    proxyURL: normalizeNetworkProxyUrl(networkProxyUrlEl?.value),
-    action: normalizeCloseAction(closeActionEl?.value),
-    base: normalizeLyricHexInput(baseEl?.value, "#ffffff"),
-    highlight: normalizeLyricHexInput(highlightEl?.value, "#ffb7d4"),
-    neteaseApiBase: normalizeNeteaseApiBase(neteaseApiBaseEl?.value),
-    globalHotkeys,
-    hotkeysSig: JSON.stringify(globalHotkeys),
-  };
-}
-
-function settingsFormIsDirty() {
-  const current = getSettingsFormValues();
-  return (
-    current.theme !== settingsFormBaseline.theme ||
-    current.mode !== settingsFormBaseline.mode ||
-    current.customAccent !== settingsFormBaseline.customAccent ||
-    current.proxyMode !== settingsFormBaseline.proxyMode ||
-    current.proxyURL !== settingsFormBaseline.proxyURL ||
-    current.action !== settingsFormBaseline.action ||
-    current.base !== settingsFormBaseline.base ||
-    current.highlight !== settingsFormBaseline.highlight ||
-    current.neteaseApiBase !== settingsFormBaseline.neteaseApiBase ||
-    current.hotkeysSig !== settingsFormBaseline.hotkeysSig
-  );
-}
-
-function updateSettingsSaveButtonState() {
-  return;
-}
-
-function syncSettingsFormBaselineFromDom() {
-  settingsFormBaseline = getSettingsFormValues();
-  updateSettingsSaveButtonState();
-}
-
-function fillSettingsFormFromSettings(settings) {
-  const theme = normalizeAppTheme(settings?.app_theme ?? settings?.appTheme ?? "coral");
-  const mode = normalizeAppThemeMode(settings?.app_theme_mode ?? settings?.appThemeMode ?? "system");
-  const customAccent = normalizeAccentHex(
-    settings?.app_theme_custom_accent ?? settings?.appThemeCustomAccent ?? "#c62f2f",
-    "#c62f2f"
-  );
-  const proxyMode = normalizeNetworkProxyMode(
-    settings?.network_proxy_mode ?? settings?.networkProxyMode ?? "direct"
-  );
-  const proxyURL = normalizeNetworkProxyUrl(
-    settings?.network_proxy_url ?? settings?.networkProxyUrl ?? ""
-  );
-  const customAccentEl = document.getElementById("setting-app-theme-custom-accent");
-  const customAccentCodeEl = document.getElementById("setting-app-theme-custom-accent-code");
-  const proxyUrlEl = document.getElementById("setting-network-proxy-url");
-  if (customAccentEl) customAccentEl.value = customAccent;
-  if (customAccentCodeEl) customAccentCodeEl.textContent = customAccent;
-  if (proxyUrlEl) proxyUrlEl.value = proxyURL;
-  setThemeModeSelection(mode);
-  setThemeCardSelection(theme);
-  setNetworkProxyModeSelection(proxyMode);
-  applyAppTheme(theme, customAccent, mode);
-  const closeActionEl = document.getElementById("setting-close-action");
-  const closeAction = normalizeCloseAction(
-    settings?.main_window_close_action ?? settings?.mainWindowCloseAction
-  );
-  if (closeActionEl) closeActionEl.value = closeAction;
-  const baseEl = document.getElementById("setting-ly-base");
-  const highlightEl = document.getElementById("setting-ly-highlight");
-  if (baseEl) {
-    baseEl.value = normalizeLyricHexInput(
-      settings?.desktop_lyrics_color_base ?? settings?.desktopLyricsColorBase,
-      "#ffffff"
-    );
-  }
-  if (highlightEl) {
-    highlightEl.value = normalizeLyricHexInput(
-      settings?.desktop_lyrics_color_highlight ?? settings?.desktopLyricsColorHighlight,
-      "#ffb7d4"
-    );
-  }
-  const neteaseApiBaseEl = document.getElementById("setting-netease-api-base");
-  if (neteaseApiBaseEl) {
-    neteaseApiBaseEl.value = normalizeNeteaseApiBase(
-      settings?.lyrics_netease_api_base ?? settings?.lyricsNeteaseApiBase ?? ""
-    );
-  }
-  fillHotkeysFormFromSettings(settings);
-  syncSettingsFormBaselineFromDom();
-}
-
-async function persistSettingsFromForm() {
-  if (settingsSaveInFlight) {
-    settingsSaveQueued = true;
-    return;
-  }
-  if (!settingsFormIsDirty()) {
-    return;
-  }
-  settingsSaveInFlight = true;
-  const current = getSettingsFormValues();
-  try {
-    let proxyURLForSave = current.proxyURL;
-    const customProxyReady = canSaveCustomProxyUrl(current.proxyURL);
-    if (current.proxyMode === "custom" && !customProxyReady) {
-      return;
-    }
-    if (current.proxyMode !== "custom" && !customProxyReady) {
-      proxyURLForSave = "";
-      const proxyUrlEl = document.getElementById("setting-network-proxy-url");
-      if (proxyUrlEl) proxyUrlEl.value = "";
-    }
-    if (current.hotkeysSig !== settingsFormBaseline.hotkeysSig) {
-      const seen = new Map();
-      for (const [fieldKey, accel] of Object.entries(current.globalHotkeys)) {
-        if (fieldKey === "enabled") continue;
-        const normalized = String(accel || "").trim();
-        if (!normalized) continue;
-        if (seen.has(normalized)) {
-          renderHotkeyStatusOk();
-          const duplicateField = seen.get(normalized);
-          const hint = `与「${hotkeyFieldLabel(duplicateField)}」重复`;
-          hotkeyStatusSetConflict(fieldKey, hint);
-          hotkeyStatusSetConflict(duplicateField, hint);
-          return;
-        }
-        seen.set(normalized, fieldKey);
-      }
-      const report = await invoke("apply_global_hotkeys", { cfg: current.globalHotkeys });
-      if (report) renderHotkeyStatusFromReport(report);
-    }
-    await invoke("save_settings", {
-      patch: {
-        app_theme: current.theme,
-        app_theme_mode: current.mode,
-        app_theme_custom_accent: current.customAccent,
-        network_proxy_mode: current.proxyMode,
-        network_proxy_url: proxyURLForSave,
-        main_window_close_action: current.action,
-        desktop_lyrics_color_base: current.base,
-        desktop_lyrics_color_highlight: current.highlight,
-        lyrics_netease_api_base: current.neteaseApiBase,
-      },
-    });
-    applyAppTheme(current.theme, current.customAccent, current.mode);
-    mainWindowCloseAction = current.action;
-    syncSettingsFormBaselineFromDom();
-    void broadcastDesktopLyricsColors();
-  } catch (e) {
-    alertRequestFailed(e, "save settings");
-  } finally {
-    settingsSaveInFlight = false;
-    if (settingsSaveQueued) {
-      settingsSaveQueued = false;
-      queueSettingsAutosave(true);
-    }
-  }
-}
-
-function queueSettingsAutosave(immediate = false) {
-  if (suppressSettingsAutoSave) {
-    return;
-  }
-  if (settingsSaveTimer != null) {
-    clearTimeout(settingsSaveTimer);
-    settingsSaveTimer = null;
-  }
-  if (immediate) {
-    void persistSettingsFromForm();
-    return;
-  }
-  settingsSaveTimer = setTimeout(() => {
-    settingsSaveTimer = null;
-    void persistSettingsFromForm();
-  }, 260);
-}
-
-function openCloseConfirmModal() {
-  const rememberEl = document.getElementById("close-choice-remember");
-  if (rememberEl) rememberEl.checked = false;
-  const modalEl = document.getElementById("close-confirm-modal");
-  if (!modalEl) return;
-  modalEl.hidden = false;
-  modalEl.setAttribute("aria-hidden", "false");
-}
-
-function closeCloseConfirmModal() {
-  const modalEl = document.getElementById("close-confirm-modal");
-  if (!modalEl) return;
-  modalEl.hidden = true;
-  modalEl.setAttribute("aria-hidden", "true");
-}
-
-async function runCloseChoice(mode) {
-  const remember = !!document.getElementById("close-choice-remember")?.checked;
-  closeCloseConfirmModal();
-  if (remember) {
-    const patch = { main_window_close_action: mode === "tray" ? "tray" : "quit" };
-    try {
-      await invoke("save_settings", { patch });
-      mainWindowCloseAction = patch.main_window_close_action;
-    } catch (e) {
-      console.warn("save_settings main_window_close_action", e);
-    }
-  }
-  try {
-    if (mode === "tray") await invoke("hide_main_window");
-    else await invoke("quit_app");
-  } catch (e) {
-    alertRequestFailed(e, "close flow");
-  }
-}
-
-function wireSettingsFormDirtyTracking() {
-  document.getElementById("setting-app-theme-mode")?.addEventListener("change", () => queueSettingsAutosave(true));
-  document.getElementById("setting-app-theme")?.addEventListener("change", () => queueSettingsAutosave(true));
-  document.getElementById("setting-app-theme-custom-accent")?.addEventListener("input", () => queueSettingsAutosave());
-  document.getElementById("setting-network-proxy-url")?.addEventListener("input", () => queueSettingsAutosave());
-  document.getElementById("setting-close-action")?.addEventListener("change", () => queueSettingsAutosave(true));
-  document.getElementById("setting-ly-base")?.addEventListener("input", () => queueSettingsAutosave());
-  document.getElementById("setting-ly-highlight")?.addEventListener("input", () => queueSettingsAutosave());
-  document.getElementById("setting-netease-api-base")?.addEventListener("input", () => queueSettingsAutosave());
-  document.getElementById("setting-hotkeys-enabled")?.addEventListener("change", () => queueSettingsAutosave(true));
-}
-
-function wireThemeModeCards() {
-  document.querySelectorAll("[data-theme-mode-card]").forEach((card) => {
-    card.addEventListener("click", () => {
-      const mode = card.getAttribute("data-theme-mode-card") || "system";
-      setThemeModeSelection(mode);
-      const current = getSettingsFormValues();
-      applyAppTheme(current.theme, current.customAccent, current.mode);
-      queueSettingsAutosave(true);
-    });
-  });
-}
-
-function wireThemeCards() {
-  document.querySelectorAll("[data-theme-card]").forEach((card) => {
-    card.addEventListener("click", () => {
-      const theme = card.getAttribute("data-theme-card") || "coral";
-      setThemeCardSelection(theme);
-      const current = getSettingsFormValues();
-      const codeEl = document.getElementById("setting-app-theme-custom-accent-code");
-      if (codeEl) codeEl.textContent = current.customAccent;
-      applyAppTheme(current.theme, current.customAccent, current.mode);
-      queueSettingsAutosave(true);
-    });
-  });
-  document.getElementById("setting-app-theme-custom-accent")?.addEventListener("input", (event) => {
-    const input = event.currentTarget;
-    const value = normalizeAccentHex(input?.value, "#c62f2f");
-    const codeEl = document.getElementById("setting-app-theme-custom-accent-code");
-    if (input) input.value = value;
-    if (codeEl) codeEl.textContent = value;
-    if (normalizeAppTheme(document.getElementById("setting-app-theme")?.value) === "custom") {
-      applyAppTheme("custom", value, getSettingsFormValues().mode);
-    }
-    queueSettingsAutosave();
-  });
-}
-
-function wireNetworkProxyModeCards() {
-  document.querySelectorAll("[data-network-proxy-mode-card]").forEach((card) => {
-    card.addEventListener("click", () => {
-      const mode = card.getAttribute("data-network-proxy-mode-card") || "direct";
-      setNetworkProxyModeSelection(mode);
-      queueSettingsAutosave(true);
-    });
-  });
-}
-
-function wireSettingsTabs() {
-  document.querySelectorAll("[data-settings-tab]").forEach((button) => {
-    button.addEventListener("click", () => {
-      setSettingsTab(button.getAttribute("data-settings-tab") || "appearance");
-    });
-  });
-  setSettingsTab("appearance");
-}
-
-function wirePreferencesModals() {
-  document.getElementById("btn-dock-settings")?.addEventListener("click", () => setPage("settings"));
-  wireSettingsTabs();
-  wireSettingsFormDirtyTracking();
-  wireThemeModeCards();
-  wireThemeCards();
-  wireNetworkProxyModeCards();
-  wireHotkeySettingsUi();
-  document.getElementById("close-choice-tray")?.addEventListener("click", () => {
-    void runCloseChoice("tray");
-  });
-  document.getElementById("close-choice-quit")?.addEventListener("click", () => {
-    void runCloseChoice("quit");
-  });
-  document.getElementById("close-choice-cancel")?.addEventListener("click", () => {
-    closeCloseConfirmModal();
-  });
-  document.getElementById("close-confirm-modal")?.addEventListener("click", (event) => {
-    if (event.target?.id === "close-confirm-modal") closeCloseConfirmModal();
-  });
 }
 
 function wireDockBar() {
@@ -3762,63 +3228,6 @@ function wireGlobalHotkeyListener() {
     else if (action === "volume_up") void adjustPlayerVolumeDelta(0.05);
     else if (action === "volume_down") void adjustPlayerVolumeDelta(-0.05);
   });
-}
-
-async function loadSettings() {
-  try {
-    const s = await invoke("get_settings");
-    applyAppTheme(
-      s?.app_theme ?? s?.appTheme ?? "coral",
-      s?.app_theme_custom_accent ?? s?.appThemeCustomAccent ?? "#c62f2f",
-      s?.app_theme_mode ?? s?.appThemeMode ?? "system"
-    );
-    mainWindowCloseAction = normalizeCloseAction(
-      s?.main_window_close_action ?? s?.mainWindowCloseAction
-    );
-    fillSettingsFormFromSettings(s);
-    const vol = document.getElementById("volume");
-    if (s && typeof s.volume === "number") {
-      vol.value = String(Math.round(s.volume * 100));
-    }
-    const a = audioEl();
-    if (a && s && typeof s.volume === "number") {
-      a.volume = s.volume;
-    }
-    if (s && typeof s.desktop_lyrics_locked === "boolean") {
-      desktopLyricsLocked = s.desktop_lyrics_locked;
-    }
-    refreshLyricsLockMenuLabel();
-    if (s && typeof s.last_library_folder === "string") {
-      lastLibraryFolder = s.last_library_folder.trim();
-    }
-    const df = s && (s.download_folder || s.downloadFolder);
-    if (typeof df === "string" && df.trim()) {
-      updateDownloadFolderHint(df);
-    } else {
-      updateDownloadFolderHint("");
-    }
-    neteaseCookieEnabled = !!(s && s.share_netease_cookie_enabled);
-    neteaseCookieValue = (s && (s.share_netease_cookie || "")) || "";
-    syncNeteaseCookieUi();
-    refreshLyricsLockMenuLabel();
-    if (desktopLyricsOpen) {
-      void broadcastDesktopLyricsLock();
-      void broadcastDesktopLyricsColors();
-    }
-    if (s?.desktop_lyrics_visible) {
-      queueMicrotask(() => {
-        void openDesktopLyricsFromSettingsIfNeeded(s);
-      });
-    }
-  } catch (e) {
-    console.warn("get_settings", e);
-  }
-  try {
-    const st = await invoke("db_status");
-    console.info(st);
-  } catch (e) {
-    console.warn("db_status", e);
-  }
 }
 
 function toggleQueuePanel() {
