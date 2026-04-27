@@ -43,6 +43,7 @@ import {
   themeAccentRgb,
 } from "./app/helpers/platformTheme.js";
 import { createImportFlowHelpers } from "./app/helpers/importFlow.js";
+import { createImportPageController } from "./features/import/controller.js";
 import { createSettingsController } from "./features/settings/controller.js";
 import { renderMainShell } from "./layout/renderMainShell.js";
 
@@ -1804,31 +1805,40 @@ function wirePlaylistPage() {
   });
 }
 
-function renderImportTable() {
-  const tbody = document.querySelector("#import-table tbody");
-  if (!tbody) return;
-  tbody.innerHTML = "";
-  if (!importTracks.length) {
-    tbody.innerHTML = '<tr><td colspan="4" class="muted">还没有导入结果。先选择一种导入方式开始。</td></tr>';
-  }
-  importTracks.forEach((t, i) => {
-    const tr = document.createElement("tr");
-    tr.innerHTML = `
-      <td class="col-idx">${i + 1}</td>
-      <td>${escapeHtml(t.title)}</td>
-      <td>${escapeHtml(t.artist)}</td>
-      <td class="muted">${escapeHtml(t.album || "—")}</td>`;
-    tbody.appendChild(tr);
-  });
-  const has = importTracks.length > 0;
-  document.getElementById("btn-import-export-txt")?.toggleAttribute("disabled", !has);
-  document.getElementById("btn-import-export-csv")?.toggleAttribute("disabled", !has);
-  document.getElementById("btn-import-save-new")?.toggleAttribute("disabled", !has);
-  const mergeBtn = document.getElementById("btn-import-merge");
-  const sel = document.getElementById("import-merge-playlist");
-  const nOpt = sel && sel.options ? sel.options.length : 0;
-  if (mergeBtn) mergeBtn.disabled = !has || !nOpt;
-}
+const { renderImportTable, wireImportPage } = createImportPageController({
+  alertRequestFailed,
+  escapeHtml,
+  getImportMethod: () => importMethod,
+  getImportShareSuggestedName: () => importShareSuggestedName,
+  getImportTracks: () => importTracks,
+  getLastLibraryFolder: () => lastLibraryFolder,
+  getNeteaseCookieState: () => ({ enabled: neteaseCookieEnabled, value: neteaseCookieValue }),
+  importBackButtonIconSvg,
+  importMethodIconSvg,
+  invoke,
+  loadPlaylistDetail,
+  MSG_REQUEST_FAILED,
+  open,
+  refreshLocalLibraryTable,
+  refreshPlaylistSelect,
+  refreshSidebarPlaylists,
+  setImportDraft: (...args) => setImportDraft(...args),
+  setImportMethod: (...args) => setImportMethod(...args),
+  setImportStep: (...args) => setImportStep(...args),
+  setLastLibraryFolder: (value) => {
+    lastLibraryFolder = value;
+  },
+  setNeteaseCookieState: ({ enabled, value }) => {
+    neteaseCookieEnabled = !!enabled;
+    neteaseCookieValue = String(value || "");
+  },
+  setPage,
+  setSelectedPlaylist: (id, name) => {
+    selectedPlaylistId = id;
+    selectedPlaylistName = name;
+  },
+  syncNeteaseCookieUi: () => syncNeteaseCookieUi(),
+});
 
 // Import flow keeps step transitions in a helper while main.js owns the mutable state.
 ({
@@ -1858,245 +1868,6 @@ function renderImportTable() {
   getNeteaseCookieValue: () => neteaseCookieValue,
   renderImportTable,
 }));
-
-function downloadBlob(filename, text, mime) {
-  const a = document.createElement("a");
-  a.href = URL.createObjectURL(new Blob([text], { type: mime }));
-  a.download = filename;
-  a.click();
-  URL.revokeObjectURL(a.href);
-}
-
-function wireImportPage() {
-  const cookieEnableEl = document.getElementById("opt-netease-cookie-enabled");
-  const cookieInputEl = document.getElementById("opt-netease-cookie");
-  const persistNeteaseCookieSettings = async () => {
-    try {
-      await invoke("save_settings", {
-        patch: {
-          share_netease_cookie_enabled: !!neteaseCookieEnabled,
-          share_netease_cookie: neteaseCookieValue || "",
-        },
-      });
-    } catch (e) {
-      console.warn("save_settings share_netease_cookie", e);
-    }
-  };
-  cookieEnableEl?.addEventListener("change", () => {
-    neteaseCookieEnabled = !!cookieEnableEl.checked;
-    syncNeteaseCookieUi();
-    void persistNeteaseCookieSettings();
-  });
-  cookieInputEl?.addEventListener("change", () => {
-    neteaseCookieValue = (cookieInputEl.value || "").trim();
-    void persistNeteaseCookieSettings();
-  });
-  syncNeteaseCookieUi();
-
-  document.querySelectorAll("[data-import-method]").forEach((button) => {
-    const iconSlot = button.querySelector(".import-method-card__icon");
-    const method = button.getAttribute("data-import-method") || "local";
-    if (iconSlot) iconSlot.innerHTML = importMethodIconSvg(method);
-    button.addEventListener("click", () => {
-      setImportMethod(method);
-    });
-  });
-
-  document.querySelectorAll("[data-import-back-button]").forEach((button) => {
-    const iconSlot = button.querySelector(".import-back-button__icon");
-    if (iconSlot) iconSlot.innerHTML = importBackButtonIconSvg();
-  });
-
-  document.querySelectorAll("[data-import-step-nav]").forEach((button) => {
-    button.addEventListener("click", () => {
-      const step = button.getAttribute("data-import-step-nav") || "choose";
-      if (step === "choose") {
-        setImportMethod("", { syncStep: false });
-        setImportStep("choose");
-      }
-      if (step === "config" && importMethod) setImportStep("config");
-      if (step === "result" && importTracks.length > 0) setImportStep("result");
-    });
-  });
-
-  document.getElementById("btn-import-back")?.addEventListener("click", () => {
-    setImportMethod("", { syncStep: false });
-    setImportStep("choose");
-  });
-
-  document.getElementById("btn-import-result-back")?.addEventListener("click", () => {
-    setImportStep(importMethod ? "config" : "choose");
-  });
-
-  document.getElementById("btn-scan-library-folder")?.addEventListener("click", async () => {
-    const statusEl = document.getElementById("local-library-status");
-    try {
-      const s = await invoke("get_settings");
-      const def = ((s && s.last_library_folder) || lastLibraryFolder || "").trim();
-      const picked = await open({
-        directory: true,
-        multiple: false,
-        defaultPath: def || undefined,
-        title: "选择音乐文件夹",
-      });
-      if (picked == null) return;
-      const folder = Array.isArray(picked) ? picked[0] : picked;
-      if (!folder || !String(folder).trim()) return;
-      const path = String(folder).trim();
-      lastLibraryFolder = path;
-      await invoke("save_settings", { patch: { last_library_folder: path } }).catch(() => {});
-      if (statusEl) statusEl.textContent = "正在扫描…";
-      const res = await invoke("scan_music_folder", { path });
-      const rows = await refreshLocalLibraryTable();
-      if (statusEl) {
-        statusEl.textContent = `已扫描 ${res.audio_files_seen} 个音频文件，整理出 ${rows.length} 首。`;
-      }
-      setImportDraft(
-        rows.map((row) => ({
-          title: (row.title || "").trim() || "未命名曲目",
-          artist: (row.artist || "").trim(),
-          album: "",
-        })),
-        {
-          suggestedName: "本地导入歌单",
-          method: "local",
-          statusText: `已从本地目录整理出 ${rows.length} 首歌曲，可以直接保存成歌单。`,
-        }
-      );
-      await refreshPlaylistSelect();
-    } catch (e) {
-      if (statusEl) statusEl.textContent = MSG_REQUEST_FAILED;
-      alertRequestFailed(e, "scan_music_folder");
-    }
-  });
-
-  document.getElementById("btn-import-parse")?.addEventListener("click", async () => {
-    const raw = document.getElementById("import-text")?.value?.trim() ?? "";
-    if (!raw) return;
-    const fmt = document.getElementById("import-fmt")?.value ?? "auto";
-    try {
-      const rows = await invoke("parse_import_text", { text: raw, fmt });
-      const shareSt = document.getElementById("import-share-status");
-      if (shareSt) shareSt.textContent = "";
-      setImportDraft(rows || [], {
-        suggestedName: "文本导入歌单",
-        method: "text",
-        statusText: `已解析 ${Array.isArray(rows) ? rows.length : 0} 条文本记录，请确认歌单名称后保存。`,
-      });
-      await refreshPlaylistSelect();
-    } catch (e) {
-      alertRequestFailed(e, "parse_import_text");
-    }
-  });
-
-  document.getElementById("btn-import-export-txt")?.addEventListener("click", () => {
-    if (!importTracks.length) return;
-    const body = importTracks.map((t) => (t.artist ? `${t.title} - ${t.artist}` : t.title)).join("\n");
-    downloadBlob("playlist.txt", body, "text/plain;charset=utf-8");
-  });
-
-  document.getElementById("btn-import-export-csv")?.addEventListener("click", () => {
-    if (!importTracks.length) return;
-    const lines = ["title,artist,album"].concat(
-      importTracks.map((t) => {
-        const esc = (s) => `"${String(s).replace(/"/g, '""')}"`;
-        return [esc(t.title), esc(t.artist), esc(t.album || "")].join(",");
-      })
-    );
-    downloadBlob("playlist.csv", lines.join("\n"), "text/csv;charset=utf-8");
-  });
-
-  document.getElementById("btn-import-save-new")?.addEventListener("click", async () => {
-    if (!importTracks.length) return;
-    const name = document.getElementById("import-playlist-name")?.value?.trim() || importShareSuggestedName || "导入歌单";
-    try {
-      const id = await invoke("create_playlist", { name });
-      await invoke("replace_playlist_import_items", {
-        playlistId: id,
-        items: importTracks.map((t) => ({
-          title: t.title,
-          artist: t.artist,
-          album: t.album || "",
-        })),
-      });
-      selectedPlaylistId = id;
-      selectedPlaylistName = name;
-      await refreshPlaylistSelect();
-      await refreshSidebarPlaylists();
-      await loadPlaylistDetail(id, name);
-      setPage("playlist");
-    } catch (e) {
-      alertRequestFailed(e, "import save playlist");
-    }
-  });
-
-  document.getElementById("btn-import-share")?.addEventListener("click", async () => {
-    const input = document.getElementById("import-share-url");
-    const url = input?.value?.trim() ?? "";
-    const st = document.getElementById("import-share-status");
-    const btn = document.getElementById("btn-import-share");
-    if (!url) {
-      alert("请先粘贴分享链接。");
-      return;
-    }
-    if (st) st.textContent = "正在拉取歌单，请稍候…";
-    if (btn) btn.disabled = true;
-    try {
-      const res = await invoke("fetch_share_playlist", { url });
-      const tracks = res.tracks || [];
-      const suggestedName = res.playlist_name || res.playlistName || "";
-      setImportDraft(tracks, {
-        suggestedName,
-        method: "share",
-        statusText: `已拉取「${suggestedName || "未命名歌单"}」共 ${tracks.length} 首，可直接保存或合并。`,
-      });
-      await refreshPlaylistSelect();
-      const n = tracks.length;
-      const pn = suggestedName || "—";
-      if (st) st.textContent = `已拉取 ${n} 首 · ${pn}`;
-    } catch (e) {
-      if (st) st.textContent = "";
-      alertRequestFailed(e, "fetch_share_playlist");
-    } finally {
-      if (btn) btn.disabled = false;
-    }
-  });
-
-  document.getElementById("import-share-url")?.addEventListener("keydown", (e) => {
-    if (e.key === "Enter") {
-      e.preventDefault();
-      document.getElementById("btn-import-share")?.click();
-    }
-  });
-
-  document.getElementById("btn-import-merge")?.addEventListener("click", async () => {
-    if (!importTracks.length) return;
-    const sel = document.getElementById("import-merge-playlist");
-    const pid = sel && sel.value ? Number(sel.value) : NaN;
-    if (!Number.isFinite(pid)) {
-      alert("请先用「保存为新歌单」创建歌单，或检查合并目标下拉框。");
-      return;
-    }
-    try {
-      await invoke("append_playlist_import_items", {
-        playlistId: pid,
-        items: importTracks.map((t) => ({
-          title: t.title,
-          artist: t.artist,
-          album: t.album || "",
-        })),
-      });
-      await refreshSidebarPlaylists();
-      const playlistName = sel.options[sel.selectedIndex]?.textContent?.replace(/\s*\(id=.*\)\s*$/, "") || "";
-      selectedPlaylistId = pid;
-      selectedPlaylistName = playlistName;
-      await loadPlaylistDetail(pid, playlistName);
-      setPage("playlist");
-    } catch (e) {
-      alertRequestFailed(e, "append_playlist_import_items");
-    }
-  });
-}
 
 function audioEl() {
   return document.getElementById("audio-player");
