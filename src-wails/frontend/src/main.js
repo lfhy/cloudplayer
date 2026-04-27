@@ -226,6 +226,15 @@ function iconSvgByName(iconName) {
   return `<svg viewBox="0 0 ${width} ${height}" aria-hidden="true" focusable="false">${icon.body}</svg>`;
 }
 
+function importMethodIconSvg(method) {
+  const icons = {
+    local: "folder-2-bold",
+    share: "link-bold",
+    text: "document-text-bold",
+  };
+  return iconSvgByName(icons[method] || "folder-2-bold");
+}
+
 function syncNeteaseCookieUi() {
   const chk = document.getElementById("opt-netease-cookie-enabled");
   const inp = document.getElementById("opt-netease-cookie");
@@ -2464,8 +2473,11 @@ function wireImportPage() {
   syncNeteaseCookieUi();
 
   document.querySelectorAll("[data-import-method]").forEach((button) => {
+    const iconSlot = button.querySelector(".import-method-card__icon");
+    const method = button.getAttribute("data-import-method") || "local";
+    if (iconSlot) iconSlot.innerHTML = importMethodIconSvg(method);
     button.addEventListener("click", () => {
-      setImportMethod(button.getAttribute("data-import-method") || "");
+      setImportMethod(method);
     });
   });
 

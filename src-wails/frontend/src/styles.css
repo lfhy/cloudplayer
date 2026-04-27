@@ -940,7 +940,6 @@ body {
 .home-hero__copy,
 .home-hero__panel,
 .home-card,
-.import-shell,
 .import-soft-card {
   background: var(--surface-soft);
   border: 1px solid var(--surface-soft-border);
@@ -1830,7 +1829,7 @@ body {
   justify-content: center;
   border-radius: 999px;
   border: 1px solid var(--border);
-  background: var(--bg-card);
+  background: transparent;
   font-size: 12px;
   font-weight: 700;
 }
@@ -1920,8 +1919,18 @@ body {
 .import-method-card__icon {
   width: 42px;
   height: 42px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   border-radius: 14px;
   background: rgba(var(--accent-rgb), 0.1);
+}
+
+.import-method-card__icon svg {
+  width: 22px;
+  height: 22px;
+  display: block;
+  color: var(--accent);
 }
 
 .import-method-card__title {
