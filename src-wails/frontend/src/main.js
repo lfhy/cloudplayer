@@ -47,6 +47,7 @@ import {
 import { createImportFlowHelpers } from "./app/helpers/importFlow.js";
 import { createImportPageController } from "./features/import/controller.js";
 import { createContextMenuController } from "./features/contextMenu/controller.js";
+import { createDownloadController } from "./features/download/controller.js";
 import { createNavigationController } from "./features/layout/navigationController.js";
 import { createHomeController } from "./features/library/homeController.js";
 import { createPlaylistController } from "./features/library/playlistController.js";
@@ -431,6 +432,30 @@ const {
   trayPlayerTarget: TRAY_PLAYER_TARGET,
 });
 
+const {
+  applyDownloadTaskChanged,
+  refreshLocalLibraryTable,
+  renderDownloadQueueTable,
+  updateDownloadFolderHint,
+  wireDownloadPage,
+} = createDownloadController({
+  alertRequestFailed,
+  escapeHtml,
+  getDownloadTasks: () => downloadTasksBySourceId,
+  invoke,
+  messageRequestFailed: MSG_REQUEST_FAILED,
+  open,
+  setLocalLibraryRows: (rows) => {
+    localLibraryRows = Array.isArray(rows) ? rows : [];
+  },
+  updateHomeAfterQueueChange: () => {
+    if (document.querySelector('.page[data-page="home"]')?.classList.contains("page-active")) {
+      renderHomePage();
+    }
+  },
+  warnRequestFailed,
+});
+
 // Settings are split into a controller so the runtime entry only keeps state bridges.
 const {
   getSettingsFormValues,
@@ -635,74 +660,6 @@ function setPlayerNavEnabled() {
   if (next) next.disabled = playIndex >= n - 1;
   queueMicrotask(() => {
     void broadcastTrayPlayerState();
-  });
-}
-
-
-function renderDownloadQueueTable() {
-  const tbody = document.querySelector("#download-queue-table tbody");
-  if (!tbody) return;
-  const list = [...downloadTasksBySourceId.values()];
-  if (!list.length) {
-    tbody.innerHTML = '<tr><td colspan="4" class="muted">队列为空。在「搜索」、歌单或每日推荐里选择「下载」后会出现在这里。</td></tr>';
-    return;
-  }
-  tbody.innerHTML = "";
-  for (const t of list) {
-    const tr = document.createElement("tr");
-    const pct = Math.round((t.progress ?? 0) * 100);
-    const st = t.status || "";
-    const rawMsg = (t.message && String(t.message)) || "";
-    const msg =
-      st === "failed" && rawMsg ? MSG_REQUEST_FAILED : rawMsg;
-    const tit = t.title || "";
-    const art = t.artist || "";
-    const qu = t.quality || "";
-    tr.innerHTML = `<td>${escapeHtml(st)}</td><td>${escapeHtml(`${tit} — ${art}`)}</td><td>${escapeHtml(qu)}</td><td>${escapeHtml(String(pct))}%${msg ? ` · ${escapeHtml(msg)}` : ""}</td>`;
-    tbody.appendChild(tr);
-  }
-}
-
-function updateDownloadFolderHint(path) {
-  const el = document.getElementById("download-folder-hint");
-  if (!el) return;
-  el.textContent = path && String(path).trim() ? `当前：${path}` : "默认：用户音乐/CloudPlayer";
-}
-
-
-async function refreshLocalLibraryTable() {
-  try {
-    const rows = await invoke("list_local_songs");
-    localLibraryRows = Array.isArray(rows) ? rows : [];
-    return localLibraryRows;
-  } catch (e) {
-    warnRequestFailed(e, "list_local_songs");
-    return [];
-  }
-}
-
-function wireDownloadPage() {
-  document.getElementById("btn-pick-download-folder")?.addEventListener("click", async () => {
-    const statusEl = document.getElementById("download-folder-hint");
-    try {
-      const s = await invoke("get_settings");
-      const def = ((s && (s.download_folder || s.downloadFolder)) || "").trim();
-      const picked = await open({
-        directory: true,
-        multiple: false,
-        defaultPath: def || undefined,
-        title: "选择下载保存目录",
-      });
-      if (picked == null) return;
-      const folder = Array.isArray(picked) ? picked[0] : picked;
-      if (!folder || !String(folder).trim()) return;
-      const path = String(folder).trim();
-      await invoke("save_settings", { patch: { download_folder: path } });
-      updateDownloadFolderHint(path);
-    } catch (e) {
-      if (statusEl) statusEl.textContent = MSG_REQUEST_FAILED;
-      alertRequestFailed(e, "pick download folder");
-    }
   });
 }
 
@@ -1141,15 +1098,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
   listen("download-task-changed", (e) => {
-    const p = e?.payload;
-    const sid = p?.source_id ?? p?.sourceId;
-    if (sid != null && String(sid) !== "") {
-      downloadTasksBySourceId.set(String(sid), p);
-    }
-    renderDownloadQueueTable();
-    if (document.querySelector('.page[data-page="home"]')?.classList.contains("page-active")) {
-      renderHomePage();
-    }
+    applyDownloadTaskChanged(e?.payload);
   });
   listen("desktop-lyrics-request-lock", async (e) => {
     const locked = e?.payload?.locked;
