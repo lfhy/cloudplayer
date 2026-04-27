@@ -10,20 +10,22 @@ import (
 type DesktopService struct{}
 
 type WindowCreateRequest struct {
-	Label       string `json:"label"`
-	URL         string `json:"url"`
-	Title       string `json:"title"`
-	Width       int    `json:"width"`
-	Height      int    `json:"height"`
-	X           int    `json:"x"`
-	Y           int    `json:"y"`
-	Resizable   bool   `json:"resizable"`
-	AlwaysOnTop bool   `json:"always_on_top"`
-	Decorations bool   `json:"decorations"`
-	Transparent bool   `json:"transparent"`
-	Shadow      bool   `json:"shadow"`
-	SkipTaskbar bool   `json:"skip_taskbar"`
-	Focus       bool   `json:"focus"`
+	Label                   string `json:"label"`
+	URL                     string `json:"url"`
+	Title                   string `json:"title"`
+	Width                   int    `json:"width"`
+	Height                  int    `json:"height"`
+	X                       int    `json:"x"`
+	Y                       int    `json:"y"`
+	Resizable               bool   `json:"resizable"`
+	AlwaysOnTop             bool   `json:"always_on_top"`
+	Decorations             bool   `json:"decorations"`
+	Transparent             bool   `json:"transparent"`
+	Shadow                  bool   `json:"shadow"`
+	SkipTaskbar             bool   `json:"skip_taskbar"`
+	Focus                   bool   `json:"focus"`
+	MacTitleBarStyle        string `json:"mac_title_bar_style"`
+	InvisibleTitleBarHeight int    `json:"invisible_title_bar_height"`
 }
 
 type WindowInfo struct {
@@ -73,9 +75,11 @@ func (s *DesktopService) EnsureWindow(req WindowCreateRequest) error {
 			DisableFramelessWindowDecorations: !req.Shadow,
 		},
 		Mac: application.MacWindow{
-			Backdrop:      macBackdrop(req.Transparent),
-			DisableShadow: !req.Shadow,
-			WindowLevel:   application.MacWindowLevelFloating,
+			Backdrop:                macBackdrop(req.Transparent),
+			DisableShadow:           !req.Shadow,
+			TitleBar:                macTitleBar(req.MacTitleBarStyle),
+			InvisibleTitleBarHeight: req.InvisibleTitleBarHeight,
+			WindowLevel:             macWindowLevel(req.AlwaysOnTop),
 		},
 	})
 	window.OnWindowEvent(events.Common.WindowClosing, func(_ *application.WindowEvent) {
@@ -149,4 +153,24 @@ func macBackdrop(transparent bool) application.MacBackdrop {
 		return application.MacBackdropTransparent
 	}
 	return application.MacBackdropNormal
+}
+
+func macWindowLevel(alwaysOnTop bool) application.MacWindowLevel {
+	if alwaysOnTop {
+		return application.MacWindowLevelFloating
+	}
+	return application.MacWindowLevelNormal
+}
+
+func macTitleBar(style string) application.MacTitleBar {
+	switch style {
+	case "hidden":
+		return application.MacTitleBarHidden
+	case "hiddenInset":
+		return application.MacTitleBarHiddenInset
+	case "hiddenInsetUnified":
+		return application.MacTitleBarHiddenInsetUnified
+	default:
+		return application.MacTitleBarDefault
+	}
 }

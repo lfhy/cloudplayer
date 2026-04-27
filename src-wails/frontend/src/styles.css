@@ -2517,12 +2517,18 @@ body {
   flex-direction: column;
   gap: 16px;
   padding: 18px 18px 16px;
-  border-radius: 18px;
-  border: 1px solid var(--surface-soft-border);
-  background: var(--surface-soft);
-  box-shadow:
-    var(--shadow-soft),
-    var(--surface-soft-inset);
+  background: transparent;
+}
+
+.platform-macos .lyrics-window {
+  background:
+    linear-gradient(180deg, var(--topbar-grad-start) 0 56px, var(--bg-main) 56px),
+    var(--bg-main);
+}
+
+.platform-macos .lyrics-window__shell {
+  min-height: calc(100vh - 18px);
+  padding-top: 56px;
 }
 
 .lyrics-window__header {
@@ -2538,15 +2544,6 @@ body {
 .lyrics-window__header-copy {
   min-width: 0;
   flex: 1;
-}
-
-.lyrics-window__header-actions {
-  display: flex;
-  align-items: flex-start;
-  justify-content: flex-end;
-  gap: 10px;
-  flex-shrink: 0;
-  --wails-draggable: no-drag;
 }
 
 .lyrics-window__title {
@@ -2570,39 +2567,7 @@ body {
   border: 1px solid var(--border);
   background: var(--bg-card-muted);
   text-align: right;
-}
-
-.lyrics-window__close {
-  width: 34px;
-  height: 34px;
-  padding: 0;
-  border: 1px solid var(--border);
-  border-radius: 999px;
-  background: var(--bg-card-muted);
-  color: var(--text-secondary);
-  cursor: pointer;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  transition:
-    background 0.18s ease,
-    border-color 0.18s ease,
-    color 0.18s ease;
-}
-
-.lyrics-window__close:hover {
-  color: var(--text);
-  border-color: rgba(var(--accent-rgb), 0.24);
-  background: rgba(var(--accent-rgb), 0.1);
-}
-
-.lyrics-window__close svg {
-  width: 16px;
-  height: 16px;
-  stroke: currentColor;
-  stroke-width: 2;
-  stroke-linecap: round;
-  fill: none;
+  --wails-draggable: no-drag;
 }
 
 .lyrics-window__track-label {
@@ -2729,11 +2694,6 @@ body {
 
   .lyrics-window__header {
     flex-direction: column;
-  }
-
-  .lyrics-window__header-actions {
-    width: 100%;
-    justify-content: space-between;
   }
 
   .lyrics-window__track {

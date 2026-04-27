@@ -36,6 +36,8 @@ export class WebviewWindow {
             shadow: options.shadow !== false,
             skip_taskbar: !!options.skipTaskbar,
             focus: options.focus !== false,
+            mac_title_bar_style: options.macTitleBarStyle || "",
+            invisible_title_bar_height: options.invisibleTitleBarHeight || 0,
           });
           emitPseudo(resolvedLabel, "tauri://created", { label: resolvedLabel });
         } catch (error) {

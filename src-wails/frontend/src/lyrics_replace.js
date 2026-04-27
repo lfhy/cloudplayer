@@ -30,6 +30,20 @@ let lyricsReplaceFetchGen = 0;
 let lyricsReplacePendingRequestId = "";
 let lyricsReplaceApplySeq = 0;
 
+function isMacDesktop() {
+  const platform =
+    globalThis.navigator?.userAgentData?.platform || globalThis.navigator?.platform || "";
+  if (typeof platform === "string" && /mac/i.test(platform)) {
+    return true;
+  }
+  const os = globalThis.window?._wails?.environment?.OS;
+  return typeof os === "string" && os.toLowerCase() === "darwin";
+}
+
+function applyPlatformClassNames() {
+  document.documentElement.classList.toggle("platform-macos", isMacDesktop());
+}
+
 function normalizeAppTheme(value) {
   const normalized = String(value || "coral").trim().toLowerCase();
   return normalized === "custom" || APP_THEMES[normalized] ? normalized : "coral";
@@ -344,9 +358,6 @@ function wireLyricsReplaceWindow() {
   document.getElementById("lyrics-replace-search-btn")?.addEventListener("click", () => {
     void searchLyricsReplaceCandidates();
   });
-  document.getElementById("lyrics-replace-close-top")?.addEventListener("click", () => {
-    void closeWindow();
-  });
   document.getElementById("lyrics-replace-close")?.addEventListener("click", () => {
     void closeWindow();
   });
@@ -394,6 +405,7 @@ if (systemDarkMedia && typeof systemDarkMedia.addEventListener === "function") {
 }
 
 document.addEventListener("DOMContentLoaded", () => {
+  applyPlatformClassNames();
   fillInitialContext();
   wireLyricsReplaceWindow();
   setTableMutedMessage(trackContext.keyword ? "正在准备搜索…" : "输入关键词后点击“搜索”");

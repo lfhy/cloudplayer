@@ -2162,11 +2162,13 @@ async function openLyricsReplaceWindow() {
     y: bounds.y,
     resizable: true,
     alwaysOnTop: false,
-    decorations: false,
+    decorations: true,
     transparent: false,
     shadow: true,
     skipTaskbar: true,
     focus: true,
+    macTitleBarStyle: "hiddenInset",
+    invisibleTitleBarHeight: 54,
   });
   win.once("tauri://error", (e) => {
     console.error(e);
