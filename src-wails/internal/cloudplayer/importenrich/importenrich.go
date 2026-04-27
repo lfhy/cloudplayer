@@ -2,15 +2,10 @@ package importenrich
 
 import (
 	"database/sql"
-	"fmt"
-	"io"
 	"net/http"
-	"os"
-	"path/filepath"
 	"strings"
 	"time"
 
-	"cloudplayer/internal/cloudplayer/config"
 	"cloudplayer/internal/cloudplayer/musicsource"
 	"cloudplayer/internal/cloudplayer/ratelimiter"
 	"github.com/wailsapp/wails/v3/pkg/application"
@@ -29,6 +24,7 @@ type importRow struct {
 	DurationMS     int64
 }
 
+// SpawnPlaylistEnrich refreshes imported tracks in the background without blocking the UI thread.
 func SpawnPlaylistEnrich(db *sql.DB, client *http.Client, limiter *ratelimiter.Limiter, playlistID int64) {
 	if playlistID <= 0 {
 		return
@@ -79,10 +75,6 @@ func runEnrich(db *sql.DB, client *http.Client, limiter *ratelimiter.Limiter, pl
 		}
 	}
 	emitEvent("import-enrich-finished", map[string]any{"playlistId": playlistID})
-}
-
-func coverCacheDir() string {
-	return filepath.Join(config.ConfigDir(), "cover_cache")
 }
 
 func loadRow(db *sql.DB, playlistID, rowID int64) (*importRow, error) {
@@ -190,64 +182,6 @@ func applySearchMetadata(db *sql.DB, client *http.Client, limiter *ratelimiter.L
 	return err
 }
 
-func cacheSearchCover(client *http.Client, limiter *ratelimiter.Limiter, first musicsource.SearchResult) (string, error) {
-	if first.CoverURL == nil || strings.TrimSpace(*first.CoverURL) == "" {
-		return "", nil
-	}
-	if err := os.MkdirAll(coverCacheDir(), 0o755); err != nil {
-		return "", err
-	}
-	path := filepath.Join(coverCacheDir(), "cov_"+musicsource.SafeCacheKey(first.SourceID)+".jpg")
-	limiter.AcquireSlot()
-	if err := downloadCover(client, *first.CoverURL, path); err != nil {
-		return "", err
-	}
-	return path, nil
-}
-
-func ensureCoverFile(client *http.Client, limiter *ratelimiter.Limiter, row importRow) (string, error) {
-	if strings.TrimSpace(row.PJMP3SourceID) == "" || strings.TrimSpace(row.CoverURL) == "" {
-		return "", nil
-	}
-	if strings.TrimSpace(row.CoverCachePath) != "" && fileExists(row.CoverCachePath) {
-		return "", nil
-	}
-	if err := os.MkdirAll(coverCacheDir(), 0o755); err != nil {
-		return "", err
-	}
-	path := filepath.Join(coverCacheDir(), "cov_"+musicsource.SafeCacheKey(row.PJMP3SourceID)+".jpg")
-	limiter.AcquireSlot()
-	if err := downloadCover(client, row.CoverURL, path); err != nil {
-		return "", err
-	}
-	return path, nil
-}
-
-func downloadCover(client *http.Client, rawURL, dest string) error {
-	request, err := http.NewRequest(http.MethodGet, rawURL, nil)
-	if err != nil {
-		return err
-	}
-	request.Header.Set("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36")
-	request.Header.Set("Accept", "image/*,*/*;q=0.8")
-	response, err := client.Do(request)
-	if err != nil {
-		return err
-	}
-	defer response.Body.Close()
-	if response.StatusCode < 200 || response.StatusCode >= 300 {
-		return fmt.Errorf("http %s", response.Status)
-	}
-	body, err := io.ReadAll(response.Body)
-	if err != nil {
-		return err
-	}
-	if len(body) < 32 {
-		return fmt.Errorf("cover too small")
-	}
-	return os.WriteFile(dest, body, 0o644)
-}
-
 func enrichSongPageAndAlbumSearch(db *sql.DB, client *http.Client, limiter *ratelimiter.Limiter, playlistID int64, row importRow) error {
 	if strings.TrimSpace(row.PJMP3SourceID) == "" {
 		return nil
@@ -300,9 +234,4 @@ func enrichSongPageAndAlbumSearch(db *sql.DB, client *http.Client, limiter *rate
 
 func emitEvent(name string, payload any) {
 	_ = application.Get().Event.Emit(name, payload)
-}
-
-func fileExists(path string) bool {
-	info, err := os.Stat(path)
-	return err == nil && !info.IsDir()
 }
