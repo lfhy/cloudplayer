@@ -44,6 +44,8 @@ import {
 } from "./app/helpers/platformTheme.js";
 import { createImportFlowHelpers } from "./app/helpers/importFlow.js";
 import { createImportPageController } from "./features/import/controller.js";
+import { createHomeController } from "./features/library/homeController.js";
+import { createPlaylistController } from "./features/library/playlistController.js";
 import { createSearchController } from "./features/search/controller.js";
 import { createSettingsController } from "./features/settings/controller.js";
 import { renderMainShell } from "./layout/renderMainShell.js";
@@ -146,7 +148,6 @@ let neteaseCookieEnabled = false;
 let neteaseCookieValue = "";
 let importMethod = "";
 let importDraftDirty = false;
-let dailyRecommendationRows = [];
 let syncNeteaseCookieUi = () => {};
 let setImportMethod = () => {};
 let showImportResultStage = () => {};
@@ -161,6 +162,59 @@ const downloadTasksBySourceId = new Map();
 /** 本地曲库列表行缓存（双击播放） @type {any[]} */
 let localLibraryRows = [];
 let lastLibraryFolder = "";
+
+const { renderDailyTable, renderHomePage } = createHomeController({
+  escapeHtml,
+  getDownloadTaskCount: () => downloadTasksBySourceId.size,
+  getSessionRecentPlays: () => sessionRecentPlays,
+  invoke,
+  playFromRecentRow,
+  playSingleItem: (item) => {
+    playQueue = item.local_path
+      ? [{ title: item.title, artist: item.artist || "", local_path: item.local_path, cover_url: null }]
+      : [{ source_id: item.source_id, title: item.title, artist: item.artist || "", cover_url: item.cover_url || null }];
+    void playFromQueueIndex(0);
+    renderQueuePanel();
+  },
+});
+
+const {
+  loadPlaylistDetail,
+  playFromPlaylistRow,
+  refreshPlaylistSelect,
+  refreshSidebarPlaylists,
+  renderPlaylistDetailTable,
+  searchLocalPlaylists,
+  wirePlaylistPage,
+} = createPlaylistController({
+  alertRequestFailed,
+  escapeHtml,
+  formatDurationMs,
+  getImportTracks: () => importTracks,
+  getLikedIds: () => likedIds,
+  getPlaylistDetailRows: () => playlistDetailRows,
+  getSelectedPlaylistId: () => selectedPlaylistId,
+  getSelectedPlaylistName: () => selectedPlaylistName,
+  invoke,
+  MSG_REQUEST_FAILED,
+  openPlaylistDetailRowContextMenu,
+  openSidebarPlaylistContextMenu,
+  playFromQueueIndex,
+  renderHomePage,
+  renderQueuePanel,
+  setPage,
+  setPlaylistDetailRows: (rows) => {
+    playlistDetailRows = Array.isArray(rows) ? rows : [];
+  },
+  setPlayQueue: (rows) => {
+    playQueue = rows;
+  },
+  setSelectedPlaylist: (id, name) => {
+    selectedPlaylistId = id;
+    selectedPlaylistName = name;
+  },
+  warnRequestFailed,
+});
 let likedIds = loadLikedSet();
 
 function randomNextIndex() {
@@ -1507,343 +1561,6 @@ async function toggleDesktopLyrics() {
     await ensureLrcLoadedForCurrentTrack(playLoadGeneration);
     await syncDesktopLyricsState();
     scheduleDesktopLyricsStateSync();
-  });
-}
-
-async function refreshPlaylistSelect() {
-  const sel = document.getElementById("import-merge-playlist");
-  const mergeBtn = document.getElementById("btn-import-merge");
-  if (!sel) {
-    await refreshSidebarPlaylists();
-    return;
-  }
-  sel.innerHTML = "";
-  let pls = [];
-  try {
-    pls = await invoke("list_playlists");
-  } catch (e) {
-    console.warn("list_playlists", e);
-  }
-  for (const p of pls) {
-    const o = document.createElement("option");
-    o.value = String(p.id);
-    o.textContent = `${p.name} (id=${p.id})`;
-    sel.appendChild(o);
-  }
-  const hasPl = pls.length > 0;
-  sel.disabled = !hasPl;
-  if (mergeBtn) mergeBtn.disabled = !hasPl || importTracks.length === 0;
-  await refreshSidebarPlaylists();
-}
-
-async function refreshSidebarPlaylists() {
-  const ul = document.getElementById("sidebar-playlist-list");
-  if (!ul) return;
-  ul.innerHTML = "";
-  let pls = [];
-  try {
-    pls = await invoke("list_playlists");
-  } catch (e) {
-    warnRequestFailed(e, "list_playlists sidebar");
-    const li = document.createElement("li");
-    li.className = "sidebar-pl-empty muted";
-    li.textContent = MSG_REQUEST_FAILED;
-    ul.appendChild(li);
-    return;
-  }
-  if (!pls.length) {
-    const li = document.createElement("li");
-    li.className = "sidebar-pl-empty muted";
-    li.textContent =
-      "暂无歌单 · 与 Py 版共用 ~/.cloudplayer/library.db · 在此页「保存为新歌单」即可出现";
-    ul.appendChild(li);
-    return;
-  }
-  for (const p of pls) {
-    const li = document.createElement("li");
-    li.className = "sidebar-pl-item";
-    if (selectedPlaylistId === p.id) li.classList.add("is-active");
-    li.textContent = p.name?.trim() || `歌单 ${p.id}`;
-    li.title = `id=${p.id} · 查看导入曲目`;
-    li.addEventListener("click", () => {
-      selectedPlaylistId = p.id;
-      selectedPlaylistName = p.name || "";
-      ul.querySelectorAll(".sidebar-pl-item").forEach((x) => x.classList.remove("is-active"));
-      li.classList.add("is-active");
-      setPage("playlist");
-    });
-    li.addEventListener("contextmenu", (ev) => {
-      ev.preventDefault();
-      void openSidebarPlaylistContextMenu(ev, p);
-    });
-    ul.appendChild(li);
-  }
-  if (document.querySelector('.page[data-page="home"]')?.classList.contains("page-active")) {
-    renderHomePage();
-  }
-}
-
-function getDailyRecommendations() {
-  const base = sessionRecentPlays.filter((item) => !!(item?.title || "").trim());
-  const dedup = [];
-  const seen = new Set();
-  for (const item of base) {
-    const key = `${(item.title || "").trim()}::${(item.artist || "").trim()}::${item.local_path ? "local" : (item.source_id || "").trim()}`;
-    if (seen.has(key)) continue;
-    seen.add(key);
-    dedup.push(item);
-  }
-  const daySeed = new Date().toISOString().slice(0, 10).replace(/-/g, "");
-  dailyRecommendationRows = dedup
-    .map((item, index) => ({ item, score: Number(daySeed) % (index + 7) }))
-    .sort((a, b) => a.score - b.score)
-    .map((entry) => entry.item)
-    .slice(0, 24);
-  return dailyRecommendationRows;
-}
-
-function renderHomePage() {
-  const playlistCountEl = document.getElementById("home-playlist-count");
-  const recentCountEl = document.getElementById("home-recent-count");
-  const downloadCountEl = document.getElementById("home-download-count");
-  const recentList = document.getElementById("home-recent-list");
-  const dailyList = document.getElementById("home-daily-list");
-  const recommendations = getDailyRecommendations();
-  if (recentCountEl) recentCountEl.textContent = String(sessionRecentPlays.length);
-  if (downloadCountEl) downloadCountEl.textContent = String(downloadTasksBySourceId.size);
-  if (recentList) {
-    recentList.innerHTML = "";
-    const rows = sessionRecentPlays.slice(0, 4);
-    if (!rows.length) {
-      recentList.innerHTML = '<p class="home-list__empty muted">还没有最近播放。去搜索或导入一张歌单开始吧。</p>';
-    } else {
-      rows.forEach((item, index) => {
-        const button = document.createElement("button");
-        button.type = "button";
-        button.className = "home-list__item";
-        button.innerHTML = `<span class="home-list__index">${index + 1}</span><span class="home-list__meta"><strong>${escapeHtml(item.title || "—")}</strong><span>${escapeHtml(item.artist || (item.local_path ? "本地音乐" : "在线曲目"))}</span></span>`;
-        button.addEventListener("click", () => playFromRecentRow(index));
-        recentList.appendChild(button);
-      });
-    }
-  }
-  if (dailyList) {
-    dailyList.innerHTML = "";
-    const rows = recommendations.slice(0, 4);
-    if (!rows.length) {
-      dailyList.innerHTML = '<p class="home-list__empty muted">需要一些最近播放记录后，主页才会生成今日推荐。</p>';
-    } else {
-      rows.forEach((item) => {
-        const button = document.createElement("button");
-        button.type = "button";
-        button.className = "home-list__item";
-        button.innerHTML = `<span class="home-list__badge">推荐</span><span class="home-list__meta"><strong>${escapeHtml(item.title || "—")}</strong><span>${escapeHtml(item.artist || (item.local_path ? "本地音乐" : "在线曲目"))}</span></span>`;
-        button.addEventListener("click", () => {
-          if (item.local_path) {
-            playQueue = [{ title: item.title, artist: item.artist || "", local_path: item.local_path, cover_url: null }];
-          } else {
-            playQueue = [{ source_id: item.source_id, title: item.title, artist: item.artist || "", cover_url: item.cover_url || null }];
-          }
-          void playFromQueueIndex(0);
-          renderQueuePanel();
-        });
-        dailyList.appendChild(button);
-      });
-    }
-  }
-  void invoke("list_playlists")
-    .then((playlists) => {
-      if (playlistCountEl) playlistCountEl.textContent = String(Array.isArray(playlists) ? playlists.length : 0);
-    })
-    .catch(() => {
-      if (playlistCountEl) playlistCountEl.textContent = "0";
-    });
-}
-
-function renderDailyTable() {
-  const tbody = document.querySelector("#daily-table tbody");
-  if (!tbody) return;
-  const rows = getDailyRecommendations();
-  if (!rows.length) {
-    tbody.innerHTML = '<tr><td colspan="4" class="muted">最近播放还不够，先听几首歌再回来生成每日推荐。</td></tr>';
-    return;
-  }
-  tbody.innerHTML = "";
-  rows.forEach((item, index) => {
-    const tr = document.createElement("tr");
-    const src = item.local_path ? "本地" : "在线";
-    tr.innerHTML = `<td>${index + 1}</td><td>${escapeHtml(item.title || "—")}</td><td>${escapeHtml(item.artist || "—")}</td><td>${escapeHtml(src)}</td>`;
-    tr.addEventListener("dblclick", () => {
-      if (item.local_path) {
-        playQueue = [{ title: item.title, artist: item.artist || "", local_path: item.local_path, cover_url: null }];
-      } else {
-        playQueue = [{ source_id: item.source_id, title: item.title, artist: item.artist || "", cover_url: item.cover_url || null }];
-      }
-      void playFromQueueIndex(0);
-      renderQueuePanel();
-    });
-    tbody.appendChild(tr);
-  });
-}
-
-async function searchLocalPlaylists(keyword) {
-  const normalized = String(keyword || "").trim().toLowerCase();
-  if (!normalized) return [];
-  const playlists = await invoke("list_playlists");
-  const results = [];
-  for (const playlist of Array.isArray(playlists) ? playlists : []) {
-    const playlistName = String(playlist.name || "").trim();
-    const rows = await invoke("list_playlist_import_items", { playlistId: playlist.id });
-    const matchedTracks = (Array.isArray(rows) ? rows : []).filter((row) => {
-      const haystack = [playlistName, row.title || "", row.artist || "", row.album || ""].join(" ").toLowerCase();
-      return haystack.includes(normalized);
-    });
-    const playlistMatched = playlistName.toLowerCase().includes(normalized);
-    if (!playlistMatched && matchedTracks.length === 0) continue;
-    results.push({
-      id: playlist.id,
-      name: playlistName || `歌单 ${playlist.id}`,
-      trackCount: Array.isArray(rows) ? rows.length : 0,
-      matchedTracks,
-      coverUrl:
-        matchedTracks.find((row) => (row.cover_url || "").trim())?.cover_url ||
-        rows?.find?.((row) => (row.cover_url || "").trim())?.cover_url ||
-        null,
-    });
-  }
-  return results;
-}
-
-async function loadPlaylistDetail(id, name) {
-  selectedPlaylistId = id;
-  selectedPlaylistName = name || "";
-  const titleEl = document.getElementById("playlist-page-title");
-  if (titleEl) titleEl.textContent = name || "歌单";
-  try {
-    const rows = await invoke("list_playlist_import_items", { playlistId: id });
-    playlistDetailRows = rows || [];
-  } catch (e) {
-    playlistDetailRows = [];
-    alertRequestFailed(e, "list_playlist_import_items");
-  }
-  renderPlaylistDetailTable();
-}
-
-function renderPlaylistDetailTable() {
-  const tbody = document.querySelector("#playlist-detail-table tbody");
-  const btnAll = document.getElementById("btn-playlist-play-all");
-  const coverEl = document.getElementById("playlist-hero-cover");
-  const countEl = document.getElementById("playlist-track-count");
-  const hintEl = document.getElementById("playlist-page-hint");
-  if (!tbody) return;
-  tbody.innerHTML = "";
-  const playable = playlistDetailRows.filter((r) => (r.pjmp3_source_id || "").trim());
-  if (btnAll) btnAll.disabled = playable.length === 0;
-  if (countEl) countEl.textContent = `共 ${playlistDetailRows.length} 首导入曲目`;
-  if (hintEl) hintEl.textContent = `CloudPlayer · ${selectedPlaylistName || "导入歌单"}`;
-  const heroCover =
-    playlistDetailRows.find((r) => (r.cover_url || "").trim())?.cover_url ||
-    "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Crect fill='%23d1d5db' width='120' height='120' rx='12'/%3E%3C/svg%3E";
-  if (coverEl) coverEl.src = heroCover;
-
-  if (!playlistDetailRows.length) {
-    const tr = document.createElement("tr");
-    tr.innerHTML = `<td colspan="5" class="muted">暂无导入曲目，或请从左侧选择其它歌单。</td>`;
-    tbody.appendChild(tr);
-    return;
-  }
-
-  playlistDetailRows.forEach((r, i) => {
-    const tr = document.createElement("tr");
-    const sid = (r.pjmp3_source_id || "").trim();
-    const ok = !!sid;
-    const cover = (r.cover_url || "").trim();
-    const liked = ok && likedIds.has(sid);
-    const dur = formatDurationMs(r.duration_ms);
-    const titleHtml = r.artist
-      ? `<span class="t-title">${escapeHtml(r.title || "—")}</span><span class="t-art">${escapeHtml(r.artist)}</span>`
-      : `<span class="t-title">${escapeHtml(r.title || "—")}</span>`;
-    const coverHtml = cover
-      ? `<img class="row-cover" src="${escapeHtml(cover)}" alt="" width="40" height="40" loading="lazy" />`
-      : `<div class="row-cover-ph" aria-hidden="true"></div>`;
-    tr.innerHTML = `
-      <td class="col-cover">${coverHtml}</td>
-      <td>${titleHtml}</td>
-      <td class="muted">${escapeHtml(r.album || "—")}</td>
-      <td class="col-like muted">${liked ? "♥" : "♡"}</td>
-      <td class="muted col-dur">${dur}</td>`;
-    tr.style.cursor = ok ? "pointer" : "default";
-    tr.title = ok ? "双击从该曲起播整单（仅含曲库 id 的曲目入队）" : "无曲库 id：请到「搜索」搜索后播放";
-    if (ok) {
-      tr.addEventListener("dblclick", () => playFromPlaylistRow(i));
-    }
-    tr.addEventListener("contextmenu", (ev) => {
-      ev.preventDefault();
-      void openPlaylistDetailRowContextMenu(ev, i);
-    });
-    tbody.appendChild(tr);
-  });
-}
-
-function playFromPlaylistRow(rowIdx) {
-  const r = playlistDetailRows[rowIdx];
-  const sid = (r?.pjmp3_source_id || "").trim();
-  if (!sid) {
-    alert("该条没有曲库 id，请使用顶栏搜索歌名后播放。");
-    return;
-  }
-  const queue = playlistDetailRows
-    .filter((row) => (row.pjmp3_source_id || "").trim())
-    .map((row) => ({
-      source_id: (row.pjmp3_source_id || "").trim(),
-      title: row.title,
-      artist: row.artist || "",
-      cover_url: (row.cover_url || "").trim() || null,
-    }));
-  if (!queue.length) {
-    alert("没有可播放条目（导入条目需含 pjmp3 曲库 id）。");
-    return;
-  }
-  let startInQueue = 0;
-  for (let i = 0; i < rowIdx; i++) {
-    if ((playlistDetailRows[i].pjmp3_source_id || "").trim()) startInQueue++;
-  }
-  playQueue = queue;
-  playFromQueueIndex(startInQueue);
-  renderQueuePanel();
-}
-
-function wirePlaylistPage() {
-  document.getElementById("btn-playlist-back")?.addEventListener("click", () => {
-    setPage("home");
-  });
-  document.getElementById("btn-playlist-rename")?.addEventListener("click", async () => {
-    if (selectedPlaylistId == null) return;
-    const nextName = window.prompt("重命名歌单", selectedPlaylistName || "歌单");
-    if (nextName == null || !nextName.trim()) return;
-    try {
-      await invoke("rename_playlist", { playlistId: selectedPlaylistId, name: nextName.trim() });
-      selectedPlaylistName = nextName.trim();
-      await refreshSidebarPlaylists();
-      await loadPlaylistDetail(selectedPlaylistId, selectedPlaylistName);
-    } catch (e) {
-      alertRequestFailed(e, "rename_playlist");
-    }
-  });
-  document.getElementById("btn-playlist-play-all")?.addEventListener("click", () => {
-    const playable = playlistDetailRows.filter((r) => (r.pjmp3_source_id || "").trim());
-    if (!playable.length) {
-      alert("没有可播放条目（导入条目需含 pjmp3 曲库 id；可先使用「搜索」搜索）。");
-      return;
-    }
-    playQueue = playable.map((r) => ({
-      source_id: (r.pjmp3_source_id || "").trim(),
-      title: r.title,
-      artist: r.artist || "",
-      cover_url: (r.cover_url || "").trim() || null,
-    }));
-    playFromQueueIndex(0);
-    renderQueuePanel();
   });
 }
 
