@@ -8,7 +8,7 @@ import (
 	"strings"
 
 	"cloudplayer/internal/cloudplayer/config"
-	"cloudplayer/internal/cloudplayer/pjmp3"
+	"cloudplayer/internal/cloudplayer/musicsource"
 )
 
 type FetchRequest struct {
@@ -34,11 +34,11 @@ func FetchSongLRCEnriched(client *http.Client, settings config.Settings, req Fet
 			if req.PJMP3SourceID == nil {
 				continue
 			}
-			sourceID := strings.TrimSpace(*req.PJMP3SourceID)
-			if sourceID == "" {
-				continue
+			ref, err := musicsource.ParseSourceID(*req.PJMP3SourceID)
+			if err != nil {
+				return nil, err
 			}
-			text, err := pjmp3.FetchSongLRCText(client, sourceID)
+			text, err := ref.Provider.FetchSongLRCText(client, ref.RawID)
 			if err != nil {
 				return nil, err
 			}

@@ -11,7 +11,7 @@ import { Create as $Create } from "@wailsio/runtime";
 import * as importplaylist$0 from "./internal/cloudplayer/importplaylist/models.js";
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore: Unused imports
-import * as pjmp3$0 from "./internal/cloudplayer/pjmp3/models.js";
+import * as musicsource$0 from "./internal/cloudplayer/musicsource/models.js";
 
 export class HotkeyApplyReport {
     /**
@@ -511,7 +511,7 @@ export class SearchResponse {
         if (!("results" in $$source)) {
             /**
              * @member
-             * @type {pjmp3$0.SearchResult[]}
+             * @type {musicsource$0.SearchResult[]}
              */
             this["results"] = [];
         }
@@ -918,7 +918,7 @@ export class WindowInfo {
 
 // Private type creation functions
 const $$createType0 = HotkeyEntryStatus.createFrom;
-const $$createType1 = pjmp3$0.SearchResult.createFrom;
+const $$createType1 = musicsource$0.SearchResult.createFrom;
 const $$createType2 = $Create.Array($$createType1);
 const $$createType3 = importplaylist$0.ImportedTrackDTO.createFrom;
 const $$createType4 = $Create.Array($$createType3);

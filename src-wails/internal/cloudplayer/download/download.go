@@ -15,6 +15,7 @@ import (
 
 	"cloudplayer/internal/cloudplayer/captcha"
 	"cloudplayer/internal/cloudplayer/config"
+	"cloudplayer/internal/cloudplayer/musicsource"
 	"github.com/wailsapp/wails/v3/pkg/application"
 )
 
@@ -77,6 +78,12 @@ func RunOneJob(client *http.Client, job DownloadJob) {
 		emitTask(task)
 	}
 
+	ref, err := musicsource.ParseSourceID(job.SourceID)
+	if err != nil {
+		fail("%s", err)
+		return
+	}
+
 	if err := checkAndReserveDownloadSlot(); err != nil {
 		fail("%s", err)
 		return
@@ -86,8 +93,17 @@ func RunOneJob(client *http.Client, job DownloadJob) {
 	task.Message = nil
 	emitTask(task)
 
+	switch ref.ProviderKey {
+	case musicsource.ProviderPJMP3:
+		runPJMP3Job(client, ref.RawID, job, &task, fail)
+	default:
+		fail("不支持的音乐源: %s", ref.ProviderKey)
+	}
+}
+
+func runPJMP3Job(client *http.Client, rawID string, job DownloadJob, task *DownloadTaskEvent, fail func(string, ...any)) {
 	base := strings.TrimRight(config.BaseURL, "/")
-	songPage := fmt.Sprintf("%s/song.php?id=%s", base, url.QueryEscape(job.SourceID))
+	songPage := fmt.Sprintf("%s/song.php?id=%s", base, url.QueryEscape(rawID))
 
 	generated, err := getJSON(client, http.MethodGet, base+"/captcha/gen", nil, map[string]string{
 		"User-Agent":      browserUA,
@@ -132,7 +148,7 @@ func RunOneJob(client *http.Client, job DownloadJob) {
 
 	values := url.Values{}
 	values.Set("captchaId", captchaID)
-	values.Set("id", job.SourceID)
+	values.Set("id", rawID)
 	values.Set("br", normalizeQuality(job.Quality))
 	getMusicURL := base + "/captcha/check/getMusicUrl?" + values.Encode()
 	urlPayload, err := getJSON(client, http.MethodGet, getMusicURL, nil, map[string]string{
@@ -209,7 +225,7 @@ func RunOneJob(client *http.Client, job DownloadJob) {
 			} else {
 				task.Progress = 0.99
 			}
-			emitTask(task)
+			emitTask(*task)
 		}
 		if readErr == io.EOF {
 			break
@@ -234,7 +250,7 @@ func RunOneJob(client *http.Client, job DownloadJob) {
 	task.Status = "completed"
 	task.Progress = 1
 	task.Message = &message
-	emitTask(task)
+	emitTask(*task)
 }
 
 func normalizeQuality(value string) string {

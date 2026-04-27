@@ -11,7 +11,7 @@ import (
 	"time"
 
 	"cloudplayer/internal/cloudplayer/config"
-	"cloudplayer/internal/cloudplayer/pjmp3"
+	"cloudplayer/internal/cloudplayer/musicsource"
 	"cloudplayer/internal/cloudplayer/ratelimiter"
 	"github.com/wailsapp/wails/v3/pkg/application"
 )
@@ -164,7 +164,7 @@ func applySearchMetadata(db *sql.DB, client *http.Client, limiter *ratelimiter.L
 		return nil
 	}
 	limiter.AcquireSlot()
-	results, _, err := pjmp3.SearchPjmp3(client, query, 1)
+	results, _, err := musicsource.Current().Search(client, query, 1)
 	if err != nil || len(results) == 0 {
 		return err
 	}
@@ -190,14 +190,14 @@ func applySearchMetadata(db *sql.DB, client *http.Client, limiter *ratelimiter.L
 	return err
 }
 
-func cacheSearchCover(client *http.Client, limiter *ratelimiter.Limiter, first pjmp3.SearchResult) (string, error) {
+func cacheSearchCover(client *http.Client, limiter *ratelimiter.Limiter, first musicsource.SearchResult) (string, error) {
 	if first.CoverURL == nil || strings.TrimSpace(*first.CoverURL) == "" {
 		return "", nil
 	}
 	if err := os.MkdirAll(coverCacheDir(), 0o755); err != nil {
 		return "", err
 	}
-	path := filepath.Join(coverCacheDir(), "cov_"+strings.TrimSpace(first.SourceID)+".jpg")
+	path := filepath.Join(coverCacheDir(), "cov_"+musicsource.SafeCacheKey(first.SourceID)+".jpg")
 	limiter.AcquireSlot()
 	if err := downloadCover(client, *first.CoverURL, path); err != nil {
 		return "", err
@@ -215,7 +215,7 @@ func ensureCoverFile(client *http.Client, limiter *ratelimiter.Limiter, row impo
 	if err := os.MkdirAll(coverCacheDir(), 0o755); err != nil {
 		return "", err
 	}
-	path := filepath.Join(coverCacheDir(), "cov_"+strings.TrimSpace(row.PJMP3SourceID)+".jpg")
+	path := filepath.Join(coverCacheDir(), "cov_"+musicsource.SafeCacheKey(row.PJMP3SourceID)+".jpg")
 	limiter.AcquireSlot()
 	if err := downloadCover(client, row.CoverURL, path); err != nil {
 		return "", err
@@ -258,17 +258,22 @@ func enrichSongPageAndAlbumSearch(db *sql.DB, client *http.Client, limiter *rate
 		return nil
 	}
 
+	ref, err := musicsource.ParseSourceID(row.PJMP3SourceID)
+	if err != nil {
+		return err
+	}
+
 	limiter.AcquireSlot()
-	html, _ := pjmp3.FetchSongPageHTML(client, row.PJMP3SourceID)
+	html, _ := ref.Provider.FetchSongPageHTML(client, ref.RawID)
 	album := row.Album
 	durationMS := row.DurationMS
 	if needAlbum {
-		if value := pjmp3.ExtractAlbumFromSongHTML(html); strings.TrimSpace(value) != "" {
+		if value := ref.Provider.ExtractAlbumFromSongHTML(html); strings.TrimSpace(value) != "" {
 			album = value
 		}
 	}
 	if needDuration {
-		if value := pjmp3.ExtractDurationMSFromSongHTML(html); value > 0 {
+		if value := ref.Provider.ExtractDurationMSFromSongHTML(html); value > 0 {
 			durationMS = value
 		}
 	}
@@ -276,21 +281,21 @@ func enrichSongPageAndAlbumSearch(db *sql.DB, client *http.Client, limiter *rate
 		query := strings.TrimSpace(strings.TrimSpace(row.Title) + " " + strings.TrimSpace(row.Artist))
 		if query != "" {
 			limiter.AcquireSlot()
-			results, _, err := pjmp3.SearchPjmp3(client, query, 1)
+			results, _, err := musicsource.Current().Search(client, query, 1)
 			if err == nil && len(results) > 0 {
 				first := results[0]
-				if strings.TrimSpace(first.SourceID) == strings.TrimSpace(row.PJMP3SourceID) && strings.TrimSpace(first.Album) != "" {
+				if musicsource.SameSourceID(first.SourceID, row.PJMP3SourceID) && strings.TrimSpace(first.Album) != "" {
 					album = first.Album
 				}
 			}
 		}
 	}
-	_, err := db.Exec(`
+	_, execErr := db.Exec(`
 		UPDATE playlist_import_items
 		SET album = ?, duration_ms = ?
 		WHERE id = ? AND playlist_id = ?
 	`, album, durationMS, row.ID, playlistID)
-	return err
+	return execErr
 }
 
 func emitEvent(name string, payload any) {

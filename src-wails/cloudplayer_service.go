@@ -14,7 +14,7 @@ import (
 	"cloudplayer/internal/cloudplayer/importenrich"
 	"cloudplayer/internal/cloudplayer/importplaylist"
 	"cloudplayer/internal/cloudplayer/lyrics"
-	"cloudplayer/internal/cloudplayer/pjmp3"
+	"cloudplayer/internal/cloudplayer/musicsource"
 	"cloudplayer/internal/cloudplayer/sharelink"
 	"github.com/wailsapp/wails/v3/pkg/application"
 )
@@ -55,8 +55,8 @@ type SettingsPatch struct {
 }
 
 type SearchResponse struct {
-	Results []pjmp3.SearchResult `json:"results"`
-	HasNext bool                 `json:"has_next"`
+	Results []musicsource.SearchResult `json:"results"`
+	HasNext bool                       `json:"has_next"`
 }
 
 type ResolveOnlinePlayOut struct {
@@ -302,7 +302,7 @@ func (s *CloudPlayerService) SearchSongs(keyword string, page uint32) (SearchRes
 		return SearchResponse{}, fmt.Errorf("请输入搜索关键词")
 	}
 	s.state.RateLimiter.AcquireSlot()
-	results, hasNext, err := pjmp3.SearchPjmp3(s.state.HTTPClient, trimmed, maxUint32(page, 1))
+	results, hasNext, err := musicsource.Current().Search(s.state.HTTPClient, trimmed, maxUint32(page, 1))
 	if err != nil {
 		return SearchResponse{}, err
 	}
@@ -310,12 +310,12 @@ func (s *CloudPlayerService) SearchSongs(keyword string, page uint32) (SearchRes
 }
 
 func (s *CloudPlayerService) GetPreviewURL(songID string) (string, error) {
-	trimmedID := strings.TrimSpace(songID)
-	if trimmedID == "" {
-		return "", fmt.Errorf("无效的歌曲 ID")
+	ref, err := musicsource.ParseSourceID(songID)
+	if err != nil {
+		return "", err
 	}
 	s.state.RateLimiter.AcquireSlot()
-	previewURL, err := pjmp3.FetchPreviewURL(s.state.HTTPClient, trimmedID)
+	previewURL, err := ref.Provider.FetchPreviewURL(s.state.HTTPClient, ref.RawID)
 	if err != nil {
 		return "", err
 	}
@@ -326,18 +326,18 @@ func (s *CloudPlayerService) GetPreviewURL(songID string) (string, error) {
 }
 
 func (s *CloudPlayerService) CachePreviewForPlay(songID string) (string, error) {
-	trimmedID := strings.TrimSpace(songID)
-	if trimmedID == "" {
-		return "", fmt.Errorf("无效的歌曲 ID")
+	ref, err := musicsource.ParseSourceID(songID)
+	if err != nil {
+		return "", err
 	}
 	s.state.RateLimiter.AcquireSlot()
-	return pjmp3.CachePreviewAudioFile(s.state.HTTPClient, trimmedID)
+	return ref.Provider.CachePreviewAudioFile(s.state.HTTPClient, ref.RawID)
 }
 
 func (s *CloudPlayerService) ResolveOnlinePlay(songID, title, artist string) (ResolveOnlinePlayOut, error) {
-	trimmedID := strings.TrimSpace(songID)
-	if trimmedID == "" {
-		return ResolveOnlinePlayOut{}, fmt.Errorf("无效的歌曲 ID")
+	ref, err := musicsource.ParseSourceID(songID)
+	if err != nil {
+		return ResolveOnlinePlayOut{}, err
 	}
 	trimmedTitle := strings.TrimSpace(title)
 	trimmedArtist := strings.TrimSpace(artist)
@@ -353,7 +353,7 @@ func (s *CloudPlayerService) ResolveOnlinePlay(songID, title, artist string) (Re
 		}
 	}
 
-	if path := pjmp3.PreviewCachePathIfExists(trimmedID); path != "" {
+	if path := ref.Provider.PreviewCachePathIfExists(ref.RawID); path != "" {
 		return ResolveOnlinePlayOut{
 			Kind: "file",
 			Path: path,
@@ -362,7 +362,7 @@ func (s *CloudPlayerService) ResolveOnlinePlay(songID, title, artist string) (Re
 	}
 
 	s.state.RateLimiter.AcquireSlot()
-	previewPath, previewErr := pjmp3.CachePreviewAudioFile(s.state.HTTPClient, trimmedID)
+	previewPath, previewErr := ref.Provider.CachePreviewAudioFile(s.state.HTTPClient, ref.RawID)
 	if previewErr == nil && previewPath != "" {
 		return ResolveOnlinePlayOut{
 			Kind: "file",
@@ -372,7 +372,7 @@ func (s *CloudPlayerService) ResolveOnlinePlay(songID, title, artist string) (Re
 	}
 
 	s.state.RateLimiter.AcquireSlot()
-	previewURL, directErr := pjmp3.FetchPreviewURL(s.state.HTTPClient, trimmedID)
+	previewURL, directErr := ref.Provider.FetchPreviewURL(s.state.HTTPClient, ref.RawID)
 	if directErr == nil && strings.TrimSpace(previewURL) != "" {
 		return ResolveOnlinePlayOut{
 			Kind: "url",
