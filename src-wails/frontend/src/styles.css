@@ -666,6 +666,10 @@ body {
   animation: search-view-enter 220ms cubic-bezier(0.22, 1, 0.36, 1);
 }
 
+.search-view[hidden] {
+  display: none !important;
+}
+
 .search-view--home {
   display: flex;
   flex-direction: column;
