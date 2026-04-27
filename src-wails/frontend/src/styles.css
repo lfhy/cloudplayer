@@ -568,16 +568,7 @@ body {
   box-sizing: border-box;
   overflow: visible;
   isolation: isolate;
-  background: linear-gradient(
-    90deg,
-    rgba(92, 230, 240, 0.55) 0%,
-    rgba(240, 92, 210, 0.55) 50%,
-    rgba(255, 215, 100, 0.55) 100%
-  );
-  background-size: 200% 100%;
-  background-position: 0% 50%;
-  animation: search-glow-flow 8.5s linear infinite;
-  transition: background 0.2s ease, box-shadow 0.2s ease;
+  transition: box-shadow 0.2s ease;
 }
 
 .neon-search-wrap::before {
@@ -585,21 +576,19 @@ body {
   position: absolute;
   inset: -6px;
   border-radius: inherit;
-  background: linear-gradient(
-    90deg,
-    rgba(92, 230, 240, 0) 0%,
-    rgba(92, 230, 240, 0.12) 12%,
-    rgba(240, 92, 210, 0.12) 50%,
-    rgba(255, 215, 100, 0.12) 88%,
-    rgba(255, 215, 100, 0) 100%
+  background: conic-gradient(
+    from 0deg,
+    rgba(92, 230, 240, 0) 0deg,
+    rgba(92, 230, 240, 0.16) 56deg,
+    rgba(240, 92, 210, 0.14) 146deg,
+    rgba(255, 215, 100, 0.16) 222deg,
+    rgba(240, 92, 210, 0.14) 296deg,
+    rgba(92, 230, 240, 0) 360deg
   );
-  background-size: 200% 100%;
-  background-position: 0% 50%;
   filter: blur(10px);
   opacity: 0.72;
   z-index: -1;
   pointer-events: none;
-  animation: search-glow-flow 10s linear infinite reverse;
   transition: opacity 0.2s ease, filter 0.2s ease;
 }
 
@@ -609,17 +598,15 @@ body {
   inset: 0;
   padding: 2px;
   border-radius: inherit;
-  background: linear-gradient(
-    108deg,
-    rgba(255, 255, 255, 0) 28%,
-    rgba(92, 230, 240, 0.12) 40%,
-    rgba(92, 230, 240, 0.88) 47%,
-    rgba(240, 92, 210, 0.96) 52%,
-    rgba(255, 215, 100, 0.92) 57%,
-    rgba(255, 255, 255, 0) 69%
+  background: conic-gradient(
+    from 0deg,
+    rgba(92, 230, 240, 0.62) 0deg,
+    rgba(92, 230, 240, 0.78) 56deg,
+    rgba(240, 92, 210, 0.66) 146deg,
+    rgba(255, 215, 100, 0.72) 222deg,
+    rgba(240, 92, 210, 0.66) 296deg,
+    rgba(92, 230, 240, 0.74) 360deg
   );
-  background-size: 240% 100%;
-  background-position: 120% 50%;
   -webkit-mask:
     linear-gradient(#000 0 0) content-box,
     linear-gradient(#000 0 0);
@@ -628,9 +615,8 @@ body {
     linear-gradient(#000 0 0) content-box,
     linear-gradient(#000 0 0);
   mask-composite: exclude;
-  opacity: 0.82;
   pointer-events: none;
-  animation: search-glow-sweep 2.9s cubic-bezier(0.45, 0.05, 0.55, 0.95) infinite;
+  animation: search-edge-run 7.8s linear infinite;
 }
 
 .neon-search-inner {
@@ -644,12 +630,6 @@ body {
 }
 
 .neon-search-wrap:focus-within {
-  background: linear-gradient(
-    90deg,
-    rgb(92, 230, 240) 0%,
-    rgb(240, 92, 210) 50%,
-    rgb(255, 215, 100) 100%
-  );
   box-shadow:
     0 0 0 1px rgba(255, 255, 255, 0.04),
     0 10px 24px rgba(15, 23, 42, 0.08);
@@ -661,28 +641,23 @@ body {
 }
 
 .neon-search-wrap:focus-within::after {
-  opacity: 1;
-  animation-duration: 2.2s;
+  background: conic-gradient(
+    from 0deg,
+    rgb(92, 230, 240) 0deg,
+    rgb(92, 230, 240) 56deg,
+    rgb(240, 92, 210) 146deg,
+    rgb(255, 215, 100) 222deg,
+    rgb(240, 92, 210) 296deg,
+    rgb(92, 230, 240) 360deg
+  );
 }
 
-@keyframes search-glow-flow {
+@keyframes search-edge-run {
   0% {
-    background-position: 0% 50%;
-  }
-  50% {
-    background-position: 100% 50%;
+    transform: rotate(0deg);
   }
   100% {
-    background-position: 0% 50%;
-  }
-}
-
-@keyframes search-glow-sweep {
-  0% {
-    background-position: 120% 50%;
-  }
-  100% {
-    background-position: -120% 50%;
+    transform: rotate(360deg);
   }
 }
 
