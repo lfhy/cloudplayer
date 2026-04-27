@@ -44,6 +44,7 @@ import {
 } from "./app/helpers/platformTheme.js";
 import { createImportFlowHelpers } from "./app/helpers/importFlow.js";
 import { createImportPageController } from "./features/import/controller.js";
+import { createSearchController } from "./features/search/controller.js";
 import { createSettingsController } from "./features/settings/controller.js";
 import { renderMainShell } from "./layout/renderMainShell.js";
 
@@ -58,6 +59,47 @@ const searchState = {
   playlistResults: [],
   view: "home",
 };
+
+const {
+  fetchSearchPage,
+  getActiveSearchInput,
+  getSearchInputs,
+  renderPlaylistSearchResults,
+  renderSearchTable,
+  setSearchScope,
+  setSearchView,
+  submitPageSearch,
+  syncSearchInputs,
+  updateSearchToolbar,
+  updateSearchViewState,
+  wireDiscoverToolbar,
+  wireSearchPage,
+} = createSearchController({
+  escapeHtml,
+  invoke,
+  loadPlaylistDetail,
+  MSG_REQUEST_FAILED,
+  openSearchRowContextMenu,
+  playCatalogAll: (rows) => {
+    playQueue = rows.map((row) => ({
+      source_id: row.source_id,
+      title: row.title,
+      artist: row.artist || "",
+      cover_url: row.cover_url || null,
+    }));
+    void playFromQueueIndex(0);
+  },
+  playFromSearchRow,
+  searchLocalPlaylists,
+  searchState,
+  setPage,
+  setSelectedPlaylist: (id, name) => {
+    selectedPlaylistId = id;
+    selectedPlaylistName = name;
+  },
+  setTableMutedMessage,
+  warnRequestFailed,
+});
 
 let playQueue = [];
 let playIndex = 0;
@@ -2036,242 +2078,6 @@ function setPage(pageId) {
   }
 }
 
-function getSearchInputs() {
-  return [document.getElementById("page-search"), document.getElementById("page-search-results")].filter(Boolean);
-}
-
-function getActiveSearchInput() {
-  return searchState.view === "results"
-    ? document.getElementById("page-search-results") || document.getElementById("page-search")
-    : document.getElementById("page-search") || document.getElementById("page-search-results");
-}
-
-function syncSearchInputs(value = searchState.keyword) {
-  getSearchInputs().forEach((input) => {
-    if (input.value !== value) input.value = value;
-  });
-}
-
-function setSearchView(view = "home") {
-  const nextView = view === "results" ? "results" : "home";
-  searchState.view = nextView;
-  const shell = document.querySelector('.page[data-page="search"] .search-shell');
-  const homeView = document.getElementById("search-home-view");
-  const resultsView = document.getElementById("search-results-view");
-  if (shell) shell.setAttribute("data-search-view", nextView);
-  if (homeView) {
-    homeView.hidden = nextView !== "home";
-    homeView.classList.toggle("is-active", nextView === "home");
-  }
-  if (resultsView) {
-    resultsView.hidden = nextView !== "results";
-    resultsView.classList.toggle("is-active", nextView === "results");
-  }
-  syncSearchInputs(searchState.keyword);
-}
-
-function setSearchScope(scope) {
-  searchState.scope = scope === "playlists" ? "playlists" : "catalog";
-  document.querySelectorAll("[data-search-scope]").forEach((button) => {
-    const active = button.getAttribute("data-search-scope") === searchState.scope;
-    button.classList.toggle("is-active", active);
-    button.setAttribute("aria-selected", active ? "true" : "false");
-  });
-  const catalogPanel = document.getElementById("search-results-catalog");
-  const playlistPanel = document.getElementById("search-results-playlists");
-  if (catalogPanel) catalogPanel.hidden = searchState.view !== "results" || searchState.scope !== "catalog";
-  if (playlistPanel) playlistPanel.hidden = searchState.view !== "results" || searchState.scope !== "playlists";
-  updateSearchViewState();
-  updateSearchToolbar();
-}
-
-function updateSearchViewState() {
-  const catalogPanel = document.getElementById("search-results-catalog");
-  const playlistPanel = document.getElementById("search-results-playlists");
-  const hasKeyword = !!searchState.keyword.trim();
-  setSearchView(hasKeyword ? "results" : "home");
-  if (catalogPanel) catalogPanel.hidden = !hasKeyword || searchState.scope !== "catalog";
-  if (playlistPanel) playlistPanel.hidden = !hasKeyword || searchState.scope !== "playlists";
-}
-
-function updateSearchToolbar() {
-  const n = searchState.results.length;
-  const info = document.getElementById("search-page-info");
-  const prev = document.getElementById("btn-prev-page");
-  const next = document.getElementById("btn-next-page");
-  const playAll = document.getElementById("btn-play-all");
-  const playlistInfo = document.getElementById("search-playlist-info");
-  const summary = document.getElementById("search-results-summary");
-  if (info) {
-    info.textContent =
-      searchState.scope !== "catalog" || !searchState.keyword.trim()
-        ? ""
-        : `共 ${n} 条 · 第 ${searchState.page} 页${searchState.hasNext ? " · 有下一页" : " · 已到末页"}`;
-  }
-  if (playlistInfo) {
-    playlistInfo.textContent =
-      searchState.scope !== "playlists" || !searchState.keyword.trim()
-        ? ""
-        : `找到 ${searchState.playlistResults.length} 张相关歌单`;
-  }
-  if (summary) {
-    summary.textContent = !searchState.keyword.trim()
-      ? ""
-      : searchState.scope === "catalog"
-        ? `搜索 “${searchState.keyword.trim()}”`
-        : `在本地歌单中搜索 “${searchState.keyword.trim()}”`;
-  }
-  if (prev) prev.disabled = searchState.scope !== "catalog" || searchState.page <= 1 || searchState.busy;
-  if (next) next.disabled = searchState.scope !== "catalog" || !searchState.hasNext || searchState.busy;
-  if (playAll) playAll.disabled = searchState.scope !== "catalog" || !n || searchState.busy;
-}
-
-function renderSearchTable() {
-  const tbody = document.querySelector("#search-table tbody");
-  if (!tbody) return;
-  if (searchState.scope !== "catalog") {
-    tbody.innerHTML = "";
-    return;
-  }
-  const rows = searchState.results;
-  if (!rows.length) {
-    setTableMutedMessage(
-      tbody,
-      5,
-      searchState.keyword.trim() ? "没有找到匹配的在线音乐结果。" : "",
-    );
-    return;
-  }
-  tbody.innerHTML = "";
-  for (let i = 0; i < rows.length; i++) {
-    const r = rows[i];
-    const tr = document.createElement("tr");
-    const coverHtml = r.cover_url
-      ? `<img class="row-cover" src="${escapeHtml(r.cover_url)}" alt="" width="40" height="40" loading="lazy" />`
-      : `<div class="row-cover-ph" aria-hidden="true"></div>`;
-    const titleBlock = r.artist
-      ? `<span class="t-title">${escapeHtml(r.title)}</span><span class="t-art">${escapeHtml(r.artist)}</span>`
-      : `<span class="t-title">${escapeHtml(r.title)}</span>`;
-    tr.innerHTML = `
-      <td class="col-idx">${i + 1}</td>
-      <td class="col-cover">${coverHtml}</td>
-      <td>${titleBlock}</td>
-      <td class="muted">${escapeHtml(r.album || "—")}</td>
-      <td class="muted col-dur">—</td>
-    `;
-    tr.style.cursor = "pointer";
-    tr.title = "双击试听";
-    tr.addEventListener("dblclick", () => playFromSearchRow(i));
-    tr.addEventListener("contextmenu", (ev) => {
-      ev.preventDefault();
-      void openSearchRowContextMenu(ev, i);
-    });
-    tbody.appendChild(tr);
-  }
-}
-
-function renderPlaylistSearchResults() {
-  const wrap = document.getElementById("search-playlist-list");
-  if (!wrap) return;
-  wrap.innerHTML = "";
-  if (searchState.scope !== "playlists") return;
-  if (!searchState.keyword.trim()) return;
-  if (!searchState.playlistResults.length) {
-    wrap.innerHTML = '<div class="search-playlist-empty muted">没有找到匹配的本地歌单或导入曲目。</div>';
-    return;
-  }
-  searchState.playlistResults.forEach((playlist) => {
-    const button = document.createElement("button");
-    button.type = "button";
-    button.className = "search-playlist-card";
-    const cover = playlist.coverUrl
-      ? `<img class="search-playlist-card__cover" src="${escapeHtml(playlist.coverUrl)}" alt="" />`
-      : `<div class="search-playlist-card__cover search-playlist-card__cover--ph" aria-hidden="true"></div>`;
-    const matches = playlist.matchedTracks
-      .slice(0, 3)
-      .map((track) => `<li>${escapeHtml(track.title || "—")}${track.artist ? ` · ${escapeHtml(track.artist)}` : ""}</li>`)
-      .join("");
-    button.innerHTML = `
-      ${cover}
-      <span class="search-playlist-card__body">
-        <strong>${escapeHtml(playlist.name)}</strong>
-        <span>${playlist.trackCount} 首歌曲${playlist.matchedTracks.length ? ` · 命中 ${playlist.matchedTracks.length} 首` : ""}</span>
-        ${matches ? `<ul>${matches}</ul>` : `<em>歌单名称命中</em>`}
-      </span>
-    `;
-    button.addEventListener("click", async () => {
-      selectedPlaylistId = playlist.id;
-      selectedPlaylistName = playlist.name;
-      setPage("playlist");
-      await loadPlaylistDetail(playlist.id, playlist.name);
-    });
-    wrap.appendChild(button);
-  });
-}
-
-async function fetchSearchPage() {
-  const kw = searchState.keyword.trim();
-  if (!kw) return;
-  searchState.busy = true;
-  updateSearchToolbar();
-  try {
-    if (searchState.scope === "catalog") {
-      const tbody = document.querySelector("#search-table tbody");
-      setTableMutedMessage(tbody, 5, "搜索中…");
-      const res = await invoke("search_songs", { keyword: kw, page: searchState.page });
-      searchState.results = res.results || [];
-      searchState.hasNext = !!res.has_next;
-      searchState.playlistResults = [];
-      renderSearchTable();
-    } else {
-      searchState.playlistResults = await searchLocalPlaylists(kw);
-      searchState.results = [];
-      searchState.hasNext = false;
-      renderPlaylistSearchResults();
-    }
-  } catch (e) {
-    warnRequestFailed(e, searchState.scope === "catalog" ? "search_songs" : "search_local_playlists");
-    if (searchState.scope === "catalog") {
-      const tbody = document.querySelector("#search-table tbody");
-      setTableMutedMessage(tbody, 5, MSG_REQUEST_FAILED);
-    } else {
-      const wrap = document.getElementById("search-playlist-list");
-      if (wrap) wrap.innerHTML = `<div class="search-playlist-empty muted">${escapeHtml(MSG_REQUEST_FAILED)}</div>`;
-    }
-    searchState.results = [];
-    searchState.playlistResults = [];
-    searchState.hasNext = false;
-  } finally {
-    searchState.busy = false;
-    updateSearchToolbar();
-  }
-}
-
-function wireDiscoverToolbar() {
-  document.getElementById("btn-prev-page")?.addEventListener("click", () => {
-    if (searchState.page <= 1 || searchState.busy) return;
-    if (!searchState.keyword.trim()) return;
-    searchState.page -= 1;
-    fetchSearchPage();
-  });
-  document.getElementById("btn-next-page")?.addEventListener("click", () => {
-    if (searchState.busy || !searchState.hasNext) return;
-    if (!searchState.keyword.trim()) return;
-    searchState.page += 1;
-    fetchSearchPage();
-  });
-  document.getElementById("btn-play-all")?.addEventListener("click", () => {
-    if (!searchState.results.length) return;
-    playQueue = searchState.results.map((r) => ({
-      source_id: r.source_id,
-      title: r.title,
-      artist: r.artist || "",
-      cover_url: r.cover_url || null,
-    }));
-    playFromQueueIndex(0);
-  });
-}
-
 /**
  * @param {{ title?: string, sub?: string, coverUrl?: string | null, touchCover?: boolean }} patch
  * touchCover 为 false 时不改封面（用于播放失败，避免错误条目替换当前正在播放的封面）
@@ -2861,86 +2667,6 @@ function wireAudio() {
     }
     if (playIndex < n - 1) playFromQueueIndex(playIndex + 1);
   });
-}
-
-function submitPageSearch(seed = null) {
-  const input = getActiveSearchInput();
-  if (!input) return;
-  if (typeof seed === "string") {
-    input.value = seed;
-    syncSearchInputs(seed);
-  }
-  const value = input.value.trim();
-  setPage("search");
-  if (!value) {
-    searchState.keyword = "";
-    searchState.page = 1;
-    searchState.results = [];
-    searchState.playlistResults = [];
-    searchState.hasNext = false;
-    syncSearchInputs("");
-    renderSearchTable();
-    renderPlaylistSearchResults();
-    updateSearchViewState();
-    updateSearchToolbar();
-    return;
-  }
-  searchState.keyword = value;
-  syncSearchInputs(value);
-  searchState.page = 1;
-  updateSearchViewState();
-  fetchSearchPage();
-}
-
-function wireSearchPage() {
-  const inputs = getSearchInputs();
-  if (!inputs.length) return;
-  inputs.forEach((input) => {
-    input.addEventListener("input", () => {
-      const value = input.value.trim();
-      syncSearchInputs(input.value);
-      if (value) return;
-      searchState.keyword = "";
-      searchState.page = 1;
-      searchState.results = [];
-      searchState.playlistResults = [];
-      searchState.hasNext = false;
-      renderSearchTable();
-      renderPlaylistSearchResults();
-      updateSearchViewState();
-      updateSearchToolbar();
-    });
-    input.addEventListener("keydown", (e) => {
-      if (e.key !== "Enter") return;
-      e.preventDefault();
-      submitPageSearch();
-    });
-  });
-  document.getElementById("btn-page-search")?.addEventListener("click", () => submitPageSearch());
-  document.getElementById("btn-page-search-results")?.addEventListener("click", () => submitPageSearch());
-  document.querySelectorAll("[data-search-scope]").forEach((button) => {
-    button.addEventListener("click", () => {
-      setSearchScope(button.getAttribute("data-search-scope") || "catalog");
-      if (searchState.keyword.trim()) {
-        searchState.page = 1;
-        void fetchSearchPage();
-      } else {
-        renderSearchTable();
-        renderPlaylistSearchResults();
-        updateSearchViewState();
-      }
-    });
-  });
-  document.querySelectorAll("[data-search-seed]").forEach((button) => {
-    button.addEventListener("click", () => {
-      const seed = button.getAttribute("data-search-seed") || "";
-      if (seed.includes("循环")) {
-        setSearchScope("playlists");
-      }
-      submitPageSearch(seed);
-    });
-  });
-  updateSearchViewState();
 }
 
 function isEditableElement(el) {
