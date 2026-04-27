@@ -2219,7 +2219,8 @@ body {
   gap: 6px;
 }
 
-.import-link-input {
+.import-link-input,
+.settings-field-control--text {
   flex: 1;
   min-width: 200px;
   padding: 8px 12px;
@@ -2277,6 +2278,30 @@ body {
   font: inherit;
   resize: vertical;
   background: var(--bg-card);
+}
+
+.import-link-input,
+.settings-field-control--text,
+.import-select,
+.import-textarea {
+  color: var(--text);
+  transition:
+    border-color 140ms ease,
+    box-shadow 140ms ease,
+    background-color 140ms ease;
+}
+
+.import-link-input:focus,
+.import-link-input:focus-visible,
+.settings-field-control--text:focus,
+.settings-field-control--text:focus-visible,
+.import-select:focus,
+.import-select:focus-visible,
+.import-textarea:focus,
+.import-textarea:focus-visible {
+  outline: none;
+  border-color: color-mix(in srgb, var(--accent, #7c9cff) 80%, var(--border) 20%);
+  box-shadow: inset 0 0 0 1px rgba(var(--accent-rgb), 0.22);
 }
 
 .import-actions {
