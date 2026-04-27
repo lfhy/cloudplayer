@@ -56,6 +56,12 @@
   color-scheme: dark;
 }
 
+@property --search-edge-angle {
+  syntax: "<angle>";
+  inherits: false;
+  initial-value: 0deg;
+}
+
 :root[data-theme-mode-resolved="dark"][data-theme-mode="graphite"] {
   --bg-main: #181a1f;
   --bg-card: #24272d;
@@ -568,6 +574,7 @@ body {
   box-sizing: border-box;
   overflow: visible;
   isolation: isolate;
+  --search-edge-angle: 0deg;
   transition: box-shadow 0.2s ease;
 }
 
@@ -576,15 +583,14 @@ body {
   position: absolute;
   inset: -6px;
   border-radius: inherit;
-  background: conic-gradient(
-    from 0deg,
-    rgba(92, 230, 240, 0) 0deg,
-    rgba(92, 230, 240, 0.16) 56deg,
-    rgba(240, 92, 210, 0.14) 146deg,
-    rgba(255, 215, 100, 0.16) 222deg,
-    rgba(240, 92, 210, 0.14) 296deg,
-    rgba(92, 230, 240, 0) 360deg
-  );
+  background:
+    radial-gradient(130% 80% at 50% 50%, rgba(240, 92, 210, 0.07), transparent 58%),
+    linear-gradient(
+      90deg,
+      rgba(92, 230, 240, 0.08) 0%,
+      rgba(240, 92, 210, 0.08) 50%,
+      rgba(255, 215, 100, 0.08) 100%
+    );
   filter: blur(10px);
   opacity: 0.72;
   z-index: -1;
@@ -599,7 +605,7 @@ body {
   padding: 2px;
   border-radius: inherit;
   background: conic-gradient(
-    from 0deg,
+    from var(--search-edge-angle),
     rgba(92, 230, 240, 0.62) 0deg,
     rgba(92, 230, 240, 0.78) 56deg,
     rgba(240, 92, 210, 0.66) 146deg,
@@ -616,7 +622,7 @@ body {
     linear-gradient(#000 0 0);
   mask-composite: exclude;
   pointer-events: none;
-  animation: search-edge-run 7.8s linear infinite;
+  animation: search-edge-angle-spin 5.2s linear infinite;
 }
 
 .neon-search-inner {
@@ -642,7 +648,7 @@ body {
 
 .neon-search-wrap:focus-within::after {
   background: conic-gradient(
-    from 0deg,
+    from var(--search-edge-angle),
     rgb(92, 230, 240) 0deg,
     rgb(92, 230, 240) 56deg,
     rgb(240, 92, 210) 146deg,
@@ -650,14 +656,12 @@ body {
     rgb(240, 92, 210) 296deg,
     rgb(92, 230, 240) 360deg
   );
+  animation-duration: 4s;
 }
 
-@keyframes search-edge-run {
-  0% {
-    transform: rotate(0deg);
-  }
+@keyframes search-edge-angle-spin {
   100% {
-    transform: rotate(360deg);
+    --search-edge-angle: 360deg;
   }
 }
 
