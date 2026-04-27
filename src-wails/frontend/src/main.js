@@ -24,6 +24,8 @@ import {
 } from "./app/helpers/icons.js";
 import { loadLikedSet, saveLikedSet } from "./app/helpers/likedSet.js";
 import { audioDiagPayload, createPlayEventLogger } from "./app/helpers/playerDiagnostics.js";
+import { escapeHtml, setTableMutedMessage } from "./app/helpers/text.js";
+import { formatDurationMs, formatTime } from "./app/helpers/time.js";
 import {
   applyAppTheme,
   applyPlatformClassNames,
@@ -458,22 +460,6 @@ function removeCurrentFromQueue() {
   refreshFavButton();
 }
 
-function escapeHtml(s) {
-  return String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
-}
-
-function setTableMutedMessage(tbody, colSpan, message) {
-  if (!tbody) return;
-  tbody.innerHTML = "";
-  const tr = document.createElement("tr");
-  const td = document.createElement("td");
-  td.colSpan = colSpan;
-  td.className = "muted";
-  td.textContent = String(message ?? "");
-  tr.appendChild(td);
-  tbody.appendChild(tr);
-}
-
 /** ---------- 右键菜单（对齐 Py sidebar / import_track_context_menu） ---------- */
 
 
@@ -543,19 +529,6 @@ const { renderImportTable, wireImportPage } = createImportPageController({
 
 function audioEl() {
   return document.getElementById("audio-player");
-}
-
-function formatTime(sec) {
-  if (sec == null || !isFinite(sec) || sec < 0) return "0:00";
-  const s = Math.floor(sec % 60);
-  const m = Math.floor(sec / 60);
-  return `${m}:${s.toString().padStart(2, "0")}`;
-}
-
-function formatDurationMs(ms) {
-  const n = Number(ms);
-  if (!Number.isFinite(n) || n <= 0) return "--";
-  return formatTime(n / 1000);
 }
 
 function renderSidebar() {
