@@ -54,6 +54,7 @@ import { createLyricsController } from "./features/lyrics/controller.js";
 import { createDockController } from "./features/player/dockController.js";
 import { createDockThemeHelpers } from "./features/player/dockTheme.js";
 import { createPlayerHotkeyController } from "./features/player/hotkeysController.js";
+import { createTrayRecentController } from "./features/player/trayRecentController.js";
 import { createSearchController } from "./features/search/controller.js";
 import { createSettingsController } from "./features/settings/controller.js";
 import { renderMainShell } from "./layout/renderMainShell.js";
@@ -392,6 +393,44 @@ const { wireGlobalHotkeyListener, wireVolume } = createPlayerHotkeyController({
   warnRequestFailed,
 });
 
+const {
+  broadcastTrayPlayerState,
+  currentTrayPlayerState,
+  loadRecentPlaysFromDb,
+  playFromRecentRow,
+  pushSessionRecentFromCurrentTrack,
+  renderRecentPlaysTable,
+} = createTrayRecentController({
+  emitTo,
+  escapeHtml,
+  getAudioEl: audioEl,
+  getPlayIndex: () => playIndex,
+  getPlayQueue: () => playQueue,
+  getSessionRecentPlays: () => sessionRecentPlays,
+  invoke,
+  maxSessionRecent: RECENT_SESSION_MAX,
+  onRecentChanged: () => {
+    if (document.querySelector('.page[data-page="recent"]')?.classList.contains("page-active")) {
+      renderRecentPlaysTable();
+    }
+    if (document.querySelector('.page[data-page="home"]')?.classList.contains("page-active")) {
+      renderHomePage();
+    }
+    if (document.querySelector('.page[data-page="daily"]')?.classList.contains("page-active")) {
+      renderDailyTable();
+    }
+  },
+  playFromQueueIndex,
+  renderQueuePanel,
+  setPlayQueue: (rows) => {
+    playQueue = rows;
+  },
+  setSessionRecentPlays: (rows) => {
+    sessionRecentPlays = Array.isArray(rows) ? rows : [];
+  },
+  trayPlayerTarget: TRAY_PLAYER_TARGET,
+});
+
 // Settings are split into a controller so the runtime entry only keeps state bridges.
 const {
   getSettingsFormValues,
@@ -599,129 +638,6 @@ function setPlayerNavEnabled() {
   });
 }
 
-function currentTrayPlayerState() {
-  const current = playQueue[playIndex] || null;
-  const audio = audioEl();
-  const title = document.getElementById("dock-title")?.textContent?.trim() || "CloudPlayer";
-  const sub = document.getElementById("dock-sub")?.textContent?.trim() || "从菜单栏快速控制当前播放";
-  const coverUrl = document.getElementById("dock-cover")?.getAttribute("src") || null;
-  const rootStyle = getComputedStyle(document.documentElement);
-  const accent = rootStyle.getPropertyValue("--accent").trim() || "#c62f2f";
-  const accentRgb = rootStyle.getPropertyValue("--accent-rgb").trim() || "198, 47, 47";
-  const prevDisabled = !!document.getElementById("btn-player-prev")?.disabled;
-  const nextDisabled = !!document.getElementById("btn-player-next")?.disabled;
-  const duration = audio?.duration;
-  const currentTime = audio?.currentTime ?? 0;
-  const progressPct =
-    duration && Number.isFinite(duration) && duration > 0 ? (currentTime / duration) * 100 : 0;
-  return {
-    hasTrack: !!current,
-    title,
-    sub,
-    coverUrl,
-    playing: !!audio && !!audio.src && !audio.paused,
-    hasPrev: !prevDisabled,
-    hasNext: !nextDisabled,
-    progressPct,
-    accent,
-    accentRgb,
-  };
-}
-
-async function broadcastTrayPlayerState() {
-  try {
-    await emitTo(TRAY_PLAYER_TARGET, "tray-player-state", currentTrayPlayerState());
-  } catch (error) {
-    console.warn("emit tray-player-state", error);
-  }
-}
-
-async function persistRecentPlaySnapshot(snap) {
-  try {
-    if (snap.local_path) {
-      await invoke("record_recent_play", {
-        row: {
-          kind: "local",
-          title: snap.title,
-          artist: snap.artist || "",
-          cover_url: null,
-          pjmp3_source_id: null,
-          file_path: snap.local_path,
-        },
-      });
-    } else {
-      await invoke("record_recent_play", {
-        row: {
-          kind: "online",
-          title: snap.title,
-          artist: snap.artist || "",
-          cover_url: snap.cover_url ?? null,
-          pjmp3_source_id: snap.source_id,
-          file_path: null,
-        },
-      });
-    }
-  } catch (e) {
-    console.warn("record_recent_play", e);
-  }
-}
-
-function pushSessionRecentFromCurrentTrack(_onlineResolvedPlayUrl = null) {
-  const it = playQueue[playIndex];
-  if (!it) return;
-  /** @type {{ source_id?: string, title: string, artist: string, cover_url?: string | null, local_path?: string }} */
-  let snap;
-  if (it.local_path) {
-    snap = { title: it.title, artist: it.artist || "", local_path: it.local_path };
-  } else {
-    const sid = (it.source_id || "").trim();
-    if (!sid) return;
-    snap = { source_id: sid, title: it.title, artist: it.artist || "", cover_url: it.cover_url || null };
-  }
-  const key = snap.local_path ? `L:${snap.local_path}` : `O:${snap.source_id}`;
-  sessionRecentPlays = sessionRecentPlays.filter((x) => {
-    const k = x.local_path ? `L:${x.local_path}` : `O:${(x.source_id || "").trim()}`;
-    return k !== key;
-  });
-  sessionRecentPlays.unshift(snap);
-  if (sessionRecentPlays.length > RECENT_SESSION_MAX) sessionRecentPlays.length = RECENT_SESSION_MAX;
-  void persistRecentPlaySnapshot(snap);
-  if (document.querySelector('.page[data-page="recent"]')?.classList.contains("page-active")) {
-    renderRecentPlaysTable();
-  }
-  if (document.querySelector('.page[data-page="home"]')?.classList.contains("page-active")) {
-    renderHomePage();
-  }
-  if (document.querySelector('.page[data-page="daily"]')?.classList.contains("page-active")) {
-    renderDailyTable();
-  }
-}
-
-async function loadRecentPlaysFromDb() {
-  try {
-    const rows = await invoke("list_recent_plays");
-    if (!Array.isArray(rows) || !rows.length) return;
-    sessionRecentPlays = rows.map((r) => {
-      const fp = r.filePath || r.file_path;
-      if ((r.kind || "") === "local" && fp) {
-        return { title: r.title, artist: r.artist || "", local_path: fp };
-      }
-      return {
-        source_id: r.pjmp3SourceId || r.pjmp3_source_id || "",
-        title: r.title,
-        artist: r.artist || "",
-        cover_url: r.coverUrl ?? r.cover_url ?? null,
-      };
-    });
-    if (document.querySelector('.page[data-page="recent"]')?.classList.contains("page-active")) {
-      renderRecentPlaysTable();
-    }
-    renderHomePage();
-    renderDailyTable();
-  } catch (e) {
-    console.warn("list_recent_plays", e);
-  }
-}
 
 function renderDownloadQueueTable() {
   const tbody = document.querySelector("#download-queue-table tbody");
@@ -753,44 +669,6 @@ function updateDownloadFolderHint(path) {
   el.textContent = path && String(path).trim() ? `当前：${path}` : "默认：用户音乐/CloudPlayer";
 }
 
-function playFromRecentRow(rowIdx) {
-  const snap = sessionRecentPlays[rowIdx];
-  if (!snap) return;
-  if (snap.local_path) {
-    playQueue = [{ title: snap.title, artist: snap.artist || "", local_path: snap.local_path, cover_url: null }];
-  } else {
-    playQueue = [
-      {
-        source_id: snap.source_id,
-        title: snap.title,
-        artist: snap.artist || "",
-        cover_url: snap.cover_url || null,
-      },
-    ];
-  }
-  void playFromQueueIndex(0);
-  renderQueuePanel();
-}
-
-function renderRecentPlaysTable() {
-  const tbody = document.querySelector("#recent-plays-table tbody");
-  if (!tbody) return;
-  if (!sessionRecentPlays.length) {
-    tbody.innerHTML =
-      '<tr><td colspan="4" class="muted">暂无记录。在「搜索」、每日推荐或歌单中播放曲目后将显示在此处。</td></tr>';
-    return;
-  }
-  tbody.innerHTML = "";
-  sessionRecentPlays.forEach((snap, i) => {
-    const tr = document.createElement("tr");
-    const title = snap.title || "—";
-    const artist = snap.artist || "—";
-    const src = snap.local_path ? "本地" : "在线";
-    tr.innerHTML = `<td>${i + 1}</td><td>${escapeHtml(title)}</td><td>${escapeHtml(artist)}</td><td>${escapeHtml(src)}</td>`;
-    tr.addEventListener("dblclick", () => playFromRecentRow(i));
-    tbody.appendChild(tr);
-  });
-}
 
 async function refreshLocalLibraryTable() {
   try {
