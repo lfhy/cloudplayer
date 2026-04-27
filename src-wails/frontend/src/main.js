@@ -249,7 +249,7 @@ function syncNeteaseCookieUi() {
   }
 }
 
-function setImportMethod(method = "") {
+function setImportMethod(method = "", { syncStep = true } = {}) {
   importMethod = method;
   document.querySelectorAll("[data-import-method]").forEach((card) => {
     card.classList.toggle("is-active", card.getAttribute("data-import-method") === method);
@@ -266,7 +266,7 @@ function setImportMethod(method = "") {
   };
   if (title) title.textContent = copy[method]?.[0] || "配置导入参数";
   if (desc) desc.textContent = copy[method]?.[1] || "";
-  setImportStep(method ? "config" : importTracks.length > 0 ? "result" : "choose");
+  if (syncStep) setImportStep(method ? "config" : importTracks.length > 0 ? "result" : "choose");
 }
 
 function showImportResultStage(show = true) {
@@ -2493,13 +2493,17 @@ function wireImportPage() {
   document.querySelectorAll("[data-import-step-nav]").forEach((button) => {
     button.addEventListener("click", () => {
       const step = button.getAttribute("data-import-step-nav") || "choose";
-      if (step === "choose") setImportStep("choose");
+      if (step === "choose") {
+        setImportMethod("", { syncStep: false });
+        setImportStep("choose");
+      }
       if (step === "config" && importMethod) setImportStep("config");
       if (step === "result" && importTracks.length > 0) setImportStep("result");
     });
   });
 
   document.getElementById("btn-import-back")?.addEventListener("click", () => {
+    setImportMethod("", { syncStep: false });
     setImportStep("choose");
   });
 
