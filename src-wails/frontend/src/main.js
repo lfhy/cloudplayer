@@ -3709,7 +3709,18 @@ function wireSearchPage() {
   if (!inputs.length) return;
   inputs.forEach((input) => {
     input.addEventListener("input", () => {
+      const value = input.value.trim();
       syncSearchInputs(input.value);
+      if (value) return;
+      searchState.keyword = "";
+      searchState.page = 1;
+      searchState.results = [];
+      searchState.playlistResults = [];
+      searchState.hasNext = false;
+      renderSearchTable();
+      renderPlaylistSearchResults();
+      updateSearchViewState();
+      updateSearchToolbar();
     });
     input.addEventListener("keydown", (e) => {
       if (e.key !== "Enter") return;
