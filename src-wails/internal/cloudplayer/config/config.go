@@ -2,12 +2,20 @@ package config
 
 import (
 	"encoding/json"
+	"fmt"
+	"net/url"
 	"os"
 	"path/filepath"
 	"strings"
 )
 
 const BaseURL = "https://pjmp3.com"
+
+const (
+	NetworkProxyModeDirect = "direct"
+	NetworkProxyModeSystem = "system"
+	NetworkProxyModeCustom = "custom"
+)
 
 type Settings struct {
 	WindowGeometryB64           *string       `json:"window_geometry_b64,omitempty"`
@@ -26,6 +34,8 @@ type Settings struct {
 	DownloadsTodayDate          string        `json:"downloads_today_date"`
 	DownloadsTodayCount         int64         `json:"downloads_today_count"`
 	LyricsNeteaseAPIBase        string        `json:"lyrics_netease_api_base"`
+	NetworkProxyMode            string        `json:"network_proxy_mode"`
+	NetworkProxyURL             string        `json:"network_proxy_url"`
 	LyricsLRCLibEnabled         bool          `json:"lyrics_lrclib_enabled"`
 	LyricsProviderOrder         string        `json:"lyrics_provider_order"`
 	MainWindowCloseAction       string        `json:"main_window_close_action"`
@@ -55,6 +65,7 @@ func DefaultSettings() Settings {
 		DesktopLyricsLocked:         true,
 		DesktopLyricsScale:          1.0,
 		LyricsLRCLibEnabled:         true,
+		NetworkProxyMode:            NetworkProxyModeDirect,
 		LyricsProviderOrder:         "pjmp3,netease,lrclib",
 		MainWindowCloseAction:       "ask",
 		AppTheme:                    "coral",
@@ -128,6 +139,46 @@ func NormalizeAppThemeMode(value string) string {
 	default:
 		return "system"
 	}
+}
+
+func NormalizeNetworkProxyMode(value string) string {
+	switch strings.ToLower(strings.TrimSpace(value)) {
+	case NetworkProxyModeSystem, NetworkProxyModeCustom:
+		return strings.ToLower(strings.TrimSpace(value))
+	default:
+		return NetworkProxyModeDirect
+	}
+}
+
+func NormalizeNetworkProxyURL(raw string) (string, error) {
+	value := strings.TrimSpace(raw)
+	if value == "" {
+		return "", nil
+	}
+	if !strings.Contains(value, "://") {
+		value = "http://" + value
+	}
+
+	parsed, err := url.Parse(value)
+	if err != nil {
+		return "", fmt.Errorf("代理地址无效")
+	}
+	switch strings.ToLower(strings.TrimSpace(parsed.Scheme)) {
+	case "", "http":
+		parsed.Scheme = "http"
+	case "https", "socks5", "socks5h":
+	case "socks":
+		parsed.Scheme = "socks5"
+	default:
+		return "", fmt.Errorf("仅支持 http、https、socks5、socks5h 代理")
+	}
+	if strings.TrimSpace(parsed.Host) == "" {
+		return "", fmt.Errorf("代理地址缺少主机或端口")
+	}
+	if parsed.Path == "/" {
+		parsed.Path = ""
+	}
+	return parsed.String(), nil
 }
 
 func SaveSettings(settings Settings) error {

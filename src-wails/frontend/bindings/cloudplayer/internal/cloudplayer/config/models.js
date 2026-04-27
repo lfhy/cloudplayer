@@ -187,6 +187,20 @@ export class Settings {
              */
             this["lyrics_netease_api_base"] = "";
         }
+        if (!("network_proxy_mode" in $$source)) {
+            /**
+             * @member
+             * @type {string}
+             */
+            this["network_proxy_mode"] = "";
+        }
+        if (!("network_proxy_url" in $$source)) {
+            /**
+             * @member
+             * @type {string}
+             */
+            this["network_proxy_url"] = "";
+        }
         if (!("lyrics_lrclib_enabled" in $$source)) {
             /**
              * @member
@@ -274,10 +288,10 @@ export class Settings {
      * @returns {Settings}
      */
     static createFrom($$source = {}) {
-        const $$createField22_0 = $$createType0;
+        const $$createField24_0 = $$createType0;
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
         if ("global_hotkeys" in $$parsedSource) {
-            $$parsedSource["global_hotkeys"] = $$createField22_0($$parsedSource["global_hotkeys"]);
+            $$parsedSource["global_hotkeys"] = $$createField24_0($$parsedSource["global_hotkeys"]);
         }
         return new Settings(/** @type {Partial<Settings>} */($$parsedSource));
     }

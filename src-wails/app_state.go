@@ -3,17 +3,20 @@ package main
 import (
 	"database/sql"
 	"net/http"
-	"net/http/cookiejar"
-	"time"
+	"sync"
 
+	"cloudplayer/internal/cloudplayer/config"
 	"cloudplayer/internal/cloudplayer/download"
+	"cloudplayer/internal/cloudplayer/httpclient"
 	"cloudplayer/internal/cloudplayer/ratelimiter"
 	"github.com/wailsapp/wails/v3/pkg/application"
 )
 
 type AppState struct {
 	DB                   *sql.DB
+	httpClientMu         sync.RWMutex
 	HTTPClient           *http.Client
+	HTTPJar              http.CookieJar
 	RateLimiter          *ratelimiter.Limiter
 	DownloadCh           chan download.DownloadJob
 	Hotkeys              *HotkeyManager
@@ -23,22 +26,51 @@ type AppState struct {
 }
 
 func NewAppState(db *sql.DB) *AppState {
-	jar, _ := cookiejar.New(nil)
+	jar := httpclient.NewJar()
+	client, _ := httpclient.Build(config.DefaultSettings(), jar)
 	return &AppState{
-		DB: db,
-		HTTPClient: &http.Client{
-			Timeout: 45 * time.Second,
-			Jar:     jar,
-		},
+		DB:          db,
+		HTTPClient:  client,
+		HTTPJar:     jar,
 		RateLimiter: ratelimiter.New(45),
 		DownloadCh:  make(chan download.DownloadJob, 64),
 	}
 }
 
+func (s *AppState) HTTP() *http.Client {
+	s.httpClientMu.RLock()
+	client := s.HTTPClient
+	s.httpClientMu.RUnlock()
+	return client
+}
+
+func (s *AppState) BuildHTTPClient(settings config.Settings) (*http.Client, error) {
+	return httpclient.Build(settings, s.HTTPJar)
+}
+
+func (s *AppState) SwapHTTPClient(client *http.Client) {
+	s.httpClientMu.Lock()
+	previous := s.HTTPClient
+	s.HTTPClient = client
+	s.httpClientMu.Unlock()
+	if previous != nil {
+		previous.CloseIdleConnections()
+	}
+}
+
+func (s *AppState) ApplyNetworkSettings(settings config.Settings) error {
+	client, err := s.BuildHTTPClient(settings)
+	if err != nil {
+		return err
+	}
+	s.SwapHTTPClient(client)
+	return nil
+}
+
 func (s *AppState) StartBackgroundWorkers() {
 	go func() {
 		for job := range s.DownloadCh {
-			download.RunOneJob(s.HTTPClient, job)
+			download.RunOneJob(s.HTTP(), job)
 		}
 	}()
 }

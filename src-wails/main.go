@@ -29,6 +29,9 @@ func main() {
 	}
 	state := NewAppState(conn)
 	initialSettings := config.LoadSettings()
+	if err := state.ApplyNetworkSettings(initialSettings); err != nil {
+		log.Printf("proxy config invalid, fallback to direct client: %v", err)
+	}
 	state.AppTheme = initialSettings.AppTheme
 	state.AppThemeCustomAccent = initialSettings.AppThemeCustomAccent
 	state.StartBackgroundWorkers()

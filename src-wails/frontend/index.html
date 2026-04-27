@@ -484,7 +484,7 @@
             <section class="page" data-page="settings" aria-label="偏好设置">
               <h1 class="page-title">偏好设置</h1>
               <p class="page-hint muted">
-                关闭主窗口行为、快捷键、网易云 API 根地址（可选）与桌面歌词颜色将保存到本地配置。播放页歌词固定为 QQ → 酷狗 → 网易云 → LRCLIB（与「换」歌词替换同源）。
+                关闭主窗口行为、网络代理、快捷键、网易云 API 根地址（可选）与桌面歌词颜色将保存到本地配置。播放页歌词固定为 QQ → 酷狗 → 网易云 → LRCLIB（与「换」歌词替换同源）。
               </p>
               <div class="settings-form">
                 <div class="settings-field">
@@ -594,6 +594,47 @@
                   </div>
                   <p class="settings-field-hint muted">
                     预设共 6 种，再加 1 个自定义颜色模式。切换后主界面强调色与 macOS Dock 图标都会同步更新；菜单栏图标保持模板白色。
+                  </p>
+                </div>
+                <div class="settings-field">
+                  <span class="settings-field-label">网络代理</span>
+                  <input type="hidden" id="setting-network-proxy-mode" value="direct" />
+                  <div class="theme-mode-grid" role="radiogroup" aria-label="网络代理模式">
+                    <button type="button" class="theme-mode-card" data-network-proxy-mode-card="direct" role="radio" aria-checked="false">
+                      <span class="theme-mode-card__preview theme-mode-card__preview--light"></span>
+                      <span class="theme-card__meta">
+                        <span class="theme-card__title">不使用代理</span>
+                        <span class="theme-card__desc">所有接口请求直接访问</span>
+                      </span>
+                    </button>
+                    <button type="button" class="theme-mode-card" data-network-proxy-mode-card="system" role="radio" aria-checked="false">
+                      <span class="theme-mode-card__preview theme-mode-card__preview--system"></span>
+                      <span class="theme-card__meta">
+                        <span class="theme-card__title">使用系统代理</span>
+                        <span class="theme-card__desc">读取 macOS 当前网络代理设置</span>
+                      </span>
+                    </button>
+                    <button type="button" class="theme-mode-card" data-network-proxy-mode-card="custom" role="radio" aria-checked="false">
+                      <span class="theme-mode-card__preview theme-mode-card__preview--graphite"></span>
+                      <span class="theme-card__meta">
+                        <span class="theme-card__title">使用自定义代理</span>
+                        <span class="theme-card__desc">手动填写 HTTP / SOCKS 代理地址</span>
+                      </span>
+                    </button>
+                  </div>
+                  <div class="settings-custom-theme" id="settings-network-proxy-custom" hidden>
+                    <label for="setting-network-proxy-url" class="settings-field-label">自定义代理地址</label>
+                    <input
+                      type="text"
+                      id="setting-network-proxy-url"
+                      class="import-link-input settings-field-control settings-field-control--text"
+                      spellcheck="false"
+                      autocomplete="off"
+                      placeholder="http://127.0.0.1:7890 或 socks5://127.0.0.1:7891"
+                    />
+                  </div>
+                  <p class="settings-field-hint muted">
+                    支持 <code>http://</code>、<code>https://</code>、<code>socks5://</code>、<code>socks5h://</code>。选「系统代理」时会跟随 macOS 当前的 HTTP / HTTPS / SOCKS 代理配置；选「自定义代理」时，地址填写完整后立即生效。
                   </p>
                 </div>
                 <div class="settings-field">

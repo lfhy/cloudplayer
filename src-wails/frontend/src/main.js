@@ -27,6 +27,7 @@ const APP_THEMES = {
 };
 
 const APP_THEME_MODES = new Set(["system", "light", "graphite", "midnight", "forestnight"]);
+const NETWORK_PROXY_MODES = new Set(["direct", "system", "custom"]);
 const QUICK_THEME_MODE_LABELS = {
   system: "跟随系统",
   light: "浅色",
@@ -450,6 +451,28 @@ function normalizeAccentHex(value, fallback = "#c62f2f") {
   return /^#[0-9a-f]{6}$/.test(normalized) ? normalized : fallback;
 }
 
+function normalizeNetworkProxyMode(value) {
+  const normalized = String(value || "direct").trim().toLowerCase();
+  return NETWORK_PROXY_MODES.has(normalized) ? normalized : "direct";
+}
+
+function normalizeNetworkProxyUrl(value) {
+  return String(value ?? "").trim();
+}
+
+function canSaveCustomProxyUrl(value) {
+  const raw = normalizeNetworkProxyUrl(value);
+  if (!raw) return false;
+  const candidate = raw.includes("://") ? raw : `http://${raw}`;
+  try {
+    const url = new URL(candidate);
+    const scheme = url.protocol.replace(/:$/, "").toLowerCase();
+    return ["http", "https", "socks", "socks5", "socks5h"].includes(scheme) && !!url.host;
+  } catch {
+    return false;
+  }
+}
+
 function themeAccentRgb(hex) {
   const normalized = normalizeAccentHex(hex);
   const r = parseInt(normalized.slice(1, 3), 16);
@@ -505,6 +528,21 @@ function setThemeModeSelection(mode) {
   refreshQuickThemeModeUi(normalized);
 }
 
+function setNetworkProxyModeSelection(mode) {
+  const normalized = normalizeNetworkProxyMode(mode);
+  const hidden = document.getElementById("setting-network-proxy-mode");
+  const customWrap = document.getElementById("settings-network-proxy-custom");
+  const urlInput = document.getElementById("setting-network-proxy-url");
+  if (hidden) hidden.value = normalized;
+  if (customWrap) customWrap.hidden = normalized !== "custom";
+  if (urlInput) urlInput.disabled = normalized !== "custom";
+  document.querySelectorAll("[data-network-proxy-mode-card]").forEach((card) => {
+    const active = card.getAttribute("data-network-proxy-mode-card") === normalized;
+    card.classList.toggle("is-active", active);
+    card.setAttribute("aria-checked", active ? "true" : "false");
+  });
+}
+
 function effectiveQuickThemeMode(mode) {
   const normalized = normalizeAppThemeMode(mode);
   if (normalized === "system") return "system";
@@ -558,6 +596,8 @@ let settingsFormBaseline = {
   theme: "coral",
   mode: "system",
   customAccent: "#c62f2f",
+  proxyMode: "direct",
+  proxyURL: "",
   action: "ask",
   base: "#ffffff",
   highlight: "#ffb7d4",
@@ -822,6 +862,8 @@ function getSettingsFormValues() {
   const themeEl = document.getElementById("setting-app-theme");
   const themeModeEl = document.getElementById("setting-app-theme-mode");
   const customAccentEl = document.getElementById("setting-app-theme-custom-accent");
+  const networkProxyModeEl = document.getElementById("setting-network-proxy-mode");
+  const networkProxyUrlEl = document.getElementById("setting-network-proxy-url");
   const closeActionEl = document.getElementById("setting-close-action");
   const baseEl = document.getElementById("setting-ly-base");
   const highlightEl = document.getElementById("setting-ly-highlight");
@@ -831,6 +873,8 @@ function getSettingsFormValues() {
     theme: normalizeAppTheme(themeEl?.value),
     mode: normalizeAppThemeMode(themeModeEl?.value),
     customAccent: normalizeAccentHex(customAccentEl?.value, "#c62f2f"),
+    proxyMode: normalizeNetworkProxyMode(networkProxyModeEl?.value),
+    proxyURL: normalizeNetworkProxyUrl(networkProxyUrlEl?.value),
     action: normalizeCloseAction(closeActionEl?.value),
     base: normalizeLyricHexInput(baseEl?.value, "#ffffff"),
     highlight: normalizeLyricHexInput(highlightEl?.value, "#ffb7d4"),
@@ -846,6 +890,8 @@ function settingsFormIsDirty() {
     current.theme !== settingsFormBaseline.theme ||
     current.mode !== settingsFormBaseline.mode ||
     current.customAccent !== settingsFormBaseline.customAccent ||
+    current.proxyMode !== settingsFormBaseline.proxyMode ||
+    current.proxyURL !== settingsFormBaseline.proxyURL ||
     current.action !== settingsFormBaseline.action ||
     current.base !== settingsFormBaseline.base ||
     current.highlight !== settingsFormBaseline.highlight ||
@@ -870,12 +916,21 @@ function fillSettingsFormFromSettings(settings) {
     settings?.app_theme_custom_accent ?? settings?.appThemeCustomAccent ?? "#c62f2f",
     "#c62f2f"
   );
+  const proxyMode = normalizeNetworkProxyMode(
+    settings?.network_proxy_mode ?? settings?.networkProxyMode ?? "direct"
+  );
+  const proxyURL = normalizeNetworkProxyUrl(
+    settings?.network_proxy_url ?? settings?.networkProxyUrl ?? ""
+  );
   const customAccentEl = document.getElementById("setting-app-theme-custom-accent");
   const customAccentCodeEl = document.getElementById("setting-app-theme-custom-accent-code");
+  const proxyUrlEl = document.getElementById("setting-network-proxy-url");
   if (customAccentEl) customAccentEl.value = customAccent;
   if (customAccentCodeEl) customAccentCodeEl.textContent = customAccent;
+  if (proxyUrlEl) proxyUrlEl.value = proxyURL;
   setThemeModeSelection(mode);
   setThemeCardSelection(theme);
+  setNetworkProxyModeSelection(proxyMode);
   applyAppTheme(theme, customAccent, mode);
   const closeActionEl = document.getElementById("setting-close-action");
   const closeAction = normalizeCloseAction(
@@ -917,6 +972,16 @@ async function persistSettingsFromForm() {
   settingsSaveInFlight = true;
   const current = getSettingsFormValues();
   try {
+    let proxyURLForSave = current.proxyURL;
+    const customProxyReady = canSaveCustomProxyUrl(current.proxyURL);
+    if (current.proxyMode === "custom" && !customProxyReady) {
+      return;
+    }
+    if (current.proxyMode !== "custom" && !customProxyReady) {
+      proxyURLForSave = "";
+      const proxyUrlEl = document.getElementById("setting-network-proxy-url");
+      if (proxyUrlEl) proxyUrlEl.value = "";
+    }
     if (current.hotkeysSig !== settingsFormBaseline.hotkeysSig) {
       const seen = new Map();
       for (const [fieldKey, accel] of Object.entries(current.globalHotkeys)) {
@@ -941,6 +1006,8 @@ async function persistSettingsFromForm() {
         app_theme: current.theme,
         app_theme_mode: current.mode,
         app_theme_custom_accent: current.customAccent,
+        network_proxy_mode: current.proxyMode,
+        network_proxy_url: proxyURLForSave,
         main_window_close_action: current.action,
         desktop_lyrics_color_base: current.base,
         desktop_lyrics_color_highlight: current.highlight,
@@ -1020,6 +1087,7 @@ function wireSettingsFormDirtyTracking() {
   document.getElementById("setting-app-theme-mode")?.addEventListener("change", () => queueSettingsAutosave(true));
   document.getElementById("setting-app-theme")?.addEventListener("change", () => queueSettingsAutosave(true));
   document.getElementById("setting-app-theme-custom-accent")?.addEventListener("input", () => queueSettingsAutosave());
+  document.getElementById("setting-network-proxy-url")?.addEventListener("input", () => queueSettingsAutosave());
   document.getElementById("setting-close-action")?.addEventListener("change", () => queueSettingsAutosave(true));
   document.getElementById("setting-ly-base")?.addEventListener("input", () => queueSettingsAutosave());
   document.getElementById("setting-ly-highlight")?.addEventListener("input", () => queueSettingsAutosave());
@@ -1064,11 +1132,22 @@ function wireThemeCards() {
   });
 }
 
+function wireNetworkProxyModeCards() {
+  document.querySelectorAll("[data-network-proxy-mode-card]").forEach((card) => {
+    card.addEventListener("click", () => {
+      const mode = card.getAttribute("data-network-proxy-mode-card") || "direct";
+      setNetworkProxyModeSelection(mode);
+      queueSettingsAutosave(true);
+    });
+  });
+}
+
 function wirePreferencesModals() {
   document.getElementById("btn-dock-settings")?.addEventListener("click", () => setPage("settings"));
   wireSettingsFormDirtyTracking();
   wireThemeModeCards();
   wireThemeCards();
+  wireNetworkProxyModeCards();
   wireHotkeySettingsUi();
   document.getElementById("close-choice-tray")?.addEventListener("click", () => {
     void runCloseChoice("tray");

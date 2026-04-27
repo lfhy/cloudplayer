@@ -42,6 +42,8 @@ type SettingsPatch struct {
 	DesktopLyricsScale          *float64 `json:"desktop_lyrics_scale,omitempty"`
 	DownloadFolder              *string  `json:"download_folder,omitempty"`
 	LyricsNeteaseAPIBase        *string  `json:"lyrics_netease_api_base,omitempty"`
+	NetworkProxyMode            *string  `json:"network_proxy_mode,omitempty"`
+	NetworkProxyURL             *string  `json:"network_proxy_url,omitempty"`
 	LyricsLRCLibEnabled         *bool    `json:"lyrics_lrclib_enabled,omitempty"`
 	LyricsProviderOrder         *string  `json:"lyrics_provider_order,omitempty"`
 	MainWindowCloseAction       *string  `json:"main_window_close_action,omitempty"`
@@ -238,6 +240,16 @@ func (s *CloudPlayerService) SaveSettings(patch SettingsPatch) error {
 	if patch.LyricsNeteaseAPIBase != nil {
 		settings.LyricsNeteaseAPIBase = *patch.LyricsNeteaseAPIBase
 	}
+	if patch.NetworkProxyMode != nil {
+		settings.NetworkProxyMode = config.NormalizeNetworkProxyMode(*patch.NetworkProxyMode)
+	}
+	if patch.NetworkProxyURL != nil {
+		value, err := config.NormalizeNetworkProxyURL(*patch.NetworkProxyURL)
+		if err != nil {
+			return err
+		}
+		settings.NetworkProxyURL = value
+	}
 	if patch.LyricsLRCLibEnabled != nil {
 		settings.LyricsLRCLibEnabled = *patch.LyricsLRCLibEnabled
 	}
@@ -280,6 +292,9 @@ func (s *CloudPlayerService) SaveSettings(patch SettingsPatch) error {
 	if err := config.SaveSettings(settings); err != nil {
 		return err
 	}
+	if err := s.state.ApplyNetworkSettings(settings); err != nil {
+		return err
+	}
 	applyThemeAssets(s.state, settings.AppTheme, settings.AppThemeCustomAccent)
 	return nil
 }
@@ -302,7 +317,7 @@ func (s *CloudPlayerService) SearchSongs(keyword string, page uint32) (SearchRes
 		return SearchResponse{}, fmt.Errorf("请输入搜索关键词")
 	}
 	s.state.RateLimiter.AcquireSlot()
-	results, hasNext, err := musicsource.Current().Search(s.state.HTTPClient, trimmed, maxUint32(page, 1))
+	results, hasNext, err := musicsource.Current().Search(s.state.HTTP(), trimmed, maxUint32(page, 1))
 	if err != nil {
 		return SearchResponse{}, err
 	}
@@ -315,7 +330,7 @@ func (s *CloudPlayerService) GetPreviewURL(songID string) (string, error) {
 		return "", err
 	}
 	s.state.RateLimiter.AcquireSlot()
-	previewURL, err := ref.Provider.FetchPreviewURL(s.state.HTTPClient, ref.RawID)
+	previewURL, err := ref.Provider.FetchPreviewURL(s.state.HTTP(), ref.RawID)
 	if err != nil {
 		return "", err
 	}
@@ -331,7 +346,7 @@ func (s *CloudPlayerService) CachePreviewForPlay(songID string) (string, error) 
 		return "", err
 	}
 	s.state.RateLimiter.AcquireSlot()
-	return ref.Provider.CachePreviewAudioFile(s.state.HTTPClient, ref.RawID)
+	return ref.Provider.CachePreviewAudioFile(s.state.HTTP(), ref.RawID)
 }
 
 func (s *CloudPlayerService) ResolveOnlinePlay(songID, title, artist string) (ResolveOnlinePlayOut, error) {
@@ -362,7 +377,7 @@ func (s *CloudPlayerService) ResolveOnlinePlay(songID, title, artist string) (Re
 	}
 
 	s.state.RateLimiter.AcquireSlot()
-	previewPath, previewErr := ref.Provider.CachePreviewAudioFile(s.state.HTTPClient, ref.RawID)
+	previewPath, previewErr := ref.Provider.CachePreviewAudioFile(s.state.HTTP(), ref.RawID)
 	if previewErr == nil && previewPath != "" {
 		return ResolveOnlinePlayOut{
 			Kind: "file",
@@ -372,7 +387,7 @@ func (s *CloudPlayerService) ResolveOnlinePlay(songID, title, artist string) (Re
 	}
 
 	s.state.RateLimiter.AcquireSlot()
-	previewURL, directErr := ref.Provider.FetchPreviewURL(s.state.HTTPClient, ref.RawID)
+	previewURL, directErr := ref.Provider.FetchPreviewURL(s.state.HTTP(), ref.RawID)
 	if directErr == nil && strings.TrimSpace(previewURL) != "" {
 		return ResolveOnlinePlayOut{
 			Kind: "url",
@@ -522,7 +537,7 @@ func (s *CloudPlayerService) ReplacePlaylistImportItems(playlistID int64, items 
 	if err := tx.Commit(); err != nil {
 		return err
 	}
-	importenrich.SpawnPlaylistEnrich(s.state.DB, s.state.HTTPClient, s.state.RateLimiter, playlistID)
+	importenrich.SpawnPlaylistEnrich(s.state.DB, s.state.HTTP(), s.state.RateLimiter, playlistID)
 	return nil
 }
 
@@ -555,7 +570,7 @@ func (s *CloudPlayerService) AppendPlaylistImportItems(playlistID int64, items [
 	if err := tx.Commit(); err != nil {
 		return err
 	}
-	importenrich.SpawnPlaylistEnrich(s.state.DB, s.state.HTTPClient, s.state.RateLimiter, playlistID)
+	importenrich.SpawnPlaylistEnrich(s.state.DB, s.state.HTTP(), s.state.RateLimiter, playlistID)
 	return nil
 }
 
@@ -563,14 +578,14 @@ func (s *CloudPlayerService) StartImportEnrich(playlistID int64) error {
 	if playlistID <= 0 {
 		return fmt.Errorf("无效的歌单 id")
 	}
-	importenrich.SpawnPlaylistEnrich(s.state.DB, s.state.HTTPClient, s.state.RateLimiter, playlistID)
+	importenrich.SpawnPlaylistEnrich(s.state.DB, s.state.HTTP(), s.state.RateLimiter, playlistID)
 	return nil
 }
 
 func (s *CloudPlayerService) FetchSongLRCEnriched(req lyrics.FetchRequest) (*string, error) {
 	settings := config.LoadSettings()
 	s.state.RateLimiter.AcquireSlot()
-	return lyrics.FetchSongLRCEnriched(s.state.HTTPClient, settings, req)
+	return lyrics.FetchSongLRCEnriched(s.state.HTTP(), settings, req)
 }
 
 func (s *CloudPlayerService) FetchSharePlaylist(rawURL string) (SharePlaylistResponse, error) {
@@ -580,7 +595,7 @@ func (s *CloudPlayerService) FetchSharePlaylist(rawURL string) (SharePlaylistRes
 	}
 	settings := config.LoadSettings()
 	s.state.RateLimiter.AcquireSlot()
-	name, tracks, err := sharelink.FetchPlaylistFromShareURL(s.state.HTTPClient, trimmed, sharelink.FetchOptions{
+	name, tracks, err := sharelink.FetchPlaylistFromShareURL(s.state.HTTP(), trimmed, sharelink.FetchOptions{
 		NeteaseCookieEnabled: settings.ShareNeteaseCookieEnabled,
 		NeteaseCookie:        settings.ShareNeteaseCookie,
 	})

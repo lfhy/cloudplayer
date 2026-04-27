@@ -634,6 +634,20 @@ export class SettingsPatch {
         if (/** @type {any} */(false)) {
             /**
              * @member
+             * @type {string | null | undefined}
+             */
+            this["network_proxy_mode"] = undefined;
+        }
+        if (/** @type {any} */(false)) {
+            /**
+             * @member
+             * @type {string | null | undefined}
+             */
+            this["network_proxy_url"] = undefined;
+        }
+        if (/** @type {any} */(false)) {
+            /**
+             * @member
              * @type {boolean | null | undefined}
              */
             this["lyrics_lrclib_enabled"] = undefined;
