@@ -596,6 +596,7 @@ body {
     linear-gradient(#000 0 0);
   mask-composite: exclude;
   pointer-events: none;
+  animation: search-glow-spin 2.4s linear infinite;
 }
 
 .neon-search-wrap::before {
@@ -603,22 +604,19 @@ body {
   position: absolute;
   inset: -6px;
   border-radius: inherit;
-  background: conic-gradient(
-    from 0deg,
-    rgba(92, 230, 240, 0) 0deg,
-    rgba(92, 230, 240, 0.16) 48deg,
-    rgba(240, 92, 210, 0.14) 128deg,
-    rgba(255, 215, 100, 0.16) 190deg,
-    rgba(240, 92, 210, 0.14) 262deg,
-    rgba(92, 230, 240, 0.16) 322deg,
-    rgba(92, 230, 240, 0) 360deg
-  );
+  background:
+    radial-gradient(130% 80% at 50% 50%, rgba(240, 92, 210, 0.07), transparent 58%),
+    linear-gradient(
+      90deg,
+      rgba(92, 230, 240, 0.08) 0%,
+      rgba(240, 92, 210, 0.08) 50%,
+      rgba(255, 215, 100, 0.08) 100%
+    );
   filter: blur(10px);
-  opacity: 0.72;
+  opacity: 0.7;
   z-index: -1;
   pointer-events: none;
-  animation: search-glow-spin 3.4s linear infinite reverse;
-  transition: opacity 0.2s ease, filter 0.2s ease, transform 0.2s ease;
+  transition: opacity 0.2s ease, filter 0.2s ease;
 }
 
 .neon-search-inner {
@@ -640,20 +638,19 @@ body {
 .neon-search-wrap:focus-within::after {
   background: conic-gradient(
     from 0deg,
-    rgba(92, 230, 240, 0.22) 0deg,
-    rgba(92, 230, 240, 1) 42deg,
-    rgba(240, 92, 210, 0.82) 126deg,
-    rgba(255, 215, 100, 1) 188deg,
-    rgba(240, 92, 210, 0.82) 256deg,
-    rgba(92, 230, 240, 1) 318deg,
-    rgba(92, 230, 240, 0.22) 360deg
+    rgba(92, 230, 240, 0.12) 0deg,
+    rgba(92, 230, 240, 0.18) 292deg,
+    rgba(92, 230, 240, 0.96) 320deg,
+    rgba(240, 92, 210, 0.98) 336deg,
+    rgba(255, 215, 100, 1) 352deg,
+    rgba(92, 230, 240, 0.12) 360deg
   );
+  animation-duration: 1.6s;
 }
 
 .neon-search-wrap:focus-within::before {
   opacity: 1;
   filter: blur(12px);
-  animation-duration: 2.5s;
 }
 
 @keyframes search-glow-spin {
