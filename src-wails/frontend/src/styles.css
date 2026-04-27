@@ -596,7 +596,6 @@ body {
     linear-gradient(#000 0 0);
   mask-composite: exclude;
   pointer-events: none;
-  animation: search-glow-spin 2.8s linear infinite;
 }
 
 .neon-search-wrap::before {
@@ -639,7 +638,16 @@ body {
 }
 
 .neon-search-wrap:focus-within::after {
-  animation-duration: 2s;
+  background: conic-gradient(
+    from 0deg,
+    rgba(92, 230, 240, 0.22) 0deg,
+    rgba(92, 230, 240, 1) 42deg,
+    rgba(240, 92, 210, 0.82) 126deg,
+    rgba(255, 215, 100, 1) 188deg,
+    rgba(240, 92, 210, 0.82) 256deg,
+    rgba(92, 230, 240, 1) 318deg,
+    rgba(92, 230, 240, 0.22) 360deg
+  );
 }
 
 .neon-search-wrap:focus-within::before {
