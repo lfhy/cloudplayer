@@ -47,6 +47,7 @@ import { createImportPageController } from "./features/import/controller.js";
 import { createContextMenuController } from "./features/contextMenu/controller.js";
 import { createHomeController } from "./features/library/homeController.js";
 import { createPlaylistController } from "./features/library/playlistController.js";
+import { createLyricsController } from "./features/lyrics/controller.js";
 import { createDockController } from "./features/player/dockController.js";
 import { createDockThemeHelpers } from "./features/player/dockTheme.js";
 import { createSearchController } from "./features/search/controller.js";
@@ -128,13 +129,6 @@ let importTracks = [];
 let desktopLyricsOpen = false;
 let desktopLyricsWindow = null;
 let desktopLyricsLocked = true;
-/** @type {{ t: number, text: string }[]} */
-let lrcEntries = [];
-/** 与 `lrcEntries` 同索引；逐字时间轴（毫秒），无则 null */
-/** @type {Array<{ startMs: number, endMs: number, words: Array<{ startMs: number, endMs: number, text: string }> }> | null} */
-let wordLines = null;
-/** @type {string | null} */
-let lrcCacheKey = null;
 
 /** 主窗口关闭：`ask` | `quit` | `tray`（与 settings 同步） */
 let mainWindowCloseAction = "ask";
@@ -165,6 +159,43 @@ const downloadTasksBySourceId = new Map();
 /** 本地曲库列表行缓存（双击播放） @type {any[]} */
 let localLibraryRows = [];
 let lastLibraryFolder = "";
+
+const {
+  applyLyricsPayload,
+  broadcastDesktopLyricsColors,
+  broadcastDesktopLyricsLock,
+  clearLyricsCache,
+  currentPlayableKey,
+  ensureLrcLoadedForCurrentTrack,
+  openDesktopLyricsFromSettingsIfNeeded,
+  openLyricsReplaceWindow,
+  refreshLyricsLockMenuLabel,
+  scheduleDesktopLyricsStateSync,
+  syncDesktopLyrics,
+  syncDesktopLyricsState,
+  toggleDesktopLyrics,
+} = createLyricsController({
+  dockLyricsLockIcon,
+  emitTo,
+  getAudioEl: audioEl,
+  getDesktopLyricsLocked: () => desktopLyricsLocked,
+  getDesktopLyricsOpen: () => desktopLyricsOpen,
+  getDesktopLyricsWindow: () => desktopLyricsWindow,
+  getPlayIndex: () => playIndex,
+  getPlayLoadGeneration: () => playLoadGeneration,
+  getPlayQueue: () => playQueue,
+  invoke,
+  setDesktopLyricsLocked: (value) => {
+    desktopLyricsLocked = value;
+  },
+  setDesktopLyricsOpen: (value) => {
+    desktopLyricsOpen = value;
+  },
+  setDesktopLyricsWindow: (value) => {
+    desktopLyricsWindow = value;
+  },
+  WebviewWindow,
+});
 
 const { renderDailyTable, renderHomePage } = createHomeController({
   escapeHtml,
@@ -436,511 +467,6 @@ function setTableMutedMessage(tbody, colSpan, message) {
 
 /** ---------- 右键菜单（对齐 Py sidebar / import_track_context_menu） ---------- */
 
-function parseLrc(text) {
-  const lines = [];
-  const re = /^\[(\d{1,2}):(\d{2})(?:\.(\d{1,3}))?\]/;
-  for (const line of text.split(/\r?\n/)) {
-    const m = line.match(re);
-    if (!m) continue;
-    const min = parseInt(m[1], 10);
-    const sec = parseInt(m[2], 10);
-    const frac = m[3] ? m[3].padEnd(3, "0").slice(0, 3) : "000";
-    const ms = parseInt(frac, 10);
-    const t = min * 60 + sec + ms / 1000;
-    const rest = line.slice(m[0].length).trim();
-    lines.push({ t, text: rest });
-  }
-  lines.sort((a, b) => a.t - b.t);
-  return lines;
-}
-
-function lyricDisplayForDesktop(ct) {
-  const cur = playQueue[playIndex];
-  const t = Number(ct) || 0;
-  if (!cur) {
-    return {
-      line1: "—",
-      line2: "—",
-      activeSlot: 1,
-      line1StartT: 0,
-      line1EndT: 1,
-      line2StartT: 0,
-      line2EndT: 1,
-      line1Words: null,
-      line2Words: null,
-      audioNow: t,
-    };
-  }
-  if (!lrcEntries.length) {
-    return {
-      line1: cur.title || "—",
-      line2: cur.artist || "在线试听",
-      activeSlot: 1,
-      line1StartT: 0,
-      line1EndT: 1,
-      line2StartT: 0,
-      line2EndT: 1,
-      line1Words: null,
-      line2Words: null,
-      audioNow: t,
-    };
-  }
-  let idx = 0;
-  for (let k = 0; k < lrcEntries.length; k++) {
-    if (lrcEntries[k].t <= t + 0.12) idx = k;
-    else break;
-  }
-  const curLine = lrcEntries[idx];
-  const prevLine = idx > 0 ? lrcEntries[idx - 1] : null;
-  const nextLine = lrcEntries[idx + 1];
-  const startT = curLine?.t ?? 0;
-  const endT = nextLine ? nextLine.t : startT + 4;
-  const wl = wordLines;
-
-  if (idx % 2 === 0) {
-    return {
-      line1: curLine?.text || "—",
-      line2: nextLine?.text || "\u00a0",
-      activeSlot: 1,
-      line1StartT: startT,
-      line1EndT: endT,
-      line2StartT: 0,
-      line2EndT: 0,
-      line1Words: wl?.[idx] ?? null,
-      line2Words: nextLine ? wl?.[idx + 1] ?? null : null,
-      audioNow: t,
-    };
-  }
-  return {
-    line1: prevLine?.text || "\u00a0",
-    line2: curLine?.text || "—",
-    activeSlot: 2,
-    line1StartT: 0,
-    line1EndT: 0,
-    line2StartT: startT,
-    line2EndT: endT,
-    line1Words: prevLine ? wl?.[idx - 1] ?? null : null,
-    line2Words: wl?.[idx] ?? null,
-    audioNow: t,
-  };
-}
-
-async function broadcastDesktopLyricsLock() {
-  /** 同步锁定状态到歌词子窗 */
-  if (desktopLyricsOpen) {
-    try {
-      await emitTo(LYRICS_WW_TARGET, "desktop-lyrics-lock", { locked: desktopLyricsLocked });
-    } catch (e) {
-      console.warn("emit desktop-lyrics-lock", e);
-    }
-  }
-}
-
-async function broadcastDesktopLyricsColors() {
-  if (!desktopLyricsOpen) return;
-  try {
-    const settings = await invoke("get_settings");
-    await emitTo(LYRICS_WW_TARGET, "desktop-lyrics-colors", {
-      base: settings.desktop_lyrics_color_base || settings.desktopLyricsColorBase || "#ffffff",
-      highlight:
-        settings.desktop_lyrics_color_highlight ||
-        settings.desktopLyricsColorHighlight ||
-        "#ffb7d4",
-    });
-  } catch (e) {
-    console.warn("emit desktop-lyrics-colors", e);
-  }
-}
-
-function refreshLyricsLockMenuLabel() {
-  const btn = document.getElementById("btn-dock-lyrics-lock");
-  if (!btn) return;
-  btn.disabled = !desktopLyricsOpen;
-  btn.classList.toggle("is-on", desktopLyricsOpen && desktopLyricsLocked);
-  btn.innerHTML = dockLyricsLockIcon(desktopLyricsOpen && desktopLyricsLocked);
-  const title = !desktopLyricsOpen
-    ? "先打开桌面歌词"
-    : desktopLyricsLocked
-      ? "解锁桌面歌词"
-      : "锁定桌面歌词";
-  btn.title = title;
-  btn.setAttribute("aria-label", title);
-}
-
-async function pushDesktopLyricsLines({
-  line1,
-  line2,
-  activeSlot = 1,
-  line1StartT,
-  line1EndT,
-  line2StartT,
-  line2EndT,
-  line1Words = null,
-  line2Words = null,
-  audioNow,
-}) {
-  if (!desktopLyricsOpen) return;
-  try {
-    const win = desktopLyricsWindow || (await WebviewWindow.getByLabel("lyrics"));
-    if (win) desktopLyricsWindow = win;
-    await emitTo(LYRICS_WW_TARGET, "desktop-lyrics-lines", {
-      line1: line1 || "—",
-      line2: line2 || "—",
-      activeSlot: activeSlot === 2 ? 2 : 1,
-      line1StartT: Number(line1StartT) || 0,
-      line1EndT: Number(line1EndT) || 0,
-      line2StartT: Number(line2StartT) || 0,
-      line2EndT: Number(line2EndT) || 0,
-      line1Words: line1Words ?? null,
-      line2Words: line2Words ?? null,
-      audioNow: Number(audioNow) || 0,
-    });
-  } catch (e) {
-    console.warn("emit lyrics", e);
-    desktopLyricsOpen = false;
-    desktopLyricsWindow = null;
-    document.getElementById("btn-dock-lyrics")?.classList.remove("is-on");
-  }
-}
-
-function isSamePlayableIdentity(a, b) {
-  if (!a || !b) return false;
-  return (
-    (a.local_path || "") === (b.local_path || "") &&
-    (a.source_id || "").trim() === (b.source_id || "").trim()
-  );
-}
-
-function currentPlayableKey(track) {
-  if (!track) return "";
-  if (track.local_path) return `local:${track.local_path}`;
-  return (track.source_id || "").trim();
-}
-
-function currentLyricsReplaceContext() {
-  const current = playQueue[playIndex] || null;
-  const a = audioEl();
-  const durationMs =
-    a && a.duration && isFinite(a.duration) && a.duration > 0
-      ? Math.round(a.duration * 1000)
-      : null;
-  return {
-    trackKey: currentPlayableKey(current),
-    title: current?.title || "",
-    artist: current?.artist || "",
-    album: current?.album || "",
-    durationMs,
-  };
-}
-
-/**
- * @param {number | undefined} loadGen 传入发起播放时的 `playLoadGeneration`，用于丢弃过期异步结果；省略则仅按当前队列校验
- */
-async function ensureLrcLoadedForCurrentTrack(loadGen) {
-  const cur = playQueue[playIndex];
-  if (!cur) {
-    const a = audioEl();
-    await pushDesktopLyricsLines({
-      line1: "—",
-      line2: "—",
-      activeSlot: 1,
-      line1StartT: 0,
-      line1EndT: 1,
-      line2StartT: 0,
-      line2EndT: 0,
-      audioNow: a?.currentTime ?? 0,
-    });
-    return;
-  }
-  const cacheKey = cur.local_path ? `local:${cur.local_path}` : (cur.source_id || "").trim();
-  if (lrcCacheKey === cacheKey) {
-    return;
-  }
-  try {
-    const a = audioEl();
-    const dur = a && a.duration && isFinite(a.duration) && a.duration > 0 ? a.duration : null;
-    const raw = await invoke("fetch_song_lrc_enriched", {
-      req: {
-        pjmp3SourceId: cur.local_path ? null : (cur.source_id || "").trim() || null,
-        title: cur.title || "",
-        artist: cur.artist || "",
-        album: cur.album || "",
-        localPath: cur.local_path || null,
-        durationSeconds: dur,
-      },
-    });
-    if (loadGen !== undefined && loadGen !== playLoadGeneration) return;
-    const cur2 = playQueue[playIndex];
-    if (!isSamePlayableIdentity(cur2, cur)) return;
-    if (raw && typeof raw === "object" && raw.lrcText != null) {
-      const lrcText = String(raw.lrcText);
-      lrcEntries = parseLrc(lrcText);
-      wordLines = Array.isArray(raw.wordLines) ? raw.wordLines : null;
-      if (lrcEntries.length > 0) {
-        lrcCacheKey = cacheKey;
-      } else {
-        wordLines = null;
-      }
-    } else if (raw && typeof raw === "string") {
-      lrcEntries = parseLrc(raw);
-      wordLines = null;
-      if (lrcEntries.length > 0) {
-        lrcCacheKey = cacheKey;
-      }
-    } else {
-      lrcCacheKey = cacheKey;
-      lrcEntries = [];
-      wordLines = null;
-    }
-  } catch (e) {
-    console.warn("fetch_song_lrc_enriched", e);
-    if (loadGen !== undefined && loadGen !== playLoadGeneration) return;
-    const cur2 = playQueue[playIndex];
-    if (!isSamePlayableIdentity(cur2, cur)) return;
-    lrcCacheKey = cacheKey;
-    lrcEntries = [];
-    wordLines = null;
-  }
-}
-
-async function syncDesktopLyrics() {
-  if (!desktopLyricsOpen) return;
-  await pushDesktopLyricsLines(lyricDisplayForDesktop(audioEl()?.currentTime ?? 0));
-}
-
-async function syncDesktopLyricsState() {
-  if (!desktopLyricsOpen) return;
-  await syncDesktopLyrics();
-  await broadcastDesktopLyricsLock();
-  await broadcastDesktopLyricsColors();
-}
-
-async function centeredChildWindowBounds(width, height) {
-  let x = Math.round((window.screen.availWidth - width) / 2);
-  let y = Math.round((window.screen.availHeight - height) / 2);
-  try {
-    const currentWindow = WebviewWindow.getCurrent();
-    const factor = await currentWindow.scaleFactor();
-    const outerPos = await currentWindow.outerPosition();
-    const outerSize = await currentWindow.outerSize();
-    const logicalPos = outerPos.toLogical(factor);
-    const logicalSize = outerSize.toLogical(factor);
-    x = Math.round(logicalPos.x + (logicalSize.width - width) / 2);
-    y = Math.round(logicalPos.y + (logicalSize.height - height) / 2);
-  } catch (e) {
-    console.warn("centeredChildWindowBounds", e);
-  }
-  const maxX = Math.max(0, window.screen.availWidth - width);
-  const maxY = Math.max(0, window.screen.availHeight - height);
-  return {
-    x: Math.max(0, Math.min(x, maxX)),
-    y: Math.max(0, Math.min(y, maxY)),
-    width,
-    height,
-  };
-}
-
-async function openLyricsReplaceWindow() {
-  const ctx = currentLyricsReplaceContext();
-  const keyword = `${ctx.artist || ""} ${ctx.title || ""}`.trim();
-  const params = new URLSearchParams();
-  if (keyword) params.set("keyword", keyword);
-  if (ctx.title) params.set("title", ctx.title);
-  if (ctx.artist) params.set("artist", ctx.artist);
-  if (ctx.album) params.set("album", ctx.album);
-  if (ctx.trackKey) params.set("trackKey", ctx.trackKey);
-  if (Number.isFinite(ctx.durationMs) && ctx.durationMs > 0) {
-    params.set("durationMs", String(ctx.durationMs));
-  }
-  const bounds = await centeredChildWindowBounds(860, 620);
-  const win = new WebviewWindow("lyrics-replace", {
-    url: `/lyrics_replace.html?${params.toString()}`,
-    title: "替换歌词",
-    width: bounds.width,
-    height: bounds.height,
-    x: bounds.x,
-    y: bounds.y,
-    resizable: true,
-    alwaysOnTop: false,
-    decorations: true,
-    transparent: false,
-    shadow: true,
-    skipTaskbar: true,
-    focus: true,
-    macTitleBarStyle: "hiddenInset",
-    invisibleTitleBarHeight: 54,
-  });
-  win.once("tauri://error", (e) => {
-    console.error(e);
-    alert("无法打开歌词替换窗口。");
-  });
-}
-
-function scheduleDesktopLyricsStateSync(delays = [80, 260]) {
-  if (!desktopLyricsOpen) return;
-  for (const delay of delays) {
-    window.setTimeout(() => {
-      if (!desktopLyricsOpen) return;
-      void syncDesktopLyricsState();
-    }, delay);
-  }
-}
-
-async function setDockLyricsActive(on) {
-  document.getElementById("btn-dock-lyrics")?.classList.toggle("is-on", on);
-  refreshLyricsLockMenuLabel();
-}
-
-function defaultDesktopLyricsBounds() {
-  const width = Math.min(720, window.screen.availWidth - 40);
-  const x = Math.max(0, Math.floor((window.screen.availWidth - width) / 2));
-  return { x, y: 48, width, height: 132 };
-}
-
-/** @param {any} s settings 对象（get_settings 返回值） */
-function desktopLyricsBoundsFromSettings(s) {
-  const d = defaultDesktopLyricsBounds();
-  let x = typeof s?.desktop_lyrics_x === "number" ? s.desktop_lyrics_x : d.x;
-  let y = typeof s?.desktop_lyrics_y === "number" ? s.desktop_lyrics_y : d.y;
-  let width = typeof s?.desktop_lyrics_width === "number" ? s.desktop_lyrics_width : d.width;
-  let height = typeof s?.desktop_lyrics_height === "number" ? s.desktop_lyrics_height : d.height;
-  const maxW = Math.max(320, window.screen.availWidth - 8);
-  const maxH = Math.max(88, window.screen.availHeight - 8);
-  width = Math.max(320, Math.min(Math.round(width), maxW));
-  height = Math.max(88, Math.min(Math.round(height), maxH));
-  x = Math.min(Math.max(0, Math.round(x)), Math.max(0, window.screen.availWidth - 48));
-  y = Math.min(Math.max(0, Math.round(y)), Math.max(0, window.screen.availHeight - 48));
-  return { x, y, width, height };
-}
-
-async function persistDesktopLyricsVisible(visible) {
-  try {
-    await invoke("save_settings", { patch: { desktop_lyrics_visible: visible } });
-  } catch (e) {
-    console.warn("save_settings desktop_lyrics_visible", e);
-  }
-}
-
-/** 启动时若上次为显示状态则打开歌词窗 */
-async function openDesktopLyricsFromSettingsIfNeeded(s) {
-  if (!s?.desktop_lyrics_visible) return;
-  const existing = await WebviewWindow.getByLabel("lyrics");
-  if (existing) {
-    desktopLyricsWindow = existing;
-    const vis = await existing.isVisible();
-    if (!vis) await existing.show();
-    desktopLyricsOpen = true;
-    await setDockLyricsActive(true);
-    await ensureLrcLoadedForCurrentTrack(playLoadGeneration);
-    await syncDesktopLyricsState();
-    scheduleDesktopLyricsStateSync();
-    return;
-  }
-  const b = desktopLyricsBoundsFromSettings(s);
-  const win = new WebviewWindow("lyrics", {
-    url: "/desktop_lyrics.html",
-    title: "桌面歌词",
-    width: b.width,
-    height: b.height,
-    x: b.x,
-    y: b.y,
-    resizable: true,
-    maximizable: false,
-    alwaysOnTop: true,
-    decorations: false,
-    transparent: true,
-    shadow: false,
-    skipTaskbar: true,
-    focus: false,
-  });
-  win.once("tauri://error", (e) => {
-    console.error(e);
-  });
-  win.once("tauri://created", async () => {
-    desktopLyricsWindow = win;
-    win.once("tauri://destroyed", async () => {
-      desktopLyricsOpen = false;
-      desktopLyricsWindow = null;
-      await setDockLyricsActive(false);
-      await persistDesktopLyricsVisible(false);
-    });
-    desktopLyricsOpen = true;
-    await setDockLyricsActive(true);
-    await ensureLrcLoadedForCurrentTrack(playLoadGeneration);
-    await syncDesktopLyricsState();
-    scheduleDesktopLyricsStateSync();
-  });
-}
-
-async function toggleDesktopLyrics() {
-  const existing = desktopLyricsWindow || (await WebviewWindow.getByLabel("lyrics"));
-  if (existing) desktopLyricsWindow = existing;
-  if (existing) {
-    const vis = await existing.isVisible();
-    if (vis) {
-      await existing.hide();
-      desktopLyricsOpen = false;
-      await setDockLyricsActive(false);
-      await persistDesktopLyricsVisible(false);
-      return;
-    }
-    await existing.show();
-    desktopLyricsOpen = true;
-    await setDockLyricsActive(true);
-    await persistDesktopLyricsVisible(true);
-    await ensureLrcLoadedForCurrentTrack(playLoadGeneration);
-    await syncDesktopLyricsState();
-    scheduleDesktopLyricsStateSync();
-    return;
-  }
-
-  let bounds = defaultDesktopLyricsBounds();
-  try {
-    const s = await invoke("get_settings");
-    bounds = desktopLyricsBoundsFromSettings(s);
-  } catch (e) {
-    console.warn("get_settings for lyrics bounds", e);
-  }
-
-  const win = new WebviewWindow("lyrics", {
-    url: "/desktop_lyrics.html",
-    title: "桌面歌词",
-    width: bounds.width,
-    height: bounds.height,
-    x: bounds.x,
-    y: bounds.y,
-    resizable: true,
-    maximizable: false,
-    alwaysOnTop: true,
-    decorations: false,
-    transparent: true,
-    /** 无边框窗口在 Windows 上默认可能有系统阴影，易看成「白边」 */
-    shadow: false,
-    skipTaskbar: true,
-    focus: false,
-  });
-
-  win.once("tauri://error", (e) => {
-    console.error(e);
-    alert("无法创建桌面歌词窗口（请确认已授予 webview 创建权限）。");
-  });
-
-  win.once("tauri://created", async () => {
-    desktopLyricsWindow = win;
-    win.once("tauri://destroyed", async () => {
-      desktopLyricsOpen = false;
-      desktopLyricsWindow = null;
-      await setDockLyricsActive(false);
-      await persistDesktopLyricsVisible(false);
-    });
-    desktopLyricsOpen = true;
-    await setDockLyricsActive(true);
-    await persistDesktopLyricsVisible(true);
-    await ensureLrcLoadedForCurrentTrack(playLoadGeneration);
-    await syncDesktopLyricsState();
-    scheduleDesktopLyricsStateSync();
-  });
-}
 
 const { renderImportTable, wireImportPage } = createImportPageController({
   alertRequestFailed,
@@ -1579,8 +1105,7 @@ async function playFromQueueIndex(idx) {
     syncSeekUi();
     renderQueuePanel();
     refreshFavButton();
-    lrcCacheKey = null;
-    wordLines = null;
+    clearLyricsCache();
     if (desktopLyricsOpen) {
       void ensureLrcLoadedForCurrentTrack(generation).then(() => {
         if (generation !== playLoadGeneration) return;
@@ -2008,10 +1533,7 @@ document.addEventListener("DOMContentLoaded", () => {
       await reply(false, "当前候选没有可用歌词。");
       return;
     }
-    lrcEntries = parseLrc(lrcText);
-    wordLines = Array.isArray(raw?.wordLines) ? raw.wordLines : null;
-    lrcCacheKey = currentTrackKey || null;
-    await syncDesktopLyrics();
+    await applyLyricsPayload(raw);
     await reply(true, "");
   });
   if (systemDarkMedia && typeof systemDarkMedia.addEventListener === "function") {
