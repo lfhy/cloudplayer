@@ -2,6 +2,7 @@ import { convertFileSrc, invoke } from "./wails/tauri-core.js";
 import { open } from "./wails/tauri-plugin-dialog.js";
 import { emitTo, listen } from "./wails/tauri-event.js";
 import { WebviewWindow } from "./wails/tauri-webviewWindow.js";
+import { renderMainShell } from "./layout/renderMainShell.js";
 import solarIcons from "@iconify-json/solar/icons.json";
 
 const NAV = [
@@ -4164,6 +4165,7 @@ function wireVolume() {
 }
 
 document.addEventListener("DOMContentLoaded", () => {
+  renderMainShell();
   applyPlatformClassNames();
   renderSidebar();
   setPage("home");
