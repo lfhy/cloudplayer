@@ -2676,22 +2676,6 @@ body {
   display: none !important;
 }
 
-.settings-panel__head {
-  margin-bottom: 18px;
-}
-
-.settings-panel__title {
-  margin: 0;
-  font-size: 24px;
-  line-height: 1.1;
-}
-
-.settings-panel__desc {
-  margin: 8px 0 0;
-  max-width: 560px;
-  line-height: 1.5;
-}
-
 .settings-panel__body {
   display: flex;
   flex-direction: column;
