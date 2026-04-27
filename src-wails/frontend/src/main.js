@@ -28,7 +28,7 @@ const APP_THEMES = {
 
 const APP_THEME_MODES = new Set(["system", "light", "graphite", "midnight", "forestnight"]);
 const NETWORK_PROXY_MODES = new Set(["direct", "system", "custom"]);
-const SETTINGS_TABS = new Set(["appearance", "network", "controls", "lyrics"]);
+const SETTINGS_TABS = new Set(["appearance", "network", "source", "controls", "lyrics"]);
 const QUICK_THEME_MODE_LABELS = {
   system: "跟随系统",
   light: "浅色",

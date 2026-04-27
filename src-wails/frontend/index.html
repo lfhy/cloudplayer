@@ -485,14 +485,18 @@
               <h1 class="page-title">偏好设置</h1>
               <div class="settings-form">
                 <div class="settings-layout">
-                  <aside class="settings-tabs" role="tablist" aria-label="偏好设置分组">
+                  <div class="settings-tabs" role="tablist" aria-label="偏好设置分组">
                     <button type="button" class="settings-tab is-active" data-settings-tab="appearance" role="tab" aria-selected="true">
                       <span class="settings-tab__title">外观</span>
                       <span class="settings-tab__desc">界面模式与主题色</span>
                     </button>
                     <button type="button" class="settings-tab" data-settings-tab="network" role="tab" aria-selected="false">
-                      <span class="settings-tab__title">网络</span>
-                      <span class="settings-tab__desc">代理与歌词接口</span>
+                      <span class="settings-tab__title">网络代理</span>
+                      <span class="settings-tab__desc">接口访问代理</span>
+                    </button>
+                    <button type="button" class="settings-tab" data-settings-tab="source" role="tab" aria-selected="false">
+                      <span class="settings-tab__title">音乐源</span>
+                      <span class="settings-tab__desc">曲库与歌词源</span>
                     </button>
                     <button type="button" class="settings-tab" data-settings-tab="controls" role="tab" aria-selected="false">
                       <span class="settings-tab__title">控制</span>
@@ -502,7 +506,7 @@
                       <span class="settings-tab__title">歌词</span>
                       <span class="settings-tab__desc">桌面歌词颜色</span>
                     </button>
-                  </aside>
+                  </div>
                   <div class="settings-panels">
                     <section class="settings-panel is-active" data-settings-panel="appearance" role="tabpanel">
                       <div class="settings-panel__head">
@@ -624,8 +628,8 @@
 
                     <section class="settings-panel" data-settings-panel="network" role="tabpanel" hidden>
                       <div class="settings-panel__head">
-                        <h2 class="settings-panel__title">网络</h2>
-                        <p class="settings-panel__desc muted">把接口访问和歌词源放在一组，避免和主题选择混在一起。</p>
+                        <h2 class="settings-panel__title">网络代理</h2>
+                        <p class="settings-panel__desc muted">仅管理接口请求经过的代理方式。</p>
                       </div>
                       <div class="settings-panel__body">
                         <div class="settings-field">
@@ -656,6 +660,23 @@
                           <p class="settings-field-hint muted">
                             支持 <code>http://</code>、<code>https://</code>、<code>socks5://</code>、<code>socks5h://</code>。选「系统代理」时会跟随 macOS 当前的 HTTP / HTTPS / SOCKS 代理配置；选「自定义代理」时，地址填写完整后立即生效。
                           </p>
+                        </div>
+                      </div>
+                    </section>
+
+                    <section class="settings-panel" data-settings-panel="source" role="tabpanel" hidden>
+                      <div class="settings-panel__head">
+                        <h2 class="settings-panel__title">音乐源</h2>
+                        <p class="settings-panel__desc muted">把曲库来源和歌词接口单独放一组，后续扩源也集中在这里。</p>
+                      </div>
+                      <div class="settings-panel__body">
+                        <div class="settings-field">
+                          <span class="settings-field-label">当前在线曲库</span>
+                          <div class="settings-source-summary">
+                            <span class="settings-source-summary__badge">当前</span>
+                            <strong class="settings-source-summary__title">PJMP3</strong>
+                            <span class="settings-source-summary__desc">当前搜索、试听与下载链路使用此在线源。</span>
+                          </div>
                         </div>
                         <div class="settings-field">
                           <label for="setting-netease-api-base" class="settings-field-label">网易云 API 根地址（可选）</label>
