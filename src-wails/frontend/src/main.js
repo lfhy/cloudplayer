@@ -44,6 +44,7 @@ import {
 } from "./app/helpers/platformTheme.js";
 import { createImportFlowHelpers } from "./app/helpers/importFlow.js";
 import { createImportPageController } from "./features/import/controller.js";
+import { createContextMenuController } from "./features/contextMenu/controller.js";
 import { createHomeController } from "./features/library/homeController.js";
 import { createPlaylistController } from "./features/library/playlistController.js";
 import { createDockController } from "./features/player/dockController.js";
@@ -83,7 +84,7 @@ const {
   invoke,
   loadPlaylistDetail,
   MSG_REQUEST_FAILED,
-  openSearchRowContextMenu,
+  openSearchRowContextMenu: (...args) => openSearchRowContextMenu(...args),
   playCatalogAll: (rows) => {
     playQueue = rows.map((row) => ({
       source_id: row.source_id,
@@ -199,8 +200,8 @@ const {
   getSelectedPlaylistName: () => selectedPlaylistName,
   invoke,
   MSG_REQUEST_FAILED,
-  openPlaylistDetailRowContextMenu,
-  openSidebarPlaylistContextMenu,
+  openPlaylistDetailRowContextMenu: (...args) => openPlaylistDetailRowContextMenu(...args),
+  openSidebarPlaylistContextMenu: (...args) => openSidebarPlaylistContextMenu(...args),
   playFromQueueIndex,
   renderHomePage,
   renderQueuePanel,
@@ -216,6 +217,37 @@ const {
     selectedPlaylistName = name;
   },
   warnRequestFailed,
+});
+
+const {
+  closeContextMenu,
+  enqueueDownloadForTrack,
+  openPlaylistDetailRowContextMenu,
+  openSearchRowContextMenu,
+  openSidebarPlaylistContextMenu,
+} = createContextMenuController({
+  alertRequestFailed,
+  getPlayIndex: () => playIndex,
+  getPlayQueue: () => playQueue,
+  getPlaylistDetailRows: () => playlistDetailRows,
+  getSearchResults: () => searchState.results,
+  getSelectedPlaylistId: () => selectedPlaylistId,
+  getSelectedPlaylistName: () => selectedPlaylistName,
+  invoke,
+  loadPlaylistDetail,
+  playFromQueueIndex,
+  playFromSearchRow,
+  refreshPlaylistSelect,
+  refreshSidebarPlaylists,
+  renderQueuePanel,
+  setPage,
+  setPlayQueue: (rows) => {
+    playQueue = rows;
+  },
+  setSelectedPlaylist: (id, name) => {
+    selectedPlaylistId = id;
+    selectedPlaylistName = name;
+  },
 });
 let likedIds = loadLikedSet();
 
@@ -403,459 +435,6 @@ function setTableMutedMessage(tbody, colSpan, message) {
 }
 
 /** ---------- 右键菜单（对齐 Py sidebar / import_track_context_menu） ---------- */
-
-let contextMenuCleanup = null;
-
-function closeContextMenu() {
-  if (contextMenuCleanup) {
-    contextMenuCleanup();
-    contextMenuCleanup = null;
-  }
-}
-
-function mountContextMenuAt(clientX, clientY, rootEl) {
-  closeContextMenu();
-  rootEl.classList.add("ctx-menu");
-  Object.assign(rootEl.style, {
-    position: "fixed",
-    zIndex: "300",
-    left: "0px",
-    top: "0px",
-  });
-  document.body.appendChild(rootEl);
-  const pad = 8;
-  const place = () => {
-    const r = rootEl.getBoundingClientRect();
-    const left = Math.max(pad, Math.min(clientX, window.innerWidth - r.width - pad));
-    const top = Math.max(pad, Math.min(clientY, window.innerHeight - r.height - pad));
-    rootEl.style.left = `${left}px`;
-    rootEl.style.top = `${top}px`;
-  };
-  place();
-
-  const onDown = (e) => {
-    if (rootEl.contains(e.target)) return;
-    closeContextMenu();
-  };
-  const onKey = (e) => {
-    if (e.key === "Escape") closeContextMenu();
-  };
-  const tid = window.setTimeout(() => {
-    document.addEventListener("mousedown", onDown, true);
-    document.addEventListener("keydown", onKey, true);
-  }, 0);
-  contextMenuCleanup = () => {
-    window.clearTimeout(tid);
-    document.removeEventListener("mousedown", onDown, true);
-    document.removeEventListener("keydown", onKey, true);
-    rootEl.remove();
-  };
-}
-
-function cmSep() {
-  const d = document.createElement("div");
-  d.className = "ctx-menu__sep";
-  return d;
-}
-
-function cmBtn(label, onClick, disabled) {
-  const b = document.createElement("button");
-  b.type = "button";
-  b.className = "ctx-menu__item";
-  b.textContent = label;
-  if (disabled) b.disabled = true;
-  else {
-    b.addEventListener("click", () => {
-      closeContextMenu();
-      try {
-        const ret = onClick();
-        if (ret != null && typeof ret.then === "function") ret.catch((e) => alertRequestFailed(e, "ctx-menu"));
-      } catch (e) {
-        alertRequestFailed(e, "ctx-menu");
-      }
-    });
-  }
-  return b;
-}
-
-async function copyImportTrackInfoToClipboard({ title, artist, album, sourceId, coverUrl }) {
-  const lines = [];
-  if ((title || "").trim()) lines.push((title || "").trim());
-  if ((artist || "").trim()) lines.push((artist || "").trim());
-  if ((album || "").trim()) lines.push(`专辑：${(album || "").trim()}`);
-  const sid = (sourceId || "").trim();
-  if (sid) lines.push(`曲库 ID：${sid}`);
-  const cu = (coverUrl || "").trim();
-  if (cu) lines.push(`封面：${cu}`);
-  const text = lines.join("\n");
-  try {
-    await navigator.clipboard.writeText(text);
-  } catch {
-    window.prompt("复制以下内容：", text);
-  }
-}
-
-function searchResultToQueueItem(r) {
-  return {
-    source_id: r.source_id,
-    title: r.title,
-    artist: r.artist || "",
-    cover_url: r.cover_url || null,
-  };
-}
-
-function playlistImportRowToQueueItem(r) {
-  const sid = (r.pjmp3_source_id || "").trim();
-  if (!sid) return null;
-  return {
-    source_id: sid,
-    title: r.title,
-    artist: r.artist || "",
-    cover_url: (r.cover_url || "").trim() || null,
-  };
-}
-
-async function listPlaylistsCached() {
-  try {
-    return await invoke("list_playlists");
-  } catch (e) {
-    console.warn("list_playlists", e);
-    return [];
-  }
-}
-
-/** @param {{ sourceId?: string, title?: string, artist?: string }} track */
-async function enqueueDownloadForTrack(track, quality) {
-  const sid = (track.sourceId || "").trim();
-  if (!sid) {
-    alert("无曲库 id，无法下载。");
-    return;
-  }
-  try {
-    await invoke("enqueue_download", {
-      source_id: sid,
-      title: track.title || "",
-      artist: track.artist || "",
-      quality,
-    });
-  } catch (e) {
-    alertRequestFailed(e, "enqueue_download");
-  }
-}
-
-/** @param {{ sourceId?: string, title?: string, artist?: string }} track */
-function buildDownloadSubmenu(track) {
-  const dlRow = document.createElement("div");
-  dlRow.className = "ctx-menu__row--sub";
-  const dlFly = document.createElement("div");
-  dlFly.className = "ctx-menu__fly";
-  dlFly.textContent = "下载";
-  const dlSub = document.createElement("div");
-  dlSub.className = "ctx-menu__subpanel";
-  for (const [label, q] of [
-    ["FLAC", "flac"],
-    ["高品质 320", "320"],
-    ["标准 128", "128"],
-  ]) {
-    dlSub.appendChild(
-      cmBtn(label, () => {
-        void enqueueDownloadForTrack(track, q);
-      })
-    );
-  }
-  dlRow.appendChild(dlFly);
-  dlRow.appendChild(dlSub);
-  return dlRow;
-}
-
-/** @param {{ title: string, artist: string, album?: string, sourceId?: string, coverUrl?: string | null }} t */
-function buildAddToSubmenu(t) {
-  const addRow = document.createElement("div");
-  addRow.className = "ctx-menu__row--sub";
-  const fly = document.createElement("div");
-  fly.className = "ctx-menu__fly";
-  fly.textContent = "添加到";
-  const sub = document.createElement("div");
-  sub.className = "ctx-menu__subpanel";
-  sub.appendChild(
-    cmBtn("播放队列", () => {
-      const qItem = {
-        source_id: t.sourceId,
-        title: t.title,
-        artist: t.artist || "",
-        cover_url: t.coverUrl || null,
-      };
-      if (!(qItem.source_id || "").trim()) {
-        alert("该条没有曲库 id，无法加入播放队列。");
-        return;
-      }
-      playQueue.push(qItem);
-      renderQueuePanel();
-    })
-  );
-  sub.appendChild(
-    cmBtn("试听列表", () => {
-      const qItem = {
-        source_id: t.sourceId,
-        title: t.title,
-        artist: t.artist || "",
-        cover_url: t.coverUrl || null,
-      };
-      if (!(qItem.source_id || "").trim()) {
-        alert("该条没有曲库 id，无法加入播放队列。");
-        return;
-      }
-      playQueue.push(qItem);
-      renderQueuePanel();
-    })
-  );
-  sub.appendChild(cmSep());
-  sub.appendChild(
-    cmBtn("添加到新歌单", async () => {
-      const name = window.prompt("歌单名称（将写入 library.db）", "新歌单");
-      if (!name || !name.trim()) return;
-      const pid = await invoke("create_playlist", { name: name.trim() });
-      await invoke("append_playlist_import_items", {
-        playlistId: pid,
-        items: [{ title: t.title, artist: t.artist || "", album: t.album || "" }],
-      });
-      await refreshSidebarPlaylists();
-      await refreshPlaylistSelect();
-    })
-  );
-  sub.appendChild(cmSep());
-  return { addRow, fly, sub };
-}
-
-async function openSearchRowContextMenu(ev, rowIdx) {
-  ev.preventDefault();
-  if (rowIdx < 0 || rowIdx >= searchState.results.length) return;
-  const r = searchState.results[rowIdx];
-  const qItem = searchResultToQueueItem(r);
-  const pls = await listPlaylistsCached();
-
-  const root = document.createElement("div");
-  root.appendChild(cmBtn("播放", () => playFromSearchRow(rowIdx)));
-  root.appendChild(
-    cmBtn("下一首播放", () => {
-      if (!playQueue.length) {
-        playQueue = [qItem];
-        void playFromQueueIndex(0);
-      } else {
-        playQueue.splice(playIndex + 1, 0, qItem);
-      }
-      renderQueuePanel();
-    })
-  );
-  root.appendChild(cmSep());
-
-  const { addRow, fly, sub } = buildAddToSubmenu({
-    title: r.title,
-    artist: r.artist,
-    album: r.album,
-    sourceId: r.source_id,
-    coverUrl: r.cover_url,
-  });
-  let any = false;
-  for (const p of pls) {
-    const pid = p.id;
-    if (pid == null) continue;
-    any = true;
-    const name = (p.name || "").trim() || `#${pid}`;
-    sub.appendChild(
-      cmBtn(name, async () => {
-        await invoke("append_playlist_import_items", {
-          playlistId: pid,
-          items: [{ title: r.title, artist: r.artist || "", album: r.album || "" }],
-        });
-        await refreshSidebarPlaylists();
-      })
-    );
-  }
-  if (!any) sub.appendChild(cmBtn("（暂无歌单，请先新建）", () => {}, true));
-  addRow.appendChild(fly);
-  addRow.appendChild(sub);
-  root.appendChild(addRow);
-
-  root.appendChild(
-    buildDownloadSubmenu({ sourceId: r.source_id, title: r.title, artist: r.artist })
-  );
-  root.appendChild(cmBtn("分享", () => {}, true));
-  root.appendChild(cmBtn("查看评论", () => {}, true));
-  root.appendChild(cmSep());
-  root.appendChild(
-    cmBtn("复制歌曲信息", () =>
-      copyImportTrackInfoToClipboard({
-        title: r.title,
-        artist: r.artist,
-        album: r.album,
-        sourceId: r.source_id,
-        coverUrl: r.cover_url,
-      })
-    )
-  );
-
-  mountContextMenuAt(ev.clientX, ev.clientY, root);
-}
-
-async function openSidebarPlaylistContextMenu(ev, pl) {
-  ev.preventDefault();
-  const root = document.createElement("div");
-  root.appendChild(
-    cmBtn("播放", async () => {
-      const rows = await invoke("list_playlist_import_items", { playlistId: pl.id });
-      const playable = (rows || []).filter((x) => (x.pjmp3_source_id || "").trim());
-      if (!playable.length) {
-        alert("歌单为空或没有可播放条目（导入条目需含 pjmp3 曲库 id）。");
-        return;
-      }
-      playQueue = playable.map((row) => ({
-        source_id: (row.pjmp3_source_id || "").trim(),
-        title: row.title,
-        artist: row.artist || "",
-        cover_url: (row.cover_url || "").trim() || null,
-      }));
-      playFromQueueIndex(0);
-      renderQueuePanel();
-    })
-  );
-  root.appendChild(
-    cmBtn("重命名", async () => {
-      const name = window.prompt("歌单名称", pl.name || "");
-      if (!name || !name.trim()) return;
-      await invoke("rename_playlist", { playlistId: pl.id, name: name.trim() });
-      if (selectedPlaylistId === pl.id) selectedPlaylistName = name.trim();
-      await refreshSidebarPlaylists();
-      await refreshPlaylistSelect();
-    })
-  );
-  root.appendChild(
-    cmBtn("删除歌单", async () => {
-      if (!window.confirm(`确定删除歌单「${(pl.name || "").trim() || pl.id}」？`)) return;
-      await invoke("delete_playlist", { playlistId: pl.id });
-      if (selectedPlaylistId === pl.id) {
-        selectedPlaylistId = null;
-        selectedPlaylistName = "";
-      }
-      await refreshSidebarPlaylists();
-      await refreshPlaylistSelect();
-      const plPage = document.querySelector('.page[data-page="playlist"]');
-      if (plPage?.classList.contains("page-active")) setPage("home");
-    })
-  );
-  mountContextMenuAt(ev.clientX, ev.clientY, root);
-}
-
-async function openPlaylistDetailRowContextMenu(ev, rowIdx) {
-  ev.preventDefault();
-  const r = playlistDetailRows[rowIdx];
-  if (!r) return;
-  const sid = (r.pjmp3_source_id || "").trim();
-  const item = playlistImportRowToQueueItem(r);
-  const pls = await listPlaylistsCached();
-  const ex = selectedPlaylistId;
-
-  const root = document.createElement("div");
-  root.appendChild(
-    cmBtn(
-      "播放",
-      () => {
-        if (!item) {
-          alert("该条没有曲库 id，请使用「搜索」搜索歌名后播放。");
-          return;
-        }
-        playQueue = [item];
-        playFromQueueIndex(0);
-        renderQueuePanel();
-      },
-      !sid
-    )
-  );
-  root.appendChild(
-    cmBtn(
-      "下一首播放",
-      () => {
-        if (!item) {
-          alert("该条没有曲库 id，无法插播。");
-          return;
-        }
-        if (!playQueue.length) {
-          playQueue = [item];
-          void playFromQueueIndex(0);
-        } else {
-          playQueue.splice(playIndex + 1, 0, item);
-          renderQueuePanel();
-        }
-      },
-      !sid
-    )
-  );
-  root.appendChild(cmSep());
-
-  const { addRow, fly, sub } = buildAddToSubmenu({
-    title: r.title,
-    artist: r.artist,
-    album: r.album,
-    sourceId: r.pjmp3_source_id,
-    coverUrl: r.cover_url,
-  });
-  let any = false;
-  for (const p of pls) {
-    const pid = p.id;
-    if (pid == null) continue;
-    if (ex != null && Number(pid) === Number(ex)) continue;
-    any = true;
-    const name = (p.name || "").trim() || `#${pid}`;
-    sub.appendChild(
-      cmBtn(name, async () => {
-        await invoke("append_playlist_import_items", {
-          playlistId: pid,
-          items: [{ title: r.title, artist: r.artist || "", album: r.album || "" }],
-        });
-        await refreshSidebarPlaylists();
-      })
-    );
-  }
-  if (!any) sub.appendChild(cmBtn("（暂无其它歌单）", () => {}, true));
-  addRow.appendChild(fly);
-  addRow.appendChild(sub);
-  root.appendChild(addRow);
-
-  root.appendChild(
-    buildDownloadSubmenu({ sourceId: r.pjmp3_source_id, title: r.title, artist: r.artist })
-  );
-  root.appendChild(cmBtn("分享", () => {}, true));
-  root.appendChild(cmBtn("查看评论", () => {}, true));
-  root.appendChild(cmSep());
-  root.appendChild(
-    cmBtn("复制歌曲信息", () =>
-      copyImportTrackInfoToClipboard({
-        title: r.title,
-        artist: r.artist,
-        album: r.album,
-        sourceId: r.pjmp3_source_id,
-        coverUrl: r.cover_url,
-      })
-    )
-  );
-
-  if (r.id != null && r.id > 0 && selectedPlaylistId != null) {
-    root.appendChild(cmSep());
-    root.appendChild(
-      cmBtn("删除", async () => {
-        if (!window.confirm("从当前歌单中删除该条目？")) return;
-        await invoke("delete_playlist_import_item", {
-          playlistId: selectedPlaylistId,
-          itemId: r.id,
-        });
-        await loadPlaylistDetail(selectedPlaylistId, selectedPlaylistName);
-        await refreshPlaylistSelect();
-      })
-    );
-  }
-
-  mountContextMenuAt(ev.clientX, ev.clientY, root);
-}
 
 function parseLrc(text) {
   const lines = [];
