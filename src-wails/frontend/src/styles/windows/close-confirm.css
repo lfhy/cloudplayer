@@ -1,0 +1,114 @@
+/* Close-confirm window keeps a compact native sheet-like layout that follows the shared app theme tokens. */
+@import "../core/theme.css";
+@import "../layout/base.css";
+
+body {
+  overflow: hidden;
+}
+
+.close-confirm-app {
+  min-height: 100vh;
+  padding: 24px;
+  background: var(--bg-main);
+}
+
+.close-confirm-shell {
+  display: flex;
+  min-height: calc(100vh - 48px);
+  align-items: center;
+  justify-content: center;
+}
+
+.close-confirm-card {
+  width: 100%;
+  display: grid;
+  gap: 16px;
+  padding: 20px 22px;
+  border-radius: 18px;
+  background: var(--surface-soft);
+  border: 1px solid var(--surface-soft-border);
+  box-shadow: var(--shadow-float), var(--surface-soft-inset);
+}
+
+.close-confirm-copy {
+  display: grid;
+  gap: 8px;
+}
+
+.close-confirm-eyebrow {
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+}
+
+.close-confirm-title {
+  margin: 0;
+  font-size: 21px;
+  line-height: 1.25;
+  color: var(--text);
+}
+
+.close-confirm-desc {
+  margin: 0;
+  line-height: 1.6;
+  color: var(--text-secondary);
+}
+
+.close-confirm-remember {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--text-secondary);
+}
+
+.close-confirm-actions {
+  display: grid;
+  gap: 10px;
+}
+
+.close-confirm-btn,
+.close-confirm-cancel {
+  width: 100%;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 11px 14px;
+  font: inherit;
+  cursor: pointer;
+  transition: background-color 160ms ease, border-color 160ms ease, color 160ms ease, transform 160ms ease;
+}
+
+.close-confirm-btn:hover,
+.close-confirm-cancel:hover {
+  transform: translateY(-1px);
+}
+
+.close-confirm-btn--secondary {
+  background: var(--bg-card);
+  color: var(--text);
+}
+
+.close-confirm-btn--secondary:hover {
+  background: rgba(var(--accent-rgb), 0.08);
+  border-color: rgba(var(--accent-rgb), 0.28);
+}
+
+.close-confirm-btn--accent {
+  border-color: rgba(var(--accent-rgb), 0.3);
+  background: rgba(var(--accent-rgb), 0.14);
+  color: var(--accent);
+}
+
+.close-confirm-btn--accent:hover {
+  border-color: rgba(var(--accent-rgb), 0.44);
+  background: rgba(var(--accent-rgb), 0.2);
+}
+
+.close-confirm-cancel {
+  background: transparent;
+  color: var(--text-secondary);
+}
+
+.close-confirm-cancel:hover {
+  background: var(--surface-subtle);
+}

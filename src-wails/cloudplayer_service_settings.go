@@ -58,29 +58,6 @@ func (s *CloudPlayerService) SetDesktopLyricsClickThrough(ignoreCursorEvents boo
 	return nil
 }
 
-func (s *CloudPlayerService) HideMainWindow() error {
-	window, ok := application.Get().Window.GetByName("main")
-	if !ok {
-		return nil
-	}
-	window.Hide()
-	return nil
-}
-
-func (s *CloudPlayerService) ShowMainWindow() error {
-	window, ok := application.Get().Window.GetByName("main")
-	if !ok {
-		return nil
-	}
-	window.Show()
-	window.Focus()
-	return nil
-}
-
-func (s *CloudPlayerService) QuitApp() {
-	requestAppQuit()
-}
-
 func (s *CloudPlayerService) LocalPathAccessible(path string) bool {
 	info, err := os.Stat(strings.TrimSpace(path))
 	return err == nil && !info.IsDir()

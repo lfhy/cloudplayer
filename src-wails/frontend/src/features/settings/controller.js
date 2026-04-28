@@ -276,5 +276,13 @@ export function createSettingsController(deps) {
     }
   }
 
-  return { getSettingsFormValues, loadSettings, openCloseConfirmModal, queueSettingsAutosave, wirePreferencesModals };
+  function syncMainWindowCloseAction(action) {
+    const normalized = normalizeCloseAction(action);
+    const closeActionEl = document.getElementById("setting-close-action");
+    if (closeActionEl) closeActionEl.value = normalized;
+    settingsFormBaseline = { ...settingsFormBaseline, action: normalized };
+    setMainWindowCloseAction(normalized);
+  }
+
+  return { getSettingsFormValues, loadSettings, openCloseConfirmModal, queueSettingsAutosave, syncMainWindowCloseAction, wirePreferencesModals };
 }
