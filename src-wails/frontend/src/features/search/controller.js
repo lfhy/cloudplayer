@@ -1,27 +1,33 @@
-// Search controller manages the dual search views and keeps the page entry thin.
+import { createCatalogResultsController } from "./catalogResultsController.js";
+
+// Search controller keeps page-level view switching thin and delegates heavy catalog logic.
 export function createSearchController(deps) {
   const {
     escapeHtml,
-    invoke,
     loadPlaylistDetail,
-    MSG_REQUEST_FAILED,
-    openSearchRowContextMenu,
-    playCatalogAll,
-    playFromSearchRow,
     searchLocalPlaylists,
     searchState,
     setPage,
     setSelectedPlaylist,
-    setTableMutedMessage,
-    warnRequestFailed,
   } = deps;
   let autoSearchTimer = null;
+
+  // Catalog results controller needs the page toolbar updater; pass it explicitly so
+  // virtual list fetch/render work does not fail before the backend request starts.
+  const catalog = createCatalogResultsController({
+    ...deps,
+    updateSearchToolbar,
+  });
 
   function resetSearchState() {
     searchState.page = 1;
     searchState.results = [];
     searchState.playlistResults = [];
     searchState.hasNext = false;
+    searchState.loadingMore = false;
+    searchState.virtualTop = 0;
+    searchState.virtualBottom = 0;
+    catalog.clearSelection();
   }
 
   function queueAutoSearch() {
@@ -92,37 +98,22 @@ export function createSearchController(deps) {
   function updateSearchToolbar() {
     const keyword = searchState.keyword.trim();
     const resultCount = searchState.results.length;
+    const selectedCount = searchState.selectedIds?.size || 0;
     const info = document.getElementById("search-page-info");
     const playlistInfo = document.getElementById("search-playlist-info");
     const summary = document.getElementById("search-results-summary");
-    if (info) info.textContent = searchState.scope !== "catalog" || !keyword ? "" : `共 ${resultCount} 条 · 第 ${searchState.page} 页${searchState.hasNext ? " · 有下一页" : " · 已到末页"}`;
+    if (info) info.textContent = searchState.scope !== "catalog" || !keyword ? "" : `${searchState.busy && !resultCount ? "搜索中…" : `共 ${resultCount} 条`}${searchState.loadingMore ? " · 正在加载更多…" : searchState.hasNext ? " · 向下滚动继续加载" : resultCount ? " · 已全部加载" : ""}`;
     if (playlistInfo) playlistInfo.textContent = searchState.scope !== "playlists" || !keyword ? "" : `找到 ${searchState.playlistResults.length} 张相关歌单`;
-    if (summary) summary.textContent = !keyword ? "" : searchState.scope === "catalog" ? `搜索 “${keyword}”` : `在本地歌单中搜索 “${keyword}”`;
-    document.getElementById("btn-prev-page")?.toggleAttribute("disabled", searchState.scope !== "catalog" || searchState.page <= 1 || searchState.busy);
-    document.getElementById("btn-next-page")?.toggleAttribute("disabled", searchState.scope !== "catalog" || !searchState.hasNext || searchState.busy);
+    if (summary) summary.textContent = !keyword ? "" : searchState.scope === "catalog" ? `搜索 “${keyword}”${selectedCount ? ` · 已选 ${selectedCount} 首` : ""}` : `在本地歌单中搜索 “${keyword}”`;
     document.getElementById("btn-play-all")?.toggleAttribute("disabled", searchState.scope !== "catalog" || !resultCount || searchState.busy);
-  }
-
-  function renderSearchTable() {
-    const tbody = document.querySelector("#search-table tbody");
-    if (!tbody) return;
-    if (searchState.scope !== "catalog") return void (tbody.innerHTML = "");
-    if (!searchState.results.length) return setTableMutedMessage(tbody, 5, searchState.keyword.trim() ? "没有找到匹配的在线音乐结果。" : "");
-    tbody.innerHTML = "";
-    searchState.results.forEach((row, index) => {
-      const tr = document.createElement("tr");
-      const cover = row.cover_url ? `<img class="row-cover" src="${escapeHtml(row.cover_url)}" alt="" width="40" height="40" loading="lazy" />` : '<div class="row-cover-ph" aria-hidden="true"></div>';
-      const title = row.artist ? `<span class="t-title">${escapeHtml(row.title)}</span><span class="t-art">${escapeHtml(row.artist)}</span>` : `<span class="t-title">${escapeHtml(row.title)}</span>`;
-      tr.innerHTML = `<td class="col-idx">${index + 1}</td><td class="col-cover">${cover}</td><td>${title}</td><td class="muted">${escapeHtml(row.album || "—")}</td><td class="muted col-dur">—</td>`;
-      tr.style.cursor = "pointer";
-      tr.title = "双击试听";
-      tr.addEventListener("dblclick", () => playFromSearchRow(index));
-      tr.addEventListener("contextmenu", (event) => {
-        event.preventDefault();
-        void openSearchRowContextMenu(event, index);
-      });
-      tbody.appendChild(tr);
-    });
+    document.getElementById("btn-search-add-selected")?.toggleAttribute("disabled", searchState.scope !== "catalog" || selectedCount === 0 || searchState.busy);
+    document.getElementById("btn-search-select-all")?.toggleAttribute("disabled", searchState.scope !== "catalog" || !resultCount || searchState.busy);
+    const selectAllCheckbox = document.getElementById("search-select-all-checkbox");
+    if (selectAllCheckbox) {
+      selectAllCheckbox.checked = resultCount > 0 && selectedCount === resultCount;
+      selectAllCheckbox.indeterminate = selectedCount > 0 && selectedCount < resultCount;
+      selectAllCheckbox.disabled = searchState.scope !== "catalog" || !resultCount || searchState.busy;
+    }
   }
 
   function renderPlaylistSearchResults() {
@@ -155,52 +146,27 @@ export function createSearchController(deps) {
     });
   }
 
-  async function fetchSearchPage() {
+  async function fetchSearchPage(options = {}) {
+    if (searchState.scope === "catalog") {
+      return catalog.fetchSearchPage(options);
+    }
     const keyword = searchState.keyword.trim();
     if (!keyword) return;
     searchState.busy = true;
     updateSearchToolbar();
     try {
-      if (searchState.scope === "catalog") {
-        setTableMutedMessage(document.querySelector("#search-table tbody"), 5, "搜索中…");
-        const result = await invoke("search_songs", { keyword, page: searchState.page });
-        searchState.results = Array.isArray(result?.results) ? result.results : [];
-        searchState.hasNext = result?.has_next === true;
-        searchState.playlistResults = [];
-        renderSearchTable();
-      } else {
-        searchState.playlistResults = await searchLocalPlaylists(keyword);
-        searchState.results = [];
-        searchState.hasNext = false;
-        renderPlaylistSearchResults();
-      }
-    } catch (error) {
-      warnRequestFailed(error, searchState.scope === "catalog" ? "search_songs" : "search_local_playlists");
-      if (searchState.scope === "catalog") setTableMutedMessage(document.querySelector("#search-table tbody"), 5, MSG_REQUEST_FAILED);
-      else document.getElementById("search-playlist-list")?.replaceChildren(Object.assign(document.createElement("div"), { className: "search-playlist-empty muted", textContent: MSG_REQUEST_FAILED }));
+      searchState.playlistResults = await searchLocalPlaylists(keyword);
       searchState.results = [];
-      searchState.playlistResults = [];
       searchState.hasNext = false;
+      renderPlaylistSearchResults();
+    } catch (error) {
+      deps.warnRequestFailed(error, "search_local_playlists");
+      document.getElementById("search-playlist-list")?.replaceChildren(Object.assign(document.createElement("div"), { className: "search-playlist-empty muted", textContent: deps.MSG_REQUEST_FAILED }));
+      searchState.playlistResults = [];
     } finally {
       searchState.busy = false;
       updateSearchToolbar();
     }
-  }
-
-  function wireDiscoverToolbar() {
-    document.getElementById("btn-prev-page")?.addEventListener("click", () => {
-      if (searchState.page <= 1 || searchState.busy || !searchState.keyword.trim()) return;
-      searchState.page -= 1;
-      void fetchSearchPage();
-    });
-    document.getElementById("btn-next-page")?.addEventListener("click", () => {
-      if (searchState.busy || !searchState.hasNext || !searchState.keyword.trim()) return;
-      searchState.page += 1;
-      void fetchSearchPage();
-    });
-    document.getElementById("btn-play-all")?.addEventListener("click", () => {
-      if (searchState.results.length) playCatalogAll(searchState.results);
-    });
   }
 
   function submitPageSearch(seed = null) {
@@ -220,7 +186,7 @@ export function createSearchController(deps) {
       searchState.keyword = "";
       resetSearchState();
       syncSearchInputs("");
-      renderSearchTable();
+      catalog.renderSearchTable();
       renderPlaylistSearchResults();
       updateSearchViewState();
       updateSearchToolbar();
@@ -230,7 +196,7 @@ export function createSearchController(deps) {
     searchState.page = 1;
     syncSearchInputs(value);
     updateSearchViewState();
-    void fetchSearchPage();
+    void fetchSearchPage({ append: false, pageOverride: 1 });
   }
 
   function wireSearchPage() {
@@ -245,7 +211,7 @@ export function createSearchController(deps) {
         }
         searchState.keyword = "";
         resetSearchState();
-        renderSearchTable();
+        catalog.renderSearchTable();
         renderPlaylistSearchResults();
         updateSearchViewState();
         updateSearchToolbar();
@@ -263,9 +229,9 @@ export function createSearchController(deps) {
         setSearchScope(button.getAttribute("data-search-scope") || "catalog");
         if (searchState.keyword.trim()) {
           searchState.page = 1;
-          void fetchSearchPage();
+          void fetchSearchPage({ append: false, pageOverride: 1 });
         } else {
-          renderSearchTable();
+          catalog.renderSearchTable();
           renderPlaylistSearchResults();
           updateSearchViewState();
         }
@@ -286,14 +252,14 @@ export function createSearchController(deps) {
     getActiveSearchInput,
     getSearchInputs,
     renderPlaylistSearchResults,
-    renderSearchTable,
+    renderSearchTable: catalog.renderSearchTable,
     setSearchScope,
     setSearchView,
     submitPageSearch,
     syncSearchInputs,
     updateSearchToolbar,
     updateSearchViewState,
-    wireDiscoverToolbar,
+    wireDiscoverToolbar: catalog.wireDiscoverToolbar,
     wireSearchPage,
   };
 }
