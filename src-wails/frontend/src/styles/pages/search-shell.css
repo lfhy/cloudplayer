@@ -1,9 +1,11 @@
 /* Search page layout, hero and scope switch. */
 .search-shell {
+  flex: 1;
   display: flex;
   flex-direction: column;
   gap: 18px;
   min-height: 0;
+  overflow: hidden;
 }
 
 .search-view {

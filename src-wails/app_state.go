@@ -19,6 +19,7 @@ type AppState struct {
 	httpClientMu         sync.RWMutex
 	HTTPClient           *http.Client
 	HTTPJar              http.CookieJar
+	SearchCache          *SearchCache
 	RateLimiter          *ratelimiter.Limiter
 	DownloadCh           chan download.DownloadJob
 	Hotkeys              *HotkeyManager
@@ -34,6 +35,7 @@ func NewAppState(db *sql.DB) *AppState {
 		DB:          db,
 		HTTPClient:  client,
 		HTTPJar:     jar,
+		SearchCache: NewSearchCache(),
 		RateLimiter: ratelimiter.New(45),
 		DownloadCh:  make(chan download.DownloadJob, 64),
 	}

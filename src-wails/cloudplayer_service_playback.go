@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"log"
 	"os"
 	"strings"
 
@@ -16,12 +17,21 @@ func (s *CloudPlayerService) SearchSongs(keyword string, page uint32) (SearchRes
 	if trimmed == "" {
 		return SearchResponse{}, fmt.Errorf("请输入搜索关键词")
 	}
+	resolvedPage := maxUint32(page, 1)
+	provider := musicsource.Current()
+	cacheKey := SearchCacheKey(provider.Key(), trimmed, resolvedPage)
+	if cached, ok := s.state.SearchCache.Get(cacheKey); ok {
+		return cached, nil
+	}
 	s.state.RateLimiter.AcquireSlot()
-	results, hasNext, err := musicsource.Current().Search(s.state.HTTP(), trimmed, maxUint32(page, 1))
+	results, hasNext, err := provider.Search(s.state.HTTP(), trimmed, resolvedPage)
 	if err != nil {
+		log.Printf("SearchSongs failed: keyword=%q page=%d provider=%s err=%v", trimmed, resolvedPage, provider.Key(), err)
 		return SearchResponse{}, err
 	}
-	return SearchResponse{Results: results, HasNext: hasNext}, nil
+	response := SearchResponse{Results: results, HasNext: hasNext}
+	s.state.SearchCache.Set(cacheKey, response)
+	return response, nil
 }
 
 func (s *CloudPlayerService) GetPreviewURL(songID string) (string, error) {
