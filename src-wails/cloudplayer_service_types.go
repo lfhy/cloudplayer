@@ -31,6 +31,7 @@ type SettingsPatch struct {
 	DesktopLyricsColorHighlight *string  `json:"desktop_lyrics_color_highlight,omitempty"`
 	ShareNeteaseCookieEnabled   *bool    `json:"share_netease_cookie_enabled,omitempty"`
 	ShareNeteaseCookie          *string  `json:"share_netease_cookie,omitempty"`
+	MusicSourceProvider         *string  `json:"music_source_provider,omitempty"`
 }
 
 type SearchResponse struct {

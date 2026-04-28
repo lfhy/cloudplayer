@@ -2,7 +2,6 @@ package pjmp3
 
 import (
 	"fmt"
-	"io"
 	"net/http"
 	"net/url"
 	"os"
@@ -47,19 +46,8 @@ func FetchSongPageHTML(client *http.Client, songID string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	request.Header.Set("User-Agent", browserUA)
-	request.Header.Set("Referer", strings.TrimRight(config.BaseURL, "/")+"/")
-	request.Header.Set("Accept-Language", "zh-CN,zh;q=0.9,en;q=0.8")
-
-	response, err := client.Do(request)
-	if err != nil {
-		return "", err
-	}
-	defer response.Body.Close()
-	if response.StatusCode < 200 || response.StatusCode >= 300 {
-		return "", fmt.Errorf("song page http %s", response.Status)
-	}
-	body, err := io.ReadAll(response.Body)
+	applyPJMP3PageHeaders(request, strings.TrimRight(config.BaseURL, "/")+"/")
+	body, err := fetchPJMP3PageBytes(client, request)
 	if err != nil {
 		return "", err
 	}

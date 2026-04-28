@@ -1,4 +1,4 @@
-/* Settings choice chips, source summary and color fields. */
+/* Settings choice chips, source cards and color fields. */
 .settings-custom-theme {
   margin-top: 12px;
 }
@@ -40,19 +40,50 @@
   color: var(--accent);
 }
 
-.settings-source-summary {
+.settings-source-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 12px;
+  max-width: 720px;
+}
+
+.settings-source-card {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: 100%;
+  padding: 14px 15px;
+  border: 1px solid var(--border);
+  border-radius: 15px;
+  background: linear-gradient(180deg, rgba(var(--accent-rgb), 0.04) 0%, transparent 100%), var(--bg-card);
+  color: var(--text);
+  text-align: left;
+  cursor: pointer;
+  transition:
+    border-color 120ms ease,
+    box-shadow 120ms ease,
+    transform 120ms ease;
+}
+
+.settings-source-card:hover {
+  border-color: rgba(var(--accent-rgb), 0.3);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.06);
+  transform: translateY(-1px);
+}
+
+.settings-source-card.is-active {
+  border-color: rgba(var(--accent-rgb), 0.52);
+  box-shadow: 0 0 0 2px rgba(var(--accent-rgb), 0.16);
+}
+
+.settings-source-card__head {
   display: flex;
   align-items: center;
   gap: 10px;
   flex-wrap: wrap;
-  padding: 14px 16px;
-  border: 1px solid var(--border);
-  border-radius: 14px;
-  background: linear-gradient(180deg, rgba(var(--accent-rgb), 0.05) 0%, transparent 100%), var(--bg-card);
-  max-width: 640px;
 }
 
-.settings-source-summary__badge {
+.settings-source-card__badge {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -67,14 +98,15 @@
   text-transform: uppercase;
 }
 
-.settings-source-summary__title {
+.settings-source-card__title {
   font-size: 15px;
   font-weight: 700;
   color: var(--text);
 }
 
-.settings-source-summary__desc {
+.settings-source-card__desc {
   font-size: 12px;
+  line-height: 1.55;
   color: var(--text-secondary);
 }
 

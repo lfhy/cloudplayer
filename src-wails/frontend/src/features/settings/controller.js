@@ -13,11 +13,13 @@ export function createSettingsController(deps) {
     normalizeAppTheme,
     normalizeAppThemeMode,
     normalizeCloseAction,
+    normalizeMusicSourceProvider,
     normalizeNetworkProxyMode,
     normalizeNetworkProxyUrl,
     openDesktopLyricsFromSettingsIfNeeded,
     refreshLyricsLockMenuLabel,
     setMainWindowCloseAction,
+    setMusicSourceProviderSelection,
     setNetworkProxyModeSelection,
     setPage,
     setThemeCardSelection,
@@ -32,7 +34,7 @@ export function createSettingsController(deps) {
     setLastLibraryFolder,
     setNeteaseCookieState,
   } = deps;
-  let settingsFormBaseline = { theme: "coral", mode: "system", customAccent: "#c62f2f", proxyMode: "direct", proxyURL: "", action: "ask", base: "#ffffff", highlight: "#ffb7d4", neteaseApiBase: "", hotkeysSig: "" };
+  let settingsFormBaseline = { theme: "coral", mode: "system", customAccent: "#c62f2f", proxyMode: "direct", proxyURL: "", action: "ask", base: "#ffffff", highlight: "#ffb7d4", neteaseApiBase: "", musicSourceProvider: "pjmp3", hotkeysSig: "" };
   let settingsSaveTimer = null;
   let settingsSaveInFlight = false;
   let settingsSaveQueued = false;
@@ -57,6 +59,7 @@ export function createSettingsController(deps) {
       proxyMode: normalizeNetworkProxyMode(document.getElementById("setting-network-proxy-mode")?.value),
       proxyURL: normalizeNetworkProxyUrl(document.getElementById("setting-network-proxy-url")?.value),
       action: normalizeCloseAction(document.getElementById("setting-close-action")?.value),
+      musicSourceProvider: normalizeMusicSourceProvider(document.getElementById("setting-music-source-provider")?.value),
       base: normalizeLyricHexInput(document.getElementById("setting-ly-base")?.value, "#ffffff"),
       highlight: normalizeLyricHexInput(document.getElementById("setting-ly-highlight")?.value, "#ffb7d4"),
       neteaseApiBase: normalizeNeteaseApiBase(document.getElementById("setting-netease-api-base")?.value),
@@ -67,7 +70,7 @@ export function createSettingsController(deps) {
 
   function settingsFormIsDirty() {
     const current = getSettingsFormValues();
-    return ["theme", "mode", "customAccent", "proxyMode", "proxyURL", "action", "base", "highlight", "neteaseApiBase", "hotkeysSig"].some((key) => current[key] !== settingsFormBaseline[key]);
+    return ["theme", "mode", "customAccent", "proxyMode", "proxyURL", "action", "musicSourceProvider", "base", "highlight", "neteaseApiBase", "hotkeysSig"].some((key) => current[key] !== settingsFormBaseline[key]);
   }
 
   function syncSettingsFormBaselineFromDom() {
@@ -89,6 +92,7 @@ export function createSettingsController(deps) {
     setThemeModeSelection(mode);
     setThemeCardSelection(theme);
     setNetworkProxyModeSelection(proxyMode);
+    setMusicSourceProviderSelection(settings?.music_source_provider ?? settings?.musicSourceProvider ?? "pjmp3");
     applyAppTheme(theme, customAccent, mode);
     const closeAction = normalizeCloseAction(settings?.main_window_close_action ?? settings?.mainWindowCloseAction);
     const closeActionEl = document.getElementById("setting-close-action");
@@ -139,7 +143,7 @@ export function createSettingsController(deps) {
         const report = await invoke("apply_global_hotkeys", { cfg: current.globalHotkeys });
         if (report) hotkeys.renderHotkeyStatusFromReport(report);
       }
-      await invoke("save_settings", { patch: { app_theme: current.theme, app_theme_mode: current.mode, app_theme_custom_accent: current.customAccent, network_proxy_mode: current.proxyMode, network_proxy_url: proxyURLForSave, main_window_close_action: current.action, desktop_lyrics_color_base: current.base, desktop_lyrics_color_highlight: current.highlight, lyrics_netease_api_base: current.neteaseApiBase } });
+      await invoke("save_settings", { patch: { app_theme: current.theme, app_theme_mode: current.mode, app_theme_custom_accent: current.customAccent, network_proxy_mode: current.proxyMode, network_proxy_url: proxyURLForSave, main_window_close_action: current.action, music_source_provider: current.musicSourceProvider, desktop_lyrics_color_base: current.base, desktop_lyrics_color_highlight: current.highlight, lyrics_netease_api_base: current.neteaseApiBase } });
       applyAppTheme(current.theme, current.customAccent, current.mode);
       setMainWindowCloseAction(current.action);
       syncSettingsFormBaselineFromDom();
@@ -234,6 +238,10 @@ export function createSettingsController(deps) {
     });
     document.querySelectorAll("[data-network-proxy-mode-card]").forEach((card) => card.addEventListener("click", () => {
       setNetworkProxyModeSelection(card.getAttribute("data-network-proxy-mode-card") || "direct");
+      queueSettingsAutosave(true);
+    }));
+    document.querySelectorAll("[data-music-source-provider-card]").forEach((card) => card.addEventListener("click", () => {
+      setMusicSourceProviderSelection(card.getAttribute("data-music-source-provider-card") || "pjmp3");
       queueSettingsAutosave(true);
     }));
     hotkeys.wireHotkeySettingsUi();

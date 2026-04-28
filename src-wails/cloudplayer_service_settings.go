@@ -156,6 +156,9 @@ func (s *CloudPlayerService) SaveSettings(patch SettingsPatch) error {
 	if patch.ShareNeteaseCookie != nil {
 		settings.ShareNeteaseCookie = *patch.ShareNeteaseCookie
 	}
+	if patch.MusicSourceProvider != nil {
+		settings.MusicSourceProvider = config.NormalizeMusicSourceProvider(*patch.MusicSourceProvider)
+	}
 	if err := config.SaveSettings(settings); err != nil {
 		return err
 	}

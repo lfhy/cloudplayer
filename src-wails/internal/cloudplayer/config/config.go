@@ -47,6 +47,7 @@ type Settings struct {
 	DesktopLyricsColorHighlight string        `json:"desktop_lyrics_color_highlight"`
 	ShareNeteaseCookieEnabled   bool          `json:"share_netease_cookie_enabled"`
 	ShareNeteaseCookie          string        `json:"share_netease_cookie"`
+	MusicSourceProvider         string        `json:"music_source_provider"`
 }
 
 type GlobalHotkeys struct {
@@ -74,6 +75,16 @@ func DefaultSettings() Settings {
 		GlobalHotkeys:               DefaultGlobalHotkeys(),
 		DesktopLyricsColorBase:      "#ffffff",
 		DesktopLyricsColorHighlight: "#ffb7d4",
+		MusicSourceProvider:         "pjmp3",
+	}
+}
+
+func NormalizeMusicSourceProvider(value string) string {
+	switch strings.ToLower(strings.TrimSpace(value)) {
+	case "pjmp3":
+		return "pjmp3"
+	default:
+		return "pjmp3"
 	}
 }
 

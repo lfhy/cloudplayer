@@ -6,6 +6,7 @@ export function createSettingsRuntime(deps) {
   const {
     alertRequestFailed,
     applyAppTheme,
+    applyMusicSourceProviderSelectionUi,
     applyNetworkProxyModeSelectionUi,
     applySettingsTabUi,
     applyThemeCardSelectionUi,
@@ -24,6 +25,7 @@ export function createSettingsRuntime(deps) {
     normalizeAppTheme,
     normalizeAppThemeMode,
     normalizeCloseAction,
+    normalizeMusicSourceProvider,
     normalizeNetworkProxyMode,
     normalizeNetworkProxyUrl,
     normalizeSettingsTab,
@@ -68,6 +70,13 @@ export function createSettingsRuntime(deps) {
     applyNetworkProxyModeSelectionUi(normalized);
   }
 
+  function setMusicSourceProviderSelection(provider) {
+    const normalized = normalizeMusicSourceProvider(provider);
+    const hidden = document.getElementById("setting-music-source-provider");
+    if (hidden) hidden.value = normalized;
+    applyMusicSourceProviderSelectionUi(normalized);
+  }
+
   function setSettingsTab(tab) {
     applySettingsTabUi(normalizeSettingsTab(tab));
   }
@@ -83,11 +92,13 @@ export function createSettingsRuntime(deps) {
     normalizeAppTheme,
     normalizeAppThemeMode,
     normalizeCloseAction,
+    normalizeMusicSourceProvider,
     normalizeNetworkProxyMode,
     normalizeNetworkProxyUrl,
     openDesktopLyricsFromSettingsIfNeeded,
     refreshLyricsLockMenuLabel,
     setMainWindowCloseAction,
+    setMusicSourceProviderSelection,
     setNetworkProxyModeSelection,
     setPage,
     setSettingsTab,
@@ -120,6 +131,7 @@ export function createSettingsRuntime(deps) {
     loadSettings: settings.loadSettings,
     openCloseConfirmModal: settings.openCloseConfirmModal,
     queueSettingsAutosave: settings.queueSettingsAutosave,
+    setMusicSourceProviderSelection,
     setNetworkProxyModeSelection,
     setSettingsTab,
     setThemeCardSelection,

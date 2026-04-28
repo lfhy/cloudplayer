@@ -2,6 +2,7 @@
 import {
   APP_THEME_MODES,
   APP_THEMES,
+  MUSIC_SOURCE_PROVIDERS,
   NETWORK_PROXY_MODES,
   QUICK_THEME_MODE_LABELS,
   SETTINGS_TABS,
@@ -54,6 +55,11 @@ export function normalizeNetworkProxyUrl(value) {
 export function normalizeSettingsTab(value) {
   const normalized = String(value || "appearance").trim().toLowerCase();
   return SETTINGS_TABS.has(normalized) ? normalized : "appearance";
+}
+
+export function normalizeMusicSourceProvider(value) {
+  const normalized = String(value || "pjmp3").trim().toLowerCase();
+  return MUSIC_SOURCE_PROVIDERS.has(normalized) ? normalized : "pjmp3";
 }
 
 export function canSaveCustomProxyUrl(value) {
@@ -122,6 +128,14 @@ export function setNetworkProxyModeSelection(mode) {
   });
   const customWrap = document.getElementById("settings-network-proxy-custom");
   if (customWrap) customWrap.hidden = mode !== "custom";
+}
+
+export function setMusicSourceProviderSelection(provider) {
+  document.querySelectorAll("[data-music-source-provider-card]").forEach((card) => {
+    const active = card.getAttribute("data-music-source-provider-card") === provider;
+    card.classList.toggle("is-active", active);
+    card.setAttribute("aria-checked", active ? "true" : "false");
+  });
 }
 
 export function setSettingsTab(tab) {

@@ -9,7 +9,7 @@ import { loadLikedSet, saveLikedSet } from "./app/helpers/likedSet.js";
 import { audioDiagPayload, createPlayEventLogger } from "./app/helpers/playerDiagnostics.js";
 import { escapeHtml, setTableMutedMessage } from "./app/helpers/text.js";
 import { formatDurationMs, formatTime } from "./app/helpers/time.js";
-import { applyAppTheme, applyPlatformClassNames, normalizeAccentHex, normalizeAppTheme, normalizeAppThemeMode, normalizeCloseAction, normalizeNetworkProxyMode, normalizeNetworkProxyUrl, normalizeSettingsTab, setNetworkProxyModeSelection as applyNetworkProxyModeSelectionUi, setSettingsTab as applySettingsTabUi, setThemeCardSelection as applyThemeCardSelectionUi, setThemeModeSelection as applyThemeModeSelectionUi, systemDarkMedia } from "./app/helpers/platformTheme.js";
+import { applyAppTheme, applyPlatformClassNames, normalizeAccentHex, normalizeAppTheme, normalizeAppThemeMode, normalizeCloseAction, normalizeMusicSourceProvider, normalizeNetworkProxyMode, normalizeNetworkProxyUrl, normalizeSettingsTab, setMusicSourceProviderSelection as applyMusicSourceProviderSelectionUi, setNetworkProxyModeSelection as applyNetworkProxyModeSelectionUi, setSettingsTab as applySettingsTabUi, setThemeCardSelection as applyThemeCardSelectionUi, setThemeModeSelection as applyThemeModeSelectionUi, systemDarkMedia } from "./app/helpers/platformTheme.js";
 import { createBasePlayerRuntime } from "./app/runtime/basePlayerRuntime.js";
 import { createDockRuntime } from "./app/runtime/dockRuntime.js";
 import { createPageRuntime } from "./app/runtime/pageRuntime.js";
@@ -40,11 +40,11 @@ function shouldIgnoreGlobalHotkeyAction() {
 }
 
 const settings = createSettingsRuntime({
-  alertRequestFailed, applyAppTheme, applyNetworkProxyModeSelectionUi, applySettingsTabUi, applyThemeCardSelectionUi, applyThemeModeSelectionUi, audioEl, invoke,
+  alertRequestFailed, applyAppTheme, applyMusicSourceProviderSelectionUi, applyNetworkProxyModeSelectionUi, applySettingsTabUi, applyThemeCardSelectionUi, applyThemeModeSelectionUi, audioEl, invoke,
   broadcastDesktopLyricsColors: (...args) => player.broadcastDesktopLyricsColors(...args), broadcastDesktopLyricsLock: (...args) => player.broadcastDesktopLyricsLock(...args),
   getDesktopLyricsOpen: () => desktopLyricsOpen, getImportDraftDirty: () => importDraftDirty, getImportMethod: () => importMethod, getImportTracks: () => importTracks,
   getNeteaseCookieEnabled: () => neteaseCookieEnabled, getNeteaseCookieValue: () => neteaseCookieValue, normalizeAccentHex, normalizeAppTheme, normalizeAppThemeMode,
-  normalizeCloseAction, normalizeNetworkProxyMode, normalizeNetworkProxyUrl, normalizeSettingsTab,
+  normalizeCloseAction, normalizeMusicSourceProvider, normalizeNetworkProxyMode, normalizeNetworkProxyUrl, normalizeSettingsTab,
   openDesktopLyricsFromSettingsIfNeeded: (...args) => player.openDesktopLyricsFromSettingsIfNeeded(...args), queueQuickThemeRefresh: (...args) => refreshQuickThemeModeUi(...args),
   refreshLyricsLockMenuLabel: (...args) => player.refreshLyricsLockMenuLabel(...args), renderImportTable: (...args) => renderImportTable(...args),
   setDesktopLyricsLocked: (value) => { desktopLyricsLocked = value; }, setImportDraftDirty: (value) => { importDraftDirty = value; }, setImportMethodValue: (value) => { importMethod = value; },

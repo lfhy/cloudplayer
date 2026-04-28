@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"strings"
 
+	"cloudplayer/internal/cloudplayer/config"
 	"cloudplayer/internal/cloudplayer/pjmp3"
 )
 
@@ -46,6 +47,10 @@ var providers = map[string]Provider{
 }
 
 func Current() Provider {
+	provider, ok := ProviderByKey(config.LoadSettings().MusicSourceProvider)
+	if ok {
+		return provider
+	}
 	return providers[DefaultProviderKey]
 }
 
