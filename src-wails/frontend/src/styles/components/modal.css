@@ -56,13 +56,13 @@
 
 .modal-choice-grid {
   display: flex;
-  flex-wrap: wrap;
+  flex-direction: column;
   gap: 10px;
 }
 
 .modal-choice {
-  flex: 1 1 190px;
-  min-height: 48px;
+  width: 100%;
+  min-height: 50px;
   padding: 0 14px;
   border: 1px solid rgba(15, 23, 42, 0.06);
   border-radius: 14px;
@@ -88,16 +88,22 @@
 }
 
 .modal-choice--tray {
-  background: linear-gradient(180deg, rgba(var(--accent-rgb), 0.12), rgba(var(--accent-rgb), 0.06));
-  border-color: rgba(var(--accent-rgb), 0.16);
-  color: var(--accent);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.32);
+  background: var(--surface-subtle);
+  border-color: rgba(15, 23, 42, 0.06);
+  color: var(--text);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.24);
 }
 
 .modal-choice--quit {
-  background: var(--bg-card);
-  border-color: var(--border);
-  color: var(--text);
+  background: linear-gradient(180deg, rgba(220, 38, 38, 0.18), rgba(220, 38, 38, 0.1));
+  border-color: rgba(220, 38, 38, 0.3);
+  color: #c62828;
+}
+
+:root[data-theme-mode-resolved="dark"] .modal-choice--quit {
+  background: linear-gradient(180deg, rgba(248, 113, 113, 0.2), rgba(239, 68, 68, 0.14));
+  border-color: rgba(248, 113, 113, 0.28);
+  color: #fca5a5;
 }
 
 .modal-remember {
@@ -157,10 +163,6 @@
   .modal-dialog {
     padding: 14px;
     border-radius: 18px;
-  }
-
-  .modal-choice-grid {
-    flex-direction: column;
   }
 
   .modal-footer {
