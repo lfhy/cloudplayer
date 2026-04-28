@@ -4,8 +4,7 @@ export function closeConfirmModalTemplate() {
     <div id="close-confirm-modal" class="modal-overlay" hidden aria-hidden="true">
       <div class="modal-dialog modal-dialog--close-confirm" role="dialog" aria-modal="true" aria-labelledby="close-modal-title">
         <header class="modal-copy">
-          <h3 id="close-modal-title" class="modal-title">关闭主窗口时怎么处理？</h3>
-          <p class="modal-desc">可临时选择，也可记住为默认行为。</p>
+          <h3 id="close-modal-title" class="modal-title">关闭主窗口后的操作</h3>
         </header>
         <div class="modal-choice-grid">
           <button type="button" class="modal-choice modal-choice--tray" id="close-choice-tray">最小化到系统托盘</button>

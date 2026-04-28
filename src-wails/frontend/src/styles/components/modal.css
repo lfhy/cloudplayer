@@ -31,12 +31,12 @@
 
 .modal-dialog--close-confirm {
   display: grid;
-  gap: 14px;
+  gap: 12px;
 }
 
 .modal-copy {
   display: grid;
-  gap: 6px;
+  gap: 0;
 }
 
 .modal-title {
@@ -45,13 +45,6 @@
   line-height: 1.16;
   letter-spacing: -0.03em;
   color: var(--text);
-}
-
-.modal-desc {
-  margin: 0;
-  font-size: 12px;
-  line-height: 1.5;
-  color: var(--text-secondary);
 }
 
 .modal-choice-grid {
@@ -95,15 +88,16 @@
 }
 
 .modal-choice--quit {
-  background: linear-gradient(180deg, rgba(220, 38, 38, 0.18), rgba(220, 38, 38, 0.1));
-  border-color: rgba(220, 38, 38, 0.3);
-  color: #c62828;
+  background: linear-gradient(180deg, #e33434, #cf2323);
+  border-color: #bb1d1d;
+  color: #ffffff;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.14);
 }
 
 :root[data-theme-mode-resolved="dark"] .modal-choice--quit {
-  background: linear-gradient(180deg, rgba(248, 113, 113, 0.2), rgba(239, 68, 68, 0.14));
-  border-color: rgba(248, 113, 113, 0.28);
-  color: #fca5a5;
+  background: linear-gradient(180deg, #ef4444, #dc2626);
+  border-color: #b91c1c;
+  color: #ffffff;
 }
 
 .modal-remember {
