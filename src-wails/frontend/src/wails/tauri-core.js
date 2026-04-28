@@ -1,5 +1,5 @@
 // Tauri compatibility wrappers map the legacy invoke calls onto Wails service bindings.
-import { CloudPlayerService } from "../../bindings/cloudplayer";
+import { CloudPlayerService } from "../../bindings/cloudplayer/index.js";
 
 const invokeMap = {
   apply_global_hotkeys: (args) => CloudPlayerService.ApplyGlobalHotkeys(args.cfg),

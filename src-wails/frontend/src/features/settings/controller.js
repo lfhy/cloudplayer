@@ -1,5 +1,6 @@
 // Settings controller owns form state, autosave, and modal wiring for preferences.
 import { createHotkeyController } from "./hotkeys.js";
+import { canSaveCustomProxyUrl } from "../../app/helpers/platformTheme.js";
 
 export function createSettingsController(deps) {
   const {
@@ -112,7 +113,7 @@ export function createSettingsController(deps) {
     const current = getSettingsFormValues();
     try {
       let proxyURLForSave = current.proxyURL;
-      const customProxyReady = /^(https?|socks5h?):\/\//i.test(current.proxyURL);
+      const customProxyReady = canSaveCustomProxyUrl(current.proxyURL);
       if (current.proxyMode === "custom" && !customProxyReady) return;
       if (current.proxyMode !== "custom" && !customProxyReady) {
         proxyURLForSave = "";

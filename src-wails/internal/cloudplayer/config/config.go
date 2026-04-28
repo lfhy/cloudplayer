@@ -155,6 +155,16 @@ func NormalizeNetworkProxyURL(raw string) (string, error) {
 	if value == "" {
 		return "", nil
 	}
+	value = strings.ReplaceAll(value, "：", ":")
+	lowerValue := strings.ToLower(value)
+	for _, scheme := range []string{"http", "https", "socks5h", "socks5", "socks"} {
+		prefix := scheme + ":"
+		if strings.HasPrefix(lowerValue, prefix) && !strings.HasPrefix(lowerValue, prefix+"//") {
+			value = scheme + "://" + strings.TrimSpace(value[len(prefix):])
+			lowerValue = strings.ToLower(value)
+			break
+		}
+	}
 	if !strings.Contains(value, "://") {
 		value = "http://" + value
 	}
@@ -173,6 +183,16 @@ func NormalizeNetworkProxyURL(raw string) (string, error) {
 		return "", fmt.Errorf("仅支持 http、https、socks5、socks5h 代理")
 	}
 	if strings.TrimSpace(parsed.Host) == "" {
+		switch {
+		case strings.TrimSpace(parsed.Opaque) != "":
+			parsed.Host = strings.TrimSpace(parsed.Opaque)
+			parsed.Opaque = ""
+		case strings.TrimSpace(parsed.Path) != "" && !strings.Contains(parsed.Path, "/"):
+			parsed.Host = strings.TrimSpace(parsed.Path)
+			parsed.Path = ""
+		}
+	}
+	if strings.TrimSpace(parsed.Hostname()) == "" || strings.TrimSpace(parsed.Port()) == "" {
 		return "", fmt.Errorf("代理地址缺少主机或端口")
 	}
 	if parsed.Path == "/" {

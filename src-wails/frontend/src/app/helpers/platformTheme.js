@@ -57,8 +57,14 @@ export function normalizeSettingsTab(value) {
 }
 
 export function canSaveCustomProxyUrl(value) {
-  if (!value) return false;
-  return /^(https?|socks5h?):\/\//i.test(value);
+  const normalized = normalizeNetworkProxyUrl(value);
+  if (!/^(https?|socks5h?):\/\//i.test(normalized)) return false;
+  try {
+    const parsed = new URL(normalized);
+    return !!parsed.hostname && !!parsed.port;
+  } catch {
+    return false;
+  }
 }
 
 export function themeAccentRgb(hex) {
