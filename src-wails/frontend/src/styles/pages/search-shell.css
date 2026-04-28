@@ -98,6 +98,10 @@
   padding-top: 10px;
 }
 
+.search-results-tail[hidden] {
+  display: none !important;
+}
+
 @keyframes search-view-enter {
   from {
     opacity: 0;

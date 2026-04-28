@@ -1,3 +1,5 @@
+import { coverImgHtml } from "../../app/helpers/covers.js";
+
 // Catalog results controller owns virtual rows, infinite loading, and multi-select actions.
 export function createCatalogResultsController(deps) {
   const {
@@ -82,7 +84,7 @@ export function createCatalogResultsController(deps) {
       const index = startIndex + offset;
       const tr = document.createElement("tr");
       const selected = searchState.selectedIds?.has(row.source_id) === true;
-      const cover = row.cover_url ? `<img class="row-cover" src="${escapeHtml(row.cover_url)}" alt="" width="40" height="40" loading="lazy" />` : '<div class="row-cover-ph" aria-hidden="true"></div>';
+      const cover = coverImgHtml({ src: row.cover_url || "", className: "row-cover", width: 40, height: 40, radius: 4 });
       const title = row.artist ? `<span class="t-title">${escapeHtml(row.title)}</span><span class="t-art">${escapeHtml(row.artist)}</span>` : `<span class="t-title">${escapeHtml(row.title)}</span>`;
       tr.classList.toggle("is-selected", selected);
       tr.innerHTML = `<td class="col-check"><label class="search-row-check"><input type="checkbox" data-search-select-row="${escapeHtml(row.source_id)}" ${selected ? "checked" : ""} aria-label="选择 ${escapeHtml(row.title)}" /></label></td><td class="col-idx">${index + 1}</td><td class="col-cover">${cover}</td><td>${title}</td><td class="muted">${escapeHtml(row.album || "—")}</td><td class="muted col-dur">—</td>`;

@@ -100,7 +100,7 @@ export function searchPageTemplate() {
                 </table>
               </div>
             </div>
-            <div class="search-results-tail">
+            <div id="search-results-tail" class="search-results-tail" hidden>
               <span id="search-page-info" class="search-page-info muted"></span>
             </div>
           </div>

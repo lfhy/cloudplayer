@@ -1,4 +1,5 @@
 import { createCatalogResultsController } from "./catalogResultsController.js";
+import { coverImgHtml } from "../../app/helpers/covers.js";
 
 // Search controller keeps page-level view switching thin and delegates heavy catalog logic.
 export function createSearchController(deps) {
@@ -97,8 +98,10 @@ export function createSearchController(deps) {
           ? ""
           : `共 ${resultCount} 条`;
     const info = document.getElementById("search-page-info");
+    const tail = document.getElementById("search-results-tail");
     const playlistInfo = document.getElementById("search-playlist-info");
     const summary = document.getElementById("search-results-summary");
+    if (tail) tail.hidden = searchState.scope !== "catalog" || !keyword || !catalogStatus;
     if (info) info.textContent = searchState.scope !== "catalog" || !keyword || !catalogStatus ? "" : catalogStatus;
     if (playlistInfo) playlistInfo.textContent = searchState.scope !== "playlists" || !keyword ? "" : `找到 ${searchState.playlistResults.length} 张相关歌单`;
     if (summary) summary.textContent = !keyword ? "" : searchState.scope === "catalog" ? `搜索 “${keyword}”${selectedCount ? ` · 已选 ${selectedCount} 首` : ""}` : `在本地歌单中搜索 “${keyword}”`;
@@ -127,8 +130,9 @@ export function createSearchController(deps) {
       const matches = playlist.matchedTracks.slice(0, 3).map((track) => `<li>${escapeHtml(track.title || "—")}${track.artist ? ` · ${escapeHtml(track.artist)}` : ""}</li>`).join("");
       button.type = "button";
       button.className = "search-playlist-card";
+      const cover = coverImgHtml({ src: playlist.coverUrl || "", className: "search-playlist-card__cover", width: 64, height: 64, radius: 14 });
       button.innerHTML = `
-        ${playlist.coverUrl ? `<img class="search-playlist-card__cover" src="${escapeHtml(playlist.coverUrl)}" alt="" />` : '<div class="search-playlist-card__cover search-playlist-card__cover--ph" aria-hidden="true"></div>'}
+        ${cover}
         <span class="search-playlist-card__body">
           <strong>${escapeHtml(playlist.name)}</strong>
           <span>${playlist.trackCount} 首歌曲${playlist.matchedTracks.length ? ` · 命中 ${playlist.matchedTracks.length} 首` : ""}</span>

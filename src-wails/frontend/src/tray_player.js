@@ -1,9 +1,8 @@
 import { invoke } from "./wails/tauri-core.js";
 import { emitTo, listen } from "./wails/tauri-event.js";
+import { setCoverImageSource } from "./app/helpers/covers.js";
 
 const MAIN_WW = { kind: "WebviewWindow", label: "main" };
-const FALLBACK_COVER =
-  "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='92' height='92' viewBox='0 0 92 92'%3E%3Crect width='92' height='92' rx='16' fill='%23292d34'/%3E%3Cpath d='M30 61.5V30.5c0-2 2.2-3.2 3.9-2.1l25.1 15.5c1.6 1 1.6 3.3 0 4.3L33.9 63.6c-1.7 1.1-3.9-.1-3.9-2.1Z' fill='%23ffffff' fill-opacity='.78'/%3E%3C/svg%3E";
 
 function applyTrayTheme(payload = {}) {
   const root = document.documentElement;
@@ -26,7 +25,7 @@ function applyTrayState(payload = {}) {
 
   const hasTrack = !!payload.hasTrack;
   if (card) card.classList.toggle("tray-empty", !hasTrack);
-  if (cover) cover.src = payload.coverUrl || FALLBACK_COVER;
+  setCoverImageSource(cover, payload.coverUrl, { size: 92, radius: 16 });
   if (title) title.textContent = payload.title || "CloudPlayer";
   if (sub) sub.textContent = payload.sub || "从菜单栏快速控制当前播放";
   if (progress) progress.style.width = `${Math.max(0, Math.min(100, Number(payload.progressPct) || 0))}%`;

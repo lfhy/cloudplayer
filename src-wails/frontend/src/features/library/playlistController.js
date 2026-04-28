@@ -1,3 +1,5 @@
+import { coverImgHtml, setCoverImageSource } from "../../app/helpers/covers.js";
+
 // Playlist controller handles sidebar, hero metadata, and playlist search helpers.
 export function createPlaylistController(deps) {
   const {
@@ -141,7 +143,7 @@ export function createPlaylistController(deps) {
     const coverEl = document.getElementById("playlist-hero-cover");
     if (countEl) countEl.textContent = `共 ${rows.length} 首导入曲目`;
     if (hintEl) hintEl.textContent = `CloudPlayer · ${getSelectedPlaylistName() || "导入歌单"}`;
-    if (coverEl) coverEl.src = rows.find((row) => (row.cover_url || "").trim())?.cover_url || "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Crect fill='%23d1d5db' width='120' height='120' rx='12'/%3E%3C/svg%3E";
+    setCoverImageSource(coverEl, rows.find((row) => (row.cover_url || "").trim())?.cover_url || "", { size: 120, radius: 12 });
     if (!rows.length) {
       tbody.innerHTML = '<tr><td colspan="5" class="muted">暂无导入曲目，或请从左侧选择其它歌单。</td></tr>';
       return;
@@ -150,8 +152,9 @@ export function createPlaylistController(deps) {
     rows.forEach((row, index) => {
       const sourceId = (row.pjmp3_source_id || "").trim();
       const tr = document.createElement("tr");
+      const cover = coverImgHtml({ src: row.cover_url || "", className: "row-cover", width: 40, height: 40, radius: 4 });
       tr.innerHTML = `
-        <td class="col-cover">${(row.cover_url || "").trim() ? `<img class="row-cover" src="${escapeHtml(row.cover_url)}" alt="" width="40" height="40" loading="lazy" />` : '<div class="row-cover-ph" aria-hidden="true"></div>'}</td>
+        <td class="col-cover">${cover}</td>
         <td>${row.artist ? `<span class="t-title">${escapeHtml(row.title || "—")}</span><span class="t-art">${escapeHtml(row.artist)}</span>` : `<span class="t-title">${escapeHtml(row.title || "—")}</span>`}</td>
         <td class="muted">${escapeHtml(row.album || "—")}</td>
         <td class="col-like muted">${sourceId && getLikedIds().has(sourceId) ? "♥" : "♡"}</td>

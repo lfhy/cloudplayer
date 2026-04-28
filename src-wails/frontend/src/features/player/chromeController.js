@@ -1,3 +1,5 @@
+import { setCoverImageSource } from "../../app/helpers/covers.js";
+
 // Player chrome helpers keep dock text, seek UI and prev/next enablement consistent.
 export function createPlayerChromeController(deps) {
   const {
@@ -18,7 +20,7 @@ export function createPlayerChromeController(deps) {
     const coverEl = document.getElementById("dock-cover");
     if (title !== undefined && titleEl) titleEl.textContent = title;
     if (sub !== undefined && subEl) subEl.textContent = sub;
-    if (touchCover && coverEl && coverUrl !== undefined && coverUrl) coverEl.src = coverUrl;
+    if (touchCover && coverEl && coverUrl !== undefined) setCoverImageSource(coverEl, coverUrl, { size: 52, radius: 10 });
     queueMicrotask(() => {
       void broadcastTrayPlayerState();
     });
