@@ -1,4 +1,6 @@
 import { coverImgHtml } from "../../app/helpers/covers.js";
+import { formatDurationMs } from "../../app/helpers/time.js";
+import { createCatalogMetadataController } from "./catalogMetadataController.js";
 
 // Catalog results controller owns virtual rows, infinite loading, and multi-select actions.
 export function createCatalogResultsController(deps) {
@@ -19,6 +21,7 @@ export function createCatalogResultsController(deps) {
   const overscanRows = 8;
   const loadMoreThreshold = Math.max(4, Math.floor(rowHeight * 0.1));
   const bottomStatusThreshold = rowHeight * 1.5;
+  const metadata = createCatalogMetadataController({ invoke, renderSearchTable, searchState, warnRequestFailed });
 
   function clearSelection() {
     searchState.selectedIds = new Set();
@@ -76,18 +79,19 @@ export function createCatalogResultsController(deps) {
     const visibleRows = Math.max(1, Math.ceil(viewportHeight / rowHeight));
     const startIndex = Math.max(0, Math.floor(scrollTop / rowHeight) - overscanRows);
     const endIndex = Math.min(totalRows, startIndex + visibleRows + overscanRows * 2);
+    const renderedRows = searchState.results.slice(startIndex, endIndex);
     searchState.virtualTop = startIndex * rowHeight;
     searchState.virtualBottom = Math.max(0, (totalRows - endIndex) * rowHeight);
     tbody.innerHTML = "";
     if (searchState.virtualTop > 0) tbody.appendChild(spacerRow(searchState.virtualTop));
-    searchState.results.slice(startIndex, endIndex).forEach((row, offset) => {
+    renderedRows.forEach((row, offset) => {
       const index = startIndex + offset;
       const tr = document.createElement("tr");
       const selected = searchState.selectedIds?.has(row.source_id) === true;
       const cover = coverImgHtml({ src: row.cover_url || "", className: "row-cover", width: 40, height: 40, radius: 4 });
       const title = row.artist ? `<span class="t-title">${escapeHtml(row.title)}</span><span class="t-art">${escapeHtml(row.artist)}</span>` : `<span class="t-title">${escapeHtml(row.title)}</span>`;
       tr.classList.toggle("is-selected", selected);
-      tr.innerHTML = `<td class="col-check"><label class="search-row-check"><input type="checkbox" data-search-select-row="${escapeHtml(row.source_id)}" ${selected ? "checked" : ""} aria-label="选择 ${escapeHtml(row.title)}" /></label></td><td class="col-idx">${index + 1}</td><td class="col-cover">${cover}</td><td>${title}</td><td class="muted">${escapeHtml(row.album || "—")}</td><td class="muted col-dur">—</td>`;
+      tr.innerHTML = `<td class="col-check"><label class="search-row-check"><input type="checkbox" data-search-select-row="${escapeHtml(row.source_id)}" ${selected ? "checked" : ""} aria-label="选择 ${escapeHtml(row.title)}" /></label></td><td class="col-idx">${index + 1}</td><td class="col-cover">${cover}</td><td>${title}</td><td class="muted">${escapeHtml(row.album || "—")}</td><td class="muted col-dur">${escapeHtml(formatDurationMs(row.duration_ms))}</td>`;
       tr.style.cursor = "pointer";
       tr.title = "双击试听";
       tr.addEventListener("dblclick", () => playFromSearchRow(index));
@@ -109,6 +113,7 @@ export function createCatalogResultsController(deps) {
     syncBottomStatusVisibility();
     updateSearchToolbar();
     maybeLoadMoreSearchResults();
+    void metadata.ensureVisibleMetadata(renderedRows);
   }
 
   function spacerRow(height) {

@@ -20,6 +20,7 @@ type SearchResult struct {
 	Title    string  `json:"title"`
 	Artist   string  `json:"artist"`
 	Album    string  `json:"album"`
+	DurationMS int64 `json:"duration_ms"`
 	CoverURL *string `json:"cover_url"`
 }
 

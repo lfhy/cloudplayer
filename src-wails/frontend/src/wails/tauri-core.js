@@ -48,6 +48,16 @@ function pickPreferredArray(...values) {
   return [];
 }
 
+function pickPositiveNumber(...values) {
+  for (const value of values) {
+    const parsed = Number(value);
+    if (Number.isFinite(parsed) && parsed > 0) {
+      return Math.round(parsed);
+    }
+  }
+  return 0;
+}
+
 function normalizeSearchRow(row) {
   const source = row && typeof row === "object" ? row : {};
   return {
@@ -62,7 +72,17 @@ function normalizeSearchRow(row) {
     title: pickFirstNonEmptyString(source.title, source.Title),
     artist: pickFirstNonEmptyString(source.artist, source.Artist),
     album: pickFirstNonEmptyString(source.album, source.Album),
+    duration_ms: pickPositiveNumber(source.duration_ms, source.durationMs, source.DurationMS),
     cover_url: pickNullableString(source.cover_url, source.coverUrl, source.CoverURL),
+  };
+}
+
+function normalizeSearchMetadataRow(row) {
+  const source = row && typeof row === "object" ? row : {};
+  return {
+    source_id: pickFirstNonEmptyString(source.source_id, source.sourceId, source.SourceID),
+    album: pickFirstNonEmptyString(source.album, source.Album),
+    duration_ms: pickPositiveNumber(source.duration_ms, source.durationMs, source.DurationMS),
   };
 }
 
@@ -88,6 +108,8 @@ const invokeMap = {
   enqueue_download: (args) => CloudPlayerService.EnqueueDownload(args),
   fetch_share_playlist: (args) => CloudPlayerService.FetchSharePlaylist(args.url),
   fetch_song_lrc_enriched: (args) => CloudPlayerService.FetchSongLRCEnriched(args.req),
+  get_search_song_metadata: async (args) =>
+    (await CloudPlayerService.GetSearchSongMetadata(args.songIds ?? [])).map((row) => normalizeSearchMetadataRow(row)),
   get_app_log_path: () => CloudPlayerService.GetAppLogPath(),
   get_global_hotkeys: () => CloudPlayerService.GetGlobalHotkeys(),
   get_preview_url: (args) => CloudPlayerService.GetPreviewURL(args.songId),

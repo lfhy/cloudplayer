@@ -40,6 +40,12 @@ type SearchResponse struct {
 	HasNext bool                       `json:"has_next"`
 }
 
+type SearchSongMetadataRow struct {
+	SourceID   string `json:"source_id"`
+	Album      string `json:"album"`
+	DurationMS int64  `json:"duration_ms"`
+}
+
 type ResolveOnlinePlayOut struct {
 	Kind string `json:"kind"`
 	Path string `json:"path,omitempty"`

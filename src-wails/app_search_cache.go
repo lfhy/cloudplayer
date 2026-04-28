@@ -15,6 +15,8 @@ import (
 const (
 	searchCacheEntryLimit = 96
 	searchCachePrefix     = "search:"
+	searchPageCachePrefix = searchCachePrefix + "page:v1:"
+	searchMetaCachePrefix = searchCachePrefix + "meta:v1:"
 )
 
 func searchCacheDir() string {
@@ -30,7 +32,11 @@ func InitSearchCacheStore() {
 }
 
 func SearchCacheKey(providerKey, keyword string, page uint32) string {
-	return searchCachePrefix + strings.ToLower(strings.TrimSpace(providerKey)) + "|" + strings.TrimSpace(keyword) + "|" + uint32String(page)
+	return searchPageCachePrefix + strings.ToLower(strings.TrimSpace(providerKey)) + "|" + strings.TrimSpace(keyword) + "|" + uint32String(page)
+}
+
+func SearchSongMetadataCacheKey(sourceID string) string {
+	return searchMetaCachePrefix + musicsource.CanonicalSourceID(sourceID)
 }
 
 func uint32String(value uint32) string {
@@ -59,6 +65,18 @@ func (c *SearchCache) Set(key string, response SearchResponse, ttl time.Duration
 		seconds = int((24 * time.Hour) / time.Second)
 	}
 	gcache.Set(key, cloneSearchResponse(response), seconds)
+}
+
+func (c *SearchCache) GetSongMetadata(key string) (SearchSongMetadataRow, bool) {
+	return gcache.Get[SearchSongMetadataRow](key)
+}
+
+func (c *SearchCache) SetSongMetadata(key string, row SearchSongMetadataRow, ttl time.Duration) {
+	seconds := int(ttl / time.Second)
+	if seconds <= 0 {
+		seconds = int((24 * time.Hour) / time.Second)
+	}
+	gcache.Set(key, row, seconds)
 }
 
 func (c *SearchCache) ClearSearchEntries() int {
