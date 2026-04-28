@@ -9,8 +9,8 @@ import (
 
 const (
 	closeConfirmWindowName   = "close-confirm"
-	closeConfirmWindowWidth  = 408
-	closeConfirmWindowHeight = 248
+	closeConfirmWindowWidth  = 548
+	closeConfirmWindowHeight = 348
 )
 
 // Native close-confirm helpers keep main-window shutdown behavior reliable even if the main webview is busy.
@@ -50,9 +50,30 @@ func showCloseConfirmWindow() {
 	dialog.Focus()
 }
 
-func ensureCloseConfirmWindow() application.Window {
+func positionCloseConfirmWindow(mainWindow application.Window, dialog *application.WebviewWindow) {
+	if dialog == nil {
+		return
+	}
+	if mainWindow == nil {
+		dialog.Center()
+		return
+	}
+	bounds := mainWindow.Bounds()
+	if bounds.Width <= 0 || bounds.Height <= 0 {
+		dialog.Center()
+		return
+	}
+	x := bounds.X + maxInt((bounds.Width-closeConfirmWindowWidth)/2, 24)
+	y := bounds.Y + maxInt((bounds.Height-closeConfirmWindowHeight)/2-28, 24)
+	dialog.SetPosition(x, y)
+}
+
+func ensureCloseConfirmWindow() *application.WebviewWindow {
 	if existing, ok := application.Get().Window.GetByName(closeConfirmWindowName); ok {
-		return existing
+		if dialog, dialogOK := existing.(*application.WebviewWindow); dialogOK {
+			return dialog
+		}
+		return nil
 	}
 	dialog := application.Get().Window.NewWithOptions(application.WebviewWindowOptions{
 		Name:          closeConfirmWindowName,
@@ -76,24 +97,6 @@ func ensureCloseConfirmWindow() application.Window {
 		dialog.Hide()
 	})
 	return dialog
-}
-
-func positionCloseConfirmWindow(mainWindow, dialog application.Window) {
-	if dialog == nil {
-		return
-	}
-	if mainWindow == nil {
-		dialog.Center()
-		return
-	}
-	bounds := mainWindow.Bounds()
-	if bounds.Width <= 0 || bounds.Height <= 0 {
-		dialog.Center()
-		return
-	}
-	x := bounds.X + maxInt((bounds.Width-closeConfirmWindowWidth)/2, 24)
-	y := bounds.Y + maxInt((bounds.Height-closeConfirmWindowHeight)/2, 24)
-	dialog.SetPosition(x, y)
 }
 
 func emitMainWindowCloseActionUpdated(action string) {

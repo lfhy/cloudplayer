@@ -12,21 +12,24 @@ function renderCloseConfirmWindow() {
   if (!root) throw new Error("close-confirm-app not found");
   root.innerHTML = `
     <main class="close-confirm-shell">
-      <section class="close-confirm-card">
-        <header class="close-confirm-copy">
-          <span class="close-confirm-eyebrow">关闭主窗口</span>
-          <h1 class="close-confirm-title">要退出还是最小化到托盘？</h1>
-          <p class="close-confirm-desc">可以先临时选择一次，也可以勾选记住，下次点关闭按钮时直接按这个行为执行。</p>
+      <section class="close-confirm-panel">
+        <header class="close-confirm-hero">
+          <div class="close-confirm-copy">
+            <h1 class="close-confirm-title">关闭 CloudPlayer 时要怎么处理？</h1>
+            <p class="close-confirm-desc">这次可以临时选择，也可以记住为默认行为。</p>
+          </div>
         </header>
-        <label class="close-confirm-remember">
-          <input type="checkbox" id="close-confirm-remember" />
-          <span>记住这次选择</span>
-        </label>
-        <div class="close-confirm-actions">
-          <button type="button" class="close-confirm-btn close-confirm-btn--secondary" id="close-confirm-tray">最小化到系统托盘</button>
-          <button type="button" class="close-confirm-btn close-confirm-btn--accent" id="close-confirm-quit">退出 CloudPlayer</button>
-        </div>
-        <button type="button" class="close-confirm-cancel" id="close-confirm-cancel">取消</button>
+        <section class="close-confirm-options" aria-label="关闭主窗口选项">
+          <button type="button" class="close-confirm-option close-confirm-option--tray" id="close-confirm-tray">最小化到系统托盘</button>
+          <button type="button" class="close-confirm-option close-confirm-option--quit" id="close-confirm-quit">退出 CloudPlayer</button>
+        </section>
+        <footer class="close-confirm-footer">
+          <label class="close-confirm-remember">
+            <input type="checkbox" id="close-confirm-remember" />
+            <span>记住这次选择</span>
+          </label>
+          <button type="button" class="close-confirm-cancel" id="close-confirm-cancel">取消</button>
+        </footer>
       </section>
     </main>
   `;
