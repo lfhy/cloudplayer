@@ -39,6 +39,10 @@
   background: rgba(var(--accent-rgb), 0.06);
 }
 
+.search-table tbody tr.search-table__loading:hover {
+  background: transparent;
+}
+
 .col-check {
   width: 44px;
   text-align: center;
