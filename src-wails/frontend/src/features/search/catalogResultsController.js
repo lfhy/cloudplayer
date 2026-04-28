@@ -16,9 +16,20 @@ export function createCatalogResultsController(deps) {
   const rowHeight = 57;
   const overscanRows = 8;
   const loadMoreThreshold = Math.max(4, Math.floor(rowHeight * 0.1));
+  const bottomStatusThreshold = rowHeight * 1.5;
 
   function clearSelection() {
     searchState.selectedIds = new Set();
+  }
+
+  function syncBottomStatusVisibility() {
+    const scrollWrap = document.getElementById("search-results-scroll");
+    if (!scrollWrap || searchState.scope !== "catalog" || !searchState.results.length) {
+      searchState.showBottomStatus = false;
+      return;
+    }
+    const remaining = Math.max(0, scrollWrap.scrollHeight - scrollWrap.scrollTop - scrollWrap.clientHeight);
+    searchState.showBottomStatus = remaining <= bottomStatusThreshold;
   }
 
   function renderSearchTable() {
@@ -26,9 +37,11 @@ export function createCatalogResultsController(deps) {
     if (!tbody) return;
     if (searchState.scope !== "catalog") {
       tbody.innerHTML = "";
+      searchState.showBottomStatus = false;
       return;
     }
     if (!searchState.results.length) {
+      searchState.showBottomStatus = false;
       setTableMutedMessage(tbody, 6, searchState.keyword.trim() ? "没有找到匹配的在线音乐结果。" : "");
       return;
     }
@@ -69,6 +82,8 @@ export function createCatalogResultsController(deps) {
       tbody.appendChild(tr);
     });
     if (searchState.virtualBottom > 0) tbody.appendChild(spacerRow(searchState.virtualBottom));
+    syncBottomStatusVisibility();
+    updateSearchToolbar();
     maybeLoadMoreSearchResults();
   }
 
@@ -100,6 +115,7 @@ export function createCatalogResultsController(deps) {
     const targetPage = pageOverride ?? (append ? searchState.page + 1 : 1);
     searchState.busy = !append;
     searchState.loadingMore = append;
+    searchState.showBottomStatus = append;
     updateSearchToolbar();
     try {
       if (!append) {
