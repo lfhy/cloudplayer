@@ -124,7 +124,6 @@ export function createSettingsRuntime(deps) {
     setSettingsTab,
     setThemeCardSelection,
     setThemeModeSelection,
-    syncMainWindowCloseAction: settings.syncMainWindowCloseAction,
     syncNeteaseCookieUi: flow.syncNeteaseCookieUi,
     wirePreferencesModals: settings.wirePreferencesModals,
     resetImportFlow: flow.resetImportFlow,

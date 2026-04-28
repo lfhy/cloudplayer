@@ -16,7 +16,6 @@ export default defineConfig({
   build: {
     rollupOptions: {
       input: {
-        close_confirm: resolve(__dirname, "close_confirm.html"),
         main: resolve(__dirname, "index.html"),
         desktop_lyrics: resolve(__dirname, "desktop_lyrics.html"),
         lyrics_replace: resolve(__dirname, "lyrics_replace.html"),

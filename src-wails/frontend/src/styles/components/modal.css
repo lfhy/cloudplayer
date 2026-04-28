@@ -2,13 +2,13 @@
 .modal-overlay {
   position: fixed;
   inset: 0;
-  z-index: 400;
+  z-index: 520;
   display: flex;
   align-items: center;
   justify-content: center;
   padding: 24px;
-  background: rgba(15, 23, 42, 0.35);
-  backdrop-filter: blur(3px);
+  background: rgba(15, 23, 42, 0.32);
+  backdrop-filter: blur(8px);
 }
 
 .modal-overlay[hidden] {
@@ -16,89 +16,154 @@
 }
 
 .modal-dialog {
-  width: min(400px, 100%);
+  width: min(520px, 100%);
   max-height: min(88vh, 560px);
   overflow: auto;
-  padding: 20px 22px;
-  border-radius: 12px;
-  background: var(--bg-card);
-  border: 1px solid var(--border);
-  box-shadow: 0 16px 40px rgba(15, 23, 42, 0.12);
+  padding: 18px;
+  border-radius: 24px;
+  background: var(--surface-soft);
+  border: 1px solid var(--surface-soft-border);
+  box-shadow:
+    0 20px 44px rgba(15, 23, 42, 0.08),
+    var(--surface-soft-inset);
   color: var(--text);
 }
 
+.modal-dialog--close-confirm {
+  display: grid;
+  gap: 16px;
+}
+
+.modal-copy {
+  display: grid;
+  gap: 8px;
+}
+
 .modal-title {
-  margin: 0 0 8px;
-  font-size: 17px;
-  font-weight: 700;
+  margin: 0;
+  font-size: 24px;
+  line-height: 1.12;
+  letter-spacing: -0.03em;
   color: var(--text);
 }
 
 .modal-desc {
-  margin: 0 0 16px;
+  margin: 0;
   font-size: 13px;
+  line-height: 1.55;
   color: var(--text-secondary);
-  line-height: 1.45;
 }
 
-.modal-actions {
+.modal-choice-grid {
   display: flex;
-  flex-direction: column;
-  gap: 10px;
-  margin-bottom: 14px;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.modal-choice {
+  flex: 1 1 220px;
+  min-height: 54px;
+  padding: 0 16px;
+  border: 1px solid rgba(15, 23, 42, 0.06);
+  border-radius: 16px;
+  background: var(--surface-subtle);
+  color: var(--text);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition:
+    border-color 160ms ease,
+    background-color 160ms ease,
+    transform 160ms ease;
+}
+
+.modal-choice:hover {
+  transform: translateY(-1px);
+  border-color: rgba(var(--accent-rgb), 0.22);
+  background: rgba(var(--accent-rgb), 0.08);
+}
+
+.modal-choice--tray {
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.42);
+}
+
+.modal-choice--quit {
+  background: linear-gradient(180deg, rgba(var(--accent-rgb), 0.13), rgba(var(--accent-rgb), 0.07));
+  border-color: rgba(var(--accent-rgb), 0.18);
 }
 
 .modal-remember {
-  display: flex;
+  display: inline-flex;
   align-items: center;
-  gap: 8px;
+  gap: 10px;
   font-size: 12px;
   color: var(--text-secondary);
-  margin-bottom: 12px;
   cursor: pointer;
+}
+
+.modal-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
 }
 
 .modal-cancel {
-  width: 100%;
-  margin-top: 4px;
-  padding: 8px 12px;
-  font-size: 13px;
-  border-radius: 8px;
-  border: 1px solid var(--border);
-  background: var(--bg-main);
-  color: var(--text);
-  cursor: pointer;
-}
-
-.modal-cancel:hover {
-  background: rgba(0, 0, 0, 0.05);
-}
-
-.btn-outline {
   padding: 8px 14px;
-  font-size: 13px;
-  border-radius: 8px;
+  font: inherit;
+  border-radius: 999px;
   border: 1px solid var(--border);
   background: var(--bg-card);
   color: var(--text);
   cursor: pointer;
+  transition:
+    background-color 160ms ease,
+    border-color 160ms ease,
+    transform 160ms ease;
 }
 
-.btn-outline:hover {
-  background: rgba(0, 0, 0, 0.04);
+.modal-cancel:hover {
+  transform: translateY(-1px);
+  background: rgba(var(--accent-rgb), 0.08);
+  border-color: rgba(var(--accent-rgb), 0.22);
 }
 
-.btn-danger {
-  padding: 8px 14px;
-  font-size: 13px;
-  border-radius: 8px;
-  border: 1px solid rgba(var(--accent-rgb), 0.26);
-  background: rgba(var(--accent-rgb), 0.1);
-  color: var(--accent);
-  cursor: pointer;
+.modal-choice:focus-visible,
+.modal-cancel:focus-visible {
+  outline: 2px solid rgba(var(--accent-rgb), 0.36);
+  outline-offset: 2px;
 }
 
-.btn-danger:hover {
-  background: rgba(var(--accent-rgb), 0.16);
-  border-color: rgba(var(--accent-rgb), 0.4);
+:root[data-theme-mode-resolved="dark"] .modal-dialog--close-confirm {
+  box-shadow:
+    0 24px 46px rgba(0, 0, 0, 0.28),
+    var(--surface-soft-inset);
+}
+
+@media (max-width: 560px) {
+  .modal-overlay {
+    padding: 16px;
+  }
+
+  .modal-dialog {
+    padding: 16px;
+    border-radius: 20px;
+  }
+
+  .modal-choice-grid {
+    flex-direction: column;
+  }
+
+  .modal-footer {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .modal-cancel {
+    width: 100%;
+  }
 }

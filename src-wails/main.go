@@ -81,7 +81,9 @@ func main() {
 			return
 		}
 		event.Cancel()
-		handleMainWindowCloseRequest()
+		_ = application.Get().Event.Emit("main-close-requested", map[string]any{
+			"__tauriTarget": "main",
+		})
 	})
 	trayWindow := app.Window.NewWithOptions(application.WebviewWindowOptions{
 		Name:             "tray-player",

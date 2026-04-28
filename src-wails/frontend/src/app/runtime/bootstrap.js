@@ -38,7 +38,6 @@ export function bootCloudPlayerApp(deps) {
     setPage,
     setSearchScope,
     syncDesktopLyricsState,
-    syncMainWindowCloseAction,
     syncTrayCommand,
     systemDarkMedia,
     updateSearchToolbar,
@@ -132,9 +131,6 @@ export function bootCloudPlayerApp(deps) {
         console.warn("save_settings desktop_lyrics_locked (request-lock)", error);
       }
       await broadcastDesktopLyricsLock();
-    });
-    listen("main-window-close-action-updated", (event) => {
-      syncMainWindowCloseAction(event?.payload?.action);
     });
     listen("main-close-requested", async () => {
       await handleMainCloseRequested();

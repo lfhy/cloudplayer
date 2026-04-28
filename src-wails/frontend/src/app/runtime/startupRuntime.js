@@ -42,7 +42,6 @@ export function startDesktopRuntime(deps) {
     setPage: deps.setPage,
     setSearchScope: deps.pages.setSearchScope,
     syncDesktopLyricsState: deps.player.syncDesktopLyricsState,
-    syncMainWindowCloseAction: deps.settings.syncMainWindowCloseAction,
     syncTrayCommand: deps.syncTrayCommand,
     systemDarkMedia: deps.systemDarkMedia,
     updateSearchToolbar: deps.pages.updateSearchToolbar,

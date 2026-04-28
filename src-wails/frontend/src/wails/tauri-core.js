@@ -5,8 +5,6 @@ const invokeMap = {
   apply_global_hotkeys: (args) => CloudPlayerService.ApplyGlobalHotkeys(args.cfg),
   append_playlist_import_items: (args) =>
     CloudPlayerService.AppendPlaylistImportItems(args.playlistId, args.items),
-  apply_main_window_close_choice: (args) =>
-    CloudPlayerService.ApplyMainWindowCloseChoice(args.action, !!args.remember),
   create_playlist: (args) => CloudPlayerService.CreatePlaylist(args.name),
   db_status: () => CloudPlayerService.DBStatus(),
   delete_playlist: (args) => CloudPlayerService.DeletePlaylist(args.playlistId),
