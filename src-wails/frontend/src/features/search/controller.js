@@ -99,10 +99,17 @@ export function createSearchController(deps) {
     const keyword = searchState.keyword.trim();
     const resultCount = searchState.results.length;
     const selectedCount = searchState.selectedIds?.size || 0;
+    const catalogStatus = searchState.busy && !resultCount
+      ? "搜索中…"
+      : searchState.loadingMore
+        ? "正在加载中…"
+        : searchState.hasNext || !resultCount
+          ? ""
+          : "已全部加载";
     const info = document.getElementById("search-page-info");
     const playlistInfo = document.getElementById("search-playlist-info");
     const summary = document.getElementById("search-results-summary");
-    if (info) info.textContent = searchState.scope !== "catalog" || !keyword ? "" : `${searchState.busy && !resultCount ? "搜索中…" : `共 ${resultCount} 条`}${searchState.loadingMore ? " · 正在加载更多…" : searchState.hasNext ? " · 向下滚动继续加载" : resultCount ? " · 已全部加载" : ""}`;
+    if (info) info.textContent = searchState.scope !== "catalog" || !keyword ? "" : `共 ${resultCount} 条${catalogStatus ? ` · ${catalogStatus}` : ""}`;
     if (playlistInfo) playlistInfo.textContent = searchState.scope !== "playlists" || !keyword ? "" : `找到 ${searchState.playlistResults.length} 张相关歌单`;
     if (summary) summary.textContent = !keyword ? "" : searchState.scope === "catalog" ? `搜索 “${keyword}”${selectedCount ? ` · 已选 ${selectedCount} 首` : ""}` : `在本地歌单中搜索 “${keyword}”`;
     document.getElementById("btn-play-all")?.toggleAttribute("disabled", searchState.scope !== "catalog" || !resultCount || searchState.busy);
