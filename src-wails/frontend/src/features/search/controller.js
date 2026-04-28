@@ -15,6 +15,22 @@ export function createSearchController(deps) {
     setTableMutedMessage,
     warnRequestFailed,
   } = deps;
+  let autoSearchTimer = null;
+
+  function resetSearchState() {
+    searchState.page = 1;
+    searchState.results = [];
+    searchState.playlistResults = [];
+    searchState.hasNext = false;
+  }
+
+  function queueAutoSearch() {
+    if (autoSearchTimer != null) clearTimeout(autoSearchTimer);
+    autoSearchTimer = setTimeout(() => {
+      autoSearchTimer = null;
+      submitPageSearch();
+    }, 260);
+  }
 
   function getSearchInputs() {
     return Array.from(document.querySelectorAll("#page-search, #page-search-results"));
@@ -148,8 +164,8 @@ export function createSearchController(deps) {
       if (searchState.scope === "catalog") {
         setTableMutedMessage(document.querySelector("#search-table tbody"), 5, "搜索中…");
         const result = await invoke("search_songs", { keyword, page: searchState.page });
-        searchState.results = result.results || [];
-        searchState.hasNext = !!result.has_next;
+        searchState.results = Array.isArray(result?.results) ? result.results : [];
+        searchState.hasNext = result?.has_next === true;
         searchState.playlistResults = [];
         renderSearchTable();
       } else {
@@ -188,6 +204,10 @@ export function createSearchController(deps) {
   }
 
   function submitPageSearch(seed = null) {
+    if (autoSearchTimer != null) {
+      clearTimeout(autoSearchTimer);
+      autoSearchTimer = null;
+    }
     const input = getActiveSearchInput();
     if (!input) return;
     if (typeof seed === "string") {
@@ -198,10 +218,7 @@ export function createSearchController(deps) {
     setPage("search");
     if (!value) {
       searchState.keyword = "";
-      searchState.page = 1;
-      searchState.results = [];
-      searchState.playlistResults = [];
-      searchState.hasNext = false;
+      resetSearchState();
       syncSearchInputs("");
       renderSearchTable();
       renderPlaylistSearchResults();
@@ -222,12 +239,12 @@ export function createSearchController(deps) {
     inputs.forEach((input) => {
       input.addEventListener("input", () => {
         syncSearchInputs(input.value);
-        if (input.value.trim()) return;
+        if (input.value.trim()) {
+          queueAutoSearch();
+          return;
+        }
         searchState.keyword = "";
-        searchState.page = 1;
-        searchState.results = [];
-        searchState.playlistResults = [];
-        searchState.hasNext = false;
+        resetSearchState();
         renderSearchTable();
         renderPlaylistSearchResults();
         updateSearchViewState();

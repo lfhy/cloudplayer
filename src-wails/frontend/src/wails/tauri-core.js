@@ -1,6 +1,80 @@
 // Tauri compatibility wrappers map the legacy invoke calls onto Wails service bindings.
 import { CloudPlayerService } from "../../bindings/cloudplayer/index.js";
 
+function pickFirstNonEmptyString(...values) {
+  for (const value of values) {
+    if (typeof value === "string" && value.trim()) {
+      return value;
+    }
+  }
+  for (const value of values) {
+    if (typeof value === "string") {
+      return value;
+    }
+  }
+  return "";
+}
+
+function pickNullableString(...values) {
+  for (const value of values) {
+    if (typeof value === "string" && value.trim()) {
+      return value;
+    }
+  }
+  for (const value of values) {
+    if (value === null) {
+      return null;
+    }
+  }
+  for (const value of values) {
+    if (typeof value === "string") {
+      return value;
+    }
+  }
+  return null;
+}
+
+function pickPreferredArray(...values) {
+  for (const value of values) {
+    if (Array.isArray(value) && value.length) {
+      return value;
+    }
+  }
+  for (const value of values) {
+    if (Array.isArray(value)) {
+      return value;
+    }
+  }
+  return [];
+}
+
+function normalizeSearchRow(row) {
+  const source = row && typeof row === "object" ? row : {};
+  return {
+    source_id: pickFirstNonEmptyString(
+      source.source_id,
+      source.sourceId,
+      source.SourceID,
+      source.pjmp3_source_id,
+      source.pjmp3SourceId,
+      source.Pjmp3SourceID,
+    ),
+    title: pickFirstNonEmptyString(source.title, source.Title),
+    artist: pickFirstNonEmptyString(source.artist, source.Artist),
+    album: pickFirstNonEmptyString(source.album, source.Album),
+    cover_url: pickNullableString(source.cover_url, source.coverUrl, source.CoverURL),
+  };
+}
+
+function normalizeSearchResponse(payload) {
+  const source = payload && typeof payload === "object" ? payload : {};
+  const rawResults = pickPreferredArray(source.results, source.Results);
+  return {
+    results: rawResults.map((row) => normalizeSearchRow(row)),
+    has_next: [source.has_next, source.hasNext, source.HasNext].some((value) => value === true),
+  };
+}
+
 const invokeMap = {
   apply_global_hotkeys: (args) => CloudPlayerService.ApplyGlobalHotkeys(args.cfg),
   append_playlist_import_items: (args) =>
@@ -40,7 +114,9 @@ const invokeMap = {
     CloudPlayerService.ResolveOnlinePlay(args.songId, args.title, args.artist),
   save_settings: (args) => CloudPlayerService.SaveSettings(args.patch),
   scan_music_folder: (args) => CloudPlayerService.ScanMusicFolder(args.path),
-  search_songs: (args) => CloudPlayerService.SearchSongs(args.keyword, args.page),
+  // Wails alpha bindings can surface either json-tag keys or exported Go field names.
+  search_songs: async (args) =>
+    normalizeSearchResponse(await CloudPlayerService.SearchSongs(args.keyword, args.page)),
   set_desktop_lyrics_click_through: (args) =>
     CloudPlayerService.SetDesktopLyricsClickThrough(args.ignoreCursorEvents),
   show_main_window: () => CloudPlayerService.ShowMainWindow(),
@@ -60,5 +136,16 @@ export async function invoke(command, args = {}) {
   if (!handler) {
     throw new Error(`Unsupported invoke command: ${command}`);
   }
-  return handler(args);
+  if (command === "search_songs") {
+    console.info("[invoke] search_songs", args);
+  }
+  const result = await handler(args);
+  if (command === "search_songs") {
+    console.info("[invoke] search_songs result", {
+      resultCount: Array.isArray(result?.results) ? result.results.length : 0,
+      hasNext: result?.has_next === true,
+      first: Array.isArray(result?.results) ? result.results[0] || null : null,
+    });
+  }
+  return result;
 }
