@@ -30,7 +30,7 @@ func (s *CloudPlayerService) SearchSongs(keyword string, page uint32) (SearchRes
 		return SearchResponse{}, err
 	}
 	response := SearchResponse{Results: results, HasNext: hasNext}
-	s.state.SearchCache.Set(cacheKey, response)
+	s.state.SearchCache.Set(cacheKey, response, s.state.SearchCacheTTL)
 	return response, nil
 }
 

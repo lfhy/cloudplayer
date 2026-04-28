@@ -34,7 +34,7 @@ export function createSettingsController(deps) {
     setLastLibraryFolder,
     setNeteaseCookieState,
   } = deps;
-  let settingsFormBaseline = { theme: "coral", mode: "system", customAccent: "#c62f2f", proxyMode: "direct", proxyURL: "", action: "ask", base: "#ffffff", highlight: "#ffb7d4", neteaseApiBase: "", musicSourceProvider: "pjmp3", hotkeysSig: "" };
+  let settingsFormBaseline = { theme: "coral", mode: "system", customAccent: "#c62f2f", proxyMode: "direct", proxyURL: "", action: "ask", base: "#ffffff", highlight: "#ffb7d4", neteaseApiBase: "", musicSourceProvider: "pjmp3", searchCacheTTLHours: 24, hotkeysSig: "" };
   let settingsSaveTimer = null;
   let settingsSaveInFlight = false;
   let settingsSaveQueued = false;
@@ -51,6 +51,12 @@ export function createSettingsController(deps) {
     return String(raw ?? "").trim();
   }
 
+  function normalizeSearchCacheTTLHours(raw) {
+    const parsed = Number.parseInt(String(raw ?? "").trim(), 10);
+    if (!Number.isFinite(parsed)) return 24;
+    return Math.min(720, Math.max(1, parsed));
+  }
+
   function getSettingsFormValues() {
     const current = {
       theme: normalizeAppTheme(document.getElementById("setting-app-theme")?.value),
@@ -60,6 +66,7 @@ export function createSettingsController(deps) {
       proxyURL: normalizeNetworkProxyUrl(document.getElementById("setting-network-proxy-url")?.value),
       action: normalizeCloseAction(document.getElementById("setting-close-action")?.value),
       musicSourceProvider: normalizeMusicSourceProvider(document.getElementById("setting-music-source-provider")?.value),
+      searchCacheTTLHours: normalizeSearchCacheTTLHours(document.getElementById("setting-search-cache-ttl-hours")?.value),
       base: normalizeLyricHexInput(document.getElementById("setting-ly-base")?.value, "#ffffff"),
       highlight: normalizeLyricHexInput(document.getElementById("setting-ly-highlight")?.value, "#ffb7d4"),
       neteaseApiBase: normalizeNeteaseApiBase(document.getElementById("setting-netease-api-base")?.value),
@@ -70,7 +77,7 @@ export function createSettingsController(deps) {
 
   function settingsFormIsDirty() {
     const current = getSettingsFormValues();
-    return ["theme", "mode", "customAccent", "proxyMode", "proxyURL", "action", "musicSourceProvider", "base", "highlight", "neteaseApiBase", "hotkeysSig"].some((key) => current[key] !== settingsFormBaseline[key]);
+    return ["theme", "mode", "customAccent", "proxyMode", "proxyURL", "action", "musicSourceProvider", "searchCacheTTLHours", "base", "highlight", "neteaseApiBase", "hotkeysSig"].some((key) => current[key] !== settingsFormBaseline[key]);
   }
 
   function syncSettingsFormBaselineFromDom() {
@@ -86,9 +93,11 @@ export function createSettingsController(deps) {
     const customAccentEl = document.getElementById("setting-app-theme-custom-accent");
     const customAccentCodeEl = document.getElementById("setting-app-theme-custom-accent-code");
     const proxyUrlEl = document.getElementById("setting-network-proxy-url");
+    const searchCacheTTLEl = document.getElementById("setting-search-cache-ttl-hours");
     if (customAccentEl) customAccentEl.value = customAccent;
     if (customAccentCodeEl) customAccentCodeEl.textContent = customAccent;
     if (proxyUrlEl) proxyUrlEl.value = proxyURL;
+    if (searchCacheTTLEl) searchCacheTTLEl.value = String(normalizeSearchCacheTTLHours(settings?.search_cache_ttl_hours ?? settings?.searchCacheTTLHours ?? 24));
     setThemeModeSelection(mode);
     setThemeCardSelection(theme);
     setNetworkProxyModeSelection(proxyMode);
@@ -99,10 +108,12 @@ export function createSettingsController(deps) {
     if (closeActionEl) closeActionEl.value = closeAction;
     const baseEl = document.getElementById("setting-ly-base");
     const highlightEl = document.getElementById("setting-ly-highlight");
+    const searchCacheStatusEl = document.getElementById("setting-search-cache-status");
     if (baseEl) baseEl.value = normalizeLyricHexInput(settings?.desktop_lyrics_color_base ?? settings?.desktopLyricsColorBase, "#ffffff");
     if (highlightEl) highlightEl.value = normalizeLyricHexInput(settings?.desktop_lyrics_color_highlight ?? settings?.desktopLyricsColorHighlight, "#ffb7d4");
     const neteaseApiBaseEl = document.getElementById("setting-netease-api-base");
     if (neteaseApiBaseEl) neteaseApiBaseEl.value = normalizeNeteaseApiBase(settings?.lyrics_netease_api_base ?? settings?.lyricsNeteaseApiBase ?? "");
+    if (searchCacheStatusEl) searchCacheStatusEl.textContent = `搜索结果按关键词、分页和当前曲库渠道缓存，当前保留 ${normalizeSearchCacheTTLHours(settings?.search_cache_ttl_hours ?? settings?.searchCacheTTLHours ?? 24)} 小时。`;
     hotkeys.fillHotkeysFormFromSettings(settings);
     syncSettingsFormBaselineFromDom();
   }
@@ -143,10 +154,12 @@ export function createSettingsController(deps) {
         const report = await invoke("apply_global_hotkeys", { cfg: current.globalHotkeys });
         if (report) hotkeys.renderHotkeyStatusFromReport(report);
       }
-      await invoke("save_settings", { patch: { app_theme: current.theme, app_theme_mode: current.mode, app_theme_custom_accent: current.customAccent, network_proxy_mode: current.proxyMode, network_proxy_url: proxyURLForSave, main_window_close_action: current.action, music_source_provider: current.musicSourceProvider, desktop_lyrics_color_base: current.base, desktop_lyrics_color_highlight: current.highlight, lyrics_netease_api_base: current.neteaseApiBase } });
+      await invoke("save_settings", { patch: { app_theme: current.theme, app_theme_mode: current.mode, app_theme_custom_accent: current.customAccent, network_proxy_mode: current.proxyMode, network_proxy_url: proxyURLForSave, main_window_close_action: current.action, music_source_provider: current.musicSourceProvider, search_cache_ttl_hours: current.searchCacheTTLHours, desktop_lyrics_color_base: current.base, desktop_lyrics_color_highlight: current.highlight, lyrics_netease_api_base: current.neteaseApiBase } });
       applyAppTheme(current.theme, current.customAccent, current.mode);
       setMainWindowCloseAction(current.action);
       syncSettingsFormBaselineFromDom();
+      const searchCacheStatusEl = document.getElementById("setting-search-cache-status");
+      if (searchCacheStatusEl) searchCacheStatusEl.textContent = `搜索结果按关键词、分页和当前曲库渠道缓存，当前保留 ${current.searchCacheTTLHours} 小时。`;
       void broadcastDesktopLyricsColors();
     } catch (error) {
       alertRequestFailed(error, "save settings");
@@ -208,8 +221,17 @@ export function createSettingsController(deps) {
     document.getElementById("btn-dock-settings")?.addEventListener("click", () => setPage("settings"));
     document.querySelectorAll("[data-settings-tab]").forEach((button) => button.addEventListener("click", () => setSettingsTab(button.getAttribute("data-settings-tab") || "appearance")));
     setSettingsTab("appearance");
-    [["setting-app-theme-mode", "change", true], ["setting-app-theme", "change", true], ["setting-app-theme-custom-accent", "input", false], ["setting-network-proxy-url", "input", false], ["setting-close-action", "change", true], ["setting-ly-base", "input", false], ["setting-ly-highlight", "input", false], ["setting-netease-api-base", "input", false], ["setting-hotkeys-enabled", "change", true]].forEach(([id, eventName, immediate]) => {
+    [["setting-app-theme-mode", "change", true], ["setting-app-theme", "change", true], ["setting-app-theme-custom-accent", "input", false], ["setting-network-proxy-url", "input", false], ["setting-close-action", "change", true], ["setting-search-cache-ttl-hours", "change", true], ["setting-ly-base", "input", false], ["setting-ly-highlight", "input", false], ["setting-netease-api-base", "input", false], ["setting-hotkeys-enabled", "change", true]].forEach(([id, eventName, immediate]) => {
       document.getElementById(id)?.addEventListener(eventName, () => queueSettingsAutosave(immediate));
+    });
+    document.getElementById("btn-clear-search-cache")?.addEventListener("click", async () => {
+      const statusEl = document.getElementById("setting-search-cache-status");
+      try {
+        const cleared = await invoke("clear_search_cache");
+        if (statusEl) statusEl.textContent = cleared > 0 ? `已清理 ${cleared} 条搜索缓存。` : "当前没有可清理的搜索缓存。";
+      } catch (error) {
+        alertRequestFailed(error, "clear search cache");
+      }
     });
     document.querySelectorAll("[data-theme-mode-card]").forEach((card) => card.addEventListener("click", () => {
       setThemeModeSelection(card.getAttribute("data-theme-mode-card") || "system");

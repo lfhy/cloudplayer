@@ -20,7 +20,9 @@ func (s *CloudPlayerService) LogPlayEvent(stage string, url *string, errorCode *
 }
 
 func (s *CloudPlayerService) GetSettings() config.Settings {
-	return config.LoadSettings()
+	settings := config.LoadSettings()
+	s.state.SetSearchCacheTTLHours(settings.SearchCacheTTLHours)
+	return settings
 }
 
 func (s *CloudPlayerService) GetGlobalHotkeys() config.GlobalHotkeys {
@@ -159,14 +161,22 @@ func (s *CloudPlayerService) SaveSettings(patch SettingsPatch) error {
 	if patch.MusicSourceProvider != nil {
 		settings.MusicSourceProvider = config.NormalizeMusicSourceProvider(*patch.MusicSourceProvider)
 	}
+	if patch.SearchCacheTTLHours != nil {
+		settings.SearchCacheTTLHours = config.NormalizeSearchCacheTTLHours(*patch.SearchCacheTTLHours)
+	}
 	if err := config.SaveSettings(settings); err != nil {
 		return err
 	}
+	s.state.SetSearchCacheTTLHours(settings.SearchCacheTTLHours)
 	if err := s.state.ApplyNetworkSettings(settings); err != nil {
 		return err
 	}
 	applyThemeAssets(s.state, settings.AppTheme, settings.AppThemeCustomAccent)
 	return nil
+}
+
+func (s *CloudPlayerService) ClearSearchCache() int {
+	return s.state.SearchCache.ClearSearchEntries()
 }
 
 func (s *CloudPlayerService) DBStatus() (string, error) {

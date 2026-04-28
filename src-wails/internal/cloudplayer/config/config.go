@@ -48,6 +48,7 @@ type Settings struct {
 	ShareNeteaseCookieEnabled   bool          `json:"share_netease_cookie_enabled"`
 	ShareNeteaseCookie          string        `json:"share_netease_cookie"`
 	MusicSourceProvider         string        `json:"music_source_provider"`
+	SearchCacheTTLHours         int           `json:"search_cache_ttl_hours"`
 }
 
 type GlobalHotkeys struct {
@@ -76,6 +77,7 @@ func DefaultSettings() Settings {
 		DesktopLyricsColorBase:      "#ffffff",
 		DesktopLyricsColorHighlight: "#ffb7d4",
 		MusicSourceProvider:         "pjmp3",
+		SearchCacheTTLHours:         24,
 	}
 }
 
@@ -131,7 +133,19 @@ func LoadSettings() Settings {
 	if err := json.Unmarshal(data, &result); err != nil {
 		return DefaultSettings()
 	}
+	result.SearchCacheTTLHours = NormalizeSearchCacheTTLHours(result.SearchCacheTTLHours)
 	return result
+}
+
+func NormalizeSearchCacheTTLHours(value int) int {
+	switch {
+	case value <= 0:
+		return 24
+	case value > 24*30:
+		return 24 * 30
+	default:
+		return value
+	}
 }
 
 func NormalizeAppTheme(value string) string {

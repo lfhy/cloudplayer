@@ -1,92 +1,76 @@
 package main
 
 import (
+	"path/filepath"
 	"strconv"
 	"strings"
-	"sync"
 	"time"
 
+	gcache "github.com/lfhy/cache"
+
+	"cloudplayer/internal/cloudplayer/config"
 	"cloudplayer/internal/cloudplayer/musicsource"
 )
 
 const (
-	searchCacheTTL        = 45 * time.Second
 	searchCacheEntryLimit = 96
+	searchCachePrefix     = "search:"
 )
 
-type searchCacheEntry struct {
-	response  SearchResponse
-	expiresAt time.Time
+func searchCacheDir() string {
+	return filepath.Join(config.ConfigDir(), "search_cache")
 }
 
-// SearchCache keeps recent successful search pages in memory to reduce repeated upstream requests.
-type SearchCache struct {
-	mu      sync.RWMutex
-	entries map[string]searchCacheEntry
-}
-
-func NewSearchCache() *SearchCache {
-	return &SearchCache{entries: make(map[string]searchCacheEntry)}
+func InitSearchCacheStore() {
+	gcache.InitLRUCache(
+		gcache.WithDir(searchCacheDir()),
+		gcache.WithCapacity(searchCacheEntryLimit),
+		gcache.WithCleanupInterval(time.Minute),
+	)
 }
 
 func SearchCacheKey(providerKey, keyword string, page uint32) string {
-	return strings.ToLower(strings.TrimSpace(providerKey)) + "|" + strings.TrimSpace(keyword) + "|" + uint32String(page)
+	return searchCachePrefix + strings.ToLower(strings.TrimSpace(providerKey)) + "|" + strings.TrimSpace(keyword) + "|" + uint32String(page)
 }
 
 func uint32String(value uint32) string {
 	return strconv.FormatUint(uint64(value), 10)
 }
 
+// SearchCache wraps lfhy/cache so the rest of the service keeps a narrow API.
+type SearchCache struct{}
+
+func NewSearchCache() *SearchCache {
+	InitSearchCacheStore()
+	return &SearchCache{}
+}
+
 func (c *SearchCache) Get(key string) (SearchResponse, bool) {
-	now := time.Now()
-	c.mu.RLock()
-	entry, ok := c.entries[key]
-	c.mu.RUnlock()
+	response, ok := gcache.Get[SearchResponse](key)
 	if !ok {
 		return SearchResponse{}, false
 	}
-	if !entry.expiresAt.After(now) {
-		c.mu.Lock()
-		delete(c.entries, key)
-		c.mu.Unlock()
-		return SearchResponse{}, false
-	}
-	return cloneSearchResponse(entry.response), true
+	return cloneSearchResponse(response), true
 }
 
-func (c *SearchCache) Set(key string, response SearchResponse) {
-	now := time.Now()
-	c.mu.Lock()
-	defer c.mu.Unlock()
-	if len(c.entries) >= searchCacheEntryLimit {
-		c.evictLocked(now)
+func (c *SearchCache) Set(key string, response SearchResponse, ttl time.Duration) {
+	seconds := int(ttl / time.Second)
+	if seconds <= 0 {
+		seconds = int((24 * time.Hour) / time.Second)
 	}
-	c.entries[key] = searchCacheEntry{
-		response:  cloneSearchResponse(response),
-		expiresAt: now.Add(searchCacheTTL),
-	}
+	gcache.Set(key, cloneSearchResponse(response), seconds)
 }
 
-func (c *SearchCache) evictLocked(now time.Time) {
-	for key, entry := range c.entries {
-		if !entry.expiresAt.After(now) {
-			delete(c.entries, key)
+func (c *SearchCache) ClearSearchEntries() int {
+	cleared := 0
+	for _, key := range gcache.Keys() {
+		if !strings.HasPrefix(key, searchCachePrefix) {
+			continue
 		}
+		gcache.Delete(key)
+		cleared += 1
 	}
-	if len(c.entries) < searchCacheEntryLimit {
-		return
-	}
-	var oldestKey string
-	var oldestTime time.Time
-	for key, entry := range c.entries {
-		if oldestKey == "" || entry.expiresAt.Before(oldestTime) {
-			oldestKey = key
-			oldestTime = entry.expiresAt
-		}
-	}
-	if oldestKey != "" {
-		delete(c.entries, oldestKey)
-	}
+	return cleared
 }
 
 func cloneSearchResponse(response SearchResponse) SearchResponse {

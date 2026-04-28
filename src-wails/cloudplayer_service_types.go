@@ -32,6 +32,7 @@ type SettingsPatch struct {
 	ShareNeteaseCookieEnabled   *bool    `json:"share_netease_cookie_enabled,omitempty"`
 	ShareNeteaseCookie          *string  `json:"share_netease_cookie,omitempty"`
 	MusicSourceProvider         *string  `json:"music_source_provider,omitempty"`
+	SearchCacheTTLHours         *int     `json:"search_cache_ttl_hours,omitempty"`
 }
 
 type SearchResponse struct {

@@ -6,6 +6,7 @@ import (
 	"database/sql"
 	"net/http"
 	"sync"
+	"time"
 
 	"cloudplayer/internal/cloudplayer/config"
 	"cloudplayer/internal/cloudplayer/download"
@@ -20,6 +21,7 @@ type AppState struct {
 	HTTPClient           *http.Client
 	HTTPJar              http.CookieJar
 	SearchCache          *SearchCache
+	SearchCacheTTL       time.Duration
 	RateLimiter          *ratelimiter.Limiter
 	DownloadCh           chan download.DownloadJob
 	Hotkeys              *HotkeyManager
@@ -32,13 +34,18 @@ func NewAppState(db *sql.DB) *AppState {
 	jar := httpclient.NewJar()
 	client, _ := httpclient.Build(config.DefaultSettings(), jar)
 	return &AppState{
-		DB:          db,
-		HTTPClient:  client,
-		HTTPJar:     jar,
-		SearchCache: NewSearchCache(),
-		RateLimiter: ratelimiter.New(45),
-		DownloadCh:  make(chan download.DownloadJob, 64),
+		DB:             db,
+		HTTPClient:     client,
+		HTTPJar:        jar,
+		SearchCache:    NewSearchCache(),
+		SearchCacheTTL: 24 * time.Hour,
+		RateLimiter:    ratelimiter.New(45),
+		DownloadCh:     make(chan download.DownloadJob, 64),
 	}
+}
+
+func (s *AppState) SetSearchCacheTTLHours(hours int) {
+	s.SearchCacheTTL = time.Duration(config.NormalizeSearchCacheTTLHours(hours)) * time.Hour
 }
 
 func (s *AppState) HTTP() *http.Client {

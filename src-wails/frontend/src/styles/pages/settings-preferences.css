@@ -148,3 +148,22 @@
   font-size: 12px;
   color: var(--text-secondary);
 }
+
+.settings-inline-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.settings-inline-row__suffix {
+  font-size: 13px;
+}
+
+.settings-inline-row__action {
+  min-height: 36px;
+}
+
+.settings-field-control--compact {
+  max-width: 120px;
+}
