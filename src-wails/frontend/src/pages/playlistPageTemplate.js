@@ -1,9 +1,12 @@
+import { fallbackCoverDataUri } from "../app/helpers/covers.js";
+
 // Playlist detail page keeps stable ids for rename, play-all and table rendering.
 export function playlistPageTemplate() {
+  const fallbackCover = fallbackCoverDataUri(120, 12);
   return `
     <section class="page" data-page="playlist">
       <div class="playlist-hero">
-        <img id="playlist-hero-cover" class="playlist-hero__cover" alt="" width="120" height="120" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Crect fill='%23d1d5db' width='120' height='120' rx='12'/%3E%3C/svg%3E" />
+        <img id="playlist-hero-cover" class="playlist-hero__cover" alt="" width="120" height="120" src="${fallbackCover}" />
         <div class="playlist-hero__meta">
           <h1 class="playlist-hero__title" id="playlist-page-title">歌单</h1>
           <div class="playlist-hero__sub" id="playlist-page-hint">CloudPlayer · 导入歌单</div>

@@ -1,9 +1,12 @@
+import { fallbackCoverDataUri } from "../app/helpers/covers.js";
+
 // Player dock is shared application chrome, so it lives under components instead of page templates.
 export function playerDockTemplate() {
+  const fallbackCover = fallbackCoverDataUri(52, 10);
   return `
     <footer class="dock-player" aria-label="播放控制">
       <div class="dock-player__left">
-        <div class="dock-player__art"><img id="dock-cover" width="52" height="52" alt="" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='52' height='52'%3E%3Crect fill='%231a222d' width='52' height='52' rx='10'/%3E%3C/svg%3E" /></div>
+        <div class="dock-player__art"><img id="dock-cover" width="52" height="52" alt="" src="${fallbackCover}" /></div>
         <div class="dock-player__meta-col">
           <div id="dock-title" class="dock-player__title">未播放</div>
           <div id="dock-sub" class="dock-player__sub">选择曲目或搜索后双击列表</div>
