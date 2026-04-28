@@ -73,14 +73,22 @@ export function searchPageTemplate() {
                 <button type="button" class="search-scope-chip" data-search-scope="playlists" role="tab" aria-selected="false">本地歌单</button>
               </div>
             </div>
-            <p id="search-results-summary" class="search-results-summary muted"></p>
+            <div class="search-results-topbar__side">
+              <p id="search-results-summary" class="search-results-summary muted"></p>
+              <div class="search-results-actions">
+                <button type="button" id="btn-search-select-all" class="btn-accent search-action-btn">全选</button>
+                <button type="button" id="btn-search-add-selected" class="btn-accent search-action-btn" disabled>添加到歌单</button>
+                <button type="button" id="btn-play-all" class="btn-accent search-action-btn" disabled>▶ 播放全部</button>
+              </div>
+            </div>
           </div>
           <div id="search-results-catalog" class="search-results-panel">
-            <div class="discover-scroll">
+            <div class="discover-scroll" id="search-results-scroll">
               <div class="table-wrap">
                 <table class="search-table" id="search-table">
                   <thead>
                     <tr>
+                      <th class="col-check"><input type="checkbox" id="search-select-all-checkbox" aria-label="全选当前搜索结果" /></th>
                       <th class="col-idx">#</th>
                       <th class="col-cover"></th>
                       <th>标题</th>
@@ -92,11 +100,8 @@ export function searchPageTemplate() {
                 </table>
               </div>
             </div>
-            <div class="discover-toolbar discover-toolbar--footer">
-              <button type="button" id="btn-play-all" class="btn-accent" disabled>▶ 播放全部</button>
-              <button type="button" id="btn-prev-page" disabled>上一页</button>
+            <div class="search-results-tail">
               <span id="search-page-info" class="search-page-info muted"></span>
-              <button type="button" id="btn-next-page" disabled>下一页</button>
             </div>
           </div>
           <section id="search-results-playlists" class="search-results-panel" hidden>
