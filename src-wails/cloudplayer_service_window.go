@@ -6,11 +6,7 @@ import (
 
 // Window-facing service methods stay isolated so bindings for desktop shell actions remain easy to scan.
 func (s *CloudPlayerService) HideMainWindow() error {
-	window, ok := application.Get().Window.GetByName("main")
-	if !ok {
-		return nil
-	}
-	window.Hide()
+	hideMainWindow()
 	return nil
 }
 

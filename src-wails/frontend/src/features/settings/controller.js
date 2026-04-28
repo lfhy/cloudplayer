@@ -199,6 +199,8 @@ export function createSettingsController(deps) {
   }
 
   function wirePreferencesModals() {
+    globalThis.__cloudplayerOpenCloseConfirmModal = openCloseConfirmModal;
+    globalThis.__cloudplayerCloseCloseConfirmModal = closeCloseConfirmModal;
     document.getElementById("btn-dock-settings")?.addEventListener("click", () => setPage("settings"));
     document.querySelectorAll("[data-settings-tab]").forEach((button) => button.addEventListener("click", () => setSettingsTab(button.getAttribute("data-settings-tab") || "appearance")));
     setSettingsTab("appearance");
