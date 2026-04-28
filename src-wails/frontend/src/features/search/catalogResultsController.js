@@ -22,6 +22,24 @@ export function createCatalogResultsController(deps) {
     searchState.selectedIds = new Set();
   }
 
+  function renderInitialLoadingState(tbody) {
+    if (!tbody) return;
+    tbody.innerHTML = `
+      <tr class="search-table__loading">
+        <td colspan="6">
+          <div class="search-table-loading" role="status" aria-live="polite" aria-label="正在搜索">
+            <div class="search-table-loading__bars" aria-hidden="true">
+              <span></span>
+              <span></span>
+              <span></span>
+              <span></span>
+            </div>
+            <p>正在搜索…</p>
+          </div>
+        </td>
+      </tr>`;
+  }
+
   function syncBottomStatusVisibility() {
     const scrollWrap = document.getElementById("search-results-scroll");
     if (!scrollWrap || searchState.scope !== "catalog" || !searchState.results.length) {
@@ -42,6 +60,10 @@ export function createCatalogResultsController(deps) {
     }
     if (!searchState.results.length) {
       searchState.showBottomStatus = false;
+      if (searchState.busy) {
+        renderInitialLoadingState(tbody);
+        return;
+      }
       setTableMutedMessage(tbody, 6, searchState.keyword.trim() ? "没有找到匹配的在线音乐结果。" : "");
       return;
     }
@@ -119,7 +141,10 @@ export function createCatalogResultsController(deps) {
     updateSearchToolbar();
     try {
       if (!append) {
-        setTableMutedMessage(document.querySelector("#search-table tbody"), 6, "搜索中…");
+        searchState.results = [];
+        searchState.hasNext = false;
+        clearSelection();
+        renderSearchTable();
       }
       const result = await invoke("search_songs", { keyword, page: targetPage });
       if (requestToken !== searchRequestToken) return;

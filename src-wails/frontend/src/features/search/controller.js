@@ -100,9 +100,7 @@ export function createSearchController(deps) {
     const keyword = searchState.keyword.trim();
     const resultCount = searchState.results.length;
     const selectedCount = searchState.selectedIds?.size || 0;
-    const catalogStatus = searchState.busy && !resultCount
-      ? "搜索中…"
-      : searchState.loadingMore
+    const catalogStatus = searchState.loadingMore
         ? "正在加载中…"
         : !searchState.showBottomStatus || searchState.hasNext || !resultCount
           ? ""
