@@ -10,7 +10,6 @@ export function createSearchController(deps) {
     setPage,
     setSelectedPlaylist,
   } = deps;
-  let autoSearchTimer = null;
 
   // Catalog results controller needs the page toolbar updater; pass it explicitly so
   // virtual list fetch/render work does not fail before the backend request starts.
@@ -29,14 +28,6 @@ export function createSearchController(deps) {
     searchState.virtualTop = 0;
     searchState.virtualBottom = 0;
     catalog.clearSelection();
-  }
-
-  function queueAutoSearch() {
-    if (autoSearchTimer != null) clearTimeout(autoSearchTimer);
-    autoSearchTimer = setTimeout(() => {
-      autoSearchTimer = null;
-      submitPageSearch();
-    }, 260);
   }
 
   function getSearchInputs() {
@@ -176,10 +167,6 @@ export function createSearchController(deps) {
   }
 
   function submitPageSearch(seed = null) {
-    if (autoSearchTimer != null) {
-      clearTimeout(autoSearchTimer);
-      autoSearchTimer = null;
-    }
     const input = getActiveSearchInput();
     if (!input) return;
     if (typeof seed === "string") {
@@ -211,16 +198,14 @@ export function createSearchController(deps) {
     inputs.forEach((input) => {
       input.addEventListener("input", () => {
         syncSearchInputs(input.value);
-        if (input.value.trim()) {
-          queueAutoSearch();
-          return;
+        if (!input.value.trim()) {
+          searchState.keyword = "";
+          resetSearchState();
+          catalog.renderSearchTable();
+          renderPlaylistSearchResults();
+          updateSearchViewState();
+          updateSearchToolbar();
         }
-        searchState.keyword = "";
-        resetSearchState();
-        catalog.renderSearchTable();
-        renderPlaylistSearchResults();
-        updateSearchViewState();
-        updateSearchToolbar();
       });
       input.addEventListener("keydown", (event) => {
         if (event.key !== "Enter") return;
