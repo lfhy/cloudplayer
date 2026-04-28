@@ -28,6 +28,7 @@ export function createSearchController(deps) {
     searchState.showBottomStatus = false;
     searchState.virtualTop = 0;
     searchState.virtualBottom = 0;
+    searchState.batchMode = false;
     catalog.clearSelection();
   }
 
@@ -92,6 +93,7 @@ export function createSearchController(deps) {
     const keyword = searchState.keyword.trim();
     const resultCount = searchState.results.length;
     const selectedCount = searchState.selectedIds?.size || 0;
+    const batchMode = searchState.batchMode === true;
     const catalogStatus = searchState.loadingMore
         ? "正在加载中…"
         : !searchState.showBottomStatus || searchState.hasNext || !resultCount
@@ -101,18 +103,39 @@ export function createSearchController(deps) {
     const tail = document.getElementById("search-results-tail");
     const playlistInfo = document.getElementById("search-playlist-info");
     const summary = document.getElementById("search-results-summary");
+    const playAllBtn = document.getElementById("btn-play-all");
+    const batchModeBtn = document.getElementById("btn-search-batch-mode");
+    const batchDoneBtn = document.getElementById("btn-search-batch-done");
+    const selectAllBtn = document.getElementById("btn-search-select-all");
+    const addSelectedBtn = document.getElementById("btn-search-add-selected");
+    const selectAllCheckbox = document.getElementById("search-select-all-checkbox");
+    const selectAllHeader = selectAllCheckbox?.closest(".col-check");
+    const searchTable = document.getElementById("search-table");
     if (tail) tail.hidden = searchState.scope !== "catalog" || !keyword || !catalogStatus;
     if (info) info.textContent = searchState.scope !== "catalog" || !keyword || !catalogStatus ? "" : catalogStatus;
     if (playlistInfo) playlistInfo.textContent = searchState.scope !== "playlists" || !keyword ? "" : `找到 ${searchState.playlistResults.length} 张相关歌单`;
-    if (summary) summary.textContent = !keyword ? "" : searchState.scope === "catalog" ? `搜索 “${keyword}”${selectedCount ? ` · 已选 ${selectedCount} 首` : ""}` : `在本地歌单中搜索 “${keyword}”`;
-    document.getElementById("btn-play-all")?.toggleAttribute("disabled", searchState.scope !== "catalog" || !resultCount || searchState.busy);
-    document.getElementById("btn-search-add-selected")?.toggleAttribute("disabled", searchState.scope !== "catalog" || selectedCount === 0 || searchState.busy);
-    document.getElementById("btn-search-select-all")?.toggleAttribute("disabled", searchState.scope !== "catalog" || !resultCount || searchState.busy);
-    const selectAllCheckbox = document.getElementById("search-select-all-checkbox");
+    if (summary) {
+      if (!keyword) summary.textContent = "";
+      else if (searchState.scope !== "catalog") summary.textContent = `在本地歌单中搜索 “${keyword}”`;
+      else if (batchMode) summary.textContent = `搜索 “${keyword}” · 已选 ${selectedCount} 首`;
+      else summary.textContent = `搜索 “${keyword}”`;
+    }
+    if (searchTable) searchTable.classList.toggle("search-table--batch-mode", batchMode);
+    if (selectAllHeader) selectAllHeader.hidden = !batchMode;
+    if (selectAllCheckbox) selectAllCheckbox.hidden = !batchMode;
+    if (playAllBtn) playAllBtn.hidden = batchMode;
+    if (batchModeBtn) batchModeBtn.hidden = batchMode;
+    if (batchDoneBtn) batchDoneBtn.hidden = !batchMode;
+    if (selectAllBtn) selectAllBtn.hidden = !batchMode;
+    if (addSelectedBtn) addSelectedBtn.hidden = !batchMode;
+    playAllBtn?.toggleAttribute("disabled", searchState.scope !== "catalog" || !resultCount || searchState.busy);
+    batchModeBtn?.toggleAttribute("disabled", searchState.scope !== "catalog" || !resultCount || searchState.busy);
+    addSelectedBtn?.toggleAttribute("disabled", searchState.scope !== "catalog" || selectedCount === 0 || searchState.busy);
+    selectAllBtn?.toggleAttribute("disabled", searchState.scope !== "catalog" || !resultCount || searchState.busy);
     if (selectAllCheckbox) {
       selectAllCheckbox.checked = resultCount > 0 && selectedCount === resultCount;
       selectAllCheckbox.indeterminate = selectedCount > 0 && selectedCount < resultCount;
-      selectAllCheckbox.disabled = searchState.scope !== "catalog" || !resultCount || searchState.busy;
+      selectAllCheckbox.disabled = !batchMode || searchState.scope !== "catalog" || !resultCount || searchState.busy;
     }
   }
 

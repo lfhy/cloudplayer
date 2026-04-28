@@ -82,6 +82,10 @@
   min-height: 34px;
 }
 
+#btn-search-batch-done {
+  min-width: 72px;
+}
+
 .search-results-panel {
   flex: 1;
   min-height: 0;

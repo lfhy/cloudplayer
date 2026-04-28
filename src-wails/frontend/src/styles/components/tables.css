@@ -48,6 +48,10 @@
   text-align: center;
 }
 
+.search-table:not(.search-table--batch-mode) .col-check {
+  display: none;
+}
+
 .search-row-check {
   display: flex;
   align-items: center;
@@ -62,6 +66,10 @@
 
 .search-table tbody tr.is-selected {
   background: rgba(var(--accent-rgb), 0.1);
+}
+
+.search-table:not(.search-table--batch-mode) tbody tr.is-selected {
+  background: transparent;
 }
 
 .search-table__loading td {

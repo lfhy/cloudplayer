@@ -76,9 +76,11 @@ export function searchPageTemplate() {
             <div class="search-results-topbar__side">
               <p id="search-results-summary" class="search-results-summary muted"></p>
               <div class="search-results-actions">
-                <button type="button" id="btn-search-select-all" class="btn-accent search-action-btn">全选</button>
-                <button type="button" id="btn-search-add-selected" class="btn-accent search-action-btn" disabled>添加到歌单</button>
                 <button type="button" id="btn-play-all" class="btn-accent search-action-btn" disabled>▶ 播放全部</button>
+                <button type="button" id="btn-search-batch-mode" class="btn-accent search-action-btn">批量操作</button>
+                <button type="button" id="btn-search-select-all" class="btn-accent search-action-btn" hidden>全选</button>
+                <button type="button" id="btn-search-add-selected" class="btn-accent search-action-btn" hidden disabled>添加到歌单</button>
+                <button type="button" id="btn-search-batch-done" class="btn-ghost search-action-btn" hidden>完成</button>
               </div>
             </div>
           </div>
@@ -88,7 +90,7 @@ export function searchPageTemplate() {
                 <table class="search-table" id="search-table">
                   <thead>
                     <tr>
-                      <th class="col-check"><input type="checkbox" id="search-select-all-checkbox" aria-label="全选当前搜索结果" /></th>
+                      <th class="col-check" hidden><input type="checkbox" id="search-select-all-checkbox" aria-label="全选当前搜索结果" /></th>
                       <th class="col-idx">#</th>
                       <th class="col-cover"></th>
                       <th>标题</th>

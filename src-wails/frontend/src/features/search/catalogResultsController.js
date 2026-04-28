@@ -27,6 +27,20 @@ export function createCatalogResultsController(deps) {
     searchState.selectedIds = new Set();
   }
 
+  function exitBatchMode() {
+    searchState.batchMode = false;
+    clearSelection();
+    updateSearchToolbar();
+    renderSearchTable();
+  }
+
+  function enterBatchMode() {
+    searchState.batchMode = true;
+    clearSelection();
+    updateSearchToolbar();
+    renderSearchTable();
+  }
+
   function renderInitialLoadingState(tbody) {
     if (!tbody) return;
     tbody.innerHTML = `
@@ -76,6 +90,7 @@ export function createCatalogResultsController(deps) {
     const viewportHeight = scrollWrap?.clientHeight || 0;
     const scrollTop = scrollWrap?.scrollTop || 0;
     const totalRows = searchState.results.length;
+    const batchMode = searchState.batchMode === true;
     const visibleRows = Math.max(1, Math.ceil(viewportHeight / rowHeight));
     const startIndex = Math.max(0, Math.floor(scrollTop / rowHeight) - overscanRows);
     const endIndex = Math.min(totalRows, startIndex + visibleRows + overscanRows * 2);
@@ -91,13 +106,17 @@ export function createCatalogResultsController(deps) {
       const cover = coverImgHtml({ src: row.cover_url || "", className: "row-cover", width: 40, height: 40, radius: 4 });
       const title = row.artist ? `<span class="t-title">${escapeHtml(row.title)}</span><span class="t-art">${escapeHtml(row.artist)}</span>` : `<span class="t-title">${escapeHtml(row.title)}</span>`;
       tr.classList.toggle("is-selected", selected);
+      tr.classList.toggle("is-batch-mode", batchMode);
       tr.innerHTML = `<td class="col-check"><label class="search-row-check"><input type="checkbox" data-search-select-row="${escapeHtml(row.source_id)}" ${selected ? "checked" : ""} aria-label="选择 ${escapeHtml(row.title)}" /></label></td><td class="col-idx">${index + 1}</td><td class="col-cover">${cover}</td><td>${title}</td><td class="muted">${escapeHtml(row.album || "—")}</td><td class="muted col-dur">${escapeHtml(formatDurationMs(row.duration_ms))}</td>`;
       tr.style.cursor = "pointer";
-      tr.title = "双击试听";
-      tr.addEventListener("dblclick", () => playFromSearchRow(index));
+      tr.title = batchMode ? "选择曲目" : "单击播放";
       tr.addEventListener("click", (event) => {
         if (event.target instanceof HTMLInputElement) return;
-        toggleResultSelected(row.source_id);
+        if (batchMode) {
+          toggleResultSelected(row.source_id);
+          return;
+        }
+        playFromSearchRow(index);
       });
       tr.addEventListener("contextmenu", (event) => {
         event.preventDefault();
@@ -253,6 +272,12 @@ export function createCatalogResultsController(deps) {
     document.getElementById("btn-play-all")?.addEventListener("click", () => {
       if (searchState.results.length) playCatalogAll(searchState.results);
     });
+    document.getElementById("btn-search-batch-mode")?.addEventListener("click", () => {
+      enterBatchMode();
+    });
+    document.getElementById("btn-search-batch-done")?.addEventListener("click", () => {
+      exitBatchMode();
+    });
     document.getElementById("btn-search-select-all")?.addEventListener("click", () => {
       const selectedCount = searchState.selectedIds?.size || 0;
       setAllResultsSelected(selectedCount !== searchState.results.length);
@@ -271,6 +296,8 @@ export function createCatalogResultsController(deps) {
 
   return {
     clearSelection,
+    enterBatchMode,
+    exitBatchMode,
     fetchSearchPage,
     renderSearchTable,
     wireDiscoverToolbar,
