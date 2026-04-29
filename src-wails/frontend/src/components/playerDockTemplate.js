@@ -36,7 +36,6 @@ export function playerDockTemplate() {
       <div class="dock-player__tools">
         <div class="dock-menu-anchor"><button type="button" id="dock-theme-mode" class="dock-chip dock-chip--icon" title="界面模式" aria-label="界面模式"></button></div>
         <div class="dock-menu-anchor"><button type="button" id="dock-quality" class="dock-chip" title="音质偏好（展示；下载以菜单为准）">标准</button><div id="popover-quality" class="dock-menu dock-menu--up dock-menu--right" role="menu" hidden><button type="button" class="dock-menu__item" data-quality="flac">无损</button><button type="button" class="dock-menu__item" data-quality="320">HQ</button><button type="button" class="dock-menu__item" data-quality="128">标准</button></div></div>
-        <button type="button" id="btn-dock-lyrics-replace" class="dock-ic dock-ic--accent" title="搜索并替换当前歌词（多源）" aria-label="搜索并替换当前歌词（多源）">换</button>
         <button type="button" id="btn-dock-lyrics" class="dock-ic dock-ic--accent" title="桌面歌词（独立窗口）">词</button>
         <button type="button" id="btn-dock-lyrics-lock" class="dock-ic dock-ic--lock" title="桌面歌词锁定" aria-label="桌面歌词锁定" disabled></button>
         <button type="button" id="btn-dock-queue" class="dock-ic" title="播放列表">☰</button>

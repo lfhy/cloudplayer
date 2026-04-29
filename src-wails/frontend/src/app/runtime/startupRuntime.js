@@ -29,6 +29,7 @@ export function startDesktopRuntime(deps) {
     onDownloadTaskChanged: deps.player.applyDownloadTaskChanged,
     onLyricsLockSync: deps.onLyricsLockSync,
     onSystemThemeChange: () => {},
+    openLyricsReplaceWindow: deps.player.openLyricsReplaceWindow,
     openCloseConfirmModal: deps.settings.openCloseConfirmModal,
     refreshLyricsLockMenuLabel: deps.player.refreshLyricsLockMenuLabel,
     renderDailyTable: deps.renderDailyTable,

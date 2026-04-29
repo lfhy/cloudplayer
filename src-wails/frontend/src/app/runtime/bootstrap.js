@@ -27,6 +27,7 @@ export function bootCloudPlayerApp(deps) {
     onDownloadTaskChanged,
     onLyricsLockSync,
     onSystemThemeChange,
+    openLyricsReplaceWindow,
     openCloseConfirmModal,
     refreshLyricsLockMenuLabel,
     renderDailyTable,
@@ -137,6 +138,9 @@ export function bootCloudPlayerApp(deps) {
     });
     listen("lyrics-replace-apply-request", async (event) => {
       await handleLyricsReplaceApplyRequest(event);
+    });
+    listen("desktop-lyrics-open-replace", async () => {
+      await openLyricsReplaceWindow();
     });
     if (systemDarkMedia && typeof systemDarkMedia.addEventListener === "function") {
       systemDarkMedia.addEventListener("change", () => {

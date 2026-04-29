@@ -13,7 +13,6 @@ export function createDockController(deps) {
     getQualityPref,
     iconSvgByName,
     invoke,
-    openLyricsReplaceWindow,
     playFromQueueIndex,
     playModeItems,
     qualityLabels,
@@ -168,11 +167,6 @@ export function createDockController(deps) {
         if (!current) return void alert("当前没有播放曲目。");
         void enqueueDownloadForTrack({ sourceId: current.source_id, title: current.title, artist: current.artist }, button.getAttribute("data-dlq") || "128");
       });
-    });
-    document.getElementById("btn-dock-lyrics-replace")?.addEventListener("click", (event) => {
-      event.stopPropagation();
-      closeAllDockMenus();
-      void openLyricsReplaceWindow();
     });
     document.getElementById("btn-dock-more")?.addEventListener("click", (event) => {
       event.stopPropagation();

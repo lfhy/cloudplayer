@@ -31,7 +31,6 @@ export function createDockRuntime(deps) {
     iconSvgByName: deps.iconSvgByName,
     invoke: deps.invoke,
     nextQuickThemeMode: dockTheme.nextQuickThemeMode,
-    openLyricsReplaceWindow: deps.openLyricsReplaceWindow,
     playFromQueueIndex: deps.playFromQueueIndex,
     playModeItems: deps.playModeItems,
     qualityLabels: deps.qualityLabels,

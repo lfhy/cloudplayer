@@ -79,6 +79,45 @@ async function initLyricsWindow() {
 }
 
 function wireLyricsWindowControls() {
+  const contextMenuEl = document.getElementById("ly-context-menu");
+  const replaceBtnEl = document.getElementById("ly-replace");
+
+  function hideContextMenu() {
+    if (contextMenuEl) contextMenuEl.hidden = true;
+  }
+
+  function showContextMenu(clientX, clientY) {
+    if (!contextMenuEl) return;
+    contextMenuEl.hidden = false;
+    const maxX = Math.max(4, window.innerWidth - contextMenuEl.offsetWidth - 4);
+    const maxY = Math.max(4, window.innerHeight - contextMenuEl.offsetHeight - 4);
+    contextMenuEl.style.left = `${Math.max(4, Math.min(clientX, maxX))}px`;
+    contextMenuEl.style.top = `${Math.max(4, Math.min(clientY, maxY))}px`;
+  }
+
+  async function requestOpenLyricsReplace() {
+    try {
+      await emitTo(MAIN_WW, "desktop-lyrics-open-replace", {});
+    } catch (error) {
+      console.warn("emit desktop-lyrics-open-replace fail", error);
+    }
+  }
+
+  async function requestLockLyricsWindow() {
+    if (desktopLyricsState.lyricsLocked) return;
+    applyLyricsLockUi(true);
+    try {
+      await invoke("save_settings", { patch: { desktop_lyrics_locked: true } });
+    } catch (error) {
+      console.warn("save_settings fail", error);
+    }
+    try {
+      await emitTo(MAIN_WW, "desktop-lyrics-lock-sync", { locked: true });
+    } catch (error) {
+      console.warn("emitTo main fail", error);
+    }
+  }
+
   frameEl?.addEventListener(
     "mousedown",
     (event) => {
@@ -93,20 +132,15 @@ function wireLyricsWindowControls() {
     lockBtnEl.addEventListener("click", async (event) => {
       event.preventDefault();
       event.stopPropagation();
-      if (desktopLyricsState.lyricsLocked) return;
-      applyLyricsLockUi(true);
-      try {
-        await invoke("save_settings", { patch: { desktop_lyrics_locked: true } });
-      } catch (error) {
-        console.warn("save_settings fail", error);
-      }
-      try {
-        await emitTo(MAIN_WW, "desktop-lyrics-lock-sync", { locked: true });
-      } catch (error) {
-        console.warn("emitTo main fail", error);
-      }
+      await requestLockLyricsWindow();
     });
   }
+
+  replaceBtnEl?.addEventListener("click", async (event) => {
+    event.preventDefault();
+    event.stopPropagation();
+    await requestOpenLyricsReplace();
+  });
 
   document.getElementById("ly-minus")?.addEventListener("click", (event) => {
     event.preventDefault();
@@ -129,6 +163,37 @@ function wireLyricsWindowControls() {
     },
     { passive: false }
   );
+
+  frameEl?.addEventListener("contextmenu", (event) => {
+    if (desktopLyricsState.lyricsLocked) return;
+    event.preventDefault();
+    event.stopPropagation();
+    showContextMenu(event.clientX, event.clientY);
+  });
+  document.addEventListener("pointerdown", (event) => {
+    if (!contextMenuEl || contextMenuEl.hidden) return;
+    if (event.target instanceof Node && contextMenuEl.contains(event.target)) return;
+    hideContextMenu();
+  });
+  window.addEventListener("blur", hideContextMenu);
+  window.addEventListener("resize", hideContextMenu);
+
+  document.getElementById("ly-menu-replace")?.addEventListener("click", async () => {
+    hideContextMenu();
+    await requestOpenLyricsReplace();
+  });
+  document.getElementById("ly-menu-minus")?.addEventListener("click", () => {
+    hideContextMenu();
+    void persistScale(desktopLyricsState.scale - 0.08);
+  });
+  document.getElementById("ly-menu-plus")?.addEventListener("click", () => {
+    hideContextMenu();
+    void persistScale(desktopLyricsState.scale + 0.08);
+  });
+  document.getElementById("ly-menu-lock")?.addEventListener("click", async () => {
+    hideContextMenu();
+    await requestLockLyricsWindow();
+  });
 }
 
 export function bootstrapDesktopLyricsWindow() {
