@@ -67,6 +67,13 @@ function setSpansUniform(lineElId, progress) {
   }
 }
 
+function setSpansRawColor(lineElId, cssColor) {
+  const spans = document.getElementById(lineElId)?.children ?? [];
+  for (let index = 0; index < spans.length; index += 1) {
+    spans[index].style.color = cssColor;
+  }
+}
+
 function colorPlainLine(lineElId, startT, endT, currentTime) {
   const duration = endT - startT;
   const progress = duration > 0 ? Math.min(1, Math.max(0, (currentTime - startT) / duration)) : 1;
@@ -86,6 +93,16 @@ export function animateLyrics() {
     rebuildLineSpans("line2", anchor.line2, anchor.line2Words);
     // Use authoritative audio time from the main player to avoid local drift while paused.
     const currentTime = anchor.audioNow;
+
+    const idleMain = String(anchor.line1 || "").trim();
+    const idleSub = String(anchor.line2 || "").trim();
+    const isIdleSlogan = idleMain === "播放完成" && idleSub === "选择下一首继续聆听";
+    if (isIdleSlogan) {
+      setSpansRawColor("line1", "var(--ly-text)");
+      setSpansRawColor("line2", "var(--ly-text)");
+      requestAnimationFrame(animateLyrics);
+      return;
+    }
 
     if (slot === 1) {
       const useWords = anchor.line1Words?.words?.length && wordsJoinForTiming(anchor.line1Words) === anchor.line1;
