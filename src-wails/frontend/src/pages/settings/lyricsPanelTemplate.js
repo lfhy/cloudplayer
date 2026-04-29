@@ -17,6 +17,13 @@ export function lyricsPanelTemplate() {
             <input type="text" id="setting-ly-idle-line2" class="settings-field-control settings-field-control--text" maxlength="36" placeholder="选择下一首继续聆听" autocomplete="off" />
           </div>
         </div>
+        <div class="settings-field">
+          <span class="settings-field-label">效果预览</span>
+          <div class="lyric-preview" id="setting-ly-preview" aria-live="polite">
+            <p class="lyric-preview__line lyric-preview__line--base" id="setting-ly-preview-line1">播放完成</p>
+            <p class="lyric-preview__line lyric-preview__line--highlight" id="setting-ly-preview-line2">选择下一首继续聆听</p>
+          </div>
+        </div>
       </div>
     </section>
   `;

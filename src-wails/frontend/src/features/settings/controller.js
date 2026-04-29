@@ -2,6 +2,7 @@
 import { createHotkeyController } from "./hotkeys.js";
 import { closeCloseConfirmModalDom, openCloseConfirmModalDom, runCloseChoiceFlow } from "./closeFlow.js";
 import { DEFAULT_LYRICS_IDLE_LINE1, DEFAULT_LYRICS_IDLE_LINE2, normalizeLyricHexInput, normalizeLyricsIdleLine, normalizeNeteaseApiBase, normalizeSearchCacheTTLHours, settingsFormBaselineDefaults } from "./formHelpers.js";
+import { renderLyricsPreview } from "./lyricsPreview.js";
 import { canSaveCustomProxyUrl } from "../../app/helpers/platformTheme.js";
 
 export function createSettingsController(deps) {
@@ -111,6 +112,7 @@ export function createSettingsController(deps) {
     if (neteaseApiBaseEl) neteaseApiBaseEl.value = normalizeNeteaseApiBase(settings?.lyrics_netease_api_base ?? settings?.lyricsNeteaseApiBase ?? "");
     if (searchCacheStatusEl) searchCacheStatusEl.textContent = `搜索结果按关键词、分页和当前曲库渠道缓存，当前保留 ${normalizeSearchCacheTTLHours(settings?.search_cache_ttl_hours ?? settings?.searchCacheTTLHours ?? 24)} 小时。`;
     hotkeys.fillHotkeysFormFromSettings(settings);
+    renderLyricsPreview({ ...getSettingsFormValues(), idleLine1, idleLine2 });
     syncSettingsFormBaselineFromDom();
   }
 
@@ -157,6 +159,7 @@ export function createSettingsController(deps) {
       const searchCacheStatusEl = document.getElementById("setting-search-cache-status");
       if (searchCacheStatusEl) searchCacheStatusEl.textContent = `搜索结果按关键词、分页和当前曲库渠道缓存，当前保留 ${current.searchCacheTTLHours} 小时。`;
       deps.setDesktopLyricsIdleText?.(current.idleLine1, current.idleLine2);
+      renderLyricsPreview(current);
       void broadcastDesktopLyricsColors();
     } catch (error) {
       alertRequestFailed(error, "save settings");
@@ -191,7 +194,10 @@ export function createSettingsController(deps) {
     document.querySelectorAll("[data-settings-tab]").forEach((button) => button.addEventListener("click", () => setSettingsTab(button.getAttribute("data-settings-tab") || "appearance")));
     setSettingsTab("appearance");
     [["setting-app-theme-mode", "change", true], ["setting-app-theme", "change", true], ["setting-app-theme-custom-accent", "input", false], ["setting-network-proxy-url", "input", false], ["setting-close-action", "change", true], ["setting-search-cache-ttl-hours", "change", true], ["setting-ly-idle-line1", "input", false], ["setting-ly-idle-line2", "input", false], ["setting-ly-base", "input", false], ["setting-ly-highlight", "input", false], ["setting-netease-api-base", "input", false], ["setting-hotkeys-enabled", "change", true]].forEach(([id, eventName, immediate]) => {
-      document.getElementById(id)?.addEventListener(eventName, () => queueSettingsAutosave(immediate));
+      document.getElementById(id)?.addEventListener(eventName, () => {
+        renderLyricsPreview(getSettingsFormValues());
+        queueSettingsAutosave(immediate);
+      });
     });
     document.getElementById("btn-clear-search-cache")?.addEventListener("click", async () => {
       const statusEl = document.getElementById("setting-search-cache-status");
@@ -267,6 +273,7 @@ export function createSettingsController(deps) {
         void broadcastDesktopLyricsColors();
       }
       if (settings?.desktop_lyrics_visible) queueMicrotask(() => void openDesktopLyricsFromSettingsIfNeeded(settings));
+      renderLyricsPreview(getSettingsFormValues());
     } catch (error) {
       console.warn("get_settings", error);
     }
