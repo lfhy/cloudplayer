@@ -90,11 +90,21 @@ export function createLyricsController(deps) {
   async function ensureLrcLoadedForCurrentTrack(loadGen) {
     const current = getPlayQueue()[getPlayIndex()];
     if (!current) {
-      await pushDesktopLyricsLines({ line1: "—", line2: "—", activeSlot: 1, line1StartT: 0, line1EndT: 1, line2StartT: 0, line2EndT: 0, audioNow: getAudioEl()?.currentTime ?? 0 });
+      await pushDesktopLyricsLines({ line1: "CloudPlayer", line2: "让音乐陪你此刻", activeSlot: 1, line1StartT: 0, line1EndT: 1, line2StartT: 0, line2EndT: 0, audioNow: getAudioEl()?.currentTime ?? 0 });
       return;
     }
     const cacheKey = currentPlayableKey(current);
     if (lrcCacheKey === cacheKey) return;
+    await pushDesktopLyricsLines({
+      line1: "歌词加载中...",
+      line2: current.artist ? `${current.title || "当前歌曲"} · ${current.artist}` : current.title || "正在获取歌词",
+      activeSlot: 1,
+      line1StartT: 0,
+      line1EndT: 1,
+      line2StartT: 0,
+      line2EndT: 0,
+      audioNow: getAudioEl()?.currentTime ?? 0,
+    });
     try {
       const audio = getAudioEl();
       const durationSeconds = audio?.duration && Number.isFinite(audio.duration) && audio.duration > 0 ? audio.duration : null;

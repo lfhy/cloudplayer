@@ -7,6 +7,9 @@ import { animateLyrics } from "./render.js";
 import { frameEl, MAIN_WW, desktopLyricsState, lyricsWin } from "./state.js";
 import { applyLyricsLockUi, lyricsPreventDragMaximize } from "./ui.js";
 
+const LYRICS_IDLE_LINE1 = "CloudPlayer";
+const LYRICS_IDLE_LINE2 = "让音乐陪你此刻";
+
 async function initLyricsWindow() {
   try {
     const settings = await invoke("get_settings");
@@ -34,9 +37,11 @@ async function initLyricsWindow() {
   await lyricsWin.listen("desktop-lyrics-lines", (event) => {
     const payload = event?.payload ?? {};
     const activeSlot = Number(payload.activeSlot ?? payload.active_slot);
+    const line1 = String(payload.line1 ?? "").trim();
+    const line2 = String(payload.line2 ?? "").trim();
     desktopLyricsState.lyAnchor = {
-      line1: payload.line1 ?? "—",
-      line2: payload.line2 ?? "—",
+      line1: line1 || LYRICS_IDLE_LINE1,
+      line2: line2 || LYRICS_IDLE_LINE2,
       activeSlot: activeSlot === 2 ? 2 : 1,
       line1StartT: Number(payload.line1StartT ?? payload.line1_start_t) || 0,
       line1EndT: Number(payload.line1EndT ?? payload.line1_end_t) || 0,

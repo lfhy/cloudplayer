@@ -1,4 +1,7 @@
 // Lyrics model helpers stay pure so the window controller can focus on side effects.
+const LYRICS_IDLE_LINE1 = "CloudPlayer";
+const LYRICS_IDLE_LINE2 = "让音乐陪你此刻";
+
 export function parseLrc(text) {
   const lines = [];
   const pattern = /^\[(\d{1,2}):(\d{2})(?:\.(\d{1,3}))?\]/;
@@ -38,7 +41,7 @@ export function currentLyricsReplaceContext(track, audioDurationSeconds) {
 export function lyricDisplayForDesktop({ currentTrack, currentTime, lrcEntries, wordLines }) {
   const now = Number(currentTime) || 0;
   if (!currentTrack) {
-    return { line1: "—", line2: "—", activeSlot: 1, line1StartT: 0, line1EndT: 1, line2StartT: 0, line2EndT: 1, line1Words: null, line2Words: null, audioNow: now };
+    return { line1: LYRICS_IDLE_LINE1, line2: LYRICS_IDLE_LINE2, activeSlot: 1, line1StartT: 0, line1EndT: 1, line2StartT: 0, line2EndT: 1, line1Words: null, line2Words: null, audioNow: now };
   }
   if (!lrcEntries.length) {
     return { line1: currentTrack.title || "—", line2: currentTrack.artist || "在线试听", activeSlot: 1, line1StartT: 0, line1EndT: 1, line2StartT: 0, line2EndT: 1, line1Words: null, line2Words: null, audioNow: now };
