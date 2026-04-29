@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"log"
 	"strings"
 
 	"cloudplayer/internal/cloudplayer/config"
@@ -13,7 +14,33 @@ import (
 func (s *CloudPlayerService) FetchSongLRCEnriched(req lyrics.FetchRequest) (*lyrics.LyricsPayload, error) {
 	settings := config.LoadSettings()
 	s.state.RateLimiter.AcquireSlot()
-	return lyrics.FetchSongLRCEnriched(s.state.HTTP(), settings, req)
+	artist := strings.TrimSpace(req.Artist)
+	title := strings.TrimSpace(req.Title)
+	sourceID := ""
+	if req.PJMP3SourceID != nil {
+		sourceID = strings.TrimSpace(*req.PJMP3SourceID)
+	}
+	trace := lyricTraceEnabled()
+	if trace {
+		log.Printf("FetchSongLRCEnriched request: source=%q artist=%q title=%q", sourceID, artist, title)
+	}
+	payload, err := lyrics.FetchSongLRCEnriched(s.state.HTTP(), settings, req)
+	if err != nil {
+		if trace {
+			log.Printf("FetchSongLRCEnriched failed: source=%q artist=%q title=%q err=%v", sourceID, artist, title, err)
+		}
+		return nil, err
+	}
+	if payload == nil {
+		if trace {
+			log.Printf("FetchSongLRCEnriched empty: source=%q artist=%q title=%q", sourceID, artist, title)
+		}
+		return nil, nil
+	}
+	if trace {
+		log.Printf("FetchSongLRCEnriched ok: source=%q artist=%q title=%q lrcChars=%d wordLines=%d", sourceID, artist, title, len(payload.LRCText), len(payload.WordLines))
+	}
+	return payload, nil
 }
 
 func (s *CloudPlayerService) LyricsSearchCandidates(keyword string, durationMS *int64, sources []string) ([]lyrics.LyricCandidate, error) {

@@ -32,11 +32,20 @@ func parseProviderOrder(value string) []string {
 		return defaultLyricSources()
 	}
 
-	out := make([]string, 0, 4)
+	out := make([]string, 0, 6)
 	seen := map[string]struct{}{}
 	for _, part := range strings.Split(normalized, ",") {
 		source := strings.TrimSpace(part)
 		switch source {
+		case "pjmp3":
+			// Legacy "pjmp3" lyric source maps to the migrated QQ + Kugou chain.
+			for _, alias := range []string{"qq", "kugou"} {
+				if _, ok := seen[alias]; ok {
+					continue
+				}
+				seen[alias] = struct{}{}
+				out = append(out, alias)
+			}
 		case "qq", "kugou", "netease", "lrclib":
 			if _, ok := seen[source]; ok {
 				continue
@@ -52,11 +61,19 @@ func parseProviderOrder(value string) []string {
 }
 
 func normalizeSourceList(sources []string) []string {
-	out := make([]string, 0, len(sources))
+	out := make([]string, 0, len(sources)+2)
 	seen := map[string]struct{}{}
 	for _, source := range sources {
 		normalized := strings.ToLower(strings.TrimSpace(source))
 		switch normalized {
+		case "pjmp3":
+			for _, alias := range []string{"qq", "kugou"} {
+				if _, ok := seen[alias]; ok {
+					continue
+				}
+				seen[alias] = struct{}{}
+				out = append(out, alias)
+			}
 		case "qq", "kugou", "netease", "lrclib":
 			if _, ok := seen[normalized]; ok {
 				continue

@@ -15,9 +15,10 @@ import (
 )
 
 var (
-	logInitOnce sync.Once
-	logInitErr  error
-	logFilePath string
+	logInitOnce  sync.Once
+	logInitErr   error
+	logFilePath  string
+	lyricTraceOn bool
 )
 
 // InitAppLogging installs the shared desktop log sink before the runtime starts serving windows.
@@ -40,6 +41,7 @@ func InitAppLogging() error {
 		log.SetFlags(log.LstdFlags | log.Lmicroseconds)
 		log.SetOutput(io.MultiWriter(os.Stderr, file))
 		logFilePath = path
+		lyricTraceOn = strings.TrimSpace(os.Getenv("CLOUDPLAYER_LYRIC_TRACE")) == "1"
 		log.Printf("CloudPlayer logging to %s", path)
 	})
 	return logInitErr
@@ -66,6 +68,10 @@ func GetAppLogPath() (string, error) {
 }
 
 func LogPlayEvent(stage string, url *string, errorCode *int, message *string, extra *string) {
+	stageTrimmed := strings.TrimSpace(stage)
+	if stageTrimmed == "lyric_sync_tick" && !lyricTraceOn {
+		return
+	}
 	stageValue := stringsTrimOrDash(stage)
 	urlValue := "-"
 	if url != nil {
@@ -85,6 +91,10 @@ func LogPlayEvent(stage string, url *string, errorCode *int, message *string, ex
 		return
 	}
 	log.Printf("INFO %s", line)
+}
+
+func lyricTraceEnabled() bool {
+	return lyricTraceOn
 }
 
 func appPanicPath() (string, error) {

@@ -21,6 +21,8 @@ export function createLyricsController(deps) {
   let lrcEntries = [];
   let wordLines = null;
   let lrcCacheKey = null;
+  let lrcLoadInFlight = null;
+  let lyricTraceLastTs = 0;
 
   function lrcEntriesFromWordLines(lines) {
     if (!Array.isArray(lines) || !lines.length) return [];
@@ -122,10 +124,55 @@ export function createLyricsController(deps) {
     }
   }
 
+  // Prevent duplicate lyric fetch calls during frequent audio timeupdate ticks.
+  async function ensureLrcLoadedForCurrentTrackDedup(loadGen) {
+    const current = getPlayQueue()[getPlayIndex()] || null;
+    const cacheKey = currentPlayableKey(current);
+    if (!cacheKey) return;
+    if (lrcCacheKey === cacheKey) return;
+    if (lrcLoadInFlight && lrcLoadInFlight.key === cacheKey) {
+      await lrcLoadInFlight.promise;
+      return;
+    }
+    const promise = ensureLrcLoadedForCurrentTrack(loadGen).finally(() => {
+      if (lrcLoadInFlight?.promise === promise) lrcLoadInFlight = null;
+    });
+    lrcLoadInFlight = { key: cacheKey, promise };
+    await promise;
+  }
+
   async function syncDesktopLyrics() {
     if (!getDesktopLyricsOpen()) return;
+    await ensureLrcLoadedForCurrentTrackDedup(getPlayLoadGeneration());
     const current = getPlayQueue()[getPlayIndex()] || null;
-    await pushDesktopLyricsLines(lyricDisplayForDesktop({ currentTrack: current, currentTime: getAudioEl()?.currentTime ?? 0, lrcEntries, wordLines }));
+    const audioNow = getAudioEl()?.currentTime ?? 0;
+    const payload = lyricDisplayForDesktop({ currentTrack: current, currentTime: audioNow, lrcEntries, wordLines });
+    await pushDesktopLyricsLines(payload);
+    const nowMs = Date.now();
+    if (nowMs-lyricTraceLastTs >= 1200) {
+      lyricTraceLastTs = nowMs;
+      const wordsCount = Array.isArray(wordLines) ? wordLines.length : 0;
+      const entriesCount = Array.isArray(lrcEntries) ? lrcEntries.length : 0;
+      const trace = {
+        open: getDesktopLyricsOpen(),
+        audioNow: Number(audioNow.toFixed(3)),
+        cacheKey: lrcCacheKey || "",
+        entriesCount,
+        wordsCount,
+        activeSlot: payload.activeSlot,
+        line1: payload.line1,
+        line2: payload.line2,
+        line1StartT: payload.line1StartT,
+        line1EndT: payload.line1EndT,
+        line2StartT: payload.line2StartT,
+        line2EndT: payload.line2EndT,
+      };
+      try {
+        await invoke("log_play_event", { stage: "lyric_sync_tick", extra: JSON.stringify(trace) });
+      } catch {
+        /* ignore trace errors */
+      }
+    }
   }
 
   async function syncDesktopLyricsState() {

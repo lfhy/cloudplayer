@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"cloudplayer/internal/cloudplayer/config"
+	"cloudplayer/internal/cloudplayer/pjmp3"
 )
 
 // Provider selection stays isolated here so source ordering can evolve without touching payload parsers.
@@ -171,6 +172,20 @@ func FetchCandidate(client *http.Client, settings config.Settings, candidate Lyr
 }
 
 func fetchSongLDDCEnriched(client *http.Client, settings config.Settings, req FetchRequest) (*LyricsPayload, error) {
+	// Prefer direct PJMP3 lyric fetch by current track source id to avoid fuzzy search misses.
+	if sourceID := parsePJMP3SongID(req.PJMP3SourceID); sourceID != "" {
+		if lrcText, err := pjmp3.FetchSongLRCText(client, sourceID); err == nil && lrcText != nil {
+			trimmed := strings.TrimSpace(*lrcText)
+			if payload := tryParseEmbeddedWordLRC(trimmed); payload != nil {
+				return payload, nil
+			}
+			if looksLikeLRC(trimmed) {
+				payload := lineOnlyPayload(trimmed)
+				return &payload, nil
+			}
+		}
+	}
+
 	keyword := strings.TrimSpace(strings.TrimSpace(req.Artist) + " " + strings.TrimSpace(req.Title))
 	if keyword == "" {
 		return nil, nil
@@ -215,4 +230,25 @@ func fetchSongLDDCEnriched(client *http.Client, settings config.Settings, req Fe
 		}
 	}
 	return fallback, nil
+}
+
+func parsePJMP3SongID(value *string) string {
+	if value == nil {
+		return ""
+	}
+	raw := strings.TrimSpace(*value)
+	if raw == "" {
+		return ""
+	}
+	raw = strings.TrimPrefix(strings.ToLower(raw), "pjmp3:")
+	trimmed := strings.TrimSpace(raw)
+	if trimmed == "" {
+		return ""
+	}
+	for _, r := range trimmed {
+		if r < '0' || r > '9' {
+			return ""
+		}
+	}
+	return trimmed
 }
