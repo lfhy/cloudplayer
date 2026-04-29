@@ -78,6 +78,10 @@
   white-space: nowrap;
 }
 
+.search-results-actions button[hidden] {
+  display: none !important;
+}
+
 .search-action-btn {
   min-height: 34px;
 }
