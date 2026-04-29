@@ -113,6 +113,10 @@ func main() {
 			log.Printf("global hotkeys init failed: %v", err)
 		}
 	})
+	// macOS dock icon click should always restore and focus the main window.
+	app.Event.OnApplicationEvent(events.Mac.ApplicationShouldHandleReopen, func(_ *application.ApplicationEvent) {
+		showMainWindow()
+	})
 
 	trayMenu := app.NewMenu()
 	trayMenu.Add("显示主窗口").OnClick(func(ctx *application.Context) {
@@ -147,6 +151,8 @@ func showMainWindow() {
 	if !ok {
 		return
 	}
+	window.Restore()
+	window.UnMinimise()
 	window.Show()
 	window.Focus()
 }
