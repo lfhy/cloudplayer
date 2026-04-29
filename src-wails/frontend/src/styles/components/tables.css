@@ -77,11 +77,12 @@
 .search-row-check input::before,
 .col-check input::before {
   content: "";
-  width: 8px;
+  width: 4px;
   height: 8px;
-  border-radius: 2px;
-  background: #fff;
-  transform: scale(0);
+  border-right: 2px solid #fff;
+  border-bottom: 2px solid #fff;
+  transform: rotate(45deg) scale(0);
+  transform-origin: center;
   transition: transform 120ms ease;
 }
 
@@ -93,7 +94,7 @@
 
 .search-row-check input:checked::before,
 .col-check input:checked::before {
-  transform: scale(1);
+  transform: rotate(45deg) scale(1);
 }
 
 .search-row-check input:focus-visible,
