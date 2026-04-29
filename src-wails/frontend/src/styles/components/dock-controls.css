@@ -59,8 +59,9 @@
   color: var(--dock-fg);
 }
 
-.dock-tbtn:not(.dock-tbtn--main):active:not(:disabled) {
-  transform: scale(0.96);
+.dock-tbtn:active:not(:disabled) {
+  transform: none;
+  background: var(--dock-hover);
 }
 
 .dock-tbtn:disabled {
@@ -107,7 +108,8 @@
 }
 
 .dock-tbtn--main:active:not(:disabled) {
-  transform: scale(0.972);
+  transform: none;
+  background: rgba(var(--accent-rgb), 0.9);
 }
 
 /* Optical centering tweak: the play triangle appears slightly left-heavy otherwise. */
