@@ -54,8 +54,8 @@ function colorLineWords(lineElId, wordLine, currentTime) {
     for (let index = 0; index < charCount; index += 1) {
       const charProgress = Math.min(1, Math.max(0, progress * charCount - index));
       if (spans[offset + index]) spans[offset + index].style.color = charColor(charProgress);
-      offset += 1;
     }
+    offset += charCount;
   }
   return offset === spans.length;
 }

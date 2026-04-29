@@ -22,6 +22,20 @@ export function createLyricsController(deps) {
   let wordLines = null;
   let lrcCacheKey = null;
 
+  function lrcEntriesFromWordLines(lines) {
+    if (!Array.isArray(lines) || !lines.length) return [];
+    const entries = [];
+    for (const line of lines) {
+      const startMS = Number(line?.startMs);
+      const words = Array.isArray(line?.words) ? line.words : [];
+      const text = words.map((word) => String(word?.text ?? "")).join("").trim();
+      if (!Number.isFinite(startMS) || startMS < 0 || !text) continue;
+      entries.push({ t: startMS / 1000, text });
+    }
+    entries.sort((left, right) => left.t - right.t);
+    return entries;
+  }
+
   function refreshLyricsLockMenuLabel() {
     const button = document.getElementById("btn-dock-lyrics-lock");
     if (!button) return;
@@ -86,8 +100,10 @@ export function createLyricsController(deps) {
       if (loadGen !== undefined && loadGen !== getPlayLoadGeneration()) return;
       if (!isSamePlayableIdentity(getPlayQueue()[getPlayIndex()], current)) return;
       if (raw?.lrcText != null) {
-        lrcEntries = parseLrc(String(raw.lrcText));
-        wordLines = Array.isArray(raw.wordLines) ? raw.wordLines : null;
+        const parsedWordLines = Array.isArray(raw.wordLines) ? raw.wordLines : null;
+        const parsedLrcEntries = parseLrc(String(raw.lrcText));
+        lrcEntries = parsedLrcEntries.length ? parsedLrcEntries : lrcEntriesFromWordLines(parsedWordLines);
+        wordLines = parsedWordLines;
       } else if (typeof raw === "string") {
         lrcEntries = parseLrc(raw);
         wordLines = null;
@@ -273,8 +289,10 @@ export function createLyricsController(deps) {
   async function applyLyricsPayload(raw) {
     const current = getPlayQueue()[getPlayIndex()] || null;
     const lrcText = String(raw?.lrcText || "");
-    lrcEntries = lrcText.trim() ? parseLrc(lrcText) : [];
-    wordLines = Array.isArray(raw?.wordLines) ? raw.wordLines : null;
+    const parsedWordLines = Array.isArray(raw?.wordLines) ? raw.wordLines : null;
+    const parsedLrcEntries = lrcText.trim() ? parseLrc(lrcText) : [];
+    lrcEntries = parsedLrcEntries.length ? parsedLrcEntries : lrcEntriesFromWordLines(parsedWordLines);
+    wordLines = parsedWordLines;
     lrcCacheKey = currentPlayableKey(current) || null;
     await syncDesktopLyrics();
   }
