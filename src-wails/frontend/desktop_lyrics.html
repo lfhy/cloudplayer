@@ -47,6 +47,16 @@
         overflow: hidden;
         pointer-events: auto;
       }
+      .ly-drag-region {
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 46px;
+        z-index: 1;
+        pointer-events: auto;
+        cursor: move;
+      }
       [data-tauri-drag-region] {
         --wails-draggable: drag;
       }
@@ -113,6 +123,9 @@
         pointer-events: none;
       }
       body.lyrics-locked .ly-toolbar {
+        display: none;
+      }
+      body.lyrics-locked .ly-drag-region {
         display: none;
       }
       .ly-lock-btn,
@@ -241,7 +254,8 @@
     </style>
   </head>
   <body>
-    <div class="frame" id="ly-frame" data-tauri-drag-region>
+    <div class="frame" id="ly-frame">
+      <div class="ly-drag-region" id="ly-drag-region" data-tauri-drag-region aria-hidden="true"></div>
       <button type="button" class="ly-lock-btn" id="btn-ly-lock" title="锁定桌面歌词" aria-label="锁定桌面歌词">
         <svg class="ly-icon" viewBox="0 0 24 24" aria-hidden="true">
           <path d="M8.5 10V7.8a3.5 3.5 0 0 1 7 0V10"></path>

@@ -96,9 +96,9 @@ export function animateLyrics() {
 
     const isIdleSlogan = !!anchor.idleMode;
     if (isIdleSlogan) {
-      const highlight = charColor(1);
-      setSpansRawColor("line1", highlight);
-      setSpansRawColor("line2", highlight);
+      // Idle slogan uses split state: line1 as played color, line2 as unplayed color.
+      setSpansRawColor("line1", charColor(1));
+      setSpansRawColor("line2", charColor(0));
       requestAnimationFrame(animateLyrics);
       return;
     }

@@ -10,9 +10,10 @@ export function applyLyricsLockUi(locked) {
     lockBtn.title = "锁定桌面歌词";
     lockBtn.setAttribute("aria-label", "锁定桌面歌词");
   }
-  if (frameEl) {
-    if (desktopLyricsState.lyricsLocked) frameEl.removeAttribute("data-tauri-drag-region");
-    else frameEl.setAttribute("data-tauri-drag-region", "");
+  const dragRegionEl = document.getElementById("ly-drag-region");
+  if (dragRegionEl) {
+    if (desktopLyricsState.lyricsLocked) dragRegionEl.removeAttribute("data-tauri-drag-region");
+    else dragRegionEl.setAttribute("data-tauri-drag-region", "");
   }
   void applyCursorPassthrough(desktopLyricsState.lyricsLocked);
 }
