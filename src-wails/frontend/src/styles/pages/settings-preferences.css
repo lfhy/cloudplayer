@@ -167,3 +167,9 @@
 .settings-field-control--compact {
   max-width: 120px;
 }
+
+.settings-inline-stack {
+  display: grid;
+  gap: 8px;
+  max-width: 420px;
+}

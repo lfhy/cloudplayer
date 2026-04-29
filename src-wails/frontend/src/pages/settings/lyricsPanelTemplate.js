@@ -10,6 +10,13 @@ export function lyricsPanelTemplate() {
             <label class="settings-color-lab">已唱<input type="color" id="setting-ly-highlight" value="#ffb7d4" title="已唱字色" /></label>
           </div>
         </div>
+        <div class="settings-field">
+          <span class="settings-field-label">无播放默认文案</span>
+          <div class="settings-inline-stack">
+            <input type="text" id="setting-ly-idle-line1" class="settings-field-control settings-field-control--text" maxlength="36" placeholder="播放完成" autocomplete="off" />
+            <input type="text" id="setting-ly-idle-line2" class="settings-field-control settings-field-control--text" maxlength="36" placeholder="选择下一首继续聆听" autocomplete="off" />
+          </div>
+        </div>
       </div>
     </section>
   `;

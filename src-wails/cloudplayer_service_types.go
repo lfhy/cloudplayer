@@ -29,6 +29,8 @@ type SettingsPatch struct {
 	AppThemeCustomAccent        *string  `json:"app_theme_custom_accent,omitempty"`
 	DesktopLyricsColorBase      *string  `json:"desktop_lyrics_color_base,omitempty"`
 	DesktopLyricsColorHighlight *string  `json:"desktop_lyrics_color_highlight,omitempty"`
+	DesktopLyricsIdleLine1      *string  `json:"desktop_lyrics_idle_line1,omitempty"`
+	DesktopLyricsIdleLine2      *string  `json:"desktop_lyrics_idle_line2,omitempty"`
 	ShareNeteaseCookieEnabled   *bool    `json:"share_netease_cookie_enabled,omitempty"`
 	ShareNeteaseCookie          *string  `json:"share_netease_cookie,omitempty"`
 	MusicSourceProvider         *string  `json:"music_source_provider,omitempty"`

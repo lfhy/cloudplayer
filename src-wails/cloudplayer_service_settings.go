@@ -152,6 +152,12 @@ func (s *CloudPlayerService) SaveSettings(patch SettingsPatch) error {
 			settings.DesktopLyricsColorHighlight = value
 		}
 	}
+	if patch.DesktopLyricsIdleLine1 != nil {
+		settings.DesktopLyricsIdleLine1 = config.NormalizeDesktopLyricsIdleLine(*patch.DesktopLyricsIdleLine1, config.DefaultSettings().DesktopLyricsIdleLine1)
+	}
+	if patch.DesktopLyricsIdleLine2 != nil {
+		settings.DesktopLyricsIdleLine2 = config.NormalizeDesktopLyricsIdleLine(*patch.DesktopLyricsIdleLine2, config.DefaultSettings().DesktopLyricsIdleLine2)
+	}
 	if patch.ShareNeteaseCookieEnabled != nil {
 		settings.ShareNeteaseCookieEnabled = *patch.ShareNeteaseCookieEnabled
 	}

@@ -47,6 +47,7 @@ const settings = createSettingsRuntime({
   normalizeCloseAction, normalizeMusicSourceProvider, normalizeNetworkProxyMode, normalizeNetworkProxyUrl, normalizeSettingsTab,
   openDesktopLyricsFromSettingsIfNeeded: (...args) => player.openDesktopLyricsFromSettingsIfNeeded(...args), queueQuickThemeRefresh: (...args) => refreshQuickThemeModeUi(...args),
   refreshLyricsLockMenuLabel: (...args) => player.refreshLyricsLockMenuLabel(...args), renderImportTable: (...args) => renderImportTable(...args),
+  setDesktopLyricsIdleText: (...args) => player.setDesktopLyricsIdleText(...args),
   setDesktopLyricsLocked: (value) => { desktopLyricsLocked = value; }, setImportDraftDirty: (value) => { importDraftDirty = value; }, setImportMethodValue: (value) => { importMethod = value; },
   setImportShareSuggestedName: (value) => { importShareSuggestedName = value || ""; }, setImportTracksValue: (rows) => { importTracks = Array.isArray(rows) ? rows : []; },
   setLastLibraryFolder: (value) => { lastLibraryFolder = value; }, setMainWindowCloseAction: (value) => { mainWindowCloseAction = value; },

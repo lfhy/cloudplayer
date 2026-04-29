@@ -45,6 +45,8 @@ type Settings struct {
 	GlobalHotkeys               GlobalHotkeys `json:"global_hotkeys"`
 	DesktopLyricsColorBase      string        `json:"desktop_lyrics_color_base"`
 	DesktopLyricsColorHighlight string        `json:"desktop_lyrics_color_highlight"`
+	DesktopLyricsIdleLine1      string        `json:"desktop_lyrics_idle_line1"`
+	DesktopLyricsIdleLine2      string        `json:"desktop_lyrics_idle_line2"`
 	ShareNeteaseCookieEnabled   bool          `json:"share_netease_cookie_enabled"`
 	ShareNeteaseCookie          string        `json:"share_netease_cookie"`
 	MusicSourceProvider         string        `json:"music_source_provider"`
@@ -76,6 +78,8 @@ func DefaultSettings() Settings {
 		GlobalHotkeys:               DefaultGlobalHotkeys(),
 		DesktopLyricsColorBase:      "#ffffff",
 		DesktopLyricsColorHighlight: "#ffb7d4",
+		DesktopLyricsIdleLine1:      "播放完成",
+		DesktopLyricsIdleLine2:      "选择下一首继续聆听",
 		MusicSourceProvider:         "pjmp3",
 		SearchCacheTTLHours:         24,
 	}
@@ -134,6 +138,9 @@ func LoadSettings() Settings {
 		return DefaultSettings()
 	}
 	result.SearchCacheTTLHours = NormalizeSearchCacheTTLHours(result.SearchCacheTTLHours)
+	defaults := DefaultSettings()
+	result.DesktopLyricsIdleLine1 = NormalizeDesktopLyricsIdleLine(result.DesktopLyricsIdleLine1, defaults.DesktopLyricsIdleLine1)
+	result.DesktopLyricsIdleLine2 = NormalizeDesktopLyricsIdleLine(result.DesktopLyricsIdleLine2, defaults.DesktopLyricsIdleLine2)
 	return result
 }
 
@@ -146,6 +153,18 @@ func NormalizeSearchCacheTTLHours(value int) int {
 	default:
 		return value
 	}
+}
+
+func NormalizeDesktopLyricsIdleLine(raw string, fallback string) string {
+	value := strings.TrimSpace(raw)
+	if value == "" {
+		return fallback
+	}
+	runes := []rune(value)
+	if len(runes) > 36 {
+		return strings.TrimSpace(string(runes[:36]))
+	}
+	return value
 }
 
 func NormalizeAppTheme(value string) string {

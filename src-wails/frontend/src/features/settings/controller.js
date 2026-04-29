@@ -1,5 +1,7 @@
 // Settings controller owns form state, autosave, and modal wiring for preferences.
 import { createHotkeyController } from "./hotkeys.js";
+import { closeCloseConfirmModalDom, openCloseConfirmModalDom, runCloseChoiceFlow } from "./closeFlow.js";
+import { DEFAULT_LYRICS_IDLE_LINE1, DEFAULT_LYRICS_IDLE_LINE2, normalizeLyricHexInput, normalizeLyricsIdleLine, normalizeNeteaseApiBase, normalizeSearchCacheTTLHours, settingsFormBaselineDefaults } from "./formHelpers.js";
 import { canSaveCustomProxyUrl } from "../../app/helpers/platformTheme.js";
 
 export function createSettingsController(deps) {
@@ -34,28 +36,13 @@ export function createSettingsController(deps) {
     setLastLibraryFolder,
     setNeteaseCookieState,
   } = deps;
-  let settingsFormBaseline = { theme: "coral", mode: "system", customAccent: "#c62f2f", proxyMode: "direct", proxyURL: "", action: "ask", base: "#ffffff", highlight: "#ffb7d4", neteaseApiBase: "", musicSourceProvider: "pjmp3", searchCacheTTLHours: 24, hotkeysSig: "" };
+  let settingsFormBaseline = settingsFormBaselineDefaults();
   let settingsSaveTimer = null;
   let settingsSaveInFlight = false;
   let settingsSaveQueued = false;
   let suppressSettingsAutoSave = false;
   let queueSettingsAutosave = () => {};
   const hotkeys = createHotkeyController({ invoke, queueSettingsAutosave: (...args) => queueSettingsAutosave(...args), updateSettingsSaveButtonState: () => {}, warnRequestFailed });
-
-  function normalizeLyricHexInput(value, fallback) {
-    const normalized = (value || "").trim();
-    return /^#[0-9a-fA-F]{6}$/.test(normalized) ? normalized.toLowerCase() : fallback;
-  }
-
-  function normalizeNeteaseApiBase(raw) {
-    return String(raw ?? "").trim();
-  }
-
-  function normalizeSearchCacheTTLHours(raw) {
-    const parsed = Number.parseInt(String(raw ?? "").trim(), 10);
-    if (!Number.isFinite(parsed)) return 24;
-    return Math.min(720, Math.max(1, parsed));
-  }
 
   function getSettingsFormValues() {
     const current = {
@@ -67,6 +54,8 @@ export function createSettingsController(deps) {
       action: normalizeCloseAction(document.getElementById("setting-close-action")?.value),
       musicSourceProvider: normalizeMusicSourceProvider(document.getElementById("setting-music-source-provider")?.value),
       searchCacheTTLHours: normalizeSearchCacheTTLHours(document.getElementById("setting-search-cache-ttl-hours")?.value),
+      idleLine1: normalizeLyricsIdleLine(document.getElementById("setting-ly-idle-line1")?.value, DEFAULT_LYRICS_IDLE_LINE1),
+      idleLine2: normalizeLyricsIdleLine(document.getElementById("setting-ly-idle-line2")?.value, DEFAULT_LYRICS_IDLE_LINE2),
       base: normalizeLyricHexInput(document.getElementById("setting-ly-base")?.value, "#ffffff"),
       highlight: normalizeLyricHexInput(document.getElementById("setting-ly-highlight")?.value, "#ffb7d4"),
       neteaseApiBase: normalizeNeteaseApiBase(document.getElementById("setting-netease-api-base")?.value),
@@ -77,7 +66,7 @@ export function createSettingsController(deps) {
 
   function settingsFormIsDirty() {
     const current = getSettingsFormValues();
-    return ["theme", "mode", "customAccent", "proxyMode", "proxyURL", "action", "musicSourceProvider", "searchCacheTTLHours", "base", "highlight", "neteaseApiBase", "hotkeysSig"].some((key) => current[key] !== settingsFormBaseline[key]);
+    return ["theme", "mode", "customAccent", "proxyMode", "proxyURL", "action", "musicSourceProvider", "searchCacheTTLHours", "idleLine1", "idleLine2", "base", "highlight", "neteaseApiBase", "hotkeysSig"].some((key) => current[key] !== settingsFormBaseline[key]);
   }
 
   function syncSettingsFormBaselineFromDom() {
@@ -108,9 +97,16 @@ export function createSettingsController(deps) {
     if (closeActionEl) closeActionEl.value = closeAction;
     const baseEl = document.getElementById("setting-ly-base");
     const highlightEl = document.getElementById("setting-ly-highlight");
+    const idleLine1El = document.getElementById("setting-ly-idle-line1");
+    const idleLine2El = document.getElementById("setting-ly-idle-line2");
     const searchCacheStatusEl = document.getElementById("setting-search-cache-status");
     if (baseEl) baseEl.value = normalizeLyricHexInput(settings?.desktop_lyrics_color_base ?? settings?.desktopLyricsColorBase, "#ffffff");
     if (highlightEl) highlightEl.value = normalizeLyricHexInput(settings?.desktop_lyrics_color_highlight ?? settings?.desktopLyricsColorHighlight, "#ffb7d4");
+    const idleLine1 = normalizeLyricsIdleLine(settings?.desktop_lyrics_idle_line1 ?? settings?.desktopLyricsIdleLine1, DEFAULT_LYRICS_IDLE_LINE1);
+    const idleLine2 = normalizeLyricsIdleLine(settings?.desktop_lyrics_idle_line2 ?? settings?.desktopLyricsIdleLine2, DEFAULT_LYRICS_IDLE_LINE2);
+    if (idleLine1El) idleLine1El.value = idleLine1;
+    if (idleLine2El) idleLine2El.value = idleLine2;
+    deps.setDesktopLyricsIdleText?.(idleLine1, idleLine2);
     const neteaseApiBaseEl = document.getElementById("setting-netease-api-base");
     if (neteaseApiBaseEl) neteaseApiBaseEl.value = normalizeNeteaseApiBase(settings?.lyrics_netease_api_base ?? settings?.lyricsNeteaseApiBase ?? "");
     if (searchCacheStatusEl) searchCacheStatusEl.textContent = `搜索结果按关键词、分页和当前曲库渠道缓存，当前保留 ${normalizeSearchCacheTTLHours(settings?.search_cache_ttl_hours ?? settings?.searchCacheTTLHours ?? 24)} 小时。`;
@@ -154,12 +150,13 @@ export function createSettingsController(deps) {
         const report = await invoke("apply_global_hotkeys", { cfg: current.globalHotkeys });
         if (report) hotkeys.renderHotkeyStatusFromReport(report);
       }
-      await invoke("save_settings", { patch: { app_theme: current.theme, app_theme_mode: current.mode, app_theme_custom_accent: current.customAccent, network_proxy_mode: current.proxyMode, network_proxy_url: proxyURLForSave, main_window_close_action: current.action, music_source_provider: current.musicSourceProvider, search_cache_ttl_hours: current.searchCacheTTLHours, desktop_lyrics_color_base: current.base, desktop_lyrics_color_highlight: current.highlight, lyrics_netease_api_base: current.neteaseApiBase } });
+      await invoke("save_settings", { patch: { app_theme: current.theme, app_theme_mode: current.mode, app_theme_custom_accent: current.customAccent, network_proxy_mode: current.proxyMode, network_proxy_url: proxyURLForSave, main_window_close_action: current.action, music_source_provider: current.musicSourceProvider, search_cache_ttl_hours: current.searchCacheTTLHours, desktop_lyrics_idle_line1: current.idleLine1, desktop_lyrics_idle_line2: current.idleLine2, desktop_lyrics_color_base: current.base, desktop_lyrics_color_highlight: current.highlight, lyrics_netease_api_base: current.neteaseApiBase } });
       applyAppTheme(current.theme, current.customAccent, current.mode);
       setMainWindowCloseAction(current.action);
       syncSettingsFormBaselineFromDom();
       const searchCacheStatusEl = document.getElementById("setting-search-cache-status");
       if (searchCacheStatusEl) searchCacheStatusEl.textContent = `搜索结果按关键词、分页和当前曲库渠道缓存，当前保留 ${current.searchCacheTTLHours} 小时。`;
+      deps.setDesktopLyricsIdleText?.(current.idleLine1, current.idleLine2);
       void broadcastDesktopLyricsColors();
     } catch (error) {
       alertRequestFailed(error, "save settings");
@@ -180,39 +177,11 @@ export function createSettingsController(deps) {
   };
 
   function openCloseConfirmModal() {
-    const rememberEl = document.getElementById("close-choice-remember");
-    if (rememberEl) rememberEl.checked = false;
-    const modalEl = document.getElementById("close-confirm-modal");
-    if (!modalEl) return;
-    modalEl.hidden = false;
-    modalEl.setAttribute("aria-hidden", "false");
+    openCloseConfirmModalDom();
   }
 
   function closeCloseConfirmModal() {
-    const modalEl = document.getElementById("close-confirm-modal");
-    if (!modalEl) return;
-    modalEl.hidden = true;
-    modalEl.setAttribute("aria-hidden", "true");
-  }
-
-  async function runCloseChoice(mode) {
-    const remember = !!document.getElementById("close-choice-remember")?.checked;
-    closeCloseConfirmModal();
-    if (remember) {
-      const patch = { main_window_close_action: mode === "tray" ? "tray" : "quit" };
-      try {
-        await invoke("save_settings", { patch });
-        setMainWindowCloseAction(patch.main_window_close_action);
-      } catch (error) {
-        console.warn("save_settings main_window_close_action", error);
-      }
-    }
-    try {
-      if (mode === "tray") await invoke("hide_main_window");
-      else await invoke("quit_app");
-    } catch (error) {
-      alertRequestFailed(error, "close flow");
-    }
+    closeCloseConfirmModalDom();
   }
 
   function wirePreferencesModals() {
@@ -221,7 +190,7 @@ export function createSettingsController(deps) {
     document.getElementById("btn-dock-settings")?.addEventListener("click", () => setPage("settings"));
     document.querySelectorAll("[data-settings-tab]").forEach((button) => button.addEventListener("click", () => setSettingsTab(button.getAttribute("data-settings-tab") || "appearance")));
     setSettingsTab("appearance");
-    [["setting-app-theme-mode", "change", true], ["setting-app-theme", "change", true], ["setting-app-theme-custom-accent", "input", false], ["setting-network-proxy-url", "input", false], ["setting-close-action", "change", true], ["setting-search-cache-ttl-hours", "change", true], ["setting-ly-base", "input", false], ["setting-ly-highlight", "input", false], ["setting-netease-api-base", "input", false], ["setting-hotkeys-enabled", "change", true]].forEach(([id, eventName, immediate]) => {
+    [["setting-app-theme-mode", "change", true], ["setting-app-theme", "change", true], ["setting-app-theme-custom-accent", "input", false], ["setting-network-proxy-url", "input", false], ["setting-close-action", "change", true], ["setting-search-cache-ttl-hours", "change", true], ["setting-ly-idle-line1", "input", false], ["setting-ly-idle-line2", "input", false], ["setting-ly-base", "input", false], ["setting-ly-highlight", "input", false], ["setting-netease-api-base", "input", false], ["setting-hotkeys-enabled", "change", true]].forEach(([id, eventName, immediate]) => {
       document.getElementById(id)?.addEventListener(eventName, () => queueSettingsAutosave(immediate));
     });
     document.getElementById("btn-clear-search-cache")?.addEventListener("click", async () => {
@@ -267,8 +236,8 @@ export function createSettingsController(deps) {
       queueSettingsAutosave(true);
     }));
     hotkeys.wireHotkeySettingsUi();
-    document.getElementById("close-choice-tray")?.addEventListener("click", () => void runCloseChoice("tray"));
-    document.getElementById("close-choice-quit")?.addEventListener("click", () => void runCloseChoice("quit"));
+    document.getElementById("close-choice-tray")?.addEventListener("click", () => void runCloseChoiceFlow("tray", { alertRequestFailed, invoke, setMainWindowCloseAction }));
+    document.getElementById("close-choice-quit")?.addEventListener("click", () => void runCloseChoiceFlow("quit", { alertRequestFailed, invoke, setMainWindowCloseAction }));
     document.getElementById("close-choice-cancel")?.addEventListener("click", () => closeCloseConfirmModal());
     document.getElementById("close-confirm-modal")?.addEventListener("click", (event) => {
       if (event.target?.id === "close-confirm-modal") closeCloseConfirmModal();

@@ -7,8 +7,8 @@ import { animateLyrics } from "./render.js";
 import { frameEl, MAIN_WW, desktopLyricsState, lyricsWin } from "./state.js";
 import { applyLyricsLockUi, lyricsPreventDragMaximize } from "./ui.js";
 
-const LYRICS_IDLE_LINE1 = "CloudPlayer";
-const LYRICS_IDLE_LINE2 = "让音乐陪你此刻";
+const LYRICS_IDLE_LINE1 = "播放完成";
+const LYRICS_IDLE_LINE2 = "选择下一首继续聆听";
 
 async function initLyricsWindow() {
   try {
@@ -17,6 +17,12 @@ async function initLyricsWindow() {
       desktopLyricsState.scale = Math.min(2.5, Math.max(0.5, settings.desktop_lyrics_scale));
       document.documentElement.style.setProperty("--ly-scale", String(desktopLyricsState.scale));
     }
+    const idleLine1 = String(settings?.desktop_lyrics_idle_line1 ?? settings?.desktopLyricsIdleLine1 ?? LYRICS_IDLE_LINE1).trim();
+    const idleLine2 = String(settings?.desktop_lyrics_idle_line2 ?? settings?.desktopLyricsIdleLine2 ?? LYRICS_IDLE_LINE2).trim();
+    const line1El = document.getElementById("line1");
+    const line2El = document.getElementById("line2");
+    if (line1El) line1El.textContent = idleLine1 || LYRICS_IDLE_LINE1;
+    if (line2El) line2El.textContent = idleLine2 || LYRICS_IDLE_LINE2;
     const locked = settings && typeof settings.desktop_lyrics_locked === "boolean" ? settings.desktop_lyrics_locked : true;
     applyLyricsLockUi(locked);
     applyLyricColors(
