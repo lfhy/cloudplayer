@@ -6,6 +6,6 @@ const PAUSE_ICON = iconSvgByName("pause-bold");
 
 export function setPlayButtonIcon(button, playing) {
   if (!button) return;
+  button.dataset.playIcon = playing ? "pause" : "play";
   button.innerHTML = playing ? PAUSE_ICON : PLAY_ICON;
 }
-

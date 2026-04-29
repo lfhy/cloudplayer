@@ -58,7 +58,7 @@
   color: var(--dock-fg);
 }
 
-.dock-tbtn:active:not(:disabled) {
+.dock-tbtn:not(.dock-tbtn--main):active:not(:disabled) {
   transform: scale(0.96);
 }
 
@@ -102,6 +102,19 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
+}
+
+.dock-tbtn--main:active:not(:disabled) {
+  transform: none;
+}
+
+/* Optical centering tweak: the play triangle appears slightly left-heavy otherwise. */
+.dock-tbtn--main[data-play-icon="play"] svg {
+  transform: translateX(0.6px);
+}
+
+.dock-tbtn--main[data-play-icon="pause"] svg {
+  transform: translateX(0);
 }
 
 .dock-player__timeline {
