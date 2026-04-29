@@ -84,8 +84,8 @@ export function animateLyrics() {
     const slot = anchor.activeSlot === 2 ? 2 : 1;
     rebuildLineSpans("line1", anchor.line1, anchor.line1Words);
     rebuildLineSpans("line2", anchor.line2, anchor.line2Words);
-    const elapsed = (Date.now() - anchor.receivedAtMs) / 1000;
-    const currentTime = anchor.audioNow + elapsed;
+    // Use authoritative audio time from the main player to avoid local drift while paused.
+    const currentTime = anchor.audioNow;
 
     if (slot === 1) {
       const useWords = anchor.line1Words?.words?.length && wordsJoinForTiming(anchor.line1Words) === anchor.line1;

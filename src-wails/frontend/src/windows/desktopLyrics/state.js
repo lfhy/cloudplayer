@@ -5,7 +5,7 @@ export const MAIN_WW = { kind: "WebviewWindow", label: "main" };
 export const lyricsWin = WebviewWindow.getCurrent();
 export const frameEl = document.getElementById("ly-frame");
 
-/** @type {{ line1: string, line2: string, activeSlot: number, line1StartT: number, line1EndT: number, line2StartT: number, line2EndT: number, line1Words: object | null, line2Words: object | null, audioNow: number, receivedAtMs: number } | null} */
+/** @type {{ line1: string, line2: string, activeSlot: number, line1StartT: number, line1EndT: number, line2StartT: number, line2EndT: number, line1Words: object | null, line2Words: object | null, audioNow: number, audioPlaying: boolean } | null} */
 export const desktopLyricsState = {
   scale: 1,
   lyricsLocked: true,

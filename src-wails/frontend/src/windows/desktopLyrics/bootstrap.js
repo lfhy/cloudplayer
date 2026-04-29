@@ -45,7 +45,7 @@ async function initLyricsWindow() {
       line1Words: payload.line1Words ?? payload.line1_words ?? null,
       line2Words: payload.line2Words ?? payload.line2_words ?? null,
       audioNow: Number(payload.audioNow ?? payload.audio_now) || 0,
-      receivedAtMs: Date.now(),
+      audioPlaying: !!payload.audioPlaying,
     };
   });
 

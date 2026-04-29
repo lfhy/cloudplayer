@@ -145,8 +145,10 @@ export function createLyricsController(deps) {
     if (!getDesktopLyricsOpen()) return;
     await ensureLrcLoadedForCurrentTrackDedup(getPlayLoadGeneration());
     const current = getPlayQueue()[getPlayIndex()] || null;
-    const audioNow = getAudioEl()?.currentTime ?? 0;
+    const audioEl = getAudioEl();
+    const audioNow = audioEl?.currentTime ?? 0;
     const payload = lyricDisplayForDesktop({ currentTrack: current, currentTime: audioNow, lrcEntries, wordLines });
+    payload.audioPlaying = !!audioEl && !audioEl.paused;
     await pushDesktopLyricsLines(payload);
     const nowMs = Date.now();
     if (nowMs-lyricTraceLastTs >= 1200) {
