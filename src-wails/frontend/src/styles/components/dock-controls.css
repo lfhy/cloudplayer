@@ -49,12 +49,13 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  transition: background 0.15s ease, border-color 0.15s ease, transform 0.1s ease;
+  transition: background 0.15s ease, border-color 0.15s ease, transform 0.1s ease, color 0.15s ease;
 }
 
 .dock-tbtn:hover:not(:disabled) {
   background: var(--dock-hover);
   border-color: var(--dock-edge);
+  color: var(--dock-fg);
 }
 
 .dock-tbtn:active:not(:disabled) {
@@ -77,13 +78,29 @@
 }
 
 .dock-tbtn--main:hover:not(:disabled) {
+  background: var(--dock-accent);
+  color: #ffffff;
   filter: brightness(1.05);
-  border-color: var(--dock-accent);
+  border-color: rgba(var(--accent-rgb), 0.35);
 }
 
 .dock-tbtn--main:disabled {
   filter: grayscale(0.3);
   opacity: 0.45;
+}
+
+.dock-tbtn svg {
+  width: 18px;
+  height: 18px;
+  display: block;
+  flex-shrink: 0;
+  fill: currentColor;
+}
+
+.dock-tbtn--main {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .dock-player__timeline {

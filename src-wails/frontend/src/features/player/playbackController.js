@@ -1,4 +1,6 @@
 // Playback loading stays in one controller so queue mutations and async generations share rules.
+import { setPlayButtonIcon } from "./playButtonIcon.js";
+
 export function createPlaybackController(deps) {
   const {
     alertRequestFailed,
@@ -41,7 +43,7 @@ export function createPlaybackController(deps) {
       }
       updatePlayerChrome({ title: "未播放", sub: "队列已空", coverUrl: null });
       const playButton = document.getElementById("btn-player-play");
-      if (playButton) playButton.textContent = "▶";
+      setPlayButtonIcon(playButton, false);
     } else {
       if (getPlayIndex() >= queue.length) setPlayIndex(queue.length - 1);
       void playFromQueueIndex(getPlayIndex());
@@ -89,7 +91,7 @@ export function createPlaybackController(deps) {
         coverUrl: item.cover_url || null,
       });
       if (playButton) {
-        playButton.textContent = "⏸";
+        setPlayButtonIcon(playButton, true);
         playButton.disabled = false;
       }
       setPlayerNavEnabled();

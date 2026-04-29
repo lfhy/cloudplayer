@@ -1,4 +1,6 @@
 // Audio event wiring stays separate from playback loading so media element behavior is easy to test.
+import { setPlayButtonIcon } from "./playButtonIcon.js";
+
 export function createAudioEventsController(deps) {
   const {
     alertRequestFailed,
@@ -70,11 +72,11 @@ export function createAudioEventsController(deps) {
       handleEnded(audio, playButton);
     });
     audio.addEventListener("play", () => {
-      if (playButton) playButton.textContent = "⏸";
+      setPlayButtonIcon(playButton, true);
       void broadcastTrayPlayerState();
     });
     audio.addEventListener("pause", () => {
-      if (playButton) playButton.textContent = "▶";
+      setPlayButtonIcon(playButton, false);
       void broadcastTrayPlayerState();
     });
     audio.addEventListener("error", () => {
@@ -173,8 +175,8 @@ export function createAudioEventsController(deps) {
     }
     if (getPlayIndex() < length - 1) {
       void playFromQueueIndex(getPlayIndex() + 1);
-    } else if (playButton) {
-      playButton.textContent = "▶";
+    } else {
+      setPlayButtonIcon(playButton, false);
     }
     syncSeekUi();
   }

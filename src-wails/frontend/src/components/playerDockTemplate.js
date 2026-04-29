@@ -1,8 +1,10 @@
 import { fallbackCoverDataUri } from "../app/helpers/covers.js";
+import { iconSvgByName } from "../app/helpers/icons.js";
 
 // Player dock is shared application chrome, so it lives under components instead of page templates.
 export function playerDockTemplate() {
   const fallbackCover = fallbackCoverDataUri(52, 10);
+  const playIcon = iconSvgByName("play-bold");
   return `
     <footer class="dock-player" aria-label="播放控制">
       <div class="dock-player__left">
@@ -22,7 +24,7 @@ export function playerDockTemplate() {
         <div class="dock-player__transport">
           <button type="button" id="btn-play-mode" class="dock-mode" title="顺序播放（点击切换模式）" aria-label="顺序播放（点击切换模式）"></button>
           <button type="button" id="btn-player-prev" class="dock-tbtn" disabled title="上一首" aria-label="上一首">⏮</button>
-          <button type="button" id="btn-player-play" class="dock-tbtn dock-tbtn--main" disabled title="播放" aria-label="播放">▶</button>
+          <button type="button" id="btn-player-play" class="dock-tbtn dock-tbtn--main" disabled title="播放" aria-label="播放">${playIcon}</button>
           <button type="button" id="btn-player-next" class="dock-tbtn" disabled title="下一首" aria-label="下一首">⏭</button>
         </div>
         <div class="dock-player__timeline">
