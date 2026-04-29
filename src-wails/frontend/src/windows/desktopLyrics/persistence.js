@@ -52,7 +52,9 @@ export async function persistScale(next) {
 
 export async function applyCursorPassthrough(locked) {
   try {
-    await lyricsWin.setIgnoreCursorEvents(!!locked);
+    await lyricsWin.setIgnoreCursorEvents(!!locked, {
+      forward: true,
+    });
   } catch (error) {
     console.warn("setIgnoreCursorEvents", error);
   }
