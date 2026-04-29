@@ -78,8 +78,8 @@ func DefaultSettings() Settings {
 		GlobalHotkeys:               DefaultGlobalHotkeys(),
 		DesktopLyricsColorBase:      "#ffffff",
 		DesktopLyricsColorHighlight: "#ffb7d4",
-		DesktopLyricsIdleLine1:      "播放完成",
-		DesktopLyricsIdleLine2:      "选择下一首继续聆听",
+		DesktopLyricsIdleLine1:      "CloudPlayer",
+		DesktopLyricsIdleLine2:      "让音乐陪你此刻",
 		MusicSourceProvider:         "pjmp3",
 		SearchCacheTTLHours:         24,
 	}

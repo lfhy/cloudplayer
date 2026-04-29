@@ -1,6 +1,6 @@
 // Idle lyric helpers normalize and build fallback payloads when nothing is playing.
-export const DESKTOP_LYRICS_IDLE_LINE1 = "播放完成";
-export const DESKTOP_LYRICS_IDLE_LINE2 = "选择下一首继续聆听";
+export const DESKTOP_LYRICS_IDLE_LINE1 = "CloudPlayer";
+export const DESKTOP_LYRICS_IDLE_LINE2 = "让音乐陪你此刻";
 
 export function normalizeDesktopLyricsIdleLine(value, fallback) {
   const trimmed = String(value || "").trim();
@@ -20,6 +20,7 @@ export function idleDesktopLyricsPayload(line1, line2, audioNow) {
   return {
     line1,
     line2,
+    idleMode: true,
     activeSlot: 1,
     line1StartT: 0,
     line1EndT: 1,

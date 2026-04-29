@@ -13,15 +13,15 @@ export function lyricsPanelTemplate() {
         <div class="settings-field">
           <span class="settings-field-label">无播放默认文案</span>
           <div class="settings-inline-stack">
-            <input type="text" id="setting-ly-idle-line1" class="settings-field-control settings-field-control--text" maxlength="36" placeholder="播放完成" autocomplete="off" />
-            <input type="text" id="setting-ly-idle-line2" class="settings-field-control settings-field-control--text" maxlength="36" placeholder="选择下一首继续聆听" autocomplete="off" />
+            <input type="text" id="setting-ly-idle-line1" class="settings-field-control settings-field-control--text" maxlength="36" placeholder="CloudPlayer" autocomplete="off" />
+            <input type="text" id="setting-ly-idle-line2" class="settings-field-control settings-field-control--text" maxlength="36" placeholder="让音乐陪你此刻" autocomplete="off" />
           </div>
         </div>
         <div class="settings-field">
           <span class="settings-field-label">效果预览</span>
           <div class="lyric-preview" id="setting-ly-preview" aria-live="polite">
-            <p class="lyric-preview__line lyric-preview__line--base" id="setting-ly-preview-line1">播放完成</p>
-            <p class="lyric-preview__line lyric-preview__line--highlight" id="setting-ly-preview-line2">选择下一首继续聆听</p>
+            <p class="lyric-preview__line lyric-preview__line--base" id="setting-ly-preview-line1">CloudPlayer</p>
+            <p class="lyric-preview__line lyric-preview__line--highlight" id="setting-ly-preview-line2">让音乐陪你此刻</p>
           </div>
         </div>
       </div>

@@ -7,8 +7,8 @@ import { animateLyrics } from "./render.js";
 import { frameEl, MAIN_WW, desktopLyricsState, lyricsWin } from "./state.js";
 import { applyLyricsLockUi, lyricsPreventDragMaximize } from "./ui.js";
 
-const LYRICS_IDLE_LINE1 = "播放完成";
-const LYRICS_IDLE_LINE2 = "选择下一首继续聆听";
+const LYRICS_IDLE_LINE1 = "CloudPlayer";
+const LYRICS_IDLE_LINE2 = "让音乐陪你此刻";
 
 async function initLyricsWindow() {
   try {
@@ -48,6 +48,7 @@ async function initLyricsWindow() {
     desktopLyricsState.lyAnchor = {
       line1: line1 || LYRICS_IDLE_LINE1,
       line2: line2 || LYRICS_IDLE_LINE2,
+      idleMode: !!payload.idleMode,
       activeSlot: activeSlot === 2 ? 2 : 1,
       line1StartT: Number(payload.line1StartT ?? payload.line1_start_t) || 0,
       line1EndT: Number(payload.line1EndT ?? payload.line1_end_t) || 0,

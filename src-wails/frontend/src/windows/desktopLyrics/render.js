@@ -94,12 +94,11 @@ export function animateLyrics() {
     // Use authoritative audio time from the main player to avoid local drift while paused.
     const currentTime = anchor.audioNow;
 
-    const idleMain = String(anchor.line1 || "").trim();
-    const idleSub = String(anchor.line2 || "").trim();
-    const isIdleSlogan = idleMain === "播放完成" && idleSub === "选择下一首继续聆听";
+    const isIdleSlogan = !!anchor.idleMode;
     if (isIdleSlogan) {
-      setSpansRawColor("line1", "var(--ly-text)");
-      setSpansRawColor("line2", "var(--ly-text)");
+      const highlight = charColor(1);
+      setSpansRawColor("line1", highlight);
+      setSpansRawColor("line2", highlight);
       requestAnimationFrame(animateLyrics);
       return;
     }

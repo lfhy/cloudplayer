@@ -1,6 +1,6 @@
 // Settings form helpers keep normalization and baseline defaults separate from controller side effects.
-export const DEFAULT_LYRICS_IDLE_LINE1 = "播放完成";
-export const DEFAULT_LYRICS_IDLE_LINE2 = "选择下一首继续聆听";
+export const DEFAULT_LYRICS_IDLE_LINE1 = "CloudPlayer";
+export const DEFAULT_LYRICS_IDLE_LINE2 = "让音乐陪你此刻";
 
 export function settingsFormBaselineDefaults() {
   return {
@@ -41,4 +41,3 @@ export function normalizeLyricsIdleLine(raw, fallback) {
   if (!value) return fallback;
   return Array.from(value).slice(0, 36).join("").trim() || fallback;
 }
-

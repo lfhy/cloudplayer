@@ -1,6 +1,6 @@
 // Lyrics model helpers stay pure so the window controller can focus on side effects.
-const LYRICS_IDLE_LINE1 = "播放完成";
-const LYRICS_IDLE_LINE2 = "选择下一首继续聆听";
+const LYRICS_IDLE_LINE1 = "CloudPlayer";
+const LYRICS_IDLE_LINE2 = "让音乐陪你此刻";
 
 export function parseLrc(text) {
   const lines = [];
@@ -43,7 +43,7 @@ export function lyricDisplayForDesktop({ currentTrack, currentTime, lrcEntries, 
   const idleLine1Text = String(idleLine1 || LYRICS_IDLE_LINE1).trim() || LYRICS_IDLE_LINE1;
   const idleLine2Text = String(idleLine2 || LYRICS_IDLE_LINE2).trim() || LYRICS_IDLE_LINE2;
   if (!currentTrack) {
-    return { line1: idleLine1Text, line2: idleLine2Text, activeSlot: 1, line1StartT: 0, line1EndT: 1, line2StartT: 0, line2EndT: 1, line1Words: null, line2Words: null, audioNow: now };
+    return { line1: idleLine1Text, line2: idleLine2Text, idleMode: true, activeSlot: 1, line1StartT: 0, line1EndT: 1, line2StartT: 0, line2EndT: 1, line1Words: null, line2Words: null, audioNow: now };
   }
   if (!lrcEntries.length) {
     return { line1: currentTrack.title || "—", line2: currentTrack.artist || "在线试听", activeSlot: 1, line1StartT: 0, line1EndT: 1, line2StartT: 0, line2EndT: 1, line1Words: null, line2Words: null, audioNow: now };
