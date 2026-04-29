@@ -122,12 +122,16 @@ func (s *CloudPlayerService) ReplacePlaylistImportItems(playlistID int64, items 
 		return err
 	}
 	for index, item := range items {
+		durationMS := item.DurationMS
+		if durationMS < 0 {
+			durationMS = 0
+		}
 		if _, err := tx.Exec(`
 			INSERT INTO playlist_import_items (
 				playlist_id, sort_order, title, artist, album, play_url, pjmp3_source_id,
 				cover_url, cover_cache_path, duration_ms, audio_cache_path
-			) VALUES (?, ?, ?, ?, ?, '', '', '', '', 0, '')
-		`, playlistID, index, strings.TrimSpace(item.Title), strings.TrimSpace(item.Artist), strings.TrimSpace(item.Album)); err != nil {
+			) VALUES (?, ?, ?, ?, ?, '', ?, ?, '', ?, '')
+		`, playlistID, index, strings.TrimSpace(item.Title), strings.TrimSpace(item.Artist), strings.TrimSpace(item.Album), strings.TrimSpace(item.Pjmp3SourceID), strings.TrimSpace(item.CoverURL), durationMS); err != nil {
 			return err
 		}
 	}
@@ -154,12 +158,16 @@ func (s *CloudPlayerService) AppendPlaylistImportItems(playlistID int64, items [
 		return err
 	}
 	for _, item := range items {
+		durationMS := item.DurationMS
+		if durationMS < 0 {
+			durationMS = 0
+		}
 		if _, err := tx.Exec(`
 			INSERT INTO playlist_import_items (
 				playlist_id, sort_order, title, artist, album, play_url, pjmp3_source_id,
 				cover_url, cover_cache_path, duration_ms, audio_cache_path
-			) VALUES (?, ?, ?, ?, ?, '', '', '', '', 0, '')
-		`, playlistID, position, strings.TrimSpace(item.Title), strings.TrimSpace(item.Artist), strings.TrimSpace(item.Album)); err != nil {
+			) VALUES (?, ?, ?, ?, ?, '', ?, ?, '', ?, '')
+		`, playlistID, position, strings.TrimSpace(item.Title), strings.TrimSpace(item.Artist), strings.TrimSpace(item.Album), strings.TrimSpace(item.Pjmp3SourceID), strings.TrimSpace(item.CoverURL), durationMS); err != nil {
 			return err
 		}
 		position++

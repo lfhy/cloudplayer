@@ -61,7 +61,16 @@ export function createContextMenuController(deps) {
       if (playlist.id == null) return;
       hasPlaylist = true;
       addMenu.sub.appendChild(cmBtn((playlist.name || "").trim() || `#${playlist.id}`, async () => {
-        await invoke("append_playlist_import_items", { playlistId: playlist.id, items: [{ title: row.title, artist: row.artist || "", album: row.album || "" }] });
+        await invoke("append_playlist_import_items", {
+          playlistId: playlist.id,
+          items: [{
+            title: row.title,
+            artist: row.artist || "",
+            album: row.album || "",
+            pjmp3_source_id: row.source_id || "",
+            cover_url: row.cover_url || "",
+          }],
+        });
         await refreshSidebarPlaylists();
       }));
     });
@@ -137,7 +146,17 @@ export function createContextMenuController(deps) {
       if (playlist.id == null || (getSelectedPlaylistId() != null && Number(playlist.id) === Number(getSelectedPlaylistId()))) return;
       hasPlaylist = true;
       addMenu.sub.appendChild(cmBtn((playlist.name || "").trim() || `#${playlist.id}`, async () => {
-        await invoke("append_playlist_import_items", { playlistId: playlist.id, items: [{ title: row.title, artist: row.artist || "", album: row.album || "" }] });
+        await invoke("append_playlist_import_items", {
+          playlistId: playlist.id,
+          items: [{
+            title: row.title,
+            artist: row.artist || "",
+            album: row.album || "",
+            pjmp3_source_id: row.pjmp3_source_id || "",
+            cover_url: row.cover_url || "",
+            duration_ms: row.duration_ms || 0,
+          }],
+        });
         await refreshSidebarPlaylists();
       }));
     });

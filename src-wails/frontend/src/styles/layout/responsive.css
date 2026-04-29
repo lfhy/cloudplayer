@@ -28,4 +28,15 @@
     white-space: normal;
     text-align: left;
   }
+
+  .search-results-topbar__side,
+  .search-results-actions {
+    align-items: stretch;
+    width: 100%;
+  }
+
+  .search-results-actions {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
 }

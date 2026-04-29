@@ -150,7 +150,16 @@ export function createContextMenuHelpers(deps) {
       const name = window.prompt("歌单名称（将写入 library.db）", "新歌单");
       if (!name || !name.trim()) return;
       const playlistId = await invoke("create_playlist", { name: name.trim() });
-      await invoke("append_playlist_import_items", { playlistId, items: [{ title: track.title, artist: track.artist || "", album: track.album || "" }] });
+      await invoke("append_playlist_import_items", {
+        playlistId,
+        items: [{
+          title: track.title,
+          artist: track.artist || "",
+          album: track.album || "",
+          pjmp3_source_id: track.sourceId || "",
+          cover_url: track.coverUrl || "",
+        }],
+      });
       await refreshSidebarPlaylists();
       await refreshPlaylistSelect();
     }));

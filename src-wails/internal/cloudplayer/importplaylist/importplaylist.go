@@ -8,9 +8,12 @@ import (
 
 // ImportedTrackDTO is the normalized playlist import item used across multiple import paths.
 type ImportedTrackDTO struct {
-	Title  string `json:"title"`
-	Artist string `json:"artist"`
-	Album  string `json:"album"`
+	Title         string `json:"title"`
+	Artist        string `json:"artist"`
+	Album         string `json:"album"`
+	Pjmp3SourceID string `json:"pjmp3_source_id,omitempty"`
+	CoverURL      string `json:"cover_url,omitempty"`
+	DurationMS    int64  `json:"duration_ms,omitempty"`
 }
 
 var linePrefixRE = regexp.MustCompile(`^\s*(?:\d+[.)]\s*|\d+\s+)`)
