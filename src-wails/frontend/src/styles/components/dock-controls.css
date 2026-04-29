@@ -49,6 +49,7 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  transform-origin: 50% 50%;
   transition: background 0.15s ease, border-color 0.15s ease, transform 0.1s ease, color 0.15s ease;
 }
 
@@ -96,6 +97,7 @@
   flex-shrink: 0;
   fill: currentColor;
   pointer-events: none;
+  transform-origin: 50% 50%;
 }
 
 .dock-tbtn--main {
@@ -105,7 +107,7 @@
 }
 
 .dock-tbtn--main:active:not(:disabled) {
-  transform: none;
+  transform: scale(0.972);
 }
 
 /* Optical centering tweak: the play triangle appears slightly left-heavy otherwise. */
