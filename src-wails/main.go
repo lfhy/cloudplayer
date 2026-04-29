@@ -113,9 +113,9 @@ func main() {
 			log.Printf("global hotkeys init failed: %v", err)
 		}
 	})
-	// macOS dock icon click should always restore and focus the main window.
+	// macOS dock icon click toggles main window visibility/minimise state.
 	app.Event.OnApplicationEvent(events.Mac.ApplicationShouldHandleReopen, func(_ *application.ApplicationEvent) {
-		showMainWindow()
+		toggleMainWindowFromDock()
 	})
 
 	trayMenu := app.NewMenu()
@@ -155,6 +155,18 @@ func showMainWindow() {
 	window.UnMinimise()
 	window.Show()
 	window.Focus()
+}
+
+func toggleMainWindowFromDock() {
+	window, ok := application.Get().Window.GetByName("main")
+	if !ok {
+		return
+	}
+	if window.IsVisible() && !window.IsMinimised() {
+		window.Minimise()
+		return
+	}
+	showMainWindow()
 }
 
 func mediaHandler(next http.Handler) http.Handler {
