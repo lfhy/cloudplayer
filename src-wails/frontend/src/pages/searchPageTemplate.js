@@ -80,7 +80,7 @@ export function searchPageTemplate() {
                 <button type="button" id="btn-search-batch-mode" class="btn-accent search-action-btn">批量操作</button>
                 <button type="button" id="btn-search-select-all" class="btn-accent search-action-btn" hidden>全选</button>
                 <button type="button" id="btn-search-add-selected" class="btn-accent search-action-btn" hidden disabled>添加到歌单</button>
-                <button type="button" id="btn-search-batch-done" class="btn-ghost search-action-btn" hidden>完成</button>
+                <button type="button" id="btn-search-batch-done" class="btn-accent search-action-btn" hidden>完成</button>
               </div>
             </div>
           </div>

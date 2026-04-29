@@ -62,6 +62,44 @@
 .col-check input {
   width: 16px;
   height: 16px;
+  margin: 0;
+  appearance: none;
+  -webkit-appearance: none;
+  border: 1px solid rgba(var(--accent-rgb), 0.45);
+  border-radius: 4px;
+  background: var(--bg-card);
+  display: inline-grid;
+  place-content: center;
+  cursor: pointer;
+  transition: background-color 120ms ease, border-color 120ms ease, box-shadow 120ms ease;
+}
+
+.search-row-check input::before,
+.col-check input::before {
+  content: "";
+  width: 8px;
+  height: 8px;
+  border-radius: 2px;
+  background: #fff;
+  transform: scale(0);
+  transition: transform 120ms ease;
+}
+
+.search-row-check input:checked,
+.col-check input:checked {
+  background: var(--accent);
+  border-color: var(--accent);
+}
+
+.search-row-check input:checked::before,
+.col-check input:checked::before {
+  transform: scale(1);
+}
+
+.search-row-check input:focus-visible,
+.col-check input:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(var(--accent-rgb), 0.24);
 }
 
 .search-table tbody tr.is-selected {
