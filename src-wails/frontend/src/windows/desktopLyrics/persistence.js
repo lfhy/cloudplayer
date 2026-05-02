@@ -51,6 +51,7 @@ export async function persistScale(next) {
 }
 
 export async function applyCursorPassthrough(locked) {
+  const seq = ++desktopLyricsState.cursorPassthroughSeq;
   try {
     if (locked) {
       await lyricsWin.setIgnoreCursorEvents(true, { forward: true });
@@ -59,5 +60,16 @@ export async function applyCursorPassthrough(locked) {
     await lyricsWin.setIgnoreCursorEvents(false);
   } catch (error) {
     console.warn("setIgnoreCursorEvents", error);
+  }
+  if (locked) return;
+  // Wails/macOS occasionally needs a second pass before the webview starts
+  // receiving hover events again after being click-through.
+  for (const delayMs of [50, 180]) {
+    window.setTimeout(() => {
+      if (desktopLyricsState.lyricsLocked || desktopLyricsState.cursorPassthroughSeq !== seq) return;
+      void lyricsWin.setIgnoreCursorEvents(false).catch((error) => {
+        console.warn("setIgnoreCursorEvents retry", error);
+      });
+    }, delayMs);
   }
 }

@@ -10,6 +10,7 @@ export const desktopLyricsState = {
   scale: 1,
   lyricsLocked: true,
   persistTimer: null,
+  cursorPassthroughSeq: 0,
   lyAnchor: null,
   builtLine1: "",
   builtLine2: "",

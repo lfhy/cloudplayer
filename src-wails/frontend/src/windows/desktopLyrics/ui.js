@@ -16,6 +16,19 @@ export function applyLyricsLockUi(locked) {
     else dragRegionEl.setAttribute("data-tauri-drag-region", "");
   }
   void applyCursorPassthrough(desktopLyricsState.lyricsLocked);
+  refreshLyricsHoverUi();
+}
+
+export function setLyricsHoverUi(hovered) {
+  document.body.classList.toggle("lyrics-hovering", !!hovered && !desktopLyricsState.lyricsLocked);
+}
+
+export function refreshLyricsHoverUi() {
+  if (desktopLyricsState.lyricsLocked) {
+    document.body.classList.remove("lyrics-hovering");
+    return;
+  }
+  setLyricsHoverUi(!!frameEl?.matches(":hover"));
 }
 
 export function lyricsPreventDragMaximize(event) {

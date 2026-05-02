@@ -5,7 +5,7 @@ import { applyLyricColors } from "./colors.js";
 import { schedulePersistBounds, persistScale, requestMainLyricsSync } from "./persistence.js";
 import { animateLyrics } from "./render.js";
 import { frameEl, MAIN_WW, desktopLyricsState, lyricsWin } from "./state.js";
-import { applyLyricsLockUi, lyricsPreventDragMaximize } from "./ui.js";
+import { applyLyricsLockUi, refreshLyricsHoverUi, setLyricsHoverUi, lyricsPreventDragMaximize } from "./ui.js";
 
 const LYRICS_IDLE_LINE1 = "CloudPlayer";
 const LYRICS_IDLE_LINE2 = "让音乐陪你此刻";
@@ -25,6 +25,7 @@ async function initLyricsWindow() {
     if (line2El) line2El.textContent = idleLine2 || LYRICS_IDLE_LINE2;
     const locked = settings && typeof settings.desktop_lyrics_locked === "boolean" ? settings.desktop_lyrics_locked : true;
     applyLyricsLockUi(locked);
+    refreshLyricsHoverUi();
     applyLyricColors(
       settings?.desktop_lyrics_color_base ?? settings?.desktopLyricsColorBase ?? "#ffffff",
       settings?.desktop_lyrics_color_highlight ?? settings?.desktopLyricsColorHighlight ?? "#ffb7d4"
@@ -138,6 +139,7 @@ function wireLyricsWindowControls() {
     true
   );
   frameEl?.addEventListener("dblclick", lyricsPreventDragMaximize, true);
+  wireLyricsHoverTracking();
 
   const lockBtnEl = document.getElementById("btn-ly-lock");
   if (lockBtnEl) {
@@ -206,6 +208,25 @@ function wireLyricsWindowControls() {
     hideContextMenu();
     await requestLockLyricsWindow();
   });
+}
+
+function wireLyricsHoverTracking() {
+  const syncHover = () => {
+    if (desktopLyricsState.lyricsLocked) return;
+    setLyricsHoverUi(!!frameEl?.matches(":hover"));
+  };
+  frameEl?.addEventListener("pointerenter", () => {
+    setLyricsHoverUi(true);
+  });
+  frameEl?.addEventListener("pointermove", syncHover);
+  frameEl?.addEventListener("pointerleave", () => {
+    setLyricsHoverUi(false);
+  });
+  window.addEventListener("focus", syncHover);
+  document.addEventListener("visibilitychange", () => {
+    if (!document.hidden) syncHover();
+  });
+  window.setTimeout(syncHover, 120);
 }
 
 export function bootstrapDesktopLyricsWindow() {
