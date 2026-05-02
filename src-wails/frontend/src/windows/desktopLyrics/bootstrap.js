@@ -5,6 +5,7 @@ import { applyLyricColors } from "./colors.js";
 import { schedulePersistBounds, persistScale, requestMainLyricsSync } from "./persistence.js";
 import { animateLyrics } from "./render.js";
 import { frameEl, MAIN_WW, desktopLyricsState, lyricsWin } from "./state.js";
+import { openDesktopLyricsContextMenuWindow } from "./contextMenuWindow.js";
 import { applyLyricsLockUi, refreshLyricsHoverUi, setLyricsHoverUi, lyricsPreventDragMaximize } from "./ui.js";
 
 const LYRICS_IDLE_LINE1 = "CloudPlayer";
@@ -73,6 +74,12 @@ async function initLyricsWindow() {
     setLyricsHoverUi(!!payload.hovered);
   });
 
+  await lyricsWin.listen("desktop-lyrics-scale-step", (event) => {
+    const delta = Number(event?.payload?.delta ?? 0);
+    if (!delta) return;
+    void persistScale(desktopLyricsState.scale + delta);
+  });
+
   const unMove = await lyricsWin.onMoved(() => {
     schedulePersistBounds();
   });
@@ -97,32 +104,8 @@ async function initLyricsWindow() {
 }
 
 function wireLyricsWindowControls() {
-  const contextMenuEl = document.getElementById("ly-context-menu");
   const closeBtnEl = document.getElementById("ly-close");
   const replaceBtnEl = document.getElementById("ly-replace");
-
-  function hideContextMenu() {
-    if (contextMenuEl) contextMenuEl.hidden = true;
-  }
-
-  function showContextMenu(clientX, clientY) {
-    if (!contextMenuEl) return;
-    contextMenuEl.hidden = false;
-    contextMenuEl.style.visibility = "hidden";
-    contextMenuEl.style.left = "0px";
-    contextMenuEl.style.top = "0px";
-    // Measure the real menu size before clamping it into the lyrics window.
-    window.requestAnimationFrame(() => {
-      if (!contextMenuEl || contextMenuEl.hidden) return;
-      const safeInset = 12;
-      const rect = contextMenuEl.getBoundingClientRect();
-      const maxX = Math.max(safeInset, window.innerWidth - rect.width - safeInset);
-      const maxY = Math.max(safeInset, window.innerHeight - rect.height - safeInset);
-      contextMenuEl.style.left = `${Math.min(Math.max(clientX, safeInset), maxX)}px`;
-      contextMenuEl.style.top = `${Math.min(Math.max(clientY, safeInset), maxY)}px`;
-      contextMenuEl.style.visibility = "visible";
-    });
-  }
 
   async function requestOpenLyricsReplace() {
     try {
@@ -212,35 +195,7 @@ function wireLyricsWindowControls() {
     if (desktopLyricsState.lyricsLocked) return;
     event.preventDefault();
     event.stopPropagation();
-    showContextMenu(event.clientX, event.clientY);
-  });
-  document.addEventListener("pointerdown", (event) => {
-    if (!contextMenuEl || contextMenuEl.hidden) return;
-    if (event.target instanceof Node && contextMenuEl.contains(event.target)) return;
-    hideContextMenu();
-  });
-  window.addEventListener("blur", hideContextMenu);
-  window.addEventListener("resize", hideContextMenu);
-
-  document.getElementById("ly-menu-replace")?.addEventListener("click", async () => {
-    hideContextMenu();
-    await requestOpenLyricsReplace();
-  });
-  document.getElementById("ly-menu-close")?.addEventListener("click", async () => {
-    hideContextMenu();
-    await requestCloseLyricsWindow();
-  });
-  document.getElementById("ly-menu-minus")?.addEventListener("click", () => {
-    hideContextMenu();
-    void persistScale(desktopLyricsState.scale - 0.08);
-  });
-  document.getElementById("ly-menu-plus")?.addEventListener("click", () => {
-    hideContextMenu();
-    void persistScale(desktopLyricsState.scale + 0.08);
-  });
-  document.getElementById("ly-menu-lock")?.addEventListener("click", async () => {
-    hideContextMenu();
-    await requestLockLyricsWindow();
+    void openDesktopLyricsContextMenuWindow(event.screenX, event.screenY);
   });
 }
 
