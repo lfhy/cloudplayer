@@ -68,6 +68,11 @@ async function initLyricsWindow() {
     applyLyricsLockUi(locked);
   });
 
+  await lyricsWin.listen("desktop-lyrics-hover-state", (event) => {
+    const payload = event?.payload ?? {};
+    setLyricsHoverUi(!!payload.hovered);
+  });
+
   const unMove = await lyricsWin.onMoved(() => {
     schedulePersistBounds();
   });

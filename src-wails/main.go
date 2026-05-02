@@ -35,6 +35,7 @@ func main() {
 	state.AppTheme = initialSettings.AppTheme
 	state.AppThemeCustomAccent = initialSettings.AppThemeCustomAccent
 	state.StartBackgroundWorkers()
+	startDesktopLyricsHoverTracking()
 	cloudPlayer := NewCloudPlayerService(state)
 	desktop := &DesktopService{}
 
