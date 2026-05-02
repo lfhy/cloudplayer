@@ -272,6 +272,7 @@ export function createLyricsController(deps) {
     currentPlayableKey,
     ensureLrcLoadedForCurrentTrack,
     openDesktopLyricsFromSettingsIfNeeded: windows.openDesktopLyricsFromSettingsIfNeeded,
+    closeDesktopLyrics: windows.closeDesktopLyrics,
     openLyricsReplaceWindow: windows.openLyricsReplaceWindow,
     refreshLyricsLockMenuLabel,
     scheduleDesktopLyricsStateSync: windows.scheduleDesktopLyricsStateSync,

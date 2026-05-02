@@ -267,6 +267,12 @@
         </svg>
       </button>
       <div class="ly-toolbar" id="ly-toolbar">
+        <button type="button" class="ly-tool" id="ly-close" title="关闭歌词" aria-label="关闭歌词">
+          <svg class="ly-icon" viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M6.5 6.5 17.5 17.5"></path>
+            <path d="M17.5 6.5 6.5 17.5"></path>
+          </svg>
+        </button>
         <button type="button" class="ly-tool" id="ly-replace" title="更换歌词" aria-label="更换歌词">
           <svg class="ly-icon" viewBox="0 0 24 24" aria-hidden="true">
             <path d="M20 11a8 8 0 1 1-2.34-5.66"></path>
@@ -293,6 +299,7 @@
       </div>
     </div>
     <div id="ly-context-menu" class="ly-menu" hidden>
+      <button type="button" id="ly-menu-close" class="ly-menu-item">关闭歌词</button>
       <button type="button" id="ly-menu-replace" class="ly-menu-item">更换歌词</button>
       <button type="button" id="ly-menu-minus" class="ly-menu-item">缩小字号</button>
       <button type="button" id="ly-menu-plus" class="ly-menu-item">放大字号</button>

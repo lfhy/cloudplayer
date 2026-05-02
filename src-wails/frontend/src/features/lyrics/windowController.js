@@ -210,11 +210,22 @@ export function createLyricsWindowController(deps) {
     });
   }
 
+  async function closeDesktopLyrics() {
+    const existing = getDesktopLyricsWindow() || (await WebviewWindow.getByLabel("lyrics"));
+    if (existing) setDesktopLyricsWindow(existing);
+    if (existing && (await existing.isVisible())) {
+      await existing.hide();
+    }
+    setDesktopLyricsOpen(false);
+    await setDockLyricsActive(false);
+    await persistDesktopLyricsVisible(false);
+  }
+
   return {
     openDesktopLyricsFromSettingsIfNeeded,
     openLyricsReplaceWindow,
+    closeDesktopLyrics,
     scheduleDesktopLyricsStateSync,
     toggleDesktopLyrics,
   };
 }
-

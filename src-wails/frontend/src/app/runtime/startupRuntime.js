@@ -31,6 +31,7 @@ export function startDesktopRuntime(deps) {
     onSystemThemeChange: () => {},
     openLyricsReplaceWindow: deps.player.openLyricsReplaceWindow,
     openCloseConfirmModal: deps.settings.openCloseConfirmModal,
+    player: deps.player,
     refreshLyricsLockMenuLabel: deps.player.refreshLyricsLockMenuLabel,
     renderDailyTable: deps.renderDailyTable,
     renderImportTable: deps.renderImportTable,

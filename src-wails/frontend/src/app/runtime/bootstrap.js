@@ -22,6 +22,7 @@ export function bootCloudPlayerApp(deps) {
     loadRecentPlaysFromDb,
     loadSettings,
     lyricsReplaceTarget,
+    player,
     mainWindowCloseAction,
     normalizeAppThemeMode,
     onDownloadTaskChanged,
@@ -141,6 +142,11 @@ export function bootCloudPlayerApp(deps) {
     });
     listen("desktop-lyrics-open-replace", async () => {
       await openLyricsReplaceWindow();
+    });
+    listen("desktop-lyrics-close-request", async () => {
+      if (typeof player.closeDesktopLyrics === "function") {
+        await player.closeDesktopLyrics();
+      }
     });
     if (systemDarkMedia && typeof systemDarkMedia.addEventListener === "function") {
       systemDarkMedia.addEventListener("change", () => {

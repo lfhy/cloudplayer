@@ -98,6 +98,7 @@ async function initLyricsWindow() {
 
 function wireLyricsWindowControls() {
   const contextMenuEl = document.getElementById("ly-context-menu");
+  const closeBtnEl = document.getElementById("ly-close");
   const replaceBtnEl = document.getElementById("ly-replace");
 
   function hideContextMenu() {
@@ -118,6 +119,14 @@ function wireLyricsWindowControls() {
       await emitTo(MAIN_WW, "desktop-lyrics-open-replace", {});
     } catch (error) {
       console.warn("emit desktop-lyrics-open-replace fail", error);
+    }
+  }
+
+  async function requestCloseLyricsWindow() {
+    try {
+      await emitTo(MAIN_WW, "desktop-lyrics-close-request", {});
+    } catch (error) {
+      console.warn("emit desktop-lyrics-close-request fail", error);
     }
   }
 
@@ -145,6 +154,12 @@ function wireLyricsWindowControls() {
   );
   frameEl?.addEventListener("dblclick", lyricsPreventDragMaximize, true);
   wireLyricsHoverTracking();
+
+  closeBtnEl?.addEventListener("click", async (event) => {
+    event.preventDefault();
+    event.stopPropagation();
+    await requestCloseLyricsWindow();
+  });
 
   const lockBtnEl = document.getElementById("btn-ly-lock");
   if (lockBtnEl) {
@@ -200,6 +215,10 @@ function wireLyricsWindowControls() {
   document.getElementById("ly-menu-replace")?.addEventListener("click", async () => {
     hideContextMenu();
     await requestOpenLyricsReplace();
+  });
+  document.getElementById("ly-menu-close")?.addEventListener("click", async () => {
+    hideContextMenu();
+    await requestCloseLyricsWindow();
   });
   document.getElementById("ly-menu-minus")?.addEventListener("click", () => {
     hideContextMenu();
