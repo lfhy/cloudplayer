@@ -73,9 +73,12 @@ func desktopLyricsWindowHovered() bool {
 	winX, winY := window.Position()
 	winW, winH := window.Size()
 	scale := float64(screen.ScaleFactor)
+	winW = int(math.Round(float64(winW) * scale))
+	winH = int(math.Round(float64(winH) * scale))
 	hoverX := int(math.Round(mouseX * scale))
 	hoverY := int(math.Round((float64(screenBounds.Height) - (mouseY - float64(screenBounds.Y))) * scale))
-	return hoverX >= winX && hoverX < winX+winW && hoverY >= winY && hoverY < winY+winH
+	pad := int(math.Round(14 * scale))
+	return hoverX >= winX-pad && hoverX < winX+winW+pad && hoverY >= winY-pad && hoverY < winY+winH+pad
 }
 
 func currentMouseLocation() (float64, float64) {
