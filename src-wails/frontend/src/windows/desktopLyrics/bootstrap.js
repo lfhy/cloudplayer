@@ -195,7 +195,7 @@ function wireLyricsWindowControls() {
     if (desktopLyricsState.lyricsLocked) return;
     event.preventDefault();
     event.stopPropagation();
-    void openDesktopLyricsContextMenuWindow(event.screenX, event.screenY);
+    void openDesktopLyricsContextMenuWindow(event.clientX, event.clientY);
   });
 }
 
