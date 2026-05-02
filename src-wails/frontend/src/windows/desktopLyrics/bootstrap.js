@@ -108,10 +108,12 @@ function wireLyricsWindowControls() {
   function showContextMenu(clientX, clientY) {
     if (!contextMenuEl) return;
     contextMenuEl.hidden = false;
-    const maxX = Math.max(4, window.innerWidth - contextMenuEl.offsetWidth - 4);
-    const maxY = Math.max(4, window.innerHeight - contextMenuEl.offsetHeight - 4);
-    contextMenuEl.style.left = `${Math.max(4, Math.min(clientX, maxX))}px`;
-    contextMenuEl.style.top = `${Math.max(4, Math.min(clientY, maxY))}px`;
+    // Keep menu away from rounded window edges so it won't be visually clipped.
+    const safeInset = 16;
+    const maxX = Math.max(safeInset, window.innerWidth - contextMenuEl.offsetWidth - safeInset);
+    const maxY = Math.max(safeInset, window.innerHeight - contextMenuEl.offsetHeight - safeInset);
+    contextMenuEl.style.left = `${Math.max(safeInset, Math.min(clientX, maxX))}px`;
+    contextMenuEl.style.top = `${Math.max(safeInset, Math.min(clientY, maxY))}px`;
   }
 
   async function requestOpenLyricsReplace() {
