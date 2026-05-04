@@ -102,7 +102,7 @@ const pages = createPageRuntime({
   refreshLocalLibraryTable: (...args) => player.refreshLocalLibraryTable(...args), refreshQuickThemeModeUi: (...args) => refreshQuickThemeModeUi(...args), renderDownloadQueueTable: (...args) => player.renderDownloadQueueTable(...args),
   renderQueuePanel: (...args) => renderQueuePanel(...args), renderRecentPlaysTable: (...args) => renderRecentPlaysTable(...args), resetImportFlow: settings.resetImportFlow, searchState,
   refreshKugouSettingsStatus: (...args) => settings.refreshKugouSettingsStatus(...args),
-  setImportDraft: settings.setImportDraft, setImportMethod: settings.setImportMethod, setImportStep: settings.setImportStep, setLastLibraryFolder: (value) => { lastLibraryFolder = value; },
+  setImportDraft: settings.setImportDraft, setImportConfigHeader: settings.setImportConfigHeader, setImportMethod: settings.setImportMethod, setImportStep: settings.setImportStep, setLastLibraryFolder: (value) => { lastLibraryFolder = value; },
   setNeteaseCookieState: ({ enabled, value }) => { neteaseCookieEnabled = !!enabled; neteaseCookieValue = String(value || ""); }, setPlayQueue: (rows) => { playQueue = Array.isArray(rows) ? rows : []; },
   setTableMutedMessage,
   setPlaylistDetailRows: (rows) => { playlistDetailRows = Array.isArray(rows) ? rows : []; }, setSelectedPlaylist: (id, name) => { selectedPlaylistId = id; selectedPlaylistName = name || ""; },

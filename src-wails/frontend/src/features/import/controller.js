@@ -33,6 +33,7 @@ export function createImportPageController(deps) {
     escapeHtml,
     invoke,
     refreshPlaylistSelect,
+    setImportConfigHeader: deps.setImportConfigHeader,
     setImportDraft,
   });
 

@@ -62,6 +62,13 @@ export function createImportFlowHelpers(deps) {
     if (syncStep) setImportStep(method ? "config" : getImportTracks().length > 0 ? "result" : "choose");
   }
 
+  function setImportConfigHeader(titleText = "", descText = "") {
+    const title = document.getElementById("import-config-title");
+    const desc = document.getElementById("import-config-desc");
+    if (title) title.textContent = String(titleText || "");
+    if (desc) desc.textContent = String(descText || "");
+  }
+
   function showImportResultStage(show = true) {
     setImportStep(show ? "result" : getImportMethod() ? "config" : "choose");
   }
@@ -95,6 +102,7 @@ export function createImportFlowHelpers(deps) {
 
   return {
     resetImportFlow,
+    setImportConfigHeader,
     setImportDraft,
     setImportMethod,
     setImportStep,

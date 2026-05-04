@@ -3,7 +3,7 @@ import { proxyRemoteAssetSrc } from "../../wails/tauri-core.js";
 
 // Kugou import controller owns login-mode switching and playlist selection inside the import page.
 export function createImportKugouController(deps) {
-  const { alertRequestFailed, escapeHtml, invoke, setImportDraft, refreshPlaylistSelect } = deps;
+  const { alertRequestFailed, escapeHtml, invoke, setImportConfigHeader, setImportDraft, refreshPlaylistSelect } = deps;
   const session = createKugouSessionBridge({ alertRequestFailed, invoke });
   let selectedIDs = new Set();
 
@@ -45,6 +45,10 @@ export function createImportKugouController(deps) {
       headCopy.textContent = visible
         ? "登录酷狗概念版后勾选要同步的歌单，导入结果会统一进入保存步骤。"
         : "当前账号已连接，可直接刷新并勾选要导入的歌单。";
+    }
+    if (setImportConfigHeader) {
+      if (visible) setImportConfigHeader("导入酷狗歌单", "登录酷狗概念版后勾选要同步的歌单，导入结果会统一进入保存步骤。");
+      else setImportConfigHeader("", "");
     }
   }
 
