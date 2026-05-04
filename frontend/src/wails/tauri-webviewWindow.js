@@ -1,5 +1,5 @@
 import { Events, Window as RuntimeWindow } from "@wailsio/runtime";
-import { DesktopService } from "../../bindings/cloudplayer/index.js";
+import { DesktopService } from "@bindings/cloudplayer/backend/cloudplayer/index.js";
 import { currentWindowLabel, emitPseudo, getWindowInfo, onPseudo } from "./shared.js";
 
 function unwrap(event) {

@@ -24,6 +24,18 @@
 - Keep service methods grouped by feature instead of one large service file.
 - Shared parsing, normalization, and transport helpers should live in dedicated helper files.
 
+## Build Outputs
+
+- Do not write compiled binaries or build artifacts to the `src-wails` repository root.
+- Route local Go and Wails build outputs to `bin/` or tool-managed build directories instead.
+- Do not add ignore rules that broadly match source package directory names such as `cloudplayer`.
+- If a root-level build artifact must be ignored, use an anchored path rule that cannot match source directories.
+
+## Git Workflow
+
+- When the user explicitly asks for a commit, stage the relevant changes and create a normal non-amended commit.
+- Do not include root-level compiled binaries or other transient build artifacts in commits.
+
 ## Validation
 
 - After each meaningful refactor batch, run the narrowest useful validation first.
