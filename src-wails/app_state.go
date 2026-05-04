@@ -21,6 +21,7 @@ type AppState struct {
 	HTTPClient           *http.Client
 	HTTPJar              http.CookieJar
 	SearchCache          *SearchCache
+	LyricsCache          *LyricsCache
 	SearchCacheTTL       time.Duration
 	RateLimiter          *ratelimiter.Limiter
 	DownloadCh           chan download.DownloadJob
@@ -38,6 +39,7 @@ func NewAppState(db *sql.DB) *AppState {
 		HTTPClient:     client,
 		HTTPJar:        jar,
 		SearchCache:    NewSearchCache(),
+		LyricsCache:    NewLyricsCache(),
 		SearchCacheTTL: 24 * time.Hour,
 		RateLimiter:    ratelimiter.New(45),
 		DownloadCh:     make(chan download.DownloadJob, 64),

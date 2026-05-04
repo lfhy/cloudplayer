@@ -16,11 +16,18 @@ func (s *CloudPlayerService) FetchSongLRCEnriched(req lyrics.FetchRequest) (*lyr
 	s.state.RateLimiter.AcquireSlot()
 	artist := strings.TrimSpace(req.Artist)
 	title := strings.TrimSpace(req.Title)
+	cacheKey := LyricsCacheKey(req)
 	sourceID := ""
 	if req.PJMP3SourceID != nil {
 		sourceID = strings.TrimSpace(*req.PJMP3SourceID)
 	}
 	trace := lyricTraceEnabled()
+	if cached, ok := s.state.LyricsCache.Get(cacheKey); ok {
+		if trace {
+			log.Printf("FetchSongLRCEnriched cache hit: key=%q source=%q artist=%q title=%q", cacheKey, sourceID, artist, title)
+		}
+		return &cached, nil
+	}
 	if trace {
 		log.Printf("FetchSongLRCEnriched request: source=%q artist=%q title=%q", sourceID, artist, title)
 	}
@@ -39,6 +46,9 @@ func (s *CloudPlayerService) FetchSongLRCEnriched(req lyrics.FetchRequest) (*lyr
 	}
 	if trace {
 		log.Printf("FetchSongLRCEnriched ok: source=%q artist=%q title=%q lrcChars=%d wordLines=%d", sourceID, artist, title, len(payload.LRCText), len(payload.WordLines))
+	}
+	if payload.LRCText != "" || len(payload.WordLines) > 0 {
+		s.state.LyricsCache.Set(cacheKey, *payload, s.state.SearchCacheTTL)
 	}
 	return payload, nil
 }
