@@ -2,6 +2,8 @@
 export function createPlaylistManageModal(deps) {
   const { alertRequestFailed, invoke, onChanged } = deps;
   let state = { mode: "create", playlistId: null, playlistName: "" };
+  let wired = false;
+  let submitting = false;
 
   function modalEl() { return document.getElementById("playlist-manage-modal"); }
   function titleEl() { return document.getElementById("playlist-manage-title"); }
@@ -43,6 +45,7 @@ export function createPlaylistManageModal(deps) {
   }
 
   function close() {
+    if (submitting) return;
     modalEl()?.setAttribute("hidden", "true");
     modalEl()?.setAttribute("aria-hidden", "true");
   }
@@ -66,6 +69,7 @@ export function createPlaylistManageModal(deps) {
   }
 
   async function submit() {
+    if (submitting) return;
     const deleting = state.mode === "delete";
     const value = String(inputEl()?.value || "").trim();
     if (!deleting && !value) {
@@ -73,6 +77,7 @@ export function createPlaylistManageModal(deps) {
       inputEl()?.focus();
       return;
     }
+    submitting = true;
     if (confirmEl()) confirmEl().disabled = true;
     setStatus(deleting ? "正在删除歌单…" : "正在保存歌单…");
     try {
@@ -85,11 +90,14 @@ export function createPlaylistManageModal(deps) {
       setStatus("操作失败，请稍后重试。", "error");
       alertRequestFailed(error, `playlist_manage_${state.mode}`);
     } finally {
+      submitting = false;
       if (confirmEl()) confirmEl().disabled = false;
     }
   }
 
   function wire() {
+    if (wired) return;
+    wired = true;
     document.getElementById("btn-playlist-manage-close")?.addEventListener("click", () => close());
     document.getElementById("btn-playlist-manage-cancel")?.addEventListener("click", () => close());
     document.getElementById("btn-playlist-manage-confirm")?.addEventListener("click", () => void submit());
@@ -97,6 +105,10 @@ export function createPlaylistManageModal(deps) {
       if (event.key !== "Enter") return;
       event.preventDefault();
       void submit();
+    });
+    document.addEventListener("keydown", (event) => {
+      if (event.key !== "Escape") return;
+      if (modalEl()?.hidden === false) close();
     });
     modalEl()?.addEventListener("click", (event) => {
       if (event.target?.id === "playlist-manage-modal") close();
