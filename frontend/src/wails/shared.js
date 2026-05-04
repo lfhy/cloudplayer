@@ -1,5 +1,5 @@
 import { Events } from "@wailsio/runtime";
-import { DesktopService } from "@bindings/cloudplayer/backend/app/index.js";
+import { DesktopService } from "@bindings/cloudplayer/backend/desktop/index.js";
 
 const pseudoListeners = new Map();
 const pseudoSubscribedLabels = new Set();

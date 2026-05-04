@@ -1,6 +1,6 @@
 //go:build !darwin
 
-package cloudplayer
+package desktop
 
 // Desktop lyric hover tracking is platform-specific; non-macOS builds keep it disabled.
-func startDesktopLyricsHoverTracking() {}
+func StartDesktopLyricsHoverTracking() {}

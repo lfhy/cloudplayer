@@ -5,6 +5,8 @@ import (
 	"strings"
 	"sync"
 
+	"cloudplayer/backend/cache"
+	"cloudplayer/backend/model"
 	"cloudplayer/backend/musicsource"
 )
 
@@ -19,16 +21,16 @@ type searchMetadataJob struct {
 }
 
 // Search metadata is fetched lazily because PJMP3 list pages only expose title, artist and cover.
-func (s *CloudPlayerService) GetSearchSongMetadata(songIDs []string) ([]SearchSongMetadataRow, error) {
+func (s *CloudPlayerService) GetSearchSongMetadata(songIDs []string) ([]model.SearchSongMetadataRow, error) {
 	normalized := normalizeSearchMetadataIDs(songIDs)
 	if len(normalized) == 0 {
-		return []SearchSongMetadataRow{}, nil
+		return []model.SearchSongMetadataRow{}, nil
 	}
 
-	rows := make([]SearchSongMetadataRow, len(normalized))
+	rows := make([]model.SearchSongMetadataRow, len(normalized))
 	jobs := make([]searchMetadataJob, 0, len(normalized))
 	for index, sourceID := range normalized {
-		cacheKey := SearchSongMetadataCacheKey(sourceID)
+		cacheKey := cache.SearchSongMetadataCacheKey(sourceID)
 		if cached, ok := s.state.SearchCache.GetSongMetadata(cacheKey); ok {
 			rows[index] = ensureSearchMetadataSourceID(sourceID, cached)
 			continue
@@ -39,7 +41,7 @@ func (s *CloudPlayerService) GetSearchSongMetadata(songIDs []string) ([]SearchSo
 	return compactSearchMetadataRows(rows), nil
 }
 
-func (s *CloudPlayerService) runSearchMetadataJobs(rows []SearchSongMetadataRow, jobs []searchMetadataJob) {
+func (s *CloudPlayerService) runSearchMetadataJobs(rows []model.SearchSongMetadataRow, jobs []searchMetadataJob) {
 	if len(jobs) == 0 {
 		return
 	}
@@ -61,8 +63,8 @@ func (s *CloudPlayerService) runSearchMetadataJobs(rows []SearchSongMetadataRow,
 	wait.Wait()
 }
 
-func (s *CloudPlayerService) fetchSearchMetadataRow(sourceID string) SearchSongMetadataRow {
-	cacheKey := SearchSongMetadataCacheKey(sourceID)
+func (s *CloudPlayerService) fetchSearchMetadataRow(sourceID string) model.SearchSongMetadataRow {
+	cacheKey := cache.SearchSongMetadataCacheKey(sourceID)
 	if cached, ok := s.state.SearchCache.GetSongMetadata(cacheKey); ok {
 		return ensureSearchMetadataSourceID(sourceID, cached)
 	}
@@ -71,10 +73,10 @@ func (s *CloudPlayerService) fetchSearchMetadataRow(sourceID string) SearchSongM
 	metadata, err := musicsource.FetchSearchMetadata(s.state.HTTP(), sourceID)
 	if err != nil {
 		log.Printf("GetSearchSongMetadata failed: sourceID=%q err=%v", sourceID, err)
-		return SearchSongMetadataRow{SourceID: musicsource.CanonicalSourceID(sourceID)}
+		return model.SearchSongMetadataRow{SourceID: musicsource.CanonicalSourceID(sourceID)}
 	}
 
-	row := SearchSongMetadataRow{
+	row := model.SearchSongMetadataRow{
 		SourceID:   metadata.SourceID,
 		Album:      metadata.Album,
 		DurationMS: metadata.DurationMS,
@@ -103,7 +105,7 @@ func normalizeSearchMetadataIDs(songIDs []string) []string {
 	return result
 }
 
-func ensureSearchMetadataSourceID(sourceID string, row SearchSongMetadataRow) SearchSongMetadataRow {
+func ensureSearchMetadataSourceID(sourceID string, row model.SearchSongMetadataRow) model.SearchSongMetadataRow {
 	if strings.TrimSpace(row.SourceID) != "" {
 		return row
 	}
@@ -111,8 +113,8 @@ func ensureSearchMetadataSourceID(sourceID string, row SearchSongMetadataRow) Se
 	return row
 }
 
-func compactSearchMetadataRows(rows []SearchSongMetadataRow) []SearchSongMetadataRow {
-	result := make([]SearchSongMetadataRow, 0, len(rows))
+func compactSearchMetadataRows(rows []model.SearchSongMetadataRow) []model.SearchSongMetadataRow {
+	result := make([]model.SearchSongMetadataRow, 0, len(rows))
 	for _, row := range rows {
 		if strings.TrimSpace(row.SourceID) == "" {
 			continue

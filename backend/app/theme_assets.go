@@ -10,6 +10,7 @@ import (
 	"sync"
 
 	"cloudplayer/backend/config"
+	"cloudplayer/backend/state"
 	"github.com/wailsapp/wails/v3/pkg/application"
 )
 
@@ -47,7 +48,7 @@ func appIconForTheme(theme, customAccent string) []byte {
 	return icon
 }
 
-func applyThemeAssets(state *AppState, theme, customAccent string) {
+func applyThemeAssets(state *state.AppState, theme, customAccent string) {
 	normalizedTheme := config.NormalizeAppTheme(theme)
 	normalizedAccent := normalizeAccentHex(customAccent, presetThemeAccents["coral"])
 	if state != nil {

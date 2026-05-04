@@ -9,7 +9,10 @@ import (
 	"sync/atomic"
 
 	"cloudplayer/backend/config"
+	"cloudplayer/backend/desktop"
 	"cloudplayer/backend/db"
+	"cloudplayer/backend/hotkeys"
+	"cloudplayer/backend/state"
 	"github.com/wailsapp/wails/v3/pkg/application"
 	"github.com/wailsapp/wails/v3/pkg/events"
 )
@@ -28,7 +31,7 @@ func Run(assets fs.FS, trayTemplateIcon []byte) error {
 	if err != nil {
 		return err
 	}
-	state := NewAppState(conn)
+	state := state.NewAppState(conn)
 	initialSettings := config.LoadSettings()
 	if err := state.ApplyNetworkSettings(initialSettings); err != nil {
 		log.Printf("proxy config invalid, fallback to direct client: %v", err)
@@ -36,10 +39,10 @@ func Run(assets fs.FS, trayTemplateIcon []byte) error {
 	state.AppTheme = initialSettings.AppTheme
 	state.AppThemeCustomAccent = initialSettings.AppThemeCustomAccent
 	state.StartBackgroundWorkers()
-	startDesktopLyricsHoverTracking()
+	desktop.StartDesktopLyricsHoverTracking()
 
 	cloudPlayer := NewCloudPlayerService(state)
-	desktop := &DesktopService{}
+	desktopService := &desktop.DesktopService{}
 	baseAssets := application.BundledAssetFileServer(assets)
 	app := application.New(application.Options{
 		Name:        "CloudPlayer",
@@ -47,7 +50,7 @@ func Run(assets fs.FS, trayTemplateIcon []byte) error {
 		Icon:        appIconForTheme(initialSettings.AppTheme, initialSettings.AppThemeCustomAccent),
 		Services: []application.Service{
 			application.NewService(cloudPlayer),
-			application.NewService(desktop),
+			application.NewService(desktopService),
 		},
 		Assets: application.AssetOptions{
 			Handler: remoteMediaHandler(state, baseAssets),
@@ -63,7 +66,7 @@ func Run(assets fs.FS, trayTemplateIcon []byte) error {
 		},
 	})
 
-	state.Hotkeys = NewHotkeyManager(func(action string) {
+	state.Hotkeys = hotkeys.NewHotkeyManager(func(action string) {
 		_ = app.Event.Emit("global-hotkey", action)
 	})
 	lyricsContextMenu := buildDesktopLyricsContextMenu(app)
@@ -85,7 +88,7 @@ func Run(assets fs.FS, trayTemplateIcon []byte) error {
 			return
 		}
 		event.Cancel()
-		handleMainWindowCloseRequest()
+		desktop.HandleMainWindowCloseRequest(requestAppQuit)
 	})
 
 	trayWindow := app.Window.NewWithOptions(application.WebviewWindowOptions{
@@ -125,7 +128,7 @@ func Run(assets fs.FS, trayTemplateIcon []byte) error {
 		showMainWindow()
 	})
 	app.Event.OnApplicationEvent(events.Mac.ApplicationWillTerminate, func(_ *application.ApplicationEvent) {
-		if err := persistDesktopLyricsBoundsNow(); err != nil {
+		if err := desktop.PersistDesktopLyricsBoundsNow(); err != nil {
 			log.Printf("persist desktop lyrics bounds on quit failed: %v", err)
 		}
 	})

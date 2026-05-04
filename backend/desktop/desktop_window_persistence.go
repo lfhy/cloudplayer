@@ -1,4 +1,4 @@
-package cloudplayer
+package desktop
 
 import (
 	"log"
@@ -9,7 +9,7 @@ import (
 )
 
 // Native window persistence hooks keep secondary-window geometry durable across relaunches.
-func attachWindowPersistenceHooks(window application.Window, label string) {
+func AttachWindowPersistenceHooks(window application.Window, label string) {
 	if label != "lyrics" {
 		return
 	}
@@ -19,7 +19,7 @@ func attachWindowPersistenceHooks(window application.Window, label string) {
 			saveTimer.Stop()
 		}
 		saveTimer = time.AfterFunc(220*time.Millisecond, func() {
-			if err := persistDesktopLyricsBoundsNow(); err != nil {
+			if err := PersistDesktopLyricsBoundsNow(); err != nil {
 				log.Printf("persist desktop lyrics bounds failed: %v", err)
 			}
 		})
@@ -29,7 +29,7 @@ func attachWindowPersistenceHooks(window application.Window, label string) {
 			saveTimer.Stop()
 			saveTimer = nil
 		}
-		if err := persistDesktopLyricsBoundsNow(); err != nil {
+		if err := PersistDesktopLyricsBoundsNow(); err != nil {
 			log.Printf("persist desktop lyrics bounds failed: %v", err)
 		}
 	}

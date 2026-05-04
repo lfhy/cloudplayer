@@ -1,4 +1,4 @@
-package cloudplayer
+package cache
 
 import (
 	"path/filepath"
@@ -9,6 +9,7 @@ import (
 	gcache "github.com/lfhy/cache"
 
 	"cloudplayer/backend/config"
+	"cloudplayer/backend/model"
 	"cloudplayer/backend/musicsource"
 )
 
@@ -51,15 +52,15 @@ func NewSearchCache() *SearchCache {
 	return &SearchCache{}
 }
 
-func (c *SearchCache) Get(key string) (SearchResponse, bool) {
-	response, ok := gcache.Get[SearchResponse](key)
+func (c *SearchCache) Get(key string) (model.SearchResponse, bool) {
+	response, ok := gcache.Get[model.SearchResponse](key)
 	if !ok {
-		return SearchResponse{}, false
+		return model.SearchResponse{}, false
 	}
 	return cloneSearchResponse(response), true
 }
 
-func (c *SearchCache) Set(key string, response SearchResponse, ttl time.Duration) {
+func (c *SearchCache) Set(key string, response model.SearchResponse, ttl time.Duration) {
 	seconds := int(ttl / time.Second)
 	if seconds <= 0 {
 		seconds = int((24 * time.Hour) / time.Second)
@@ -67,11 +68,11 @@ func (c *SearchCache) Set(key string, response SearchResponse, ttl time.Duration
 	gcache.Set(key, cloneSearchResponse(response), seconds)
 }
 
-func (c *SearchCache) GetSongMetadata(key string) (SearchSongMetadataRow, bool) {
-	return gcache.Get[SearchSongMetadataRow](key)
+func (c *SearchCache) GetSongMetadata(key string) (model.SearchSongMetadataRow, bool) {
+	return gcache.Get[model.SearchSongMetadataRow](key)
 }
 
-func (c *SearchCache) SetSongMetadata(key string, row SearchSongMetadataRow, ttl time.Duration) {
+func (c *SearchCache) SetSongMetadata(key string, row model.SearchSongMetadataRow, ttl time.Duration) {
 	seconds := int(ttl / time.Second)
 	if seconds <= 0 {
 		seconds = int((24 * time.Hour) / time.Second)
@@ -91,10 +92,10 @@ func (c *SearchCache) ClearSearchEntries() int {
 	return cleared
 }
 
-func cloneSearchResponse(response SearchResponse) SearchResponse {
+func cloneSearchResponse(response model.SearchResponse) model.SearchResponse {
 	results := make([]musicsource.SearchResult, len(response.Results))
 	copy(results, response.Results)
-	return SearchResponse{
+	return model.SearchResponse{
 		Results: results,
 		HasNext: response.HasNext,
 	}

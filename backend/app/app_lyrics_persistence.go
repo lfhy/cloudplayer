@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"time"
 
+	"cloudplayer/backend/cache"
 	"cloudplayer/backend/lyrics"
 )
 
@@ -36,11 +37,11 @@ func loadPersistentLyrics(db *sql.DB, cacheKey string) (lyrics.LyricsPayload, bo
 	if err := json.Unmarshal([]byte(payloadJSON), &payload); err != nil {
 		return lyrics.LyricsPayload{}, false, false, err
 	}
-	return cloneLyricsPayload(payload), isOverride, true, nil
+	return cache.CloneLyricsPayload(payload), isOverride, true, nil
 }
 
 func savePersistentLyrics(db *sql.DB, cacheKey string, payload lyrics.LyricsPayload, isOverride bool) error {
-	encoded, err := json.Marshal(cloneLyricsPayload(payload))
+	encoded, err := json.Marshal(cache.CloneLyricsPayload(payload))
 	if err != nil {
 		return err
 	}

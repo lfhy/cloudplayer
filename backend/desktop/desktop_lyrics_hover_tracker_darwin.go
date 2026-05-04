@@ -1,6 +1,6 @@
 //go:build darwin
 
-package cloudplayer
+package desktop
 
 /*
 #cgo CFLAGS: -x objective-c
@@ -30,7 +30,7 @@ import (
 )
 
 // Desktop lyric hover tracking polls the global mouse position so hover works even when the window is inactive.
-func startDesktopLyricsHoverTracking() {
+func StartDesktopLyricsHoverTracking() {
 	go func() {
 		ticker := time.NewTicker(33 * time.Millisecond)
 		defer ticker.Stop()

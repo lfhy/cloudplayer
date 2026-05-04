@@ -1,6 +1,6 @@
 //go:build windows
 
-package cloudplayer
+package hotkeys
 
 import "golang.design/x/hotkey"
 

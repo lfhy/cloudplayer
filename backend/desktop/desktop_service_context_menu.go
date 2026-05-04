@@ -1,4 +1,4 @@
-package cloudplayer
+package desktop
 
 // DesktopService exposes native context menus for lightweight utility windows.
 

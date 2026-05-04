@@ -1,12 +1,13 @@
 package cloudplayer
 
 import (
+	"cloudplayer/backend/desktop"
 	"github.com/wailsapp/wails/v3/pkg/application"
 )
 
 // Window-facing service methods stay isolated so bindings for desktop shell actions remain easy to scan.
 func (s *CloudPlayerService) HideMainWindow() error {
-	hideMainWindow()
+	desktop.HideMainWindow()
 	return nil
 }
 

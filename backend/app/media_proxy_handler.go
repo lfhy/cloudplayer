@@ -12,10 +12,11 @@ import (
 	"time"
 
 	"cloudplayer/backend/config"
+	"cloudplayer/backend/state"
 )
 
 // Remote media proxy keeps third-party avatars, covers and stream URLs behind the app's HTTP client.
-func remoteMediaHandler(state *AppState, next http.Handler) http.Handler {
+func remoteMediaHandler(state *state.AppState, next http.Handler) http.Handler {
 	return http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
 		switch request.URL.Path {
 		case "/__media__":
@@ -35,7 +36,7 @@ func remoteMediaHandler(state *AppState, next http.Handler) http.Handler {
 	})
 }
 
-func serveRemoteMedia(state *AppState, writer http.ResponseWriter, request *http.Request) {
+func serveRemoteMedia(state *state.AppState, writer http.ResponseWriter, request *http.Request) {
 	rawURL := strings.TrimSpace(request.URL.Query().Get("url"))
 	if rawURL == "" || (!strings.HasPrefix(rawURL, "https://") && !strings.HasPrefix(rawURL, "http://")) {
 		http.NotFound(writer, request)

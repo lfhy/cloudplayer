@@ -1,6 +1,6 @@
 //go:build darwin
 
-package cloudplayer
+package hotkeys
 
 type hotkeyApplyResult struct {
 	report HotkeyApplyReport

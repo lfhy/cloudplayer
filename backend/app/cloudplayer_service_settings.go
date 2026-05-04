@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"cloudplayer/backend/config"
+	"cloudplayer/backend/hotkeys"
 	"github.com/wailsapp/wails/v3/pkg/application"
 )
 
@@ -31,22 +32,22 @@ func (s *CloudPlayerService) GetGlobalHotkeys() config.GlobalHotkeys {
 }
 
 func (s *CloudPlayerService) ValidateAccelerator(value string) error {
-	return ValidateAcceleratorString(value)
+	return hotkeys.ValidateAcceleratorString(value)
 }
 
-func (s *CloudPlayerService) ApplyGlobalHotkeys(cfg config.GlobalHotkeys) (HotkeyApplyReport, error) {
-	report := AllOKHotkeyReport()
+func (s *CloudPlayerService) ApplyGlobalHotkeys(cfg config.GlobalHotkeys) (hotkeys.HotkeyApplyReport, error) {
+	report := hotkeys.AllOKHotkeyReport()
 	var err error
 	if s.state.Hotkeys != nil {
 		report, err = s.state.Hotkeys.Apply(cfg)
 		if err != nil {
-			return HotkeyApplyReport{}, err
+			return hotkeys.HotkeyApplyReport{}, err
 		}
 	}
 	settings := config.LoadSettings()
 	settings.GlobalHotkeys = cfg
 	if err := config.SaveSettings(settings); err != nil {
-		return HotkeyApplyReport{}, err
+		return hotkeys.HotkeyApplyReport{}, err
 	}
 	return report, nil
 }

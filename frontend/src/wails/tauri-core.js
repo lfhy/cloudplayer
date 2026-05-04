@@ -1,5 +1,6 @@
 // Tauri compatibility wrappers map the legacy invoke calls onto Wails service bindings.
-import { CloudPlayerService, DesktopService } from "@bindings/cloudplayer/backend/app/index.js";
+import { CloudPlayerService } from "@bindings/cloudplayer/backend/app/index.js";
+import { DesktopService } from "@bindings/cloudplayer/backend/desktop/index.js";
 
 function pickFirstNonEmptyString(...values) {
   for (const value of values) {

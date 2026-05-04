@@ -1,4 +1,4 @@
-package cloudplayer
+package desktop
 
 // DesktopService coordinates secondary desktop windows such as tray and lyrics overlays.
 
@@ -84,7 +84,7 @@ func (s *DesktopService) EnsureWindow(req WindowCreateRequest) error {
 			WindowLevel:             macWindowLevel(req.AlwaysOnTop),
 		},
 	})
-	attachWindowPersistenceHooks(window, req.Label)
+	AttachWindowPersistenceHooks(window, req.Label)
 	window.OnWindowEvent(events.Common.WindowClosing, func(_ *application.WindowEvent) {
 		_ = application.Get().Event.Emit("wails:window:closing", map[string]any{
 			"name": req.Label,

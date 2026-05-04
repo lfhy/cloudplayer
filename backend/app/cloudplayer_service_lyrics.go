@@ -5,8 +5,10 @@ import (
 	"log"
 	"strings"
 
+	"cloudplayer/backend/cache"
 	"cloudplayer/backend/config"
 	"cloudplayer/backend/lyrics"
+	"cloudplayer/backend/model"
 	"cloudplayer/backend/sharelink"
 )
 
@@ -16,7 +18,7 @@ func (s *CloudPlayerService) FetchSongLRCEnriched(req lyrics.FetchRequest) (*lyr
 	s.state.RateLimiter.AcquireSlot()
 	artist := strings.TrimSpace(req.Artist)
 	title := strings.TrimSpace(req.Title)
-	cacheKey := LyricsCacheKey(req)
+	cacheKey := cache.LyricsCacheKey(req)
 	sourceID := ""
 	if req.PJMP3SourceID != nil {
 		sourceID = strings.TrimSpace(*req.PJMP3SourceID)
@@ -70,7 +72,7 @@ func (s *CloudPlayerService) FetchSongLRCEnriched(req lyrics.FetchRequest) (*lyr
 }
 
 func (s *CloudPlayerService) SaveLyricsOverride(req lyrics.FetchRequest, payload lyrics.LyricsPayload) error {
-	cacheKey := LyricsCacheKey(req)
+	cacheKey := cache.LyricsCacheKey(req)
 	if strings.TrimSpace(cacheKey) == "" {
 		return fmt.Errorf("歌词缓存键无效")
 	}
@@ -93,10 +95,10 @@ func (s *CloudPlayerService) LyricsFetchCandidate(candidate lyrics.LyricCandidat
 	return lyrics.FetchCandidate(s.state.HTTP(), settings, candidate)
 }
 
-func (s *CloudPlayerService) FetchSharePlaylist(rawURL string) (SharePlaylistResponse, error) {
+func (s *CloudPlayerService) FetchSharePlaylist(rawURL string) (model.SharePlaylistResponse, error) {
 	trimmed := strings.TrimSpace(rawURL)
 	if trimmed == "" {
-		return SharePlaylistResponse{}, fmt.Errorf("请先粘贴分享链接。")
+		return model.SharePlaylistResponse{}, fmt.Errorf("请先粘贴分享链接。")
 	}
 	settings := config.LoadSettings()
 	s.state.RateLimiter.AcquireSlot()
@@ -105,9 +107,9 @@ func (s *CloudPlayerService) FetchSharePlaylist(rawURL string) (SharePlaylistRes
 		NeteaseCookie:        settings.ShareNeteaseCookie,
 	})
 	if err != nil {
-		return SharePlaylistResponse{}, err
+		return model.SharePlaylistResponse{}, err
 	}
-	return SharePlaylistResponse{
+	return model.SharePlaylistResponse{
 		PlaylistName: name,
 		Tracks:       tracks,
 	}, nil

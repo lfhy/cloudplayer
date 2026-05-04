@@ -1,13 +1,13 @@
-//go:build darwin
+//go:build linux
 
-package cloudplayer
+package hotkeys
 
 import "golang.design/x/hotkey"
 
 func platformAltModifier() hotkey.Modifier {
-	return hotkey.ModOption
+	return hotkey.Mod1
 }
 
 func platformSuperModifier() hotkey.Modifier {
-	return hotkey.ModCmd
+	return hotkey.Mod4
 }

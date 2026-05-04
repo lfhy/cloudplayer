@@ -1,4 +1,4 @@
-package cloudplayer
+package cache
 
 // Lyrics cache reuses the shared lfhy/cache store with a dedicated key prefix.
 
@@ -61,7 +61,7 @@ func (c *LyricsCache) Get(key string) (lyrics.LyricsPayload, bool) {
 	if !ok {
 		return lyrics.LyricsPayload{}, false
 	}
-	return cloneLyricsPayload(payload), true
+	return CloneLyricsPayload(payload), true
 }
 
 func (c *LyricsCache) Set(key string, payload lyrics.LyricsPayload, ttl time.Duration) {
@@ -69,10 +69,10 @@ func (c *LyricsCache) Set(key string, payload lyrics.LyricsPayload, ttl time.Dur
 	if seconds <= 0 {
 		seconds = int((24 * time.Hour) / time.Second)
 	}
-	gcache.Set(key, cloneLyricsPayload(payload), seconds)
+	gcache.Set(key, CloneLyricsPayload(payload), seconds)
 }
 
-func cloneLyricsPayload(payload lyrics.LyricsPayload) lyrics.LyricsPayload {
+func CloneLyricsPayload(payload lyrics.LyricsPayload) lyrics.LyricsPayload {
 	clonedLines := make([]lyrics.WordLine, 0, len(payload.WordLines))
 	for _, line := range payload.WordLines {
 		clonedWords := make([]lyrics.WordTiming, len(line.Words))

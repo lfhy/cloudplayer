@@ -1,6 +1,6 @@
 //go:build darwin || linux || windows
 
-package cloudplayer
+package hotkeys
 
 import (
 	"fmt"

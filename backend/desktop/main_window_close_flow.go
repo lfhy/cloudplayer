@@ -1,4 +1,4 @@
-package cloudplayer
+package desktop
 
 import (
 	"cloudplayer/backend/config"
@@ -7,19 +7,21 @@ import (
 )
 
 // Main-window close flow is handled in Go so the preference value always takes effect.
-func handleMainWindowCloseRequest() {
+func HandleMainWindowCloseRequest(onQuit func()) {
 	settings := config.LoadSettings()
 	switch settings.MainWindowCloseAction {
 	case "quit":
-		requestAppQuit()
+		if onQuit != nil {
+			onQuit()
+		}
 	case "tray":
-		hideMainWindow()
+		HideMainWindow()
 	default:
-		showMainWindowCloseModal()
+		ShowMainWindowCloseModal()
 	}
 }
 
-func hideMainWindow() {
+func HideMainWindow() {
 	window, ok := application.Get().Window.GetByName("main")
 	if !ok {
 		return
@@ -27,7 +29,7 @@ func hideMainWindow() {
 	window.Hide()
 }
 
-func showMainWindowCloseModal() {
+func ShowMainWindowCloseModal() {
 	window, ok := application.Get().Window.GetByName("main")
 	if !ok {
 		return

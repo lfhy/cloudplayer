@@ -1,4 +1,4 @@
-package cloudplayer
+package state
 
 // AppState owns the shared backend services that are wired into the Wails app lifecycle.
 
@@ -8,8 +8,10 @@ import (
 	"sync"
 	"time"
 
+	"cloudplayer/backend/cache"
 	"cloudplayer/backend/config"
 	"cloudplayer/backend/download"
+	"cloudplayer/backend/hotkeys"
 	"cloudplayer/backend/httpclient"
 	"cloudplayer/backend/ratelimiter"
 	"github.com/wailsapp/wails/v3/pkg/application"
@@ -20,12 +22,12 @@ type AppState struct {
 	httpClientMu         sync.RWMutex
 	HTTPClient           *http.Client
 	HTTPJar              http.CookieJar
-	SearchCache          *SearchCache
-	LyricsCache          *LyricsCache
+	SearchCache          *cache.SearchCache
+	LyricsCache          *cache.LyricsCache
 	SearchCacheTTL       time.Duration
 	RateLimiter          *ratelimiter.Limiter
 	DownloadCh           chan download.DownloadJob
-	Hotkeys              *HotkeyManager
+	Hotkeys              *hotkeys.HotkeyManager
 	SystemTray           *application.SystemTray
 	AppTheme             string
 	AppThemeCustomAccent string
@@ -38,8 +40,8 @@ func NewAppState(db *sql.DB) *AppState {
 		DB:             db,
 		HTTPClient:     client,
 		HTTPJar:        jar,
-		SearchCache:    NewSearchCache(),
-		LyricsCache:    NewLyricsCache(),
+		SearchCache:    cache.NewSearchCache(),
+		LyricsCache:    cache.NewLyricsCache(),
 		SearchCacheTTL: 24 * time.Hour,
 		RateLimiter:    ratelimiter.New(45),
 		DownloadCh:     make(chan download.DownloadJob, 64),
