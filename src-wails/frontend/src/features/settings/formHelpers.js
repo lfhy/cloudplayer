@@ -14,6 +14,8 @@ export function settingsFormBaselineDefaults() {
     highlight: "#ffb7d4",
     idleLine1: DEFAULT_LYRICS_IDLE_LINE1,
     idleLine2: DEFAULT_LYRICS_IDLE_LINE2,
+    lyricsProviderOrder: "qq,kugou,netease,lrclib",
+    lyricsLRCLibEnabled: true,
     neteaseApiBase: "",
     musicSourceProvider: "pjmp3",
     searchCacheTTLHours: 24,

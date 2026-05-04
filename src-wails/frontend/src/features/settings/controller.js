@@ -3,6 +3,7 @@ import { createHotkeyController } from "./hotkeys.js";
 import { closeCloseConfirmModalDom, openCloseConfirmModalDom, runCloseChoiceFlow } from "./closeFlow.js";
 import { wireSettingsActionButtons } from "./actions.js";
 import { DEFAULT_LYRICS_IDLE_LINE1, DEFAULT_LYRICS_IDLE_LINE2, normalizeLyricHexInput, normalizeLyricsIdleLine, normalizeNeteaseApiBase, normalizeSearchCacheTTLHours, settingsFormBaselineDefaults } from "./formHelpers.js";
+import { applyLyricsSourceSelectionToDom, readLyricsSourceSettingsFromDom, wireLyricsSourceSelection } from "./lyricSources.js";
 import { renderLyricsPreview } from "./lyricsPreview.js";
 import { canSaveCustomProxyUrl } from "../../app/helpers/platformTheme.js";
 
@@ -63,6 +64,7 @@ export function createSettingsController(deps) {
       searchCacheTTLHours: normalizeSearchCacheTTLHours(document.getElementById("setting-search-cache-ttl-hours")?.value),
       idleLine1: normalizeLyricsIdleLine(document.getElementById("setting-ly-idle-line1")?.value, DEFAULT_LYRICS_IDLE_LINE1),
       idleLine2: normalizeLyricsIdleLine(document.getElementById("setting-ly-idle-line2")?.value, DEFAULT_LYRICS_IDLE_LINE2),
+      ...readLyricsSourceSettingsFromDom(),
       base: normalizeLyricHexInput(document.getElementById("setting-ly-base")?.value, "#ffffff"),
       highlight: normalizeLyricHexInput(document.getElementById("setting-ly-highlight")?.value, "#ffb7d4"),
       neteaseApiBase: normalizeNeteaseApiBase(document.getElementById("setting-netease-api-base")?.value),
@@ -73,7 +75,7 @@ export function createSettingsController(deps) {
 
   function settingsFormIsDirty() {
     const current = getSettingsFormValues();
-    return ["theme", "mode", "customAccent", "proxyMode", "proxyURL", "action", "musicSourceProvider", "searchCacheTTLHours", "idleLine1", "idleLine2", "base", "highlight", "neteaseApiBase", "hotkeysSig"].some((key) => current[key] !== settingsFormBaseline[key]);
+    return ["theme", "mode", "customAccent", "proxyMode", "proxyURL", "action", "musicSourceProvider", "searchCacheTTLHours", "idleLine1", "idleLine2", "lyricsProviderOrder", "lyricsLRCLibEnabled", "base", "highlight", "neteaseApiBase", "hotkeysSig"].some((key) => current[key] !== settingsFormBaseline[key]);
   }
 
   function syncSettingsFormBaselineFromDom() {
@@ -116,6 +118,7 @@ export function createSettingsController(deps) {
     deps.setDesktopLyricsIdleText?.(idleLine1, idleLine2);
     const neteaseApiBaseEl = document.getElementById("setting-netease-api-base");
     if (neteaseApiBaseEl) neteaseApiBaseEl.value = normalizeNeteaseApiBase(settings?.lyrics_netease_api_base ?? settings?.lyricsNeteaseApiBase ?? "");
+    applyLyricsSourceSelectionToDom(settings?.lyrics_provider_order ?? settings?.lyricsProviderOrder ?? "qq,kugou,netease,lrclib", settings?.lyrics_lrclib_enabled !== false);
     if (searchCacheStatusEl) searchCacheStatusEl.textContent = `搜索结果按关键词、分页和当前曲库渠道缓存，当前保留 ${normalizeSearchCacheTTLHours(settings?.search_cache_ttl_hours ?? settings?.searchCacheTTLHours ?? 24)} 小时。`;
     hotkeys.fillHotkeysFormFromSettings(settings);
     renderLyricsPreview({ ...getSettingsFormValues(), idleLine1, idleLine2 });
@@ -158,7 +161,7 @@ export function createSettingsController(deps) {
         const report = await invoke("apply_global_hotkeys", { cfg: current.globalHotkeys });
         if (report) hotkeys.renderHotkeyStatusFromReport(report);
       }
-      await invoke("save_settings", { patch: { app_theme: current.theme, app_theme_mode: current.mode, app_theme_custom_accent: current.customAccent, network_proxy_mode: current.proxyMode, network_proxy_url: proxyURLForSave, main_window_close_action: current.action, music_source_provider: current.musicSourceProvider, search_cache_ttl_hours: current.searchCacheTTLHours, desktop_lyrics_idle_line1: current.idleLine1, desktop_lyrics_idle_line2: current.idleLine2, desktop_lyrics_color_base: current.base, desktop_lyrics_color_highlight: current.highlight, lyrics_netease_api_base: current.neteaseApiBase } });
+      await invoke("save_settings", { patch: { app_theme: current.theme, app_theme_mode: current.mode, app_theme_custom_accent: current.customAccent, network_proxy_mode: current.proxyMode, network_proxy_url: proxyURLForSave, main_window_close_action: current.action, music_source_provider: current.musicSourceProvider, search_cache_ttl_hours: current.searchCacheTTLHours, desktop_lyrics_idle_line1: current.idleLine1, desktop_lyrics_idle_line2: current.idleLine2, desktop_lyrics_color_base: current.base, desktop_lyrics_color_highlight: current.highlight, lyrics_provider_order: current.lyricsProviderOrder, lyrics_lrclib_enabled: current.lyricsLRCLibEnabled, lyrics_netease_api_base: current.neteaseApiBase } });
       applyAppTheme(current.theme, current.customAccent, current.mode);
       setMainWindowCloseAction(current.action);
       syncSettingsFormBaselineFromDom();
@@ -240,6 +243,7 @@ export function createSettingsController(deps) {
       setMusicSourceProviderSelection(card.getAttribute("data-music-source-provider-card") || "pjmp3");
       queueSettingsAutosave(true);
     }));
+    wireLyricsSourceSelection(() => queueSettingsAutosave(true));
     hotkeys.wireHotkeySettingsUi();
     document.getElementById("close-choice-tray")?.addEventListener("click", () => void runCloseChoiceFlow("tray", { alertRequestFailed, invoke, setMainWindowCloseAction }));
     document.getElementById("close-choice-quit")?.addEventListener("click", () => void runCloseChoiceFlow("quit", { alertRequestFailed, invoke, setMainWindowCloseAction }));
