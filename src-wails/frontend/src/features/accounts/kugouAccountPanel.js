@@ -9,10 +9,6 @@ export function kugouAccountPanelTemplate() {
       <div class="account-provider-layout">
         <aside class="account-provider-brand">
           <div class="account-provider-brand__mark" aria-hidden="true">K</div>
-          <div class="account-provider-brand__meta">
-            <strong>酷狗概念版</strong>
-            <span class="muted">同步你的云歌单与账号状态</span>
-          </div>
         </aside>
         <div class="account-provider-main">
           <div class="account-provider-card" id="account-kugou-profile" hidden>

@@ -1,11 +1,11 @@
 /* Account center modal styles keep provider login flows reusable beyond Kugou. */
 .modal-dialog--account-center {
-  width: min(720px, 100%);
-  max-height: min(82vh, 620px);
+  width: min(840px, 100%);
+  max-height: min(84vh, 680px);
   position: relative;
   display: grid;
-  gap: 14px;
-  padding: 16px;
+  gap: 16px;
+  padding: 18px;
 }
 
 .modal-copy--account-center {
@@ -87,7 +87,7 @@
   border: 1px solid color-mix(in srgb, var(--border) 84%, transparent);
   border-radius: 18px;
   background: color-mix(in srgb, var(--bg-card) 92%, transparent);
-  padding: 14px;
+  padding: 18px;
 }
 
 .account-provider-panel {
@@ -98,8 +98,8 @@
 
 .account-provider-layout {
   display: grid;
-  grid-template-columns: 180px minmax(0, 1fr);
-  gap: 18px;
+  grid-template-columns: 108px minmax(0, 1fr);
+  gap: 22px;
   align-items: start;
 }
 
@@ -124,33 +124,29 @@
 }
 
 .account-provider-brand {
-  display: grid;
-  gap: 14px;
-  padding-right: 18px;
+  display: flex;
+  justify-content: center;
+  padding-top: 6px;
+  padding-right: 22px;
   border-right: 1px solid color-mix(in srgb, var(--border) 82%, transparent);
 }
 
 .account-provider-brand__mark {
-  width: 72px;
-  height: 72px;
+  width: 78px;
+  height: 78px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  border-radius: 24px;
+  border-radius: 26px;
   background: rgba(var(--accent-rgb), 0.12);
   color: var(--accent);
-  font-size: 32px;
+  font-size: 34px;
   font-weight: 700;
-}
-
-.account-provider-brand__meta {
-  display: grid;
-  gap: 6px;
 }
 
 .account-provider-main {
   display: grid;
-  gap: 12px;
+  gap: 14px;
   min-width: 0;
 }
 
@@ -184,7 +180,7 @@
 .account-provider-footer {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 12px;
   flex-wrap: wrap;
 }
 
@@ -215,6 +211,7 @@
 
 .account-provider-pane {
   min-width: 0;
+  padding-top: 4px;
 }
 
 .account-provider-pane[hidden] {
@@ -222,17 +219,17 @@
 }
 
 .account-provider-qr-image {
-  width: 132px;
-  height: 132px;
-  padding: 8px;
-  border-radius: 16px;
+  width: 172px;
+  height: 172px;
+  padding: 10px;
+  border-radius: 20px;
   background: #fff;
   object-fit: contain;
 }
 
 .account-provider-qr-meta,
 .account-provider-sms-grid {
-  gap: 10px;
+  gap: 12px;
 }
 
 .account-provider-code-row .import-name-field {
@@ -248,7 +245,7 @@
 
 .account-provider-footer {
   justify-content: space-between;
-  padding-top: 2px;
+  padding-top: 6px;
 }
 
 .account-provider-empty {
