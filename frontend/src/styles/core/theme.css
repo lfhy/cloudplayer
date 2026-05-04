@@ -1,0 +1,85 @@
+/* Theme variables and mode tokens. */
+/* 对齐 PySide6 config/theme.py 主色与背景 */
+:root {
+  --accent: #c62f2f;
+  --accent-rgb: 198, 47, 47;
+  --bg-main: #f7f7f7;
+  --bg-card: #ffffff;
+  --bg-card-muted: rgba(255, 255, 255, 0.72);
+  --bg-elevated: rgba(255, 255, 255, 0.95);
+  --text: #333333;
+  --text-secondary: #888888;
+  --border: #e5e5e5;
+  --shadow-soft: 0 8px 20px rgba(15, 23, 42, 0.05);
+  --shadow-float: 0 18px 34px rgba(15, 23, 42, 0.14);
+  --surface-soft: linear-gradient(180deg, rgba(255, 255, 255, 0.92), rgba(255, 255, 255, 0.78));
+  --surface-soft-border: rgba(255, 255, 255, 0.82);
+  --surface-soft-inset: inset 0 1px 0 rgba(255, 255, 255, 0.7);
+  --surface-subtle: rgba(255, 255, 255, 0.68);
+  --surface-subtle-2: rgba(255, 255, 255, 0.62);
+  --topbar-grad-start: #eef0f3;
+  --cover-placeholder: #e5e7eb;
+  --cover-placeholder-grad: linear-gradient(135deg, #eee, #ddd);
+  --dock-fg: #1f2937;
+  --dock-muted: #6b7280;
+  --dock-edge: #e5e7eb;
+  --dock-hover: #f3f4f6;
+  --dock-chip-bg: #fafafa;
+  --sidebar-width: 200px;
+  --titlebar-left-gap: 16px;
+  --sidebar-top-gap: 12px;
+  color-scheme: light;
+}
+
+:root[data-theme-mode-resolved="dark"] {
+  --bg-main: #16181c;
+  --bg-card: #22252b;
+  --bg-card-muted: rgba(34, 37, 43, 0.78);
+  --bg-elevated: rgba(30, 33, 39, 0.96);
+  --text: #f2f3f5;
+  --text-secondary: #a4acb8;
+  --border: rgba(255, 255, 255, 0.1);
+  --shadow-soft: 0 10px 28px rgba(0, 0, 0, 0.24);
+  --shadow-float: 0 24px 44px rgba(0, 0, 0, 0.3);
+  --surface-soft: linear-gradient(180deg, rgba(34, 37, 43, 0.96), rgba(27, 30, 36, 0.92));
+  --surface-soft-border: rgba(255, 255, 255, 0.08);
+  --surface-soft-inset: inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  --surface-subtle: rgba(255, 255, 255, 0.06);
+  --surface-subtle-2: rgba(255, 255, 255, 0.05);
+  --topbar-grad-start: var(--bg-main);
+  --cover-placeholder: rgba(255, 255, 255, 0.08);
+  --cover-placeholder-grad: linear-gradient(135deg, rgba(255, 255, 255, 0.12), rgba(255, 255, 255, 0.05));
+  --dock-fg: #f2f3f5;
+  --dock-muted: #a4acb8;
+  --dock-edge: rgba(255, 255, 255, 0.1);
+  --dock-hover: rgba(255, 255, 255, 0.08);
+  --dock-chip-bg: rgba(255, 255, 255, 0.06);
+  color-scheme: dark;
+}
+
+@property --search-edge-angle {
+  syntax: "<angle>";
+  inherits: false;
+  initial-value: 0deg;
+}
+
+:root[data-theme-mode-resolved="dark"][data-theme-mode="graphite"] {
+  --bg-main: #181a1f;
+  --bg-card: #24272d;
+  --bg-card-muted: rgba(36, 39, 45, 0.8);
+  --bg-elevated: rgba(31, 34, 40, 0.96);
+}
+
+:root[data-theme-mode-resolved="dark"][data-theme-mode="midnight"] {
+  --bg-main: #101725;
+  --bg-card: #182131;
+  --bg-card-muted: rgba(24, 33, 49, 0.8);
+  --bg-elevated: rgba(19, 28, 44, 0.96);
+}
+
+:root[data-theme-mode-resolved="dark"][data-theme-mode="forestnight"] {
+  --bg-main: #141c19;
+  --bg-card: #1d2824;
+  --bg-card-muted: rgba(29, 40, 36, 0.8);
+  --bg-elevated: rgba(24, 34, 31, 0.96);
+}

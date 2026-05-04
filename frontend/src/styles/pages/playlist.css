@@ -1,0 +1,90 @@
+/* Playlist hero area and row text helpers. */
+.playlist-hero {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+  margin-bottom: 14px;
+}
+
+.playlist-hero__cover {
+  width: 120px;
+  height: 120px;
+  border-radius: 12px;
+  object-fit: cover;
+  box-shadow: 0 10px 26px rgba(15, 23, 42, 0.16);
+  background: var(--cover-placeholder);
+}
+
+.playlist-hero__meta {
+  min-width: 0;
+}
+
+.playlist-hero__title {
+  margin: 0;
+  font-size: 42px;
+  line-height: 1.05;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+.playlist-hero__sub {
+  margin-top: 8px;
+  color: var(--text-secondary);
+  font-size: 16px;
+}
+
+.playlist-hero__count {
+  margin-top: 6px;
+  color: var(--text-secondary);
+  font-size: 14px;
+}
+
+.playlist-hero__status {
+  min-height: 20px;
+  margin-top: 6px;
+  font-size: 13px;
+}
+
+.playlist-hero__status[data-tone="error"] {
+  color: #c83b32;
+}
+
+.playlist-hero__actions {
+  margin-top: 10px;
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.playlist-hero__actions .btn-outline {
+  padding: 6px 12px;
+  border-radius: 16px;
+  border: 1px solid var(--border);
+  background: var(--bg-card);
+  color: var(--text-main);
+  font: inherit;
+  cursor: pointer;
+}
+
+.playlist-hero__actions .btn-outline:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.playlist-table tbody tr {
+  height: 62px;
+}
+
+.t-title {
+  font-weight: 600;
+  display: block;
+}
+
+.t-art {
+  display: block;
+  font-size: 12px;
+  color: var(--text-secondary);
+  font-weight: 400;
+  margin-top: 2px;
+}

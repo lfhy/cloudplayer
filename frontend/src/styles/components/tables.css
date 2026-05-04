@@ -1,0 +1,207 @@
+/* Reusable table presentation for list pages. */
+/* 表格随内容增高，仅 .stack 滚动；与页面背景融合（导入页 .import-table-wrap 保留卡片样式） */
+.table-wrap {
+  overflow: visible;
+}
+
+.table-wrap:not(.import-table-wrap) {
+  border: none;
+  background: transparent;
+  border-radius: 0;
+}
+
+.search-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.search-table th,
+.search-table td {
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--border);
+  text-align: left;
+  vertical-align: middle;
+}
+
+.search-table thead th {
+  color: var(--text-secondary);
+  font-weight: 600;
+  font-size: 12px;
+  background: rgba(0, 0, 0, 0.02);
+}
+
+.table-wrap:not(.import-table-wrap) .search-table thead th {
+  background: transparent;
+}
+
+.search-table tbody tr:hover {
+  background: rgba(var(--accent-rgb), 0.06);
+}
+
+.search-table tbody tr.search-table__loading:hover {
+  background: transparent;
+}
+
+.col-check {
+  width: 44px;
+  text-align: center;
+}
+
+.search-table:not(.search-table--batch-mode) .col-check {
+  display: none;
+}
+
+.search-row-check {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.search-row-check input,
+.col-check input {
+  width: 16px;
+  height: 16px;
+  margin: 0;
+  appearance: none;
+  -webkit-appearance: none;
+  border: 1px solid rgba(var(--accent-rgb), 0.45);
+  border-radius: 4px;
+  background: var(--bg-card);
+  display: inline-grid;
+  place-content: center;
+  cursor: pointer;
+  transition: background-color 120ms ease, border-color 120ms ease, box-shadow 120ms ease;
+}
+
+.search-row-check input::before,
+.col-check input::before {
+  content: "";
+  width: 4px;
+  height: 8px;
+  border-right: 2px solid #fff;
+  border-bottom: 2px solid #fff;
+  transform: rotate(45deg) scale(0);
+  transform-origin: center;
+  transition: transform 120ms ease;
+}
+
+.search-row-check input:checked,
+.col-check input:checked {
+  background: var(--accent);
+  border-color: var(--accent);
+}
+
+.search-row-check input:checked::before,
+.col-check input:checked::before {
+  transform: rotate(45deg) scale(1);
+}
+
+.search-row-check input:focus-visible,
+.col-check input:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(var(--accent-rgb), 0.24);
+}
+
+.search-table tbody tr.is-selected {
+  background: rgba(var(--accent-rgb), 0.1);
+}
+
+.search-table:not(.search-table--batch-mode) tbody tr.is-selected {
+  background: transparent;
+}
+
+.search-table__loading td {
+  padding: 0;
+  border-bottom: none;
+}
+
+.search-table-loading {
+  min-height: 260px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  color: var(--text-secondary);
+}
+
+.search-table-loading p {
+  margin: 0;
+  font-size: 13px;
+  letter-spacing: 0.01em;
+}
+
+.search-table-loading__bars {
+  display: inline-flex;
+  align-items: flex-end;
+  gap: 6px;
+  height: 28px;
+}
+
+.search-table-loading__bars span {
+  width: 6px;
+  height: 100%;
+  border-radius: 999px;
+  background: linear-gradient(180deg, rgba(var(--accent-rgb), 0.96), rgba(var(--accent-rgb), 0.34));
+  transform-origin: center bottom;
+  animation: search-table-loading-bars 820ms ease-in-out infinite;
+}
+
+.search-table-loading__bars span:nth-child(2) {
+  animation-delay: 90ms;
+}
+
+.search-table-loading__bars span:nth-child(3) {
+  animation-delay: 180ms;
+}
+
+.search-table-loading__bars span:nth-child(4) {
+  animation-delay: 270ms;
+}
+
+@keyframes search-table-loading-bars {
+  0%, 100% {
+    opacity: 0.38;
+    transform: scaleY(0.36);
+  }
+  50% {
+    opacity: 1;
+    transform: scaleY(1);
+  }
+}
+
+.col-idx {
+  width: 36px;
+  color: var(--text-secondary);
+}
+
+.col-cover {
+  width: 52px;
+}
+
+.col-dur {
+  width: 56px;
+  text-align: right;
+}
+
+.row-cover {
+  width: 40px;
+  height: 40px;
+  border-radius: 4px;
+  object-fit: cover;
+  display: block;
+  background: var(--bg-main);
+}
+
+.row-cover-ph {
+  width: 40px;
+  height: 40px;
+  border-radius: 4px;
+  background: var(--cover-placeholder-grad);
+}
+
+.col-like {
+  width: 52px;
+  text-align: center;
+}

@@ -1,0 +1,75 @@
+<!doctype html>
+<!-- Lyrics replacement window hosts the dedicated search-and-apply flow. -->
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>替换歌词</title>
+    <script>
+      globalThis.__CLOUDPLAYER_WINDOW_NAME__ = "lyrics-replace";
+    </script>
+    <script type="module" src="/src/lyrics_replace.js"></script>
+  </head>
+  <body class="lyrics-window">
+    <div class="lyrics-window__shell">
+      <header class="lyrics-window__header" data-wails-drag>
+        <div class="lyrics-window__header-copy">
+          <h1 class="lyrics-window__title">替换歌词</h1>
+          <p class="lyrics-window__desc">从 QQ 音乐、酷狗、网易云、LRCLIB 搜索并预览，应用到当前播放曲目。</p>
+        </div>
+        <div class="lyrics-window__track">
+          <span class="lyrics-window__track-label">当前曲目</span>
+          <strong id="lyrics-replace-track" class="lyrics-window__track-name">未锁定当前曲目</strong>
+        </div>
+      </header>
+      <section class="lyrics-replace-search" aria-label="搜索歌词">
+        <input
+          type="search"
+          id="lyrics-replace-keyword"
+          class="lyrics-replace-input"
+          placeholder="歌手 + 歌名"
+          autocomplete="off"
+        />
+        <button type="button" class="btn-accent" id="lyrics-replace-search-btn">搜索</button>
+      </section>
+      <section class="lyrics-replace-sources" role="group" aria-label="歌词来源">
+        <label class="lyrics-replace-chip"
+          ><input type="checkbox" id="lyrics-replace-src-qq" checked /> <span class="src-qq">QQ</span></label
+        >
+        <label class="lyrics-replace-chip"
+          ><input type="checkbox" id="lyrics-replace-src-kugou" checked /> <span class="src-kg">酷狗</span></label
+        >
+        <label class="lyrics-replace-chip"
+          ><input type="checkbox" id="lyrics-replace-src-netease" checked /> <span class="src-ne">网易</span></label
+        >
+        <label class="lyrics-replace-chip"
+          ><input type="checkbox" id="lyrics-replace-src-lrclib" checked /> <span class="src-lr">LRCLIB</span></label
+        >
+      </section>
+      <section class="lyrics-replace-body">
+        <div class="lyrics-replace-results-wrap">
+          <table class="lyrics-replace-table" aria-label="搜索结果">
+            <thead>
+              <tr>
+                <th class="col-lr-src">来源</th>
+                <th>标题</th>
+                <th>艺人</th>
+                <th class="col-lr-dur">时长</th>
+              </tr>
+            </thead>
+            <tbody id="lyrics-replace-tbody"></tbody>
+          </table>
+        </div>
+        <div class="lyrics-replace-preview-wrap">
+          <div class="lyrics-replace-preview-label">预览</div>
+          <pre id="lyrics-replace-preview" class="lyrics-replace-preview"></pre>
+        </div>
+      </section>
+      <p id="lyrics-replace-error" class="lyrics-replace-error" hidden></p>
+      <footer class="lyrics-window__footer">
+        <button type="button" class="btn-outline" id="lyrics-replace-close">关闭</button>
+        <button type="button" class="btn-accent" id="lyrics-replace-apply" disabled>应用到当前歌曲</button>
+      </footer>
+    </div>
+  </body>
+</html>

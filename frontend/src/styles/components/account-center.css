@@ -1,0 +1,255 @@
+/* Account center modal styles keep provider login flows reusable beyond Kugou. */
+.modal-dialog--account-center {
+  width: min(840px, 100%);
+  max-height: min(84vh, 680px);
+  position: relative;
+  display: grid;
+  gap: 16px;
+  padding: 18px;
+}
+
+.modal-copy--account-center {
+  display: flex;
+  align-items: flex-start;
+  justify-content: flex-start;
+  padding-right: 36px;
+}
+
+.modal-close {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  width: 30px;
+  height: 30px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--bg-card);
+  color: var(--text);
+  font: inherit;
+  font-size: 18px;
+  cursor: pointer;
+}
+
+.account-center-tabs {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.account-center-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: var(--bg-card);
+  color: var(--text);
+  cursor: pointer;
+}
+
+.account-center-tab[disabled] {
+  opacity: 0.52;
+  cursor: not-allowed;
+}
+
+.account-center-tab.is-active {
+  border-color: rgba(var(--accent-rgb), 0.28);
+  background: rgba(var(--accent-rgb), 0.1);
+}
+
+.account-center-tab__icon,
+.account-center-tab__icon svg {
+  width: 18px;
+  height: 18px;
+  display: block;
+}
+
+.account-center-tab__text {
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.account-provider-card__meta,
+.account-provider-qr-meta,
+.account-provider-sms-grid {
+  display: grid;
+  gap: 4px;
+}
+
+.account-center-panel {
+  min-width: 0;
+  display: grid;
+  align-content: start;
+  border: 1px solid color-mix(in srgb, var(--border) 84%, transparent);
+  border-radius: 18px;
+  background: color-mix(in srgb, var(--bg-card) 92%, transparent);
+  padding: 18px;
+}
+
+.account-provider-panel {
+  display: grid;
+  gap: 12px;
+  min-width: 0;
+}
+
+.account-provider-heading {
+  display: grid;
+  gap: 4px;
+}
+
+.account-provider-heading strong {
+  font-size: 16px;
+}
+
+.account-provider-heading span {
+  font-size: 12px;
+}
+
+.account-provider-card {
+  display: grid;
+  grid-template-columns: 46px minmax(0, 1fr);
+  gap: 12px;
+  align-items: center;
+}
+
+.account-provider-main {
+  display: grid;
+  gap: 14px;
+  min-width: 0;
+  width: min(520px, 100%);
+}
+
+.account-provider-card__avatar {
+  width: 46px;
+  height: 46px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 14px;
+  background: rgba(var(--accent-rgb), 0.12);
+  color: var(--accent);
+  font-size: 18px;
+  font-weight: 700;
+  background-size: cover;
+  background-position: center;
+}
+
+.account-provider-card__avatar.is-image {
+  color: transparent;
+}
+
+.account-provider-status {
+  min-height: 1.2em;
+  margin: 0;
+  font-size: 12px;
+}
+
+.account-provider-mode-switch,
+.account-provider-actions,
+.account-provider-footer {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.account-provider-qr-box {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px 0 2px;
+}
+
+.account-provider-mode {
+  min-height: 34px;
+  padding: 0 14px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--bg-card);
+  color: var(--text-secondary);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.account-provider-mode.is-active {
+  border-color: rgba(var(--accent-rgb), 0.3);
+  background: rgba(var(--accent-rgb), 0.1);
+  color: var(--accent);
+}
+
+.account-provider-mode-switch[hidden] {
+  display: none !important;
+}
+
+.account-provider-pane {
+  min-width: 0;
+  padding-top: 4px;
+}
+
+.account-provider-pane[hidden] {
+  display: none !important;
+}
+
+.account-provider-qr-image {
+  width: 172px;
+  height: 172px;
+  padding: 10px;
+  border-radius: 20px;
+  background: #fff;
+  object-fit: contain;
+}
+
+.account-provider-qr-meta,
+.account-provider-sms-grid {
+  gap: 12px;
+}
+
+.account-provider-code-row .import-name-field {
+  min-width: 0;
+}
+
+.account-provider-code-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 12px;
+  align-items: end;
+}
+
+.account-provider-footer {
+  justify-content: space-between;
+  padding-top: 6px;
+}
+
+.account-provider-empty {
+  display: grid;
+  gap: 8px;
+  align-content: start;
+}
+
+@media (max-width: 720px) {
+  .modal-dialog--account-center {
+    padding: 14px;
+  }
+
+  .account-provider-main {
+    width: 100%;
+  }
+
+  .account-provider-code-row {
+    grid-template-columns: 1fr;
+  }
+
+  .account-provider-qr-image {
+    width: min(132px, 100%);
+  }
+
+  .account-provider-footer {
+    align-items: stretch;
+  }
+}

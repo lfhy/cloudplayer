@@ -1,0 +1,56 @@
+/* Kugou preview modal keeps long track lists readable without expanding the import card grid. */
+.modal-dialog--kugou-preview {
+  width: min(720px, 100%);
+  max-height: min(84vh, 760px);
+  display: grid;
+  gap: 14px;
+}
+
+.modal-copy--kugou-preview {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.kugou-preview-modal__body {
+  display: grid;
+  gap: 12px;
+  min-height: 160px;
+}
+
+.kugou-preview-modal__footer {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.modal-close {
+  width: 30px;
+  height: 30px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--bg-card);
+  color: var(--text-secondary);
+  font: inherit;
+  font-size: 18px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.modal-close:hover {
+  color: var(--text);
+  border-color: rgba(var(--accent-rgb), 0.22);
+  background: rgba(var(--accent-rgb), 0.08);
+}
+
+@media (max-width: 560px) {
+  .kugou-preview-modal__footer {
+    flex-direction: column-reverse;
+    align-items: stretch;
+  }
+}
