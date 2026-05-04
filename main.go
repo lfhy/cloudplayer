@@ -4,7 +4,7 @@ import (
 	"embed"
 	"log"
 
-	"cloudplayer/backend/cloudplayer"
+	cloudplayer "cloudplayer/backend/app"
 )
 
 // Main wires embedded frontend assets into the backend app package.

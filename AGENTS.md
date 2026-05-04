@@ -33,6 +33,7 @@
 
 ## Git Workflow
 
+- After completing the requested implementation and validation successfully, create a normal non-amended commit unless the user explicitly says not to commit.
 - When the user explicitly asks for a commit, stage the relevant changes and create a normal non-amended commit.
 - Do not include root-level compiled binaries or other transient build artifacts in commits.
 
