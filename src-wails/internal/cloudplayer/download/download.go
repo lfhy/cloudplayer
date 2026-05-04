@@ -87,6 +87,8 @@ func RunOneJob(client *http.Client, job DownloadJob) {
 	switch ref.ProviderKey {
 	case musicsource.ProviderPJMP3:
 		runPJMP3Job(client, ref.RawID, job, &task, fail)
+	case musicsource.ProviderKugou:
+		runKugouJob(ref.RawID, job, &task, fail)
 	default:
 		fail("不支持的音乐源: %s", ref.ProviderKey)
 	}

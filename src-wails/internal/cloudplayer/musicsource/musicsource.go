@@ -12,16 +12,17 @@ import (
 // Source adapters translate the configured provider name into a concrete search implementation.
 const (
 	ProviderPJMP3      = "pjmp3"
+	ProviderKugou      = "kugou"
 	DefaultProviderKey = ProviderPJMP3
 )
 
 type SearchResult struct {
-	SourceID string  `json:"source_id"`
-	Title    string  `json:"title"`
-	Artist   string  `json:"artist"`
-	Album    string  `json:"album"`
-	DurationMS int64 `json:"duration_ms"`
-	CoverURL *string `json:"cover_url"`
+	SourceID   string  `json:"source_id"`
+	Title      string  `json:"title"`
+	Artist     string  `json:"artist"`
+	Album      string  `json:"album"`
+	DurationMS int64   `json:"duration_ms"`
+	CoverURL   *string `json:"cover_url"`
 }
 
 type Provider interface {
@@ -45,6 +46,7 @@ type SourceRef struct {
 
 var providers = map[string]Provider{
 	ProviderPJMP3: pjmp3Provider{},
+	ProviderKugou: kugouProvider{},
 }
 
 func Current() Provider {

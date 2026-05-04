@@ -87,8 +87,8 @@ func DefaultSettings() Settings {
 
 func NormalizeMusicSourceProvider(value string) string {
 	switch strings.ToLower(strings.TrimSpace(value)) {
-	case "pjmp3":
-		return "pjmp3"
+	case "pjmp3", "kugou":
+		return strings.ToLower(strings.TrimSpace(value))
 	default:
 		return "pjmp3"
 	}

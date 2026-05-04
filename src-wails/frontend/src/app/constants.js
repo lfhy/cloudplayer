@@ -23,7 +23,7 @@ export const APP_THEMES = {
 
 export const APP_THEME_MODES = new Set(["system", "light", "graphite", "midnight", "forestnight"]);
 export const NETWORK_PROXY_MODES = new Set(["direct", "system", "custom"]);
-export const MUSIC_SOURCE_PROVIDERS = new Set(["pjmp3"]);
+export const MUSIC_SOURCE_PROVIDERS = new Set(["pjmp3", "kugou"]);
 export const SETTINGS_TABS = new Set(["appearance", "network", "source", "controls", "lyrics"]);
 export const QUICK_THEME_MODE_LABELS = { system: "跟随系统", light: "浅色", dark: "深色" };
 

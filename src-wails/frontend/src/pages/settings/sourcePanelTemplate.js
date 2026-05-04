@@ -6,21 +6,11 @@ export function sourcePanelTemplate() {
         <div class="settings-field">
           <span class="settings-field-label">在线曲库渠道</span>
           <input type="hidden" id="setting-music-source-provider" value="pjmp3" />
-          <div class="settings-source-grid" role="radiogroup" aria-label="在线曲库渠道">
-            <button
-              type="button"
-              class="settings-source-card"
-              data-music-source-provider-card="pjmp3"
-              role="radio"
-              aria-checked="false"
-            >
-              <span class="settings-source-card__head">
-                <span class="settings-source-card__badge">公共源</span>
-                <strong class="settings-source-card__title">PJMP3</strong>
-              </span>
-              <span class="settings-source-card__desc">当前音乐搜索、试听与下载链路统一走这个公共聚合源。</span>
-            </button>
+          <div class="settings-choice-group" role="radiogroup" aria-label="在线曲库渠道">
+            <button type="button" class="settings-choice" data-music-source-provider-card="pjmp3" role="radio" aria-checked="false">PJMP3 公共源</button>
+            <button type="button" class="settings-choice" data-music-source-provider-card="kugou" role="radio" aria-checked="false">酷狗 Lite</button>
           </div>
+          <p class="settings-field-hint muted">当前默认搜索、试听、播放与下载都会跟随这里选择的曲库渠道。</p>
         </div>
         <div class="settings-field">
           <label for="setting-netease-api-base" class="settings-field-label">网易云歌词 API 根地址（可选）</label>

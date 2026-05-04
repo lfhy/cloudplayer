@@ -5,6 +5,7 @@ go 1.25.0
 require (
 	github.com/PuerkitoBio/goquery v1.12.0
 	github.com/lfhy/cache v0.0.1
+	github.com/lfhy/kugou-music-api v0.0.2
 	github.com/mattn/go-sqlite3 v1.14.42
 	github.com/wailsapp/wails/v3 v3.0.0-alpha.74
 	golang.design/x/hotkey v0.4.1
@@ -46,6 +47,7 @@ require (
 	github.com/samber/lo v1.52.0 // indirect
 	github.com/sergi/go-diff v1.4.0 // indirect
 	github.com/skeema/knownhosts v1.3.2 // indirect
+	github.com/skip2/go-qrcode v0.0.0-20200617195104-da1b6568686e // indirect
 	github.com/wailsapp/go-webview2 v1.0.23 // indirect
 	github.com/xanzy/ssh-agent v0.3.3 // indirect
 	go.opentelemetry.io/otel v1.38.0 // indirect
