@@ -32,8 +32,8 @@ export function createPlaylistManageModal(deps) {
     show();
   }
 
-  function openDelete(playlistId, playlistName) {
-    state = { mode: "delete", playlistId, playlistName: playlistName || "" };
+  function openDelete(playlistId) {
+    state = { mode: "delete", playlistId, playlistName: "" };
     render();
     show();
   }
@@ -44,10 +44,14 @@ export function createPlaylistManageModal(deps) {
     if (state.mode !== "delete") queueMicrotask(() => inputEl()?.focus());
   }
 
-  function close() {
-    if (submitting) return;
+  function hide() {
     modalEl()?.setAttribute("hidden", "true");
     modalEl()?.setAttribute("aria-hidden", "true");
+  }
+
+  function close() {
+    if (submitting) return;
+    hide();
   }
 
   function render() {
@@ -84,7 +88,7 @@ export function createPlaylistManageModal(deps) {
       if (state.mode === "create") await invoke("create_playlist", { name: value });
       if (state.mode === "rename") await invoke("rename_playlist", { playlistId: state.playlistId, name: value });
       if (state.mode === "delete") await invoke("delete_playlist", { playlistId: state.playlistId });
-      close();
+      hide();
       await onChanged?.({ ...state, nextName: value || state.playlistName || "" });
     } catch (error) {
       setStatus("操作失败，请稍后重试。", "error");

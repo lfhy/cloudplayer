@@ -100,7 +100,7 @@ export function createContextMenuController(deps) {
       openRenamePlaylistModal?.(playlist.id, playlist.name || "");
     }));
     root.appendChild(cmBtn("删除歌单", async () => {
-      openDeletePlaylistModal?.(playlist.id, playlist.name || "");
+      openDeletePlaylistModal?.(playlist.id);
     }));
     mountContextMenuAt(event.clientX, event.clientY, root);
   }
