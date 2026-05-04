@@ -91,15 +91,15 @@ func (s *CloudPlayerService) SyncKugouPlaylist(listID int64) (SharePlaylistRespo
 	tracks := make([]importplaylist.ImportedTrackDTO, 0, len(items))
 	for _, item := range items {
 		hash := strings.ToLower(strings.TrimSpace(kugouMapString(item, "hash", "audio_hash", "file_hash", "hash_128")))
-		title := strings.TrimSpace(kugouMapString(item, "songname", "song_name", "filename", "name", "audio_name"))
+		title := kugouTrackTitle(item)
 		if hash == "" || title == "" {
 			continue
 		}
 		albumAudioID := kugouMapInt(item, "album_audio_id", "mixsongid", "mixsong_id", "albumaudioid")
 		tracks = append(tracks, importplaylist.ImportedTrackDTO{
 			Title:         title,
-			Artist:        strings.TrimSpace(kugouMapString(item, "singername", "singer_name", "author_name", "artist")),
-			Album:         strings.TrimSpace(kugouMapString(item, "album_name", "albumname", "album")),
+			Artist:        kugouTrackArtist(item),
+			Album:         kugouTrackAlbum(item),
 			Pjmp3SourceID: musicsource.EncodeSourceID(musicsource.ProviderKugou, encodeKugouImportRawID(hash, albumAudioID)),
 			CoverURL:      kugouMapCoverString(item),
 			DurationMS:    kugouTrackDurationMS(item),

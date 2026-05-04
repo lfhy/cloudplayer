@@ -16,7 +16,7 @@ func kugouFindPlaylistItems(root any) []map[string]any {
 				walk(item)
 			}
 		case map[string]any:
-			if kugouMapInt(typed, "listid", "list_id", "id") > 0 && kugouMapString(typed, "listname", "list_name", "name", "title") != "" {
+			if kugouDirectInt(typed, "listid", "list_id", "id") > 0 && kugouDirectString(typed, "listname", "list_name", "name", "title") != "" {
 				out = append(out, typed)
 			}
 			for _, item := range typed {
@@ -38,8 +38,8 @@ func kugouFindTrackItems(root any) []map[string]any {
 				walk(item)
 			}
 		case map[string]any:
-			if kugouMapString(typed, "hash", "audio_hash", "file_hash", "hash_128") != "" &&
-				kugouMapString(typed, "songname", "song_name", "filename", "name", "audio_name") != "" {
+			if kugouDirectString(typed, "hash", "audio_hash", "file_hash", "hash_128") != "" &&
+				kugouDirectString(typed, "songname", "song_name", "filename", "name", "audio_name") != "" {
 				out = append(out, typed)
 			}
 			for _, item := range typed {
@@ -88,7 +88,95 @@ func kugouMapString(item map[string]any, keys ...string) string {
 	return kugouBodyString(item, keys...)
 }
 
+func kugouDirectString(item map[string]any, keys ...string) string {
+	for _, key := range keys {
+		value, ok := item[key]
+		if !ok {
+			continue
+		}
+		text := strings.TrimSpace(fmt.Sprintf("%v", value))
+		if text != "" && text != "<nil>" {
+			return text
+		}
+	}
+	return ""
+}
+
+func kugouTrackArtist(item map[string]any) string {
+	if value := strings.TrimSpace(kugouMapString(item, "singername", "singer_name", "author_name", "artist")); value != "" {
+		return value
+	}
+	if raw, ok := item["singerinfo"].([]any); ok && len(raw) > 0 {
+		names := make([]string, 0, len(raw))
+		for _, entry := range raw {
+			typed, ok := entry.(map[string]any)
+			if !ok {
+				continue
+			}
+			name := strings.TrimSpace(kugouMapString(typed, "name", "singername", "singer_name"))
+			if name != "" {
+				names = append(names, name)
+			}
+		}
+		if len(names) > 0 {
+			return strings.Join(names, " / ")
+		}
+	}
+	return ""
+}
+
+func kugouTrackAlbum(item map[string]any) string {
+	if value := strings.TrimSpace(kugouMapString(item, "album_name", "albumname", "album")); value != "" {
+		return value
+	}
+	if raw, ok := item["albuminfo"].(map[string]any); ok {
+		if value := strings.TrimSpace(kugouMapString(raw, "name", "album_name", "albumname")); value != "" {
+			return value
+		}
+	}
+	return ""
+}
+
+func kugouTrackTitle(item map[string]any) string {
+	title := strings.TrimSpace(kugouMapString(item, "songname", "song_name", "filename", "name", "audio_name"))
+	if title == "" {
+		return ""
+	}
+	title = strings.TrimSuffix(title, ".mp3")
+	title = strings.TrimSuffix(title, ".flac")
+	title = strings.TrimSuffix(title, ".wav")
+	title = strings.TrimSpace(title)
+	artist := kugouTrackArtist(item)
+	if artist == "" {
+		return title
+	}
+	artistAliases := []string{artist, strings.ReplaceAll(artist, " / ", "、"), strings.ReplaceAll(artist, " / ", "/")}
+	for _, alias := range artistAliases {
+		for _, sep := range []string{" - ", " – ", " — "} {
+			prefix := alias + sep
+			if strings.HasPrefix(title, prefix) {
+				return strings.TrimSpace(strings.TrimPrefix(title, prefix))
+			}
+		}
+	}
+	return title
+}
+
 func kugouMapInt(item map[string]any, keys ...string) int {
+	for _, key := range keys {
+		value, ok := item[key]
+		if !ok {
+			continue
+		}
+		var parsed int
+		if _, err := fmt.Sscanf(strings.TrimSpace(fmt.Sprintf("%v", value)), "%d", &parsed); err == nil && parsed > 0 {
+			return parsed
+		}
+	}
+	return 0
+}
+
+func kugouDirectInt(item map[string]any, keys ...string) int {
 	for _, key := range keys {
 		value, ok := item[key]
 		if !ok {
