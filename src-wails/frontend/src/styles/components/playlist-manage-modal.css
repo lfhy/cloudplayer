@@ -24,6 +24,11 @@
   gap: 8px;
 }
 
+.playlist-manage-modal__field[hidden],
+.playlist-manage-modal__delete-copy[hidden] {
+  display: none !important;
+}
+
 .playlist-manage-modal__field span {
   font-size: 12px;
   color: var(--text-secondary);

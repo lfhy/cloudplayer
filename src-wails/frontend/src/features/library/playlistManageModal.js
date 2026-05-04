@@ -102,20 +102,29 @@ export function createPlaylistManageModal(deps) {
   function wire() {
     if (wired) return;
     wired = true;
-    document.getElementById("btn-playlist-manage-close")?.addEventListener("click", () => close());
-    document.getElementById("btn-playlist-manage-cancel")?.addEventListener("click", () => close());
-    document.getElementById("btn-playlist-manage-confirm")?.addEventListener("click", () => void submit());
-    inputEl()?.addEventListener("keydown", (event) => {
-      if (event.key !== "Enter") return;
-      event.preventDefault();
-      void submit();
-    });
     document.addEventListener("keydown", (event) => {
+      if (event.key === "Enter" && document.activeElement?.id === "playlist-manage-input") {
+        event.preventDefault();
+        void submit();
+        return;
+      }
       if (event.key !== "Escape") return;
       if (modalEl()?.hidden === false) close();
     });
-    modalEl()?.addEventListener("click", (event) => {
-      if (event.target?.id === "playlist-manage-modal") close();
+    document.addEventListener("click", (event) => {
+      const target = event.target;
+      if (!(target instanceof HTMLElement)) return;
+      if (target.id === "btn-playlist-manage-close" || target.id === "btn-playlist-manage-cancel") {
+        close();
+        return;
+      }
+      if (target.id === "btn-playlist-manage-confirm") {
+        void submit();
+        return;
+      }
+      if (target.id === "playlist-manage-modal") {
+        close();
+      }
     });
   }
 
