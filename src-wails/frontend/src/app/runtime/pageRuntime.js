@@ -51,6 +51,9 @@ export function createPageRuntime(deps) {
     syncNeteaseCookieUi,
     warnRequestFailed,
   } = deps;
+  const settingsRefresh = async () => {
+    await deps.refreshKugouSettingsStatus?.();
+  };
 
   let setPage = () => {};
 
@@ -199,6 +202,9 @@ export function createPageRuntime(deps) {
       queueMicrotask(() => {
         search.getActiveSearchInput()?.focus();
       });
+    },
+    onSettingsPage: () => {
+      void settingsRefresh();
     },
     refreshQuickThemeModeUi: deps.refreshQuickThemeModeUi,
     refreshSidebarPlaylists: playlist.refreshSidebarPlaylists,

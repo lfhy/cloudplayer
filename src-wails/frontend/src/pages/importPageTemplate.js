@@ -1,3 +1,5 @@
+import { kugouImportPanelTemplate } from "./import/kugouPanelTemplate.js";
+
 // Import page keeps the three-step flow markup but moves it out of index.html.
 export function importPageTemplate() {
   return `
@@ -20,11 +22,12 @@ export function importPageTemplate() {
           <div class="import-stage__intro">
             <p class="import-stage__eyebrow">步骤 1</p>
             <h2>选择导入方式</h2>
-            <p>你可以从本地目录扫描、解析分享链接，或者直接粘贴文本列表。</p>
+            <p>你可以从本地目录扫描、解析分享链接、同步酷狗歌单，或者直接粘贴文本列表。</p>
           </div>
           <div class="import-method-grid">
             <button type="button" class="import-method-card" data-import-method="local"><span class="import-method-card__icon" aria-hidden="true"></span><span class="import-method-card__title">导入本地目录</span><span class="import-method-card__desc">扫描一个音乐文件夹，把结果带入歌单草稿。</span></button>
             <button type="button" class="import-method-card" data-import-method="share"><span class="import-method-card__icon" aria-hidden="true"></span><span class="import-method-card__title">分享链接导入</span><span class="import-method-card__desc">支持网易云和 QQ 音乐歌单分享链接。</span></button>
+            <button type="button" class="import-method-card" data-import-method="kugou"><span class="import-method-card__icon" aria-hidden="true"></span><span class="import-method-card__title">导入酷狗歌单</span><span class="import-method-card__desc">登录酷狗 Lite 后，可勾选一个或多个歌单直接导入。</span></button>
             <button type="button" class="import-method-card" data-import-method="text"><span class="import-method-card__icon" aria-hidden="true"></span><span class="import-method-card__title">粘贴文本导入</span><span class="import-method-card__desc">适合从聊天记录、TXT、CSV 或 JSON 中整理歌单。</span></button>
           </div>
         </section>
@@ -50,6 +53,7 @@ export function importPageTemplate() {
             </div>
             <p id="import-share-status" class="import-share-status muted" aria-live="polite"></p>
           </div>
+          ${kugouImportPanelTemplate()}
           <div id="import-panel-text" class="import-panel" hidden>
             <h3>粘贴文本列表</h3>
             <div class="import-toolbar">

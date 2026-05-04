@@ -1,5 +1,5 @@
 // Tauri compatibility wrappers map the legacy invoke calls onto Wails service bindings.
-import { CloudPlayerService, DesktopService } from "../../bindings/cloudplayer/index.js";
+import { CloudPlayerService, DesktopService } from "@bindings/cloudplayer/index.js";
 
 function pickFirstNonEmptyString(...values) {
   for (const value of values) {
@@ -100,6 +100,7 @@ const invokeMap = {
   append_playlist_import_items: (args) =>
     CloudPlayerService.AppendPlaylistImportItems(args.playlistId, args.items),
   clear_search_cache: () => CloudPlayerService.ClearSearchCache(),
+  create_kugou_login_qr_code: () => CloudPlayerService.CreateKugouLoginQRCode(),
   create_playlist: (args) => CloudPlayerService.CreatePlaylist(args.name),
   db_status: () => CloudPlayerService.DBStatus(),
   delete_playlist: (args) => CloudPlayerService.DeletePlaylist(args.playlistId),
@@ -112,9 +113,11 @@ const invokeMap = {
     (await CloudPlayerService.GetSearchSongMetadata(args.songIds ?? [])).map((row) => normalizeSearchMetadataRow(row)),
   get_app_log_path: () => CloudPlayerService.GetAppLogPath(),
   get_global_hotkeys: () => CloudPlayerService.GetGlobalHotkeys(),
+  get_kugou_login_status: () => CloudPlayerService.GetKugouLoginStatus(),
   get_preview_url: (args) => CloudPlayerService.GetPreviewURL(args.songId),
   get_settings: () => CloudPlayerService.GetSettings(),
   hide_main_window: () => CloudPlayerService.HideMainWindow(),
+  list_kugou_playlists: () => CloudPlayerService.ListKugouPlaylists(),
   list_local_songs: () => CloudPlayerService.ListLocalSongs(),
   list_playlist_import_items: (args) =>
     CloudPlayerService.ListPlaylistImportItems(args.playlistId),
@@ -123,6 +126,8 @@ const invokeMap = {
   local_path_accessible: (args) => CloudPlayerService.LocalPathAccessible(args.path),
   log_play_event: (args) =>
     CloudPlayerService.LogPlayEvent(args.stage, args.url ?? null, args.error_code ?? null, args.message ?? null, args.extra ?? null),
+  login_kugou_by_cellphone: (args) => CloudPlayerService.LoginKugouByCellphone(args.mobile, args.code),
+  logout_kugou: () => CloudPlayerService.LogoutKugou(),
   lyrics_fetch_candidate: (args) => CloudPlayerService.LyricsFetchCandidate(args.candidate),
   lyrics_search_candidates: (args) =>
     CloudPlayerService.LyricsSearchCandidates(args.keyword, args.durationMs ?? null, args.sources ?? []),
@@ -130,6 +135,7 @@ const invokeMap = {
   parse_import_text: (args) => CloudPlayerService.ParseImportText(args.text, args.fmt),
   cache_preview_for_play: (args) => CloudPlayerService.CachePreviewForPlay(args.songId),
   persist_desktop_lyrics_bounds: () => CloudPlayerService.PersistDesktopLyricsBounds(),
+  poll_kugou_login_qr_code: (args) => CloudPlayerService.PollKugouLoginQRCode(args.key),
   quit_app: () => CloudPlayerService.QuitApp(),
   record_recent_play: (args) => CloudPlayerService.RecordRecentPlay(args.row),
   reset_desktop_lyrics_bounds: () => CloudPlayerService.ResetDesktopLyricsBounds(),
@@ -140,6 +146,7 @@ const invokeMap = {
     CloudPlayerService.ResolveOnlinePlay(args.songId, args.title, args.artist),
   save_settings: (args) => CloudPlayerService.SaveSettings(args.patch),
   scan_music_folder: (args) => CloudPlayerService.ScanMusicFolder(args.path),
+  send_kugou_login_captcha: (args) => CloudPlayerService.SendKugouLoginCaptcha(args.mobile),
   // Wails alpha bindings can surface either json-tag keys or exported Go field names.
   search_songs: async (args) =>
     normalizeSearchResponse(await CloudPlayerService.SearchSongs(args.keyword, args.page)),
@@ -147,6 +154,8 @@ const invokeMap = {
     CloudPlayerService.SetDesktopLyricsClickThrough(args.ignoreCursorEvents),
   show_main_window: () => CloudPlayerService.ShowMainWindow(),
   start_import_enrich: (args) => CloudPlayerService.StartImportEnrich(args.playlistId),
+  sync_kugou_playlist: (args) => CloudPlayerService.SyncKugouPlaylist(args.listId),
+  sync_kugou_playlists: (args) => CloudPlayerService.SyncKugouPlaylists(args.listIds ?? []),
   validate_accelerator: (args) => CloudPlayerService.ValidateAccelerator(args.s),
 };
 

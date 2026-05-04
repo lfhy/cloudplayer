@@ -1,3 +1,5 @@
+import { createImportKugouController } from "./kugouController.js";
+
 // Import page controller owns the multi-step UI while main.js keeps the mutable state.
 export function createImportPageController(deps) {
   const {
@@ -26,6 +28,13 @@ export function createImportPageController(deps) {
     setSelectedPlaylist,
     syncNeteaseCookieUi,
   } = deps;
+  const kugou = createImportKugouController({
+    alertRequestFailed,
+    escapeHtml,
+    invoke,
+    refreshPlaylistSelect,
+    setImportDraft,
+  });
 
   function renderImportTable() {
     const tracks = getImportTracks();
@@ -93,7 +102,10 @@ export function createImportPageController(deps) {
       const method = button.getAttribute("data-import-method") || "local";
       const iconSlot = button.querySelector(".import-method-card__icon");
       if (iconSlot) iconSlot.innerHTML = importMethodIconSvg(method);
-      button.addEventListener("click", () => setImportMethod(method));
+      button.addEventListener("click", () => {
+        setImportMethod(method);
+        if (method === "kugou") void kugou.refreshKugouImport();
+      });
     });
     document.querySelectorAll("[data-import-back-button]").forEach((button) => {
       const iconSlot = button.querySelector(".import-back-button__icon");
@@ -239,6 +251,7 @@ export function createImportPageController(deps) {
         alertRequestFailed(error, "append_playlist_import_items");
       }
     });
+    kugou.wireKugouImport();
   }
 
   return { renderImportTable, wireImportPage };

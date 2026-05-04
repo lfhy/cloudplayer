@@ -81,7 +81,7 @@ export function navIconSvg(name) {
 }
 
 export function importMethodIconSvg(method) {
-  const icons = { local: "folder-2-bold", share: "link-bold", text: "document-text-bold" };
+  const icons = { local: "folder-2-bold", share: "link-bold", kugou: "music-library-2-bold", text: "document-text-bold" };
   return iconSvgByName(icons[method] || "folder-2-bold");
 }
 

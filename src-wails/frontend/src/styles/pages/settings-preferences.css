@@ -126,31 +126,6 @@
   max-width: 420px;
 }
 
-.settings-kugou-qr {
-  display: flex;
-  align-items: center;
-  gap: 14px;
-  padding: 12px 14px;
-  border: 1px solid var(--border);
-  border-radius: 16px;
-  background: rgba(var(--accent-rgb), 0.05);
-}
-
-.settings-kugou-qr__image {
-  width: 132px;
-  height: 132px;
-  border-radius: 14px;
-  background: #fff;
-  object-fit: contain;
-  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.08);
-}
-
-.settings-kugou-qr__meta {
-  display: grid;
-  gap: 8px;
-  max-width: 320px;
-}
-
 .lyric-preview {
   position: relative;
   max-width: 520px;

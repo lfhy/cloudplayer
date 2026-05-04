@@ -16,6 +16,7 @@ export function createNavigationController(deps) {
     onPlaylistPage,
     onRecentPage,
     onSearchPage,
+    onSettingsPage,
     refreshQuickThemeModeUi,
     refreshSidebarPlaylists,
     renderQueuePanel,
@@ -36,6 +37,7 @@ export function createNavigationController(deps) {
     if (pageId === "import") onImportPage();
     if (pageId === "playlist") onPlaylistPage();
     if (pageId === "search") onSearchPage();
+    if (pageId === "settings" && typeof onSettingsPage === "function") onSettingsPage();
   }
 
   function renderSidebar() {

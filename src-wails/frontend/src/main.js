@@ -84,6 +84,7 @@ const pages = createPageRuntime({
   playFromQueueIndex: (...args) => player.playFromQueueIndex(...args), playFromRecentRow: (...args) => player.playFromRecentRow(...args), playFromSearchRow: (...args) => player.playFromSearchRow(...args),
   refreshLocalLibraryTable: (...args) => player.refreshLocalLibraryTable(...args), refreshQuickThemeModeUi: (...args) => refreshQuickThemeModeUi(...args), renderDownloadQueueTable: (...args) => player.renderDownloadQueueTable(...args),
   renderQueuePanel: (...args) => renderQueuePanel(...args), renderRecentPlaysTable: (...args) => renderRecentPlaysTable(...args), resetImportFlow: settings.resetImportFlow, searchState,
+  refreshKugouSettingsStatus: (...args) => settings.refreshKugouSettingsStatus(...args),
   setImportDraft: settings.setImportDraft, setImportMethod: settings.setImportMethod, setImportStep: settings.setImportStep, setLastLibraryFolder: (value) => { lastLibraryFolder = value; },
   setNeteaseCookieState: ({ enabled, value }) => { neteaseCookieEnabled = !!enabled; neteaseCookieValue = String(value || ""); }, setPlayQueue: (rows) => { playQueue = Array.isArray(rows) ? rows : []; },
   setTableMutedMessage,

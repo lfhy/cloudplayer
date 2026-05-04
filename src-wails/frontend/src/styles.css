@@ -15,6 +15,7 @@
 @import "./styles/components/dock-controls.css";
 @import "./styles/pages/import-steps.css";
 @import "./styles/pages/import-form.css";
+@import "./styles/pages/import-kugou.css";
 @import "./styles/components/context-menu.css";
 @import "./styles/windows/lyrics-shell.css";
 @import "./styles/windows/lyrics-replace.css";

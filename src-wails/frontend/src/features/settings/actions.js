@@ -3,6 +3,7 @@ import { wireKugouSettingsActions } from "./kugouActions.js";
 // Settings action helpers isolate one-off button flows from the core controller.
 export function wireSettingsActionButtons(deps) {
   const { alertRequestFailed, invoke } = deps;
+  const kugou = wireKugouSettingsActions(deps);
   document.getElementById("btn-clear-search-cache")?.addEventListener("click", async () => {
     const statusEl = document.getElementById("setting-search-cache-status");
     try {
@@ -23,5 +24,5 @@ export function wireSettingsActionButtons(deps) {
     }
   });
 
-  wireKugouSettingsActions(deps);
+  return { refreshKugouSettingsStatus: kugou?.refreshStatus || (() => {}) };
 }

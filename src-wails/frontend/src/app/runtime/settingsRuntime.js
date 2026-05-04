@@ -136,6 +136,7 @@ export function createSettingsRuntime(deps) {
     loadSettings: settings.loadSettings,
     openCloseConfirmModal: settings.openCloseConfirmModal,
     queueSettingsAutosave: settings.queueSettingsAutosave,
+    refreshKugouSettingsStatus: settings.refreshKugouSettingsStatus,
     setMusicSourceProviderSelection,
     setNetworkProxyModeSelection,
     setSettingsTab,

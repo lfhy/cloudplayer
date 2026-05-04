@@ -6,6 +6,7 @@ import { resolve } from "node:path";
 export default defineConfig({
   resolve: {
     alias: {
+      "@bindings": resolve(__dirname, "bindings"),
       "./bindings/github.com/wailsapp/wails/v3/internal/eventcreate": resolve(
         __dirname,
         "bindings/github.com/wailsapp/wails/v3/internal/eventcreate.js"

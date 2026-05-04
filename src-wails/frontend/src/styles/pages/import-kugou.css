@@ -1,0 +1,129 @@
+/* Kugou import page styles keep auth and playlist sync UI aligned with the import flow layout. */
+.import-kugou-shell {
+  display: grid;
+  gap: 18px;
+}
+
+.import-kugou-head,
+.import-kugou-playlists__head,
+.import-kugou-submit-row,
+.import-kugou-actions,
+.import-kugou-code-row,
+.import-kugou-qr-box {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.import-kugou-head,
+.import-kugou-playlists__head,
+.import-kugou-submit-row {
+  justify-content: space-between;
+}
+
+.import-kugou-status {
+  min-height: 1.2em;
+  margin: 0;
+}
+
+.import-kugou-mode-switch {
+  display: inline-flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.import-kugou-mode {
+  min-height: 38px;
+  padding: 0 16px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--bg-card);
+  color: var(--text-secondary);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.import-kugou-mode.is-active {
+  border-color: rgba(var(--accent-rgb), 0.3);
+  background: rgba(var(--accent-rgb), 0.1);
+  color: var(--accent);
+}
+
+.import-kugou-qr-image {
+  width: 148px;
+  height: 148px;
+  padding: 10px;
+  border-radius: 18px;
+  background: #fff;
+  object-fit: contain;
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.08);
+}
+
+.import-kugou-qr-meta,
+.import-kugou-sms-grid {
+  display: grid;
+  gap: 10px;
+}
+
+.import-kugou-sms-grid {
+  max-width: 620px;
+}
+
+.import-kugou-code-row .import-name-field {
+  flex: 1;
+}
+
+.import-kugou-playlist-list {
+  display: grid;
+  gap: 10px;
+}
+
+.import-kugou-playlist-row {
+  display: grid;
+  grid-template-columns: auto 46px minmax(0, 1fr);
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  border: 1px solid color-mix(in srgb, var(--border) 82%, transparent);
+  border-radius: 16px;
+  background: color-mix(in srgb, var(--bg-card) 90%, transparent);
+}
+
+.import-kugou-playlist-row__checkbox {
+  accent-color: var(--accent);
+}
+
+.import-kugou-playlist-row__cover {
+  width: 46px;
+  height: 46px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 14px;
+  background: rgba(var(--accent-rgb), 0.12);
+  color: var(--accent);
+  font-size: 20px;
+  font-weight: 700;
+  overflow: hidden;
+}
+
+.import-kugou-playlist-row__cover img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.import-kugou-playlist-row__meta {
+  min-width: 0;
+  display: grid;
+  gap: 4px;
+}
+
+.import-kugou-playlist-row__meta strong {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}

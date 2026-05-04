@@ -54,6 +54,7 @@ export function createImportFlowHelpers(deps) {
     const copy = {
       local: ["导入本地目录", "选择一个音乐文件夹，扫描完成后会自动把结果带入歌单草稿。"],
       share: ["导入分享链接", "粘贴歌单分享链接并解析，完成后可以直接保存或合并到已有歌单。"],
+      kugou: ["导入酷狗歌单", "登录酷狗 Lite 后勾选要同步的歌单，导入结果会统一进入保存步骤。"],
       text: ["导入文本列表", "把歌单文本、CSV 或 JSON 粘贴进来，解析后统一进入保存步骤。"],
     };
     if (title) title.textContent = copy[method]?.[0] || "配置导入参数";

@@ -46,6 +46,7 @@ export function createSettingsController(deps) {
   let settingsSaveInFlight = false;
   let settingsSaveQueued = false;
   let suppressSettingsAutoSave = false;
+  let refreshKugouSettingsStatus = () => {};
   let queueSettingsAutosave = () => {};
   const hotkeys = createHotkeyController({ invoke, queueSettingsAutosave: (...args) => queueSettingsAutosave(...args), updateSettingsSaveButtonState: () => {}, warnRequestFailed });
 
@@ -203,7 +204,8 @@ export function createSettingsController(deps) {
         queueSettingsAutosave(immediate);
       });
     });
-    wireSettingsActionButtons({ alertRequestFailed, invoke, setImportDraft, setImportMethod, setImportStep, setPage });
+    const actionButtons = wireSettingsActionButtons({ alertRequestFailed, invoke, setImportDraft, setImportMethod, setImportStep, setPage });
+    refreshKugouSettingsStatus = actionButtons?.refreshKugouSettingsStatus || (() => {});
     document.querySelectorAll("[data-theme-mode-card]").forEach((card) => card.addEventListener("click", () => {
       setThemeModeSelection(card.getAttribute("data-theme-mode-card") || "system");
       const current = getSettingsFormValues();
@@ -280,5 +282,5 @@ export function createSettingsController(deps) {
     }
   }
 
-  return { getSettingsFormValues, loadSettings, openCloseConfirmModal, queueSettingsAutosave, wirePreferencesModals };
+  return { getSettingsFormValues, loadSettings, openCloseConfirmModal, queueSettingsAutosave, refreshKugouSettingsStatus, wirePreferencesModals };
 }
