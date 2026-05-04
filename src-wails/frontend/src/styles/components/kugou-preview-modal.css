@@ -19,6 +19,13 @@
   min-height: 160px;
 }
 
+.kugou-preview-modal__footer {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
 .modal-close {
   width: 30px;
   height: 30px;
@@ -39,4 +46,11 @@
   color: var(--text);
   border-color: rgba(var(--accent-rgb), 0.22);
   background: rgba(var(--accent-rgb), 0.08);
+}
+
+@media (max-width: 560px) {
+  .kugou-preview-modal__footer {
+    flex-direction: column-reverse;
+    align-items: stretch;
+  }
 }

@@ -6,34 +6,32 @@ export function createImportKugouController(deps) {
   const { alertRequestFailed, escapeHtml, invoke, setImportConfigHeader, setImportDraft, refreshPlaylistSelect } = deps;
   const session = createKugouSessionBridge({ alertRequestFailed, invoke });
   let lastRows = [];
+  let previewListID = 0;
   let previewState = new Map();
   let selectedIDs = new Set();
 
   function loginStatusEl() {
     return document.getElementById("import-kugou-login-status");
   }
-
   function playlistListEl() {
     return document.getElementById("import-kugou-playlist-list");
   }
-
   function selectionHintEl() {
     return document.getElementById("import-kugou-selection-hint");
   }
-
   function readSelectedPlaylistIDs() {
     return Array.from(selectedIDs.values());
   }
-
   function previewModalEl() {
     return document.getElementById("kugou-preview-modal");
   }
-
+  function previewImportButtonEl() {
+    return document.getElementById("btn-kugou-preview-import");
+  }
   function syncSelectedIDs(rows) {
     const validIDs = new Set((Array.isArray(rows) ? rows : []).map((row) => Number(row.id || 0)));
     selectedIDs = new Set(Array.from(selectedIDs).filter((id) => validIDs.has(id)));
   }
-
   function setLoginUiVisible(visible) {
     const head = document.getElementById("import-kugou-head");
     const loginShell = document.getElementById("import-kugou-login-shell");
@@ -63,7 +61,6 @@ export function createImportKugouController(deps) {
       else setImportConfigHeader("", "");
     }
   }
-
   function setMode(mode = "qr") {
     document.querySelectorAll("[data-kugou-login-mode]").forEach((button) => {
       const active = button.getAttribute("data-kugou-login-mode") === mode;
@@ -75,7 +72,6 @@ export function createImportKugouController(deps) {
     if (qrPanel) qrPanel.hidden = mode !== "qr";
     if (smsPanel) smsPanel.hidden = mode !== "sms";
   }
-
   function updateSelectionHint() {
     const count = selectedIDs.size;
     if (!selectionHintEl()) return;
@@ -97,12 +93,12 @@ export function createImportKugouController(deps) {
       });
     });
     host.querySelectorAll("[data-kugou-preview-toggle]").forEach((button) => {
-      button.addEventListener("click", () => void togglePreview(Number(button.getAttribute("data-kugou-preview-toggle") || 0)));
+      button.addEventListener("click", () => void openPreviewModal(Number(button.getAttribute("data-kugou-preview-toggle") || 0)));
     });
     updateSelectionHint();
   }
-
   function closePreviewModal() {
+    previewListID = 0;
     previewModalEl()?.setAttribute("hidden", "true");
     previewModalEl()?.setAttribute("aria-hidden", "true");
   }
@@ -116,10 +112,11 @@ export function createImportKugouController(deps) {
     if (title) title.textContent = row?.name || "歌单预览";
     if (subtitle) subtitle.textContent = row?.track_count ? `${row.track_count} 首歌曲` : "";
     if (body) body.innerHTML = renderKugouPreviewMarkup(preview, escapeHtml, row?.name || "");
+    if (previewImportButtonEl()) previewImportButtonEl().disabled = !!preview?.loading;
   }
-
   async function openPreviewModal(listID) {
     if (listID <= 0) return;
+    previewListID = listID;
     previewModalEl()?.removeAttribute("hidden");
     previewModalEl()?.setAttribute("aria-hidden", "false");
     if (!previewState.has(listID)) {
@@ -139,7 +136,18 @@ export function createImportKugouController(deps) {
     }
     renderPreviewModal(listID);
   }
-
+  async function importSinglePlaylist(listID) {
+    if (listID <= 0) return;
+    const result = await invoke("sync_kugou_playlist", { listId: listID });
+    const tracks = result?.tracks || [];
+    setImportDraft(tracks, {
+      suggestedName: result?.playlist_name || result?.playlistName || "酷狗导入歌单",
+      method: "kugou",
+      statusText: `已从酷狗导入 ${tracks.length} 首歌曲，请确认名称后保存。`,
+    });
+    await refreshPlaylistSelect();
+    closePreviewModal();
+  }
   function renderLoginStatus(status) {
     if (!loginStatusEl()) return;
     if (status?.logged_in) {
@@ -157,7 +165,6 @@ export function createImportKugouController(deps) {
     }
     loginStatusEl().textContent = "未登录酷狗概念版。";
   }
-
   async function refreshLoginStatus() {
     const status = await session.getLoginStatus();
     renderLoginStatus(status);
@@ -165,13 +172,11 @@ export function createImportKugouController(deps) {
     else renderPlaylists([]);
     return status;
   }
-
   async function refreshPlaylists() {
     const rows = await session.listPlaylists();
     renderPlaylists(rows || []);
     return rows;
   }
-
   async function importSelectedPlaylists() {
     const listIds = readSelectedPlaylistIDs();
     if (!listIds.length) {
@@ -187,13 +192,11 @@ export function createImportKugouController(deps) {
     });
     await refreshPlaylistSelect();
   }
-
   function wireModeSwitch() {
     document.querySelectorAll("[data-kugou-login-mode]").forEach((button) => {
       button.addEventListener("click", () => setMode(button.getAttribute("data-kugou-login-mode") || "qr"));
     });
   }
-
   function wireActions() {
     document.getElementById("btn-import-kugou-qr")?.addEventListener("click", async () => {
       try {
@@ -270,12 +273,13 @@ export function createImportKugouController(deps) {
       updateSelectionHint();
     });
     document.getElementById("btn-kugou-preview-close")?.addEventListener("click", () => closePreviewModal());
+    document.getElementById("btn-kugou-preview-cancel")?.addEventListener("click", () => closePreviewModal());
+    previewImportButtonEl()?.addEventListener("click", () => void importSinglePlaylist(previewListID));
     previewModalEl()?.addEventListener("click", (event) => {
       if (event.target?.id === "kugou-preview-modal") closePreviewModal();
     });
     document.getElementById("btn-import-kugou-import")?.addEventListener("click", () => void importSelectedPlaylists());
   }
-
   function wireKugouImport() {
     wireModeSwitch();
     wireActions();

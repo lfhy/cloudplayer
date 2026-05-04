@@ -11,6 +11,10 @@ export function kugouPlaylistPreviewModalTemplate() {
           <button type="button" class="modal-close" id="btn-kugou-preview-close" aria-label="关闭歌单预览">×</button>
         </header>
         <section id="kugou-preview-body" class="kugou-preview-modal__body"></section>
+        <footer class="kugou-preview-modal__footer">
+          <button type="button" class="modal-cancel" id="btn-kugou-preview-cancel">关闭</button>
+          <button type="button" class="btn-accent" id="btn-kugou-preview-import">直接导入这个歌单</button>
+        </footer>
       </div>
     </div>
   `;
