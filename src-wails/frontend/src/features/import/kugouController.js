@@ -1,10 +1,13 @@
 import { createKugouSessionBridge } from "../kugou/session.js";
-import { proxyRemoteAssetSrc } from "../../wails/tauri-core.js";
+import { renderKugouPlaylistCards } from "./kugouPlaylistView.js";
 
 // Kugou import controller owns login-mode switching and playlist selection inside the import page.
 export function createImportKugouController(deps) {
   const { alertRequestFailed, escapeHtml, invoke, setImportConfigHeader, setImportDraft, refreshPlaylistSelect } = deps;
   const session = createKugouSessionBridge({ alertRequestFailed, invoke });
+  let expandedPreviewID = null;
+  let lastRows = [];
+  let previewState = new Map();
   let selectedIDs = new Set();
 
   function loginStatusEl() {
@@ -21,6 +24,11 @@ export function createImportKugouController(deps) {
 
   function readSelectedPlaylistIDs() {
     return Array.from(selectedIDs.values());
+  }
+
+  function syncSelectedIDs(rows) {
+    const validIDs = new Set((Array.isArray(rows) ? rows : []).map((row) => Number(row.id || 0)));
+    selectedIDs = new Set(Array.from(selectedIDs).filter((id) => validIDs.has(id)));
   }
 
   function setLoginUiVisible(visible) {
@@ -74,28 +82,9 @@ export function createImportKugouController(deps) {
   function renderPlaylists(rows) {
     const host = playlistListEl();
     if (!host) return;
-    const items = Array.isArray(rows) ? rows : [];
-    if (!items.length) {
-      host.innerHTML = '<p class="muted">当前没有可导入的酷狗歌单。</p>';
-      updateSelectionHint();
-      return;
-    }
-    host.innerHTML = items.map((row) => {
-      const checked = selectedIDs.has(Number(row.id));
-      const cover = row.cover_url || row.coverUrl || row.CoverURL || "";
-      const coverSrc = proxyRemoteAssetSrc(cover);
-      const suffix = row.track_count ? `${row.track_count} 首` : "歌单";
-      return `
-        <label class="import-kugou-playlist-row">
-          <input type="checkbox" class="import-kugou-playlist-row__checkbox" data-kugou-playlist-id="${row.id}" ${checked ? "checked" : ""} />
-          <span class="import-kugou-playlist-row__cover">${coverSrc ? `<img src="${coverSrc}" alt="" />` : "♪"}</span>
-          <span class="import-kugou-playlist-row__meta">
-            <strong>${escapeHtml(row.name || "")}</strong>
-            <span class="muted">${escapeHtml(suffix)}</span>
-          </span>
-        </label>
-      `;
-    }).join("");
+    lastRows = Array.isArray(rows) ? rows : [];
+    syncSelectedIDs(lastRows);
+    renderKugouPlaylistCards(host, { escapeHtml, expandedPreviewID, previewState, rows: lastRows, selectedIDs });
     host.querySelectorAll("[data-kugou-playlist-id]").forEach((checkbox) => {
       checkbox.addEventListener("change", () => {
         const id = Number(checkbox.getAttribute("data-kugou-playlist-id") || 0);
@@ -104,7 +93,36 @@ export function createImportKugouController(deps) {
         updateSelectionHint();
       });
     });
+    host.querySelectorAll("[data-kugou-preview-toggle]").forEach((button) => {
+      button.addEventListener("click", () => void togglePreview(Number(button.getAttribute("data-kugou-preview-toggle") || 0)));
+    });
     updateSelectionHint();
+  }
+
+  async function togglePreview(listID) {
+    if (listID <= 0) return;
+    if (expandedPreviewID === listID) {
+      expandedPreviewID = null;
+      renderPlaylists(lastRows);
+      return;
+    }
+    expandedPreviewID = listID;
+    if (!previewState.has(listID)) {
+      previewState.set(listID, { loading: true, tracks: [] });
+      renderPlaylists(lastRows);
+      try {
+        const result = await invoke("sync_kugou_playlist", { listId: listID });
+        previewState.set(listID, {
+          loading: false,
+          playlistName: result?.playlist_name || result?.playlistName || "",
+          tracks: Array.isArray(result?.tracks) ? result.tracks : [],
+        });
+      } catch (error) {
+        const message = error instanceof Error ? error.message : "歌单预览加载失败，请稍后重试。";
+        previewState.set(listID, { error: message, loading: false, tracks: [] });
+      }
+    }
+    if (expandedPreviewID === listID) renderPlaylists(lastRows);
   }
 
   function renderLoginStatus(status) {
@@ -213,6 +231,8 @@ export function createImportKugouController(deps) {
     document.getElementById("btn-import-kugou-logout")?.addEventListener("click", async () => {
       try {
         await session.logout();
+        expandedPreviewID = null;
+        previewState = new Map();
         selectedIDs = new Set();
         renderLoginStatus({ status: "logged_out", logged_in: false });
         renderPlaylists([]);
