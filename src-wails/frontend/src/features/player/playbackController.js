@@ -63,7 +63,7 @@ export function createPlaybackController(deps) {
     const item = queue[index];
     updatePlayerChrome({
       title: item.title,
-      sub: `${item.local_path ? item.artist || "本地音乐" : item.artist || "在线试听"} · ${item.local_path ? "正在加载本地文件…" : "正在拉取音频…"}`,
+      sub: item.artist || "",
       touchCover: false,
     });
     const playButton = document.getElementById("btn-player-play");
@@ -82,13 +82,7 @@ export function createPlaybackController(deps) {
       onAfterQueueChanged();
       updatePlayerChrome({
         title: item.title,
-        sub: item.local_path
-          ? item.artist
-            ? `${item.artist} · 本地`
-            : "本地音乐"
-          : item.artist
-            ? `${item.artist} · 在线试听`
-            : "在线试听",
+        sub: item.artist || "",
         coverUrl: item.cover_url || null,
       });
       if (playButton) {
