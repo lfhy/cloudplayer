@@ -2,6 +2,7 @@
 import { accountCenterModalTemplate } from "../components/accountCenterModalTemplate.js";
 import { closeConfirmModalTemplate } from "../components/closeConfirmModalTemplate.js";
 import { kugouPlaylistPreviewModalTemplate } from "../components/kugouPlaylistPreviewModalTemplate.js";
+import { playlistManageModalTemplate } from "../components/playlistManageModalTemplate.js";
 import { playerDockTemplate } from "../components/playerDockTemplate.js";
 import { queuePanelTemplate } from "../components/queuePanelTemplate.js";
 import { dailyPageTemplate } from "../pages/dailyPageTemplate.js";
@@ -43,5 +44,6 @@ export function renderMainShell(root = document.getElementById("app")) {
     ${accountCenterModalTemplate()}
     ${closeConfirmModalTemplate()}
     ${kugouPlaylistPreviewModalTemplate()}
+    ${playlistManageModalTemplate()}
   `;
 }

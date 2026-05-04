@@ -1,0 +1,62 @@
+/* Playlist manage modal keeps create, rename and delete flows consistent with the rest of the glass UI. */
+.modal-dialog--playlist-manage {
+  width: min(460px, 100%);
+  position: relative;
+  display: grid;
+  gap: 16px;
+  padding: 18px;
+}
+
+.modal-copy--playlist-manage {
+  display: flex;
+  align-items: flex-start;
+  justify-content: flex-start;
+  padding-right: 36px;
+}
+
+.playlist-manage-modal__body {
+  display: grid;
+  gap: 14px;
+}
+
+.playlist-manage-modal__field {
+  display: grid;
+  gap: 8px;
+}
+
+.playlist-manage-modal__field span {
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+.playlist-manage-modal__delete-copy {
+  padding: 14px 16px;
+  border-radius: 16px;
+  border: 1px solid rgba(221, 58, 58, 0.18);
+  background: rgba(221, 58, 58, 0.08);
+  color: var(--text);
+  line-height: 1.6;
+}
+
+.playlist-manage-modal__status {
+  min-height: 18px;
+  margin: 0;
+  font-size: 12px;
+}
+
+.playlist-manage-modal__status[data-tone="error"] {
+  color: #c83b32;
+}
+
+.playlist-manage-modal__footer {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 12px;
+}
+
+.playlist-manage-modal__confirm--danger {
+  background: linear-gradient(180deg, #e33434, #cf2323);
+  border-color: #bb1d1d;
+  color: #ffffff;
+}

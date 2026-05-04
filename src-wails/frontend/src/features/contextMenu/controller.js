@@ -25,6 +25,8 @@ export function createContextMenuController(deps) {
     getSelectedPlaylistName,
     invoke,
     loadPlaylistDetail,
+    openDeletePlaylistModal,
+    openRenamePlaylistModal,
     playFromQueueIndex,
     playFromSearchRow,
     refreshPlaylistSelect,
@@ -95,20 +97,10 @@ export function createContextMenuController(deps) {
       renderQueuePanel();
     }));
     root.appendChild(cmBtn("重命名", async () => {
-      const name = window.prompt("歌单名称", playlist.name || "");
-      if (!name || !name.trim()) return;
-      await invoke("rename_playlist", { playlistId: playlist.id, name: name.trim() });
-      if (getSelectedPlaylistId() === playlist.id) setSelectedPlaylist(playlist.id, name.trim());
-      await refreshSidebarPlaylists();
-      await refreshPlaylistSelect();
+      openRenamePlaylistModal?.(playlist.id, playlist.name || "");
     }));
     root.appendChild(cmBtn("删除歌单", async () => {
-      if (!window.confirm(`确定删除歌单「${(playlist.name || "").trim() || playlist.id}」？`)) return;
-      await invoke("delete_playlist", { playlistId: playlist.id });
-      if (getSelectedPlaylistId() === playlist.id) setSelectedPlaylist(null, "");
-      await refreshSidebarPlaylists();
-      await refreshPlaylistSelect();
-      if (document.querySelector('.page[data-page="playlist"]')?.classList.contains("page-active")) setPage("home");
+      openDeletePlaylistModal?.(playlist.id, playlist.name || "");
     }));
     mountContextMenuAt(event.clientX, event.clientY, root);
   }

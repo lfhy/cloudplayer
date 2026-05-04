@@ -82,7 +82,18 @@ func (s *CloudPlayerService) RenamePlaylist(playlistID int64, name string) error
 }
 
 func (s *CloudPlayerService) DeletePlaylist(playlistID int64) error {
-	result, err := s.state.DB.Exec(`DELETE FROM playlists WHERE id = ?`, playlistID)
+	tx, err := s.state.DB.Begin()
+	if err != nil {
+		return err
+	}
+	defer rollback(tx)
+	if _, err := tx.Exec(`DELETE FROM playlist_import_items WHERE playlist_id = ?`, playlistID); err != nil {
+		return err
+	}
+	if _, err := tx.Exec(`DELETE FROM playlist_songs WHERE playlist_id = ?`, playlistID); err != nil {
+		return err
+	}
+	result, err := tx.Exec(`DELETE FROM playlists WHERE id = ?`, playlistID)
 	if err != nil {
 		return err
 	}
@@ -93,7 +104,7 @@ func (s *CloudPlayerService) DeletePlaylist(playlistID int64) error {
 	if changed == 0 {
 		return fmt.Errorf("歌单不存在")
 	}
-	return nil
+	return tx.Commit()
 }
 
 func (s *CloudPlayerService) DeletePlaylistImportItem(playlistID, itemID int64) error {

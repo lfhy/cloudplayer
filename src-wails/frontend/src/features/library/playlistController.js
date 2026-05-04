@@ -23,6 +23,8 @@ export function createPlaylistController(deps) {
     setPlaylistDetailRows,
     setPlayQueue,
     setSelectedPlaylist,
+    showDeletePlaylistModal,
+    showRenamePlaylistModal,
     warnRequestFailed,
   } = deps;
   const enrich = createPlaylistEnrichHelpers({ invoke, warnRequestFailed });
@@ -209,16 +211,7 @@ export function createPlaylistController(deps) {
     });
     document.getElementById("btn-playlist-rename")?.addEventListener("click", async () => {
       if (getSelectedPlaylistId() == null) return;
-      const nextName = window.prompt("重命名歌单", getSelectedPlaylistName() || "歌单");
-      if (nextName == null || !nextName.trim()) return;
-      try {
-        await invoke("rename_playlist", { playlistId: getSelectedPlaylistId(), name: nextName.trim() });
-        setSelectedPlaylist(getSelectedPlaylistId(), nextName.trim());
-        await refreshSidebarPlaylists();
-        await loadPlaylistDetail(getSelectedPlaylistId(), getSelectedPlaylistName());
-      } catch (error) {
-        alertRequestFailed(error, "rename_playlist");
-      }
+      showRenamePlaylistModal?.(getSelectedPlaylistId(), getSelectedPlaylistName() || "歌单");
     });
     document.getElementById("btn-playlist-play-all")?.addEventListener("click", () => {
       const playable = getPlaylistDetailRows().filter((row) => (row.pjmp3_source_id || "").trim());

@@ -2,6 +2,7 @@ import { createContextMenuController } from "../../features/contextMenu/controll
 import { createImportPageController } from "../../features/import/controller.js";
 import { createNavigationController } from "../../features/layout/navigationController.js";
 import { createHomeController } from "../../features/library/homeController.js";
+import { createPlaylistManageModal } from "../../features/library/playlistManageModal.js";
 import { createPlaylistController } from "../../features/library/playlistController.js";
 import { createSearchController } from "../../features/search/controller.js";
 
@@ -58,6 +59,27 @@ export function createPageRuntime(deps) {
   };
 
   let setPage = () => {};
+  const playlistManageModal = createPlaylistManageModal({
+    alertRequestFailed,
+    invoke,
+    onChanged: async (result) => {
+      await playlist.refreshSidebarPlaylists();
+      await playlist.refreshPlaylistSelect();
+      if (result.mode === "create") return;
+      if (result.mode === "delete") {
+        if (getSelectedPlaylistId() === result.playlistId) {
+          setSelectedPlaylist(null, "");
+          setPlaylistDetailRows([]);
+          setPage("home");
+        }
+        return;
+      }
+      if (result.mode === "rename" && getSelectedPlaylistId() === result.playlistId) {
+        setSelectedPlaylist(result.playlistId, result.nextName);
+        await playlist.loadPlaylistDetail(result.playlistId, result.nextName);
+      }
+    },
+  });
 
   const home = createHomeController({
     escapeHtml,
@@ -96,6 +118,8 @@ export function createPageRuntime(deps) {
     setPlaylistDetailRows,
     setPlayQueue,
     setSelectedPlaylist,
+    showDeletePlaylistModal: (...args) => playlistManageModal.openDelete(...args),
+    showRenamePlaylistModal: (...args) => playlistManageModal.openRename(...args),
     warnRequestFailed,
   });
 
@@ -109,6 +133,8 @@ export function createPageRuntime(deps) {
     getSelectedPlaylistName,
     invoke,
     loadPlaylistDetail: playlist.loadPlaylistDetail,
+    openDeletePlaylistModal: (...args) => playlistManageModal.openDelete(...args),
+    openRenamePlaylistModal: (...args) => playlistManageModal.openRename(...args),
     playFromQueueIndex,
     playFromSearchRow,
     refreshPlaylistSelect: playlist.refreshPlaylistSelect,
@@ -188,6 +214,9 @@ export function createPageRuntime(deps) {
     onLoginAccount: () => {
       openAccountCenter?.("kugou");
     },
+    onNewPlaylist: () => {
+      playlistManageModal.openCreate("新歌单");
+    },
     onImportPage: () => {
       if (!getImportMethod() && !getImportTracks().length) resetImportFlow();
       void importer.refreshImportPageState();
@@ -219,6 +248,7 @@ export function createPageRuntime(deps) {
     sidebarMenuItems,
   });
   setPage = navigation.setPage;
+  playlistManageModal.wire();
 
   return {
     closeContextMenu: context.closeContextMenu,

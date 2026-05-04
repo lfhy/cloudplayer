@@ -1,12 +1,10 @@
 // Navigation wiring owns sidebar rendering and page activation so bootstrap stays declarative.
 export function createNavigationController(deps) {
   const {
-    alertRequestFailed,
     appLogoMarkSvg,
     applyQuickThemeMode,
     escapeHtml,
     getActiveSearchInput,
-    invoke,
     navIconSvg,
     navItems,
     onDailyPage,
@@ -14,12 +12,12 @@ export function createNavigationController(deps) {
     onHomePage,
     onImportPage,
     onLoginAccount,
+    onNewPlaylist,
     onPlaylistPage,
     onRecentPage,
     onSearchPage,
     onSettingsPage,
     refreshQuickThemeModeUi,
-    refreshSidebarPlaylists,
     renderQueuePanel,
     sidebarMenuItems,
   } = deps;
@@ -58,7 +56,6 @@ export function createNavigationController(deps) {
     sidebar.appendChild(renderPlaylistSection());
     sidebar.appendChild(renderAccountSection());
     refreshQuickThemeModeUi();
-    void refreshSidebarPlaylists();
   }
 
   function toggleQueuePanel() {
@@ -168,14 +165,7 @@ export function createNavigationController(deps) {
   async function onCreatePlaylist(event) {
     event.preventDefault();
     event.stopPropagation();
-    const name = window.prompt("新歌单名称", "新歌单");
-    if (name == null || !String(name).trim()) return;
-    try {
-      await invoke("create_playlist", { name: name.trim() });
-      await refreshSidebarPlaylists();
-    } catch (error) {
-      alertRequestFailed(error, "create_playlist sidebar");
-    }
+    onNewPlaylist?.();
   }
 
   return { renderSidebar, setPage, toggleQueuePanel, wireQueueToggle };
