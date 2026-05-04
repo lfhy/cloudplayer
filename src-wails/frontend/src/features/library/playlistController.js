@@ -1,4 +1,5 @@
 import { coverImgHtml, setCoverImageSource } from "../../app/helpers/covers.js";
+import { collectPlaylistsMissingPlayableData, hasMissingPlayableData } from "./playlistEnrichHelpers.js";
 
 // Playlist controller handles sidebar, hero metadata, and playlist search helpers.
 export function createPlaylistController(deps) {
@@ -135,14 +136,6 @@ export function createPlaylistController(deps) {
     renderPlaylistDetailTable();
   }
 
-  function hasMissingPlayableData(rows) {
-    return (Array.isArray(rows) ? rows : []).some((row) => {
-      const title = String(row?.title || "").trim();
-      if (!title) return false;
-      return !String(row?.pjmp3_source_id || "").trim() || !String(row?.cover_url || "").trim();
-    });
-  }
-
   async function maybeEnrichPlaylist(playlistID, rows, { force = false } = {}) {
     const normalizedID = Number(playlistID || 0);
     if (!Number.isFinite(normalizedID) || normalizedID <= 0) return;
@@ -230,6 +223,30 @@ export function createPlaylistController(deps) {
       const playlistID = getSelectedPlaylistId();
       if (playlistID == null) return;
       await maybeEnrichPlaylist(playlistID, getPlaylistDetailRows(), { force: true });
+    });
+    document.getElementById("btn-playlist-enrich-all")?.addEventListener("click", async () => {
+      const button = document.getElementById("btn-playlist-enrich-all");
+      const previousText = button?.textContent || "";
+      if (button) {
+        button.disabled = true;
+        button.textContent = "批量补全中…";
+      }
+      try {
+        const missingPlaylists = await collectPlaylistsMissingPlayableData(invoke);
+        for (const playlist of missingPlaylists) {
+          await maybeEnrichPlaylist(playlist.id, playlist.rows, { force: true });
+        }
+        if (getSelectedPlaylistId() != null) {
+          await loadPlaylistDetail(getSelectedPlaylistId(), getSelectedPlaylistName());
+        }
+      } catch (error) {
+        alertRequestFailed(error, "batch playlist enrich");
+      } finally {
+        if (button) {
+          button.disabled = false;
+          button.textContent = previousText || "批量补全缺失歌单";
+        }
+      }
     });
     document.getElementById("btn-playlist-rename")?.addEventListener("click", async () => {
       if (getSelectedPlaylistId() == null) return;
