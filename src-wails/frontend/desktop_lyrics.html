@@ -218,6 +218,21 @@
         transition: color 72ms linear;
         will-change: color;
       }
+      .ly-line-base,
+      .ly-line-fill {
+        display: block;
+        white-space: nowrap;
+        text-overflow: ellipsis;
+        overflow: hidden;
+        max-width: 100%;
+      }
+      .ly-line-fill {
+        position: absolute;
+        inset: 0 auto 0 0;
+        pointer-events: none;
+        will-change: clip-path;
+        transition: clip-path 70ms linear, -webkit-clip-path 70ms linear;
+      }
       .l2 {
         align-self: flex-end;
         text-align: right;
