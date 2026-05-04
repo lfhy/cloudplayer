@@ -33,10 +33,11 @@ export function createImportKugouController(deps) {
     const clearButton = document.getElementById("btn-import-kugou-clear");
     const importButton = document.getElementById("btn-import-kugou-import");
     const headCopy = document.getElementById("import-kugou-head-copy");
-    if (head) head.hidden = !visible;
+    const showLoggedInHead = visible;
+    if (head) head.hidden = !showLoggedInHead;
     if (loginShell) loginShell.hidden = !visible;
     if (loginStatus) loginStatus.hidden = !visible;
-    if (logoutButton) logoutButton.hidden = visible;
+    if (logoutButton) logoutButton.hidden = true;
     if (refreshButton) refreshButton.hidden = visible;
     if (selectAllButton) selectAllButton.hidden = visible;
     if (clearButton) clearButton.hidden = visible;
@@ -44,7 +45,7 @@ export function createImportKugouController(deps) {
     if (headCopy) {
       headCopy.textContent = visible
         ? "登录酷狗概念版后勾选要同步的歌单，导入结果会统一进入保存步骤。"
-        : "当前账号已连接，可直接刷新并勾选要导入的歌单。";
+        : "";
     }
     if (setImportConfigHeader) {
       if (visible) setImportConfigHeader("导入酷狗歌单", "登录酷狗概念版后勾选要同步的歌单，导入结果会统一进入保存步骤。");
