@@ -72,6 +72,11 @@ export function createImportPageController(deps) {
     URL.revokeObjectURL(anchor.href);
   }
 
+  function refreshImportPageState() {
+    if (getImportMethod() !== "kugou") return Promise.resolve(null);
+    return kugou.refreshKugouImport();
+  }
+
   function wireImportPage() {
     const cookieEnableEl = document.getElementById("opt-netease-cookie-enabled");
     const cookieInputEl = document.getElementById("opt-netease-cookie");
@@ -255,5 +260,5 @@ export function createImportPageController(deps) {
     kugou.wireKugouImport();
   }
 
-  return { renderImportTable, wireImportPage };
+  return { refreshImportPageState, renderImportTable, wireImportPage };
 }

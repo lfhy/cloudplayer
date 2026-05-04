@@ -41,6 +41,7 @@ export function createPageRuntime(deps) {
     resetImportFlow,
     searchState,
     setImportDraft,
+    setImportConfigHeader,
     setImportMethod,
     setImportStep,
     setLastLibraryFolder,
@@ -162,6 +163,7 @@ export function createPageRuntime(deps) {
     refreshPlaylistSelect: playlist.refreshPlaylistSelect,
     refreshSidebarPlaylists: playlist.refreshSidebarPlaylists,
     setImportDraft,
+    setImportConfigHeader,
     setImportMethod,
     setImportStep,
     setLastLibraryFolder,
@@ -188,6 +190,7 @@ export function createPageRuntime(deps) {
     },
     onImportPage: () => {
       if (!getImportMethod() && !getImportTracks().length) resetImportFlow();
+      void importer.refreshImportPageState();
       void playlist.refreshPlaylistSelect();
     },
     onPlaylistPage: () => {

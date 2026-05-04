@@ -33,7 +33,7 @@ export function importPageTemplate() {
         </section>
         <section class="import-stage import-stage--config" id="import-config-stage" hidden>
           <div class="import-stage__head">
-            <div><p class="import-stage__eyebrow">步骤 2</p><h2 id="import-config-title">配置导入参数</h2><p id="import-config-desc" class="muted"></p></div>
+            <div id="import-config-copy"><p class="import-stage__eyebrow">步骤 2</p><h2 id="import-config-title">配置导入参数</h2><p id="import-config-desc" class="muted"></p></div>
             <button type="button" id="btn-import-back" class="import-back-button" data-import-back-button><span class="import-back-button__icon" aria-hidden="true"></span><span>上一步</span></button>
           </div>
           <div id="import-panel-local" class="import-panel" hidden>

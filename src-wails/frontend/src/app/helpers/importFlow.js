@@ -63,8 +63,11 @@ export function createImportFlowHelpers(deps) {
   }
 
   function setImportConfigHeader(titleText = "", descText = "") {
+    const copy = document.getElementById("import-config-copy");
     const title = document.getElementById("import-config-title");
     const desc = document.getElementById("import-config-desc");
+    const hasCopy = !!String(titleText || "").trim() || !!String(descText || "").trim();
+    if (copy) copy.hidden = !hasCopy;
     if (title) title.textContent = String(titleText || "");
     if (desc) desc.textContent = String(descText || "");
   }
