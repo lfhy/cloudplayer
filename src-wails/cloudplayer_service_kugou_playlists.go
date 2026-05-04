@@ -53,22 +53,32 @@ func (s *CloudPlayerService) ListKugouPlaylists() ([]KugouPlaylistRow, error) {
 }
 
 func (s *CloudPlayerService) SyncKugouPlaylist(listID int64) (SharePlaylistResponse, error) {
-	client, _, err := kugouClientFromSession()
+	client, session, err := kugouClientFromSession()
 	if err != nil {
 		return SharePlaylistResponse{}, err
 	}
 	if listID <= 0 {
 		return SharePlaylistResponse{}, fmt.Errorf("无效的酷狗歌单 ID")
 	}
-	detailResp, err := client.PlaylistDetail(context.Background(), kg.PlaylistDetailRequest{Ids: fmt.Sprintf("%d", listID)})
-	if err != nil {
-		return SharePlaylistResponse{}, err
-	}
 	tracksResp, err := client.PlaylistTrackAll(context.Background(), kg.PlaylistTrackAllRequest{Id: listID, Page: 1, Pagesize: 500})
 	if err != nil {
 		return SharePlaylistResponse{}, err
 	}
-	name := kugouFindPlaylistName(detailResp.Body)
+	detailResp, detailErr := client.PlaylistDetail(context.Background(), kg.PlaylistDetailRequest{
+		Ids:    fmt.Sprintf("%d", listID),
+		Token:  strings.TrimSpace(session.Cookie["token"]),
+		Userid: strings.TrimSpace(session.Cookie["userid"]),
+		Cookie: session.Cookie,
+	})
+	if detailErr != nil && !kugouUpstream404(detailErr) {
+		return SharePlaylistResponse{}, detailErr
+	}
+	name := kugouFindPlaylistName(tracksResp.Body)
+	if detailResp != nil {
+		if detailName := kugouFindPlaylistName(detailResp.Body); strings.TrimSpace(detailName) != "" {
+			name = detailName
+		}
+	}
 	items := kugouFindTrackItems(tracksResp.Body)
 	tracks := make([]importplaylist.ImportedTrackDTO, 0, len(items))
 	for _, item := range items {
@@ -96,4 +106,8 @@ func encodeKugouImportRawID(hash string, albumAudioID int) string {
 		return hash
 	}
 	return fmt.Sprintf("%s|%d", hash, albumAudioID)
+}
+
+func kugouUpstream404(err error) bool {
+	return err != nil && strings.Contains(err.Error(), "upstream status 404")
 }
