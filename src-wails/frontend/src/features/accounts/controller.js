@@ -36,17 +36,14 @@ export function createAccountCenterController(deps) {
       return `
         <button
           type="button"
-          class="account-center-provider${active ? " is-active" : ""}"
+          class="account-center-tab${active ? " is-active" : ""}"
           data-account-provider="${provider.key}"
           role="tab"
           aria-selected="${active ? "true" : "false"}"
           ${disabled}
         >
-          <span class="account-center-provider__icon">${iconSvgByName(provider.icon)}</span>
-          <span class="account-center-provider__meta">
-            <strong>${escapeHtml(provider.title)}</strong>
-            <span>${escapeHtml(provider.subtitle)}</span>
-          </span>
+          <span class="account-center-tab__icon">${iconSvgByName(provider.icon)}</span>
+          <span class="account-center-tab__text">${escapeHtml(provider.title)}</span>
         </button>
       `;
     }).join("");
@@ -65,7 +62,7 @@ export function createAccountCenterController(deps) {
     if (!host) return;
     host.innerHTML = activeProvider === "kugou"
       ? kugouAccountPanelTemplate()
-      : '<div class="account-provider-empty"><strong>即将支持</strong><p class="muted">后续会接入这里。</p></div>';
+      : '<div class="account-provider-empty"><strong>网易云音乐</strong><p class="muted">账号接入即将支持。</p></div>';
     if (activeProvider === "kugou") wireKugouPanel();
   }
 

@@ -2,6 +2,10 @@
 export function kugouAccountPanelTemplate() {
   return `
     <div class="account-provider-panel" data-account-provider-panel="kugou">
+      <div class="account-provider-heading">
+        <strong>酷狗概念版</strong>
+        <span class="muted">扫码或短信验证码登录</span>
+      </div>
       <div class="account-provider-card" id="account-kugou-profile" hidden>
         <div id="account-kugou-avatar" class="account-provider-card__avatar" aria-hidden="true">K</div>
         <div class="account-provider-card__meta">

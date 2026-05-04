@@ -1,6 +1,6 @@
 /* Account center modal styles keep provider login flows reusable beyond Kugou. */
 .modal-dialog--account-center {
-  width: min(680px, 100%);
+  width: min(720px, 100%);
   max-height: min(82vh, 620px);
   display: grid;
   gap: 14px;
@@ -29,63 +29,51 @@
   cursor: pointer;
 }
 
-.account-center-shell {
-  display: grid;
-  grid-template-columns: 180px minmax(0, 1fr);
-  gap: 12px;
-  min-height: 0;
-  align-items: start;
-}
-
-.account-center-providers {
-  display: grid;
+.account-center-tabs {
+  display: flex;
   gap: 8px;
-  align-content: start;
-  min-width: 0;
+  flex-wrap: wrap;
 }
 
-.account-center-provider {
-  display: grid;
-  grid-template-columns: 18px minmax(0, 1fr);
-  gap: 10px;
+.account-center-tab {
+  display: inline-flex;
   align-items: center;
+  gap: 10px;
   padding: 10px 12px;
   border: 1px solid var(--border);
   border-radius: 14px;
   background: var(--bg-card);
   color: var(--text);
-  text-align: left;
   cursor: pointer;
 }
 
-.account-center-provider[disabled] {
+.account-center-tab[disabled] {
   opacity: 0.52;
   cursor: not-allowed;
 }
 
-.account-center-provider.is-active {
+.account-center-tab.is-active {
   border-color: rgba(var(--accent-rgb), 0.28);
   background: rgba(var(--accent-rgb), 0.1);
 }
 
-.account-center-provider__icon,
-.account-center-provider__icon svg {
+.account-center-tab__icon,
+.account-center-tab__icon svg {
   width: 18px;
   height: 18px;
   display: block;
 }
 
-.account-center-provider__meta,
+.account-center-tab__text {
+  font-size: 13px;
+  font-weight: 600;
+}
+
 .account-provider-card__meta,
 .account-provider-qr-meta,
 .account-provider-sms-grid {
   display: grid;
   gap: 4px;
-}
-
-.account-center-provider__meta span {
-  color: var(--text-secondary);
-  font-size: 11px;
 }
 
 .account-center-panel {
@@ -102,6 +90,19 @@
   display: grid;
   gap: 12px;
   min-width: 0;
+}
+
+.account-provider-heading {
+  display: grid;
+  gap: 4px;
+}
+
+.account-provider-heading strong {
+  font-size: 16px;
+}
+
+.account-provider-heading span {
+  font-size: 12px;
 }
 
 .account-provider-card {
@@ -218,10 +219,6 @@
 @media (max-width: 720px) {
   .modal-dialog--account-center {
     padding: 14px;
-  }
-
-  .account-center-shell {
-    grid-template-columns: 1fr;
   }
 
   .account-provider-qr-box,

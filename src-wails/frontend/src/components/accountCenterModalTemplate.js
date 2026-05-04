@@ -9,10 +9,8 @@ export function accountCenterModalTemplate() {
           </div>
           <button type="button" class="modal-close" id="btn-account-center-close" aria-label="关闭登录账号">×</button>
         </header>
-        <div class="account-center-shell">
-          <aside class="account-center-providers" id="account-center-provider-list" role="tablist" aria-label="音乐源账号"></aside>
-          <section class="account-center-panel" id="account-center-panel"></section>
-        </div>
+        <nav class="account-center-tabs" id="account-center-provider-list" role="tablist" aria-label="音乐源账号"></nav>
+        <section class="account-center-panel" id="account-center-panel"></section>
       </div>
     </div>
   `;
