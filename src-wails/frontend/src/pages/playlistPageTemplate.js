@@ -13,6 +13,7 @@ export function playlistPageTemplate() {
           <div class="playlist-hero__count" id="playlist-track-count">共 0 首导入曲目</div>
           <div class="playlist-hero__actions">
             <button type="button" id="btn-playlist-play-all" class="btn-accent" disabled>▶ 播放全部</button>
+            <button type="button" id="btn-playlist-enrich" class="btn-outline">补全播放信息</button>
             <button type="button" id="btn-playlist-rename" class="btn-outline">重命名歌单</button>
             <button type="button" id="btn-playlist-back">返回首页</button>
           </div>

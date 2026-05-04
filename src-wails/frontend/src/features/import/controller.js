@@ -72,6 +72,18 @@ export function createImportPageController(deps) {
     URL.revokeObjectURL(anchor.href);
   }
 
+  function toImportItemPayload(track) {
+    // Preserve provider-specific IDs and remote artwork so imported online playlists stay playable after save.
+    return {
+      title: track.title,
+      artist: track.artist,
+      album: track.album || "",
+      pjmp3_source_id: track.pjmp3_source_id || "",
+      cover_url: track.cover_url || "",
+      duration_ms: Number(track.duration_ms || 0) || 0,
+    };
+  }
+
   function refreshImportPageState() {
     if (getImportMethod() !== "kugou") return Promise.resolve(null);
     return kugou.refreshKugouImport();
@@ -199,7 +211,7 @@ export function createImportPageController(deps) {
       const name = document.getElementById("import-playlist-name")?.value?.trim() || getImportShareSuggestedName() || "导入歌单";
       try {
         const id = await invoke("create_playlist", { name });
-        await invoke("replace_playlist_import_items", { playlistId: id, items: tracks.map((track) => ({ title: track.title, artist: track.artist, album: track.album || "" })) });
+        await invoke("replace_playlist_import_items", { playlistId: id, items: tracks.map((track) => toImportItemPayload(track)) });
         setSelectedPlaylist(id, name);
         await refreshPlaylistSelect();
         await refreshSidebarPlaylists();
@@ -247,7 +259,7 @@ export function createImportPageController(deps) {
       const playlistId = playlistSelect?.value ? Number(playlistSelect.value) : NaN;
       if (!Number.isFinite(playlistId)) return alert("请先用「保存为新歌单」创建歌单，或检查合并目标下拉框。");
       try {
-        await invoke("append_playlist_import_items", { playlistId, items: tracks.map((track) => ({ title: track.title, artist: track.artist, album: track.album || "" })) });
+        await invoke("append_playlist_import_items", { playlistId, items: tracks.map((track) => toImportItemPayload(track)) });
         await refreshSidebarPlaylists();
         const playlistName = playlistSelect.options[playlistSelect.selectedIndex]?.textContent?.replace(/\s*\(id=.*\)\s*$/, "") || "";
         setSelectedPlaylist(playlistId, playlistName);

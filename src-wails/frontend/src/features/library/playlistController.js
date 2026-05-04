@@ -24,6 +24,7 @@ export function createPlaylistController(deps) {
     setSelectedPlaylist,
     warnRequestFailed,
   } = deps;
+  const enrichPending = new Set();
 
   async function refreshPlaylistSelect() {
     const select = document.getElementById("import-merge-playlist");
@@ -124,12 +125,47 @@ export function createPlaylistController(deps) {
     const titleEl = document.getElementById("playlist-page-title");
     if (titleEl) titleEl.textContent = name || "歌单";
     try {
-      setPlaylistDetailRows(await invoke("list_playlist_import_items", { playlistId: id }) || []);
+      const rows = await invoke("list_playlist_import_items", { playlistId: id });
+      setPlaylistDetailRows(rows || []);
+      void maybeEnrichPlaylist(id, rows || []);
     } catch (error) {
       setPlaylistDetailRows([]);
       alertRequestFailed(error, "list_playlist_import_items");
     }
     renderPlaylistDetailTable();
+  }
+
+  function hasMissingPlayableData(rows) {
+    return (Array.isArray(rows) ? rows : []).some((row) => {
+      const title = String(row?.title || "").trim();
+      if (!title) return false;
+      return !String(row?.pjmp3_source_id || "").trim() || !String(row?.cover_url || "").trim();
+    });
+  }
+
+  async function maybeEnrichPlaylist(playlistID, rows, { force = false } = {}) {
+    const normalizedID = Number(playlistID || 0);
+    if (!Number.isFinite(normalizedID) || normalizedID <= 0) return;
+    if (!force && !hasMissingPlayableData(rows)) return;
+    if (enrichPending.has(normalizedID)) return;
+    enrichPending.add(normalizedID);
+    const button = document.getElementById("btn-playlist-enrich");
+    const previousText = button?.textContent || "";
+    if (button) {
+      button.disabled = true;
+      button.textContent = "补全中…";
+    }
+    try {
+      await invoke("start_import_enrich", { playlistId: normalizedID });
+    } catch (error) {
+      warnRequestFailed(error, "start_import_enrich");
+    } finally {
+      enrichPending.delete(normalizedID);
+      if (button) {
+        button.disabled = false;
+        button.textContent = previousText || "补全播放信息";
+      }
+    }
   }
 
   function renderPlaylistDetailTable() {
@@ -190,6 +226,11 @@ export function createPlaylistController(deps) {
 
   function wirePlaylistPage() {
     document.getElementById("btn-playlist-back")?.addEventListener("click", () => setPage("home"));
+    document.getElementById("btn-playlist-enrich")?.addEventListener("click", async () => {
+      const playlistID = getSelectedPlaylistId();
+      if (playlistID == null) return;
+      await maybeEnrichPlaylist(playlistID, getPlaylistDetailRows(), { force: true });
+    });
     document.getElementById("btn-playlist-rename")?.addEventListener("click", async () => {
       if (getSelectedPlaylistId() == null) return;
       const nextName = window.prompt("重命名歌单", getSelectedPlaylistName() || "歌单");
