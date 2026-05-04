@@ -185,6 +185,11 @@ func fetchSongLDDCEnriched(client *http.Client, settings config.Settings, req Fe
 			}
 		}
 	}
+	if hit, ok := parseKugouLyricHit(req.PJMP3SourceID, req); ok {
+		if payload, err := fetchKugouLyrics(client, hit); err == nil && strings.TrimSpace(payload.LRCText) != "" {
+			return &payload, nil
+		}
+	}
 
 	keyword := strings.TrimSpace(strings.TrimSpace(req.Artist) + " " + strings.TrimSpace(req.Title))
 	if keyword == "" {
