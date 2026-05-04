@@ -66,6 +66,29 @@ export function createAccountCenterController(deps) {
     if (activeProvider === "kugou") wireKugouPanel();
   }
 
+  function formatAccountID(value) {
+    const raw = String(value || "").trim();
+    if (!raw) return "";
+    if (!/[eE]\+/.test(raw)) return raw;
+    const parsed = Number(raw);
+    return Number.isFinite(parsed) ? parsed.toFixed(0) : raw;
+  }
+
+  function setKugouLoginControlsVisible(visible) {
+    const modeSwitch = document.querySelector(".account-provider-mode-switch");
+    const smsPanel = document.getElementById("account-kugou-sms-panel");
+    const qrPanel = document.getElementById("account-kugou-qr-panel");
+    if (modeSwitch) modeSwitch.hidden = !visible;
+    if (!visible) {
+      if (smsPanel) smsPanel.hidden = true;
+      if (qrPanel) qrPanel.hidden = true;
+      return;
+    }
+    const activeMode = document.querySelector("[data-account-kugou-mode].is-active")?.getAttribute("data-account-kugou-mode") || "sms";
+    if (smsPanel) smsPanel.hidden = activeMode !== "sms";
+    if (qrPanel) qrPanel.hidden = activeMode !== "qr";
+  }
+
   async function setKugouMode(mode = "sms") {
     document.querySelectorAll("[data-account-kugou-mode]").forEach((button) => {
       const active = button.getAttribute("data-account-kugou-mode") === mode;
@@ -88,6 +111,7 @@ export function createAccountCenterController(deps) {
     if (profile) profile.hidden = true;
     if (logout) logout.hidden = true;
     if (importBtn) importBtn.hidden = true;
+    setKugouLoginControlsVisible(true);
   }
 
   function renderKugouStatus(status) {
@@ -102,10 +126,11 @@ export function createAccountCenterController(deps) {
     const expired = status?.status === "expired";
     if (!loggedIn && !expired) return renderKugouGuest();
     const nickname = status?.nickname || "酷狗概念版";
-    const userID = status?.user_id || status?.userId || "";
+    const userID = formatAccountID(status?.user_id || status?.userId || "");
     if (profileEl) profileEl.hidden = false;
     if (logoutEl) logoutEl.hidden = false;
     if (importEl) importEl.hidden = !loggedIn;
+    setKugouLoginControlsVisible(!loggedIn);
     if (nameEl) nameEl.textContent = nickname;
     if (detailEl) detailEl.textContent = loggedIn ? `已登录 · ${userID || "当前账号"}` : `登录已过期 · ${userID || "请重新登录"}`;
     if (statusEl) {
