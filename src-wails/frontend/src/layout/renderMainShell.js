@@ -1,4 +1,5 @@
 // Main shell composition keeps the static DOM tree out of index.html and main.js.
+import { accountCenterModalTemplate } from "../components/accountCenterModalTemplate.js";
 import { closeConfirmModalTemplate } from "../components/closeConfirmModalTemplate.js";
 import { playerDockTemplate } from "../components/playerDockTemplate.js";
 import { queuePanelTemplate } from "../components/queuePanelTemplate.js";
@@ -38,6 +39,7 @@ export function renderMainShell(root = document.getElementById("app")) {
         ${playerDockTemplate()}
       </div>
     </div>
+    ${accountCenterModalTemplate()}
     ${closeConfirmModalTemplate()}
   `;
 }

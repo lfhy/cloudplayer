@@ -44,6 +44,7 @@ export function bootCloudPlayerApp(deps) {
     systemDarkMedia,
     updateSearchToolbar,
     updateSearchViewState,
+    wireAccountCenter,
     wireAudio,
     wireDiscoverToolbar,
     wireDockBar,
@@ -64,6 +65,7 @@ export function bootCloudPlayerApp(deps) {
     setPage("home");
     wireHomeShortcuts(setPage, renderDailyTable);
     wireQueueToggle();
+    wireAccountCenter();
     wireDockBar();
     wireDownloadPage();
     wireImportPage();

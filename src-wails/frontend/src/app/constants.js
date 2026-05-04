@@ -7,6 +7,7 @@ export const NAV = [
 ];
 
 export const SIDEBAR_MENU_NAV = [
+  { id: "account-login", label: "登录账号", icon: "login" },
   { id: "download", label: "下载管理", icon: "download" },
   { id: "import", label: "导入歌单", icon: "library" },
   { id: "settings", label: "偏好设置", icon: "settings" },

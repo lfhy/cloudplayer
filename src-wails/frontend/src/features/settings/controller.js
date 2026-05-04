@@ -40,6 +40,7 @@ export function createSettingsController(deps) {
     setImportDraft,
     setImportMethod,
     setImportStep,
+    openAccountCenter,
   } = deps;
   let settingsFormBaseline = settingsFormBaselineDefaults();
   let settingsSaveTimer = null;
@@ -204,7 +205,7 @@ export function createSettingsController(deps) {
         queueSettingsAutosave(immediate);
       });
     });
-    const actionButtons = wireSettingsActionButtons({ alertRequestFailed, invoke, setImportDraft, setImportMethod, setImportStep, setPage });
+    const actionButtons = wireSettingsActionButtons({ alertRequestFailed, invoke, openAccountCenter, setImportDraft, setImportMethod, setImportStep, setPage });
     refreshKugouSettingsStatus = actionButtons?.refreshKugouSettingsStatus || (() => {});
     document.querySelectorAll("[data-theme-mode-card]").forEach((card) => card.addEventListener("click", () => {
       setThemeModeSelection(card.getAttribute("data-theme-mode-card") || "system");

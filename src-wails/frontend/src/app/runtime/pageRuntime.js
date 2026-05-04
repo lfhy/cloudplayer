@@ -30,6 +30,7 @@ export function createPageRuntime(deps) {
     messageRequestFailed,
     navIconSvg,
     navItems,
+    openAccountCenter,
     open,
     playFromQueueIndex,
     playFromRecentRow,
@@ -182,6 +183,9 @@ export function createPageRuntime(deps) {
     onDailyPage: () => home.renderDailyTable(),
     onDownloadPage: () => renderDownloadQueueTable(),
     onHomePage: () => home.renderHomePage(),
+    onLoginAccount: () => {
+      openAccountCenter?.("kugou");
+    },
     onImportPage: () => {
       if (!getImportMethod() && !getImportTracks().length) resetImportFlow();
       void playlist.refreshPlaylistSelect();

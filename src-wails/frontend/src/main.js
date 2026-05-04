@@ -10,6 +10,7 @@ import { audioDiagPayload, createPlayEventLogger } from "./app/helpers/playerDia
 import { escapeHtml, setTableMutedMessage } from "./app/helpers/text.js";
 import { formatDurationMs, formatTime } from "./app/helpers/time.js";
 import { applyAppTheme, applyPlatformClassNames, normalizeAccentHex, normalizeAppTheme, normalizeAppThemeMode, normalizeCloseAction, normalizeMusicSourceProvider, normalizeNetworkProxyMode, normalizeNetworkProxyUrl, normalizeSettingsTab, setMusicSourceProviderSelection as applyMusicSourceProviderSelectionUi, setNetworkProxyModeSelection as applyNetworkProxyModeSelectionUi, setSettingsTab as applySettingsTabUi, setThemeCardSelection as applyThemeCardSelectionUi, setThemeModeSelection as applyThemeModeSelectionUi, systemDarkMedia } from "./app/helpers/platformTheme.js";
+import { createAccountCenterController } from "./features/accounts/controller.js";
 import { createBasePlayerRuntime } from "./app/runtime/basePlayerRuntime.js";
 import { createDockRuntime } from "./app/runtime/dockRuntime.js";
 import { createPageRuntime } from "./app/runtime/pageRuntime.js";
@@ -26,6 +27,7 @@ let neteaseCookieEnabled = false, neteaseCookieValue = "", importMethod = "", im
 const downloadTasksBySourceId = new Map(), logPlayEventDesktop = createPlayEventLogger(invoke);
 let likedIds = loadLikedSet(), setPage = () => {}, renderHomePage = () => {}, renderDailyTable = () => {}, renderRecentPlaysTable = () => {};
 let renderQueuePanel = () => {}, refreshFavButton = () => {}, randomNextIndex = () => 0, refreshQuickThemeModeUi = () => {}, renderImportTable = () => {}, loadPlaylistDetail = async () => {};
+let openAccountCenter = () => {}, refreshAccountCenter = () => {}, wireAccountCenter = () => {};
 
 function audioEl() { return document.getElementById("audio-player"); }
 
@@ -45,6 +47,7 @@ const settings = createSettingsRuntime({
   getDesktopLyricsOpen: () => desktopLyricsOpen, getImportDraftDirty: () => importDraftDirty, getImportMethod: () => importMethod, getImportTracks: () => importTracks,
   getNeteaseCookieEnabled: () => neteaseCookieEnabled, getNeteaseCookieValue: () => neteaseCookieValue, normalizeAccentHex, normalizeAppTheme, normalizeAppThemeMode,
   normalizeCloseAction, normalizeMusicSourceProvider, normalizeNetworkProxyMode, normalizeNetworkProxyUrl, normalizeSettingsTab,
+  openAccountCenter: (...args) => openAccountCenter(...args),
   openDesktopLyricsFromSettingsIfNeeded: (...args) => player.openDesktopLyricsFromSettingsIfNeeded(...args), queueQuickThemeRefresh: (...args) => refreshQuickThemeModeUi(...args),
   refreshLyricsLockMenuLabel: (...args) => player.refreshLyricsLockMenuLabel(...args), renderImportTable: (...args) => renderImportTable(...args),
   setDesktopLyricsIdleText: (...args) => player.setDesktopLyricsIdleText(...args),
@@ -75,12 +78,26 @@ const player = createBasePlayerRuntime({
   trayPlayerTarget: TRAY_PLAYER_TARGET, warnRequestFailed, WebviewWindow,
 });
 
+const accountCenter = createAccountCenterController({
+  alertRequestFailed,
+  escapeHtml,
+  invoke,
+  onKugouStatusChanged: () => refreshAccountCenter(),
+  setImportMethod: (...args) => settings.setImportMethod(...args),
+  setImportStep: (...args) => settings.setImportStep(...args),
+  setPage: (...args) => setPage(...args),
+});
+openAccountCenter = (...args) => accountCenter.openAccountCenter(...args);
+refreshAccountCenter = (...args) => settings.refreshKugouSettingsStatus(...args);
+wireAccountCenter = (...args) => accountCenter.wireAccountCenter(...args);
+
 const pages = createPageRuntime({
   alertRequestFailed, appLogoMarkSvg, applyQuickThemeMode: (...args) => dockTheme.applyQuickThemeMode(...args), escapeHtml, formatDurationMs, invoke, messageRequestFailed: MSG_REQUEST_FAILED,
   getDownloadTaskCount: () => downloadTasksBySourceId.size, getImportMethod: () => importMethod, getImportShareSuggestedName: () => importShareSuggestedName, getImportTracks: () => importTracks,
   getLastLibraryFolder: () => lastLibraryFolder, getLikedIds: () => likedIds, getNeteaseCookieState: () => ({ enabled: neteaseCookieEnabled, value: neteaseCookieValue }),
   getPlayIndex: () => playIndex, getPlayQueue: () => playQueue, getPlaylistDetailRows: () => playlistDetailRows, getSelectedPlaylistId: () => selectedPlaylistId, getSelectedPlaylistName: () => selectedPlaylistName,
   getSessionRecentPlays: () => sessionRecentPlays, importBackButtonIconSvg, importMethodIconSvg, navIconSvg, navItems: NAV, open,
+  openAccountCenter: (...args) => openAccountCenter(...args),
   playFromQueueIndex: (...args) => player.playFromQueueIndex(...args), playFromRecentRow: (...args) => player.playFromRecentRow(...args), playFromSearchRow: (...args) => player.playFromSearchRow(...args),
   refreshLocalLibraryTable: (...args) => player.refreshLocalLibraryTable(...args), refreshQuickThemeModeUi: (...args) => refreshQuickThemeModeUi(...args), renderDownloadQueueTable: (...args) => player.renderDownloadQueueTable(...args),
   renderQueuePanel: (...args) => renderQueuePanel(...args), renderRecentPlaysTable: (...args) => renderRecentPlaysTable(...args), resetImportFlow: settings.resetImportFlow, searchState,
@@ -117,4 +134,5 @@ startDesktopRuntime({
     else if (action === "next") document.getElementById("btn-player-next")?.click();
     else if (action === "open-main") await invoke("show_main_window").catch((error) => console.warn("show_main_window from tray-player-command", error));
   },
+  wireAccountCenter: (...args) => wireAccountCenter(...args),
 });

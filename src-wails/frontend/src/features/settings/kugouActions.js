@@ -2,7 +2,7 @@ import { createKugouSessionBridge } from "../kugou/session.js";
 
 // Settings only shows shared Kugou session status while the full import flow lives on the import page.
 export function wireKugouSettingsActions(deps) {
-  const { alertRequestFailed, invoke, setPage, setImportMethod, setImportStep } = deps;
+  const { alertRequestFailed, invoke, openAccountCenter } = deps;
   const session = createKugouSessionBridge({ alertRequestFailed, invoke });
   const statusEl = () => document.getElementById("setting-kugou-login-status");
   const profileEl = () => document.getElementById("setting-kugou-profile");
@@ -54,9 +54,7 @@ export function wireKugouSettingsActions(deps) {
   }
 
   document.getElementById("btn-kugou-open-import")?.addEventListener("click", () => {
-    setImportMethod("kugou");
-    setImportStep("config");
-    setPage("import");
+    openAccountCenter?.("kugou");
   });
 
   document.getElementById("btn-kugou-logout")?.addEventListener("click", async () => {

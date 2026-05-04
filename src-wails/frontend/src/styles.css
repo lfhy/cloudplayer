@@ -13,6 +13,7 @@
 @import "./styles/components/queue.css";
 @import "./styles/components/dock-chrome.css";
 @import "./styles/components/dock-controls.css";
+@import "./styles/components/account-center.css";
 @import "./styles/pages/import-steps.css";
 @import "./styles/pages/import-form.css";
 @import "./styles/pages/import-kugou.css";

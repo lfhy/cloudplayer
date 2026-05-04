@@ -48,6 +48,7 @@ export function startDesktopRuntime(deps) {
     systemDarkMedia: deps.systemDarkMedia,
     updateSearchToolbar: deps.pages.updateSearchToolbar,
     updateSearchViewState: deps.pages.updateSearchViewState,
+    wireAccountCenter: deps.wireAccountCenter,
     wireAudio: deps.player.wireAudio,
     wireDiscoverToolbar: deps.pages.wireDiscoverToolbar,
     wireDockBar: deps.dock.wireDockBar,

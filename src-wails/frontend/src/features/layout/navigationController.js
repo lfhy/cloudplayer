@@ -13,6 +13,7 @@ export function createNavigationController(deps) {
     onDownloadPage,
     onHomePage,
     onImportPage,
+    onLoginAccount,
     onPlaylistPage,
     onRecentPage,
     onSearchPage,
@@ -124,7 +125,13 @@ export function createNavigationController(deps) {
       menuButton.type = "button";
       menuButton.className = "sidebar-account__menu-item";
       menuButton.innerHTML = `<span class="sidebar-account__menu-icon">${navIconSvg(item.icon)}</span><span class="sidebar-account__menu-text">${escapeHtml(item.label)}</span>`;
-      menuButton.addEventListener("click", () => setPage(item.id));
+      menuButton.addEventListener("click", () => {
+        if (item.id === "account-login") {
+          onLoginAccount?.();
+          return;
+        }
+        setPage(item.id);
+      });
       menu.appendChild(menuButton);
     });
     menu.appendChild(renderThemeModeSection());
