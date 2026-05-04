@@ -15,7 +15,7 @@ func (kugouProvider) Key() string {
 }
 
 func (kugouProvider) Search(_ *http.Client, keyword string, page uint32) ([]SearchResult, bool, error) {
-	client, err := kg.New(kg.WithLite(true))
+	client, err := newKugouClient()
 	if err != nil {
 		return nil, false, err
 	}
@@ -65,7 +65,7 @@ func (kugouProvider) FetchPreviewURL(_ *http.Client, rawID string) (string, erro
 	if err != nil {
 		return "", err
 	}
-	client, err := kg.New(kg.WithLite(true))
+	client, err := newKugouClient()
 	if err != nil {
 		return "", err
 	}

@@ -51,12 +51,7 @@ func kugouPickInt(item map[string]any, keys ...string) int {
 		if !ok {
 			continue
 		}
-		text := strings.TrimSpace(fmt.Sprintf("%v", value))
-		if text == "" || text == "<nil>" {
-			continue
-		}
-		var parsed int
-		if _, err := fmt.Sscanf(text, "%d", &parsed); err == nil && parsed > 0 {
+		if parsed := kugouNumericID(value); parsed > 0 {
 			return parsed
 		}
 	}

@@ -10,6 +10,7 @@ import (
 	"strings"
 	"time"
 
+	"cloudplayer/internal/cloudplayer/config"
 	kg "github.com/lfhy/kugou-music-api"
 )
 
@@ -20,7 +21,8 @@ func runKugouJob(rawID string, job DownloadJob, task *DownloadTaskEvent, fail fu
 		fail("%s", err)
 		return
 	}
-	client, err := kg.New(kg.WithLite(true))
+	session := config.LoadKugouSession()
+	client, err := kg.New(kg.WithLite(true), kg.WithCookie(session.Cookie))
 	if err != nil {
 		fail("初始化酷狗 SDK 失败: %v", err)
 		return
@@ -29,6 +31,7 @@ func runKugouJob(rawID string, job DownloadJob, task *DownloadTaskEvent, fail fu
 		Hash:         hash,
 		AlbumAudioID: albumAudioID,
 		FreePart:     true,
+		Cookie:       session.Cookie,
 	})
 	if err != nil {
 		fail("获取酷狗下载地址失败: %v", err)

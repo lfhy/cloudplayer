@@ -168,8 +168,7 @@ func kugouMapInt(item map[string]any, keys ...string) int {
 		if !ok {
 			continue
 		}
-		var parsed int
-		if _, err := fmt.Sscanf(strings.TrimSpace(fmt.Sprintf("%v", value)), "%d", &parsed); err == nil && parsed > 0 {
+		if parsed := kugouParseInt(value); parsed > 0 {
 			return parsed
 		}
 	}
@@ -182,8 +181,7 @@ func kugouDirectInt(item map[string]any, keys ...string) int {
 		if !ok {
 			continue
 		}
-		var parsed int
-		if _, err := fmt.Sscanf(strings.TrimSpace(fmt.Sprintf("%v", value)), "%d", &parsed); err == nil && parsed > 0 {
+		if parsed := kugouParseInt(value); parsed > 0 {
 			return parsed
 		}
 	}
@@ -234,7 +232,5 @@ func kugouTrackDurationMS(item map[string]any) int64 {
 }
 
 func kugouInt(raw string) int {
-	var value int
-	_, _ = fmt.Sscanf(strings.TrimSpace(raw), "%d", &value)
-	return value
+	return kugouParseInt(raw)
 }
