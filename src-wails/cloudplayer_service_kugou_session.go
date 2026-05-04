@@ -40,8 +40,8 @@ func (s *CloudPlayerService) GetKugouLoginStatus() (KugouLoginStatus, error) {
 		return KugouLoginStatus{Status: "expired", LoggedIn: false, UserID: strings.TrimSpace(session.Cookie["userid"])}, nil
 	}
 	_ = saveKugouClientSession(client)
-	nickname := strings.TrimSpace(kugouBodyString(resp.Body, "nickname", "name", "username", "user_name"))
-	avatarURL := strings.TrimSpace(kugouBodyString(resp.Body, "pic", "avatar", "headimg", "user_pic"))
+	nickname := strings.TrimSpace(kugouBodyString(resp.Body, "nickname", "k_nickname", "name", "username", "user_name"))
+	avatarURL := kugouNormalizeAssetURL(kugouBodyString(resp.Body, "pic", "k_pic", "fx_pic", "avatar", "headimg", "user_pic", "bg_pic"))
 	status := KugouLoginStatus{
 		Status:   "logged_in",
 		LoggedIn: true,

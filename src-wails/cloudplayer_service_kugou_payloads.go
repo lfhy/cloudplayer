@@ -118,12 +118,23 @@ func kugouMapCoverString(item map[string]any) string {
 		}
 		value = strings.ReplaceAll(value, "{size}", "240")
 		value = strings.ReplaceAll(value, "/{size}/", "/240/")
-		if strings.HasPrefix(value, "//") {
-			value = "https:" + value
-		}
-		return value
+		return kugouNormalizeAssetURL(value)
 	}
 	return ""
+}
+
+func kugouNormalizeAssetURL(value string) string {
+	value = strings.TrimSpace(value)
+	if value == "" {
+		return ""
+	}
+	if strings.HasPrefix(value, "//") {
+		return "https:" + value
+	}
+	if strings.HasPrefix(value, "http://") {
+		return "https://" + strings.TrimPrefix(value, "http://")
+	}
+	return value
 }
 
 func kugouTrackDurationMS(item map[string]any) int64 {
