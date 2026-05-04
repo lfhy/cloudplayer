@@ -183,6 +183,10 @@
   color: var(--accent);
 }
 
+.account-provider-mode-switch[hidden] {
+  display: none !important;
+}
+
 .account-provider-pane {
   min-width: 0;
   padding-top: 4px;

@@ -12,6 +12,7 @@ export function createAccountCenterController(deps) {
   function modalEl() { return document.getElementById("account-center-modal"); }
   function providerListEl() { return document.getElementById("account-center-provider-list"); }
   function panelEl() { return document.getElementById("account-center-panel"); }
+  function kugouPanelEl() { return panelEl()?.querySelector('[data-account-provider-panel="kugou"]'); }
 
   function openAccountCenter(provider = "kugou") {
     activeProvider = provider;
@@ -75,28 +76,30 @@ export function createAccountCenterController(deps) {
   }
 
   function setKugouLoginControlsVisible(visible) {
-    const modeSwitch = document.querySelector(".account-provider-mode-switch");
-    const smsPanel = document.getElementById("account-kugou-sms-panel");
-    const qrPanel = document.getElementById("account-kugou-qr-panel");
+    const root = kugouPanelEl();
+    const modeSwitch = root?.querySelector(".account-provider-mode-switch");
+    const smsPanel = root?.querySelector("#account-kugou-sms-panel");
+    const qrPanel = root?.querySelector("#account-kugou-qr-panel");
     if (modeSwitch) modeSwitch.hidden = !visible;
     if (!visible) {
       if (smsPanel) smsPanel.hidden = true;
       if (qrPanel) qrPanel.hidden = true;
       return;
     }
-    const activeMode = document.querySelector("[data-account-kugou-mode].is-active")?.getAttribute("data-account-kugou-mode") || "sms";
+    const activeMode = root?.querySelector("[data-account-kugou-mode].is-active")?.getAttribute("data-account-kugou-mode") || "sms";
     if (smsPanel) smsPanel.hidden = activeMode !== "sms";
     if (qrPanel) qrPanel.hidden = activeMode !== "qr";
   }
 
   async function setKugouMode(mode = "sms") {
-    document.querySelectorAll("[data-account-kugou-mode]").forEach((button) => {
+    const root = kugouPanelEl();
+    root?.querySelectorAll("[data-account-kugou-mode]").forEach((button) => {
       const active = button.getAttribute("data-account-kugou-mode") === mode;
       button.classList.toggle("is-active", active);
       button.setAttribute("aria-selected", active ? "true" : "false");
     });
-    const qrPanel = document.getElementById("account-kugou-qr-panel");
-    const smsPanel = document.getElementById("account-kugou-sms-panel");
+    const qrPanel = root?.querySelector("#account-kugou-qr-panel");
+    const smsPanel = root?.querySelector("#account-kugou-sms-panel");
     if (qrPanel) qrPanel.hidden = mode !== "qr";
     if (smsPanel) smsPanel.hidden = mode !== "sms";
     if (mode === "qr") await ensureKugouQRCode();
@@ -178,7 +181,7 @@ export function createAccountCenterController(deps) {
   function wireKugouPanel() {
     void setKugouMode("sms");
     renderKugouGuest();
-    document.querySelectorAll("[data-account-kugou-mode]").forEach((button) => {
+    kugouPanelEl()?.querySelectorAll("[data-account-kugou-mode]").forEach((button) => {
       button.addEventListener("click", () => {
         void setKugouMode(button.getAttribute("data-account-kugou-mode") || "sms");
       });
