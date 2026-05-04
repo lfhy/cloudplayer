@@ -2,7 +2,7 @@ import { proxyRemoteAssetSrc } from "../../wails/tauri-core.js";
 
 // Kugou playlist preview markup stays isolated so the controller can focus on state and RPC wiring.
 export function renderKugouPlaylistCards(host, deps) {
-  const { escapeHtml, expandedPreviewID, previewState, rows, selectedIDs } = deps;
+  const { escapeHtml, rows, selectedIDs } = deps;
   const items = Array.isArray(rows) ? rows : [];
   if (!host) return;
   if (!items.length) {
@@ -15,10 +15,8 @@ export function renderKugouPlaylistCards(host, deps) {
     const cover = row.cover_url || row.coverUrl || row.CoverURL || "";
     const coverSrc = proxyRemoteAssetSrc(cover);
     const suffix = row.track_count ? `${row.track_count} 首` : "歌单";
-    const expanded = expandedPreviewID === id;
-    const preview = previewState.get(id) || null;
     return `
-      <div class="import-kugou-playlist-card${expanded ? " is-expanded" : ""}">
+      <div class="import-kugou-playlist-card">
         <div class="import-kugou-playlist-card__body">
           <label class="import-kugou-playlist-card__check">
             <input type="checkbox" class="import-kugou-playlist-row__checkbox" data-kugou-playlist-id="${id}" ${checked ? "checked" : ""} />
@@ -32,20 +30,17 @@ export function renderKugouPlaylistCards(host, deps) {
             </span>
           </div>
           <div class="import-kugou-playlist-card__actions">
-            <button type="button" class="settings-action-button import-kugou-preview-button${expanded ? " is-active" : ""}" data-kugou-preview-toggle="${id}">
-              ${expanded ? "收起预览" : "预览曲目"}
+            <button type="button" class="settings-action-button import-kugou-preview-button" data-kugou-preview-toggle="${id}">
+              预览曲目
             </button>
           </div>
         </div>
-        <section class="import-kugou-preview"${expanded ? "" : " hidden"}>
-          ${renderKugouPreviewMarkup(preview, escapeHtml, row.name || "")}
-        </section>
       </div>
     `;
   }).join("");
 }
 
-function renderKugouPreviewMarkup(preview, escapeHtml, fallbackName) {
+export function renderKugouPreviewMarkup(preview, escapeHtml, fallbackName) {
   if (!preview || preview.loading) {
     return '<p class="muted">正在加载歌单曲目…</p>';
   }

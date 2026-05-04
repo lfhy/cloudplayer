@@ -90,8 +90,7 @@
   transition: border-color 140ms ease, box-shadow 140ms ease, transform 140ms ease;
 }
 
-.import-kugou-playlist-card:hover,
-.import-kugou-playlist-card.is-expanded {
+.import-kugou-playlist-card:hover {
   border-color: rgba(var(--accent-rgb), 0.24);
   box-shadow: 0 16px 34px rgba(var(--accent-rgb), 0.08);
   transform: translateY(-1px);
@@ -178,13 +177,6 @@
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-}
-
-.import-kugou-preview {
-  display: grid;
-  gap: 8px;
-  padding: 0 12px 12px;
-  border-top: 1px solid color-mix(in srgb, var(--border) 74%, transparent);
 }
 
 .import-kugou-preview__head,

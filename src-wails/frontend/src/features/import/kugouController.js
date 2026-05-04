@@ -1,11 +1,10 @@
 import { createKugouSessionBridge } from "../kugou/session.js";
-import { renderKugouPlaylistCards } from "./kugouPlaylistView.js";
+import { renderKugouPlaylistCards, renderKugouPreviewMarkup } from "./kugouPlaylistView.js";
 
 // Kugou import controller owns login-mode switching and playlist selection inside the import page.
 export function createImportKugouController(deps) {
   const { alertRequestFailed, escapeHtml, invoke, setImportConfigHeader, setImportDraft, refreshPlaylistSelect } = deps;
   const session = createKugouSessionBridge({ alertRequestFailed, invoke });
-  let expandedPreviewID = null;
   let lastRows = [];
   let previewState = new Map();
   let selectedIDs = new Set();
@@ -24,6 +23,10 @@ export function createImportKugouController(deps) {
 
   function readSelectedPlaylistIDs() {
     return Array.from(selectedIDs.values());
+  }
+
+  function previewModalEl() {
+    return document.getElementById("kugou-preview-modal");
   }
 
   function syncSelectedIDs(rows) {
@@ -84,7 +87,7 @@ export function createImportKugouController(deps) {
     if (!host) return;
     lastRows = Array.isArray(rows) ? rows : [];
     syncSelectedIDs(lastRows);
-    renderKugouPlaylistCards(host, { escapeHtml, expandedPreviewID, previewState, rows: lastRows, selectedIDs });
+    renderKugouPlaylistCards(host, { escapeHtml, rows: lastRows, selectedIDs });
     host.querySelectorAll("[data-kugou-playlist-id]").forEach((checkbox) => {
       checkbox.addEventListener("change", () => {
         const id = Number(checkbox.getAttribute("data-kugou-playlist-id") || 0);
@@ -99,17 +102,29 @@ export function createImportKugouController(deps) {
     updateSelectionHint();
   }
 
-  async function togglePreview(listID) {
+  function closePreviewModal() {
+    previewModalEl()?.setAttribute("hidden", "true");
+    previewModalEl()?.setAttribute("aria-hidden", "true");
+  }
+
+  function renderPreviewModal(listID) {
+    const body = document.getElementById("kugou-preview-body");
+    const title = document.getElementById("kugou-preview-title");
+    const subtitle = document.getElementById("kugou-preview-subtitle");
+    const preview = previewState.get(listID) || null;
+    const row = lastRows.find((item) => Number(item.id || 0) === listID) || null;
+    if (title) title.textContent = row?.name || "歌单预览";
+    if (subtitle) subtitle.textContent = row?.track_count ? `${row.track_count} 首歌曲` : "";
+    if (body) body.innerHTML = renderKugouPreviewMarkup(preview, escapeHtml, row?.name || "");
+  }
+
+  async function openPreviewModal(listID) {
     if (listID <= 0) return;
-    if (expandedPreviewID === listID) {
-      expandedPreviewID = null;
-      renderPlaylists(lastRows);
-      return;
-    }
-    expandedPreviewID = listID;
+    previewModalEl()?.removeAttribute("hidden");
+    previewModalEl()?.setAttribute("aria-hidden", "false");
     if (!previewState.has(listID)) {
       previewState.set(listID, { loading: true, tracks: [] });
-      renderPlaylists(lastRows);
+      renderPreviewModal(listID);
       try {
         const result = await invoke("sync_kugou_playlist", { listId: listID });
         previewState.set(listID, {
@@ -122,7 +137,7 @@ export function createImportKugouController(deps) {
         previewState.set(listID, { error: message, loading: false, tracks: [] });
       }
     }
-    if (expandedPreviewID === listID) renderPlaylists(lastRows);
+    renderPreviewModal(listID);
   }
 
   function renderLoginStatus(status) {
@@ -231,7 +246,7 @@ export function createImportKugouController(deps) {
     document.getElementById("btn-import-kugou-logout")?.addEventListener("click", async () => {
       try {
         await session.logout();
-        expandedPreviewID = null;
+        closePreviewModal();
         previewState = new Map();
         selectedIDs = new Set();
         renderLoginStatus({ status: "logged_out", logged_in: false });
@@ -253,6 +268,10 @@ export function createImportKugouController(deps) {
         checkbox.checked = false;
       });
       updateSelectionHint();
+    });
+    document.getElementById("btn-kugou-preview-close")?.addEventListener("click", () => closePreviewModal());
+    previewModalEl()?.addEventListener("click", (event) => {
+      if (event.target?.id === "kugou-preview-modal") closePreviewModal();
     });
     document.getElementById("btn-import-kugou-import")?.addEventListener("click", () => void importSelectedPlaylists());
   }
