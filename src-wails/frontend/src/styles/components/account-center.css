@@ -2,6 +2,7 @@
 .modal-dialog--account-center {
   width: min(720px, 100%);
   max-height: min(82vh, 620px);
+  position: relative;
   display: grid;
   gap: 14px;
   padding: 16px;
@@ -9,12 +10,15 @@
 
 .modal-copy--account-center {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
+  align-items: flex-start;
+  justify-content: flex-start;
+  padding-right: 36px;
 }
 
 .modal-close {
+  position: absolute;
+  top: 14px;
+  right: 14px;
   width: 30px;
   height: 30px;
   display: inline-flex;
@@ -92,6 +96,13 @@
   min-width: 0;
 }
 
+.account-provider-layout {
+  display: grid;
+  grid-template-columns: 180px minmax(0, 1fr);
+  gap: 18px;
+  align-items: start;
+}
+
 .account-provider-heading {
   display: grid;
   gap: 4px;
@@ -110,6 +121,37 @@
   grid-template-columns: 46px minmax(0, 1fr);
   gap: 12px;
   align-items: center;
+}
+
+.account-provider-brand {
+  display: grid;
+  gap: 14px;
+  padding-right: 18px;
+  border-right: 1px solid color-mix(in srgb, var(--border) 82%, transparent);
+}
+
+.account-provider-brand__mark {
+  width: 72px;
+  height: 72px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 24px;
+  background: rgba(var(--accent-rgb), 0.12);
+  color: var(--accent);
+  font-size: 32px;
+  font-weight: 700;
+}
+
+.account-provider-brand__meta {
+  display: grid;
+  gap: 6px;
+}
+
+.account-provider-main {
+  display: grid;
+  gap: 12px;
+  min-width: 0;
 }
 
 .account-provider-card__avatar {
@@ -147,10 +189,9 @@
 }
 
 .account-provider-qr-box {
-  display: grid;
-  grid-template-columns: 132px minmax(0, 1fr);
-  gap: 12px;
-  align-items: start;
+  display: flex;
+  align-items: flex-start;
+  justify-content: flex-start;
 }
 
 .account-provider-mode {
@@ -219,6 +260,18 @@
 @media (max-width: 720px) {
   .modal-dialog--account-center {
     padding: 14px;
+  }
+
+  .account-provider-layout {
+    grid-template-columns: 1fr;
+    gap: 14px;
+  }
+
+  .account-provider-brand {
+    padding-right: 0;
+    padding-bottom: 12px;
+    border-right: 0;
+    border-bottom: 1px solid color-mix(in srgb, var(--border) 82%, transparent);
   }
 
   .account-provider-qr-box,

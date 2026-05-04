@@ -66,7 +66,7 @@ export function createAccountCenterController(deps) {
     if (activeProvider === "kugou") wireKugouPanel();
   }
 
-  function setKugouMode(mode = "qr") {
+  async function setKugouMode(mode = "sms") {
     document.querySelectorAll("[data-account-kugou-mode]").forEach((button) => {
       const active = button.getAttribute("data-account-kugou-mode") === mode;
       button.classList.toggle("is-active", active);
@@ -76,15 +76,18 @@ export function createAccountCenterController(deps) {
     const smsPanel = document.getElementById("account-kugou-sms-panel");
     if (qrPanel) qrPanel.hidden = mode !== "qr";
     if (smsPanel) smsPanel.hidden = mode !== "sms";
+    if (mode === "qr") await ensureKugouQRCode();
   }
 
   function renderKugouGuest() {
     const status = document.getElementById("account-kugou-status");
     const profile = document.getElementById("account-kugou-profile");
     const logout = document.getElementById("btn-account-kugou-logout");
+    const importBtn = document.getElementById("btn-account-kugou-open-import");
     if (status) status.textContent = "未登录酷狗概念版。";
     if (profile) profile.hidden = true;
     if (logout) logout.hidden = true;
+    if (importBtn) importBtn.hidden = true;
   }
 
   function renderKugouStatus(status) {
@@ -94,6 +97,7 @@ export function createAccountCenterController(deps) {
     const nameEl = document.getElementById("account-kugou-name");
     const detailEl = document.getElementById("account-kugou-detail");
     const logoutEl = document.getElementById("btn-account-kugou-logout");
+    const importEl = document.getElementById("btn-account-kugou-open-import");
     const loggedIn = !!status?.logged_in;
     const expired = status?.status === "expired";
     if (!loggedIn && !expired) return renderKugouGuest();
@@ -101,6 +105,7 @@ export function createAccountCenterController(deps) {
     const userID = status?.user_id || status?.userId || "";
     if (profileEl) profileEl.hidden = false;
     if (logoutEl) logoutEl.hidden = false;
+    if (importEl) importEl.hidden = !loggedIn;
     if (nameEl) nameEl.textContent = nickname;
     if (detailEl) detailEl.textContent = loggedIn ? `已登录 · ${userID || "当前账号"}` : `登录已过期 · ${userID || "请重新登录"}`;
     if (statusEl) {
@@ -129,37 +134,29 @@ export function createAccountCenterController(deps) {
     }
   }
 
+  async function ensureKugouQRCode() {
+    try {
+      const qr = await kugou.createQRCode();
+      const image = document.getElementById("account-kugou-qr-image");
+      if (image) {
+        image.src = qr?.base64 || "";
+        image.hidden = !qr?.base64;
+      }
+      const statusEl = document.getElementById("account-kugou-status");
+      if (statusEl) statusEl.textContent = "等待扫码登录…";
+      void kugou.pollQRCode((status) => renderKugouStatus(status));
+    } catch (error) {
+      alertRequestFailed(error, "create_kugou_login_qr_code");
+    }
+  }
+
   function wireKugouPanel() {
-    setKugouMode("qr");
+    void setKugouMode("sms");
     renderKugouGuest();
     document.querySelectorAll("[data-account-kugou-mode]").forEach((button) => {
-      button.addEventListener("click", () => setKugouMode(button.getAttribute("data-account-kugou-mode") || "qr"));
-    });
-    document.getElementById("btn-account-kugou-qr")?.addEventListener("click", async () => {
-      try {
-        const qr = await kugou.createQRCode();
-        const image = document.getElementById("account-kugou-qr-image");
-        if (image) {
-          image.src = qr?.base64 || "";
-          image.hidden = !qr?.base64;
-        }
-        const statusEl = document.getElementById("account-kugou-status");
-        if (statusEl) statusEl.textContent = "等待扫码登录…";
-        void kugou.pollQRCode((status) => renderKugouStatus(status));
-      } catch (error) {
-        alertRequestFailed(error, "create_kugou_login_qr_code");
-      }
-    });
-    document.getElementById("btn-account-kugou-copy-qr")?.addEventListener("click", async () => {
-      const { qrURL } = kugou.state();
-      if (!qrURL) return;
-      try {
-        await navigator.clipboard.writeText(qrURL);
-        const statusEl = document.getElementById("account-kugou-status");
-        if (statusEl) statusEl.textContent = "已复制酷狗概念版登录链接。";
-      } catch (error) {
-        alertRequestFailed(error, "copy kugou login url");
-      }
+      button.addEventListener("click", () => {
+        void setKugouMode(button.getAttribute("data-account-kugou-mode") || "sms");
+      });
     });
     document.getElementById("btn-account-kugou-captcha")?.addEventListener("click", async () => {
       try {
