@@ -1,6 +1,7 @@
 package config
 
 import (
+	"bytes"
 	"encoding/json"
 	"os"
 	"path/filepath"
@@ -24,7 +25,20 @@ func LoadKugouSession() KugouSession {
 	if err != nil {
 		return session
 	}
-	_ = json.Unmarshal(data, &session)
+	if err := json.Unmarshal(data, &session); err != nil {
+		trimmed := bytes.TrimSpace(data)
+		for len(trimmed) > 0 {
+			if json.Unmarshal(trimmed, &session) == nil {
+				_ = os.WriteFile(kugouSessionPath(), trimmed, 0o600)
+				break
+			}
+			index := bytes.LastIndexByte(trimmed[:len(trimmed)-1], '}')
+			if index < 0 {
+				break
+			}
+			trimmed = bytes.TrimSpace(trimmed[:index+1])
+		}
+	}
 	if session.Cookie == nil {
 		session.Cookie = map[string]string{}
 	}
@@ -40,7 +54,12 @@ func SaveKugouSession(session KugouSession) error {
 	if err != nil {
 		return err
 	}
-	return os.WriteFile(kugouSessionPath(), data, 0o600)
+	path := kugouSessionPath()
+	tmp := path + ".tmp"
+	if err := os.WriteFile(tmp, data, 0o600); err != nil {
+		return err
+	}
+	return os.Rename(tmp, path)
 }
 
 func ClearKugouSession() error {

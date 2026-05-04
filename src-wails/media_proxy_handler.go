@@ -1,10 +1,17 @@
 package main
 
 import (
+	"bytes"
+	"crypto/sha1"
+	"encoding/hex"
 	"io"
+	"os"
 	"net/http"
+	"path/filepath"
 	"strings"
 	"time"
+
+	"cloudplayer/internal/cloudplayer/config"
 )
 
 // Remote media proxy keeps third-party avatars, covers and stream URLs behind the app's HTTP client.
@@ -34,6 +41,14 @@ func serveRemoteMedia(state *AppState, writer http.ResponseWriter, request *http
 		http.NotFound(writer, request)
 		return
 	}
+	if request.Method != http.MethodGet && request.Method != http.MethodHead {
+		http.Error(writer, "method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	if serveRemoteMediaCache(rawURL, writer, request) {
+		return
+	}
 
 	req, err := http.NewRequestWithContext(request.Context(), http.MethodGet, rawURL, nil)
 	if err != nil {
@@ -55,12 +70,22 @@ func serveRemoteMedia(state *AppState, writer http.ResponseWriter, request *http
 	}
 	defer resp.Body.Close()
 
+	cacheable := remoteImageCacheable(resp.Header.Get("Content-Type"))
 	copyRemoteMediaHeaders(writer.Header(), resp.Header)
 	if writer.Header().Get("Cache-Control") == "" {
 		writer.Header().Set("Cache-Control", "public, max-age=86400")
 	}
 	if writer.Header().Get("Access-Control-Allow-Origin") == "" {
 		writer.Header().Set("Access-Control-Allow-Origin", "*")
+	}
+	if cacheable && resp.StatusCode == http.StatusOK {
+		body, err := io.ReadAll(resp.Body)
+		if err == nil && len(body) > 0 {
+			cacheRemoteMedia(rawURL, body)
+			writer.WriteHeader(resp.StatusCode)
+			_, _ = io.Copy(writer, bytes.NewReader(body))
+			return
+		}
 	}
 	writer.WriteHeader(resp.StatusCode)
 	_, _ = io.Copy(writer, resp.Body)
@@ -85,4 +110,51 @@ func copyRemoteMediaHeaders(dst, src http.Header) {
 		return
 	}
 	dst.Set("Expires", time.Now().Add(24*time.Hour).UTC().Format(http.TimeFormat))
+}
+
+func remoteMediaCacheDir() string {
+	return filepath.Join(config.ConfigDir(), "remote_media_cache")
+}
+
+func remoteMediaCachePath(rawURL string) string {
+	sum := sha1.Sum([]byte(strings.TrimSpace(rawURL)))
+	return filepath.Join(remoteMediaCacheDir(), hex.EncodeToString(sum[:]))
+}
+
+func remoteImageCacheable(contentType string) bool {
+	return strings.HasPrefix(strings.ToLower(strings.TrimSpace(contentType)), "image/")
+}
+
+func serveRemoteMediaCache(rawURL string, writer http.ResponseWriter, request *http.Request) bool {
+	path := remoteMediaCachePath(rawURL)
+	info, err := os.Stat(path)
+	if err != nil || info.IsDir() || info.Size() <= 0 {
+		return false
+	}
+	writer.Header().Set("Cache-Control", "public, max-age=604800")
+	writer.Header().Set("Access-Control-Allow-Origin", "*")
+	http.ServeFile(writer, request, path)
+	return true
+}
+
+func cacheRemoteMedia(rawURL string, body []byte) {
+	if err := os.MkdirAll(remoteMediaCacheDir(), 0o755); err != nil {
+		return
+	}
+	path := remoteMediaCachePath(rawURL)
+	tmp := path + ".tmp"
+	file, err := os.Create(tmp)
+	if err != nil {
+		return
+	}
+	if _, err = file.Write(body); err != nil {
+		_ = file.Close()
+		_ = os.Remove(tmp)
+		return
+	}
+	if err = file.Close(); err != nil {
+		_ = os.Remove(tmp)
+		return
+	}
+	_ = os.Rename(tmp, path)
 }
