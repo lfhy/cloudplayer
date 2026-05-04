@@ -1,4 +1,5 @@
 import { createKugouSessionBridge } from "../kugou/session.js";
+import { proxyRemoteAssetSrc } from "../../wails/tauri-core.js";
 
 // Kugou import controller owns login-mode switching and playlist selection inside the import page.
 export function createImportKugouController(deps) {
@@ -52,11 +53,12 @@ export function createImportKugouController(deps) {
     host.innerHTML = items.map((row) => {
       const checked = selectedIDs.has(Number(row.id));
       const cover = row.cover_url || row.coverUrl || row.CoverURL || "";
+      const coverSrc = proxyRemoteAssetSrc(cover);
       const suffix = row.track_count ? `${row.track_count} 首` : "歌单";
       return `
         <label class="import-kugou-playlist-row">
           <input type="checkbox" class="import-kugou-playlist-row__checkbox" data-kugou-playlist-id="${row.id}" ${checked ? "checked" : ""} />
-          <span class="import-kugou-playlist-row__cover">${cover ? `<img src="${cover}" alt="" />` : "♪"}</span>
+          <span class="import-kugou-playlist-row__cover">${coverSrc ? `<img src="${coverSrc}" alt="" />` : "♪"}</span>
           <span class="import-kugou-playlist-row__meta">
             <strong>${escapeHtml(row.name || "")}</strong>
             <span class="muted">${escapeHtml(suffix)}</span>

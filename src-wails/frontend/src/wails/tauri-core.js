@@ -166,6 +166,20 @@ export function convertFileSrc(path) {
   return `/__media__?path=${encodeURIComponent(path)}`;
 }
 
+export function proxyRemoteAssetSrc(url) {
+  const resolved = String(url || "").trim();
+  if (!resolved) {
+    return "";
+  }
+  if (resolved.startsWith("data:") || resolved.startsWith("blob:") || resolved.startsWith("/")) {
+    return resolved;
+  }
+  if (!/^https?:\/\//i.test(resolved)) {
+    return resolved;
+  }
+  return `/__remote_media__?url=${encodeURIComponent(resolved)}`;
+}
+
 export async function invoke(command, args = {}) {
   const handler = invokeMap[command];
   if (!handler) {

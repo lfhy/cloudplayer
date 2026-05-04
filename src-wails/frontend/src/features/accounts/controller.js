@@ -1,4 +1,5 @@
 import { iconSvgByName } from "../../app/helpers/icons.js";
+import { proxyRemoteAssetSrc } from "../../wails/tauri-core.js";
 import { createKugouSessionBridge } from "../kugou/session.js";
 import { kugouAccountPanelTemplate } from "./kugouAccountPanel.js";
 import { ACCOUNT_PROVIDERS } from "./providers.js";
@@ -144,7 +145,7 @@ export function createAccountCenterController(deps) {
     if (avatarEl) {
       const avatarURL = status?.avatar_url || status?.avatarUrl || "";
       avatarEl.textContent = avatarURL ? "" : nickname.slice(0, 1).toUpperCase();
-      avatarEl.style.backgroundImage = avatarURL ? `url("${avatarURL}")` : "";
+      avatarEl.style.backgroundImage = avatarURL ? `url("${proxyRemoteAssetSrc(avatarURL)}")` : "";
       avatarEl.classList.toggle("is-image", !!avatarURL);
     }
   }

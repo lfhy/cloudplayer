@@ -1,4 +1,5 @@
 // Playback loading stays in one controller so queue mutations and async generations share rules.
+import { proxyRemoteAssetSrc } from "../../wails/tauri-core.js";
 import { setPlayButtonIcon } from "./playButtonIcon.js";
 
 export function createPlaybackController(deps) {
@@ -179,7 +180,7 @@ export function createPlaybackController(deps) {
     if (!resolved) throw lastError ?? new Error("resolve_online_play failed");
     if (resolved.kind === "url" && resolved.url) {
       return {
-        assetUrl: resolved.url,
+        assetUrl: proxyRemoteAssetSrc(resolved.url),
         playLogExtra: { sid: item.source_id, kind: resolved.kind, via: resolved.via },
       };
     }

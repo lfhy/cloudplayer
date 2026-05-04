@@ -1,4 +1,5 @@
 // Cover helpers centralize fallback SVG artwork and failed-image recovery.
+import { proxyRemoteAssetSrc } from "../../wails/tauri-core.js";
 
 // Use a single path from the existing Solar icon set instead of bundling the whole JSON file.
 const FALLBACK_COVER_ICON_BODY =
@@ -90,7 +91,7 @@ export function coverImgHtml({
   const safeWidth = Number.isFinite(width) ? Math.max(1, Math.round(width)) : 40;
   const safeHeight = Number.isFinite(height) ? Math.max(1, Math.round(height)) : safeWidth;
   const fallback = fallbackCoverDataUri(Math.max(safeWidth, safeHeight), radius);
-  const resolved = String(src || "").trim() || fallback;
+  const resolved = proxyRemoteAssetSrc(src) || fallback;
   const loadingAttr = loading ? ` loading="${escapeAttr(loading)}"` : "";
   const fallbackClass = resolved === fallback ? " is-fallback-cover" : "";
   return `<img class="${escapeAttr(className)}${fallbackClass}" src="${escapeAttr(resolved)}" data-cover-fallback="${escapeAttr(fallback)}" onerror="this.onerror=null;this.classList.add('is-fallback-cover');this.src=this.dataset.coverFallback" alt="${escapeAttr(alt)}" width="${safeWidth}" height="${safeHeight}"${loadingAttr} />`;
@@ -99,7 +100,7 @@ export function coverImgHtml({
 export function setCoverImageSource(img, src, { size = 64, radius = null } = {}) {
   if (!img) return;
   const fallback = fallbackCoverDataUri(size, radius);
-  const nextSrc = String(src || "").trim() || fallback;
+  const nextSrc = proxyRemoteAssetSrc(src) || fallback;
   img.dataset.coverFallback = fallback;
   img.onerror = () => {
     img.onerror = null;

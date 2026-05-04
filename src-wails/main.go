@@ -3,7 +3,6 @@ package main
 import (
 	"embed"
 	"log"
-	"net/http"
 	"runtime"
 	"sync/atomic"
 
@@ -49,7 +48,7 @@ func main() {
 			application.NewService(desktop),
 		},
 		Assets: application.AssetOptions{
-			Handler: mediaHandler(baseAssets),
+			Handler: remoteMediaHandler(state, baseAssets),
 		},
 		Windows: application.WindowsOptions{
 			DisableQuitOnLastWindowClosed: true,
@@ -186,19 +185,4 @@ func showMainWindow() {
 	window.UnMinimise()
 	window.Show()
 	window.Focus()
-}
-
-func mediaHandler(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
-		if request.URL.Path == "/__media__" {
-			path := request.URL.Query().Get("path")
-			if path == "" {
-				http.NotFound(writer, request)
-				return
-			}
-			http.ServeFile(writer, request, path)
-			return
-		}
-		next.ServeHTTP(writer, request)
-	})
 }

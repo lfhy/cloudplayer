@@ -1,4 +1,5 @@
 import { createKugouSessionBridge } from "../kugou/session.js";
+import { proxyRemoteAssetSrc } from "../../wails/tauri-core.js";
 
 // Settings only shows shared Kugou session status while the full import flow lives on the import page.
 export function wireKugouSettingsActions(deps) {
@@ -38,7 +39,7 @@ export function wireKugouSettingsActions(deps) {
     if (avatarEl()) {
       const avatarURL = status?.avatar_url || status?.avatarUrl || "";
       avatarEl().textContent = avatarURL ? "" : nickname.slice(0, 1).toUpperCase();
-      avatarEl().style.backgroundImage = avatarURL ? `url("${avatarURL}")` : "";
+      avatarEl().style.backgroundImage = avatarURL ? `url("${proxyRemoteAssetSrc(avatarURL)}")` : "";
       avatarEl().classList.toggle("is-image", !!avatarURL);
     }
   }
