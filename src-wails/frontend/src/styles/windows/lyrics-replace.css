@@ -1,10 +1,12 @@
 /* Lyrics result table, preview panel and error state. */
 .lyrics-replace-results-wrap {
   min-height: 0;
+  height: 100%;
   border: 1px solid var(--border);
   border-radius: 12px;
   overflow: auto;
   background: var(--bg-card);
+  align-self: stretch;
 }
 
 .lyrics-replace-table {
@@ -61,12 +63,14 @@
 
 .lyrics-replace-preview-wrap {
   min-height: 0;
+  height: 100%;
   display: flex;
   flex-direction: column;
   border: 1px solid var(--border);
   border-radius: 12px;
   overflow: hidden;
   background: var(--bg-card);
+  align-self: stretch;
 }
 
 .lyrics-replace-preview-label {
@@ -83,6 +87,7 @@
   padding: 10px 12px;
   flex: 1;
   overflow: auto;
+  min-height: 0;
   font-size: 12px;
   line-height: 1.55;
   white-space: pre-wrap;

@@ -2,17 +2,20 @@
 /* 歌词替换窗口 */
 .lyrics-window {
   min-height: 100vh;
+  height: 100vh;
   padding: 18px;
   background: var(--bg-main);
+  overflow: hidden;
 }
 
 .lyrics-window__shell {
-  min-height: calc(100vh - 36px);
+  height: calc(100vh - 36px);
   display: flex;
   flex-direction: column;
   gap: 16px;
   padding: 18px 18px 16px;
   background: transparent;
+  min-height: 0;
 }
 
 .platform-macos .lyrics-window {
@@ -22,7 +25,7 @@
 }
 
 .platform-macos .lyrics-window__shell {
-  min-height: calc(100vh - 18px);
+  height: calc(100vh - 18px);
   padding-top: 56px;
 }
 
@@ -175,6 +178,8 @@
   gap: 14px;
   min-height: 0;
   flex: 1;
+  overflow: hidden;
+  align-items: stretch;
 }
 
 @media (max-width: 740px) {
@@ -183,7 +188,7 @@
   }
 
   .lyrics-window__shell {
-    min-height: calc(100vh - 24px);
+    height: calc(100vh - 24px);
     padding: 14px;
   }
 
