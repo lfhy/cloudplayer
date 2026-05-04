@@ -84,7 +84,7 @@ export function createAccountCenterController(deps) {
     const profile = document.getElementById("account-kugou-profile");
     const logout = document.getElementById("btn-account-kugou-logout");
     const importBtn = document.getElementById("btn-account-kugou-open-import");
-    if (status) status.textContent = "未登录酷狗概念版。";
+    if (status) status.textContent = "登录后可同步账号状态与云歌单。";
     if (profile) profile.hidden = true;
     if (logout) logout.hidden = true;
     if (importBtn) importBtn.hidden = true;
@@ -110,7 +110,7 @@ export function createAccountCenterController(deps) {
     if (detailEl) detailEl.textContent = loggedIn ? `已登录 · ${userID || "当前账号"}` : `登录已过期 · ${userID || "请重新登录"}`;
     if (statusEl) {
       statusEl.textContent = loggedIn
-        ? "已连接酷狗概念版账号。"
+        ? "账号已连接，可直接同步歌单。"
         : "登录已过期，请重新登录。";
     }
     if (avatarEl) {

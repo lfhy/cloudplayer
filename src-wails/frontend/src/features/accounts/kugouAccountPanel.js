@@ -4,7 +4,6 @@ export function kugouAccountPanelTemplate() {
     <div class="account-provider-panel" data-account-provider-panel="kugou">
       <div class="account-provider-heading">
         <strong>酷狗概念版</strong>
-        <span class="muted">选择登录方式</span>
       </div>
       <div class="account-provider-main">
         <div class="account-provider-card" id="account-kugou-profile" hidden>
