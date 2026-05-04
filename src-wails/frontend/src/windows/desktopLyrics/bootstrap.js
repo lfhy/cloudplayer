@@ -146,7 +146,7 @@ function wireLyricsWindowControls() {
     true
   );
   frameEl?.addEventListener("dblclick", lyricsPreventDragMaximize, true);
-  dragRegionEl?.setAttribute("data-wails-drag", "");
+  if (dragRegionEl) dragRegionEl.style.setProperty("--wails-draggable", "drag");
   wireLyricsHoverTracking();
 
   closeBtnEl?.addEventListener("click", async (event) => {
