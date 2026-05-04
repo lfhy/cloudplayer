@@ -78,7 +78,7 @@ export function createImportKugouController(deps) {
   function renderLoginStatus(status) {
     if (!loginStatusEl()) return;
     if (status?.logged_in) {
-      loginStatusEl().textContent = `已登录酷狗 Lite · ${status.nickname || status.user_id || status.userId || ""}`;
+      loginStatusEl().textContent = `已登录酷狗概念版 · ${status.nickname || status.user_id || status.userId || ""}`;
       return;
     }
     if (status?.status === "scanned") {
@@ -89,7 +89,7 @@ export function createImportKugouController(deps) {
       loginStatusEl().textContent = "等待扫码登录…";
       return;
     }
-    loginStatusEl().textContent = "未登录酷狗 Lite。";
+    loginStatusEl().textContent = "未登录酷狗概念版。";
   }
 
   async function refreshLoginStatus() {
@@ -150,7 +150,7 @@ export function createImportKugouController(deps) {
       if (!qrURL) return;
       try {
         await navigator.clipboard.writeText(qrURL);
-        if (loginStatusEl()) loginStatusEl().textContent = "已复制酷狗登录链接。";
+        if (loginStatusEl()) loginStatusEl().textContent = "已复制酷狗概念版登录链接。";
       } catch (error) {
         alertRequestFailed(error, "copy kugou login url");
       }

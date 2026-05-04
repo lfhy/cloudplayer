@@ -8,18 +8,25 @@ export function sourcePanelTemplate() {
           <input type="hidden" id="setting-music-source-provider" value="pjmp3" />
           <div class="settings-choice-group" role="radiogroup" aria-label="在线曲库渠道">
             <button type="button" class="settings-choice" data-music-source-provider-card="pjmp3" role="radio" aria-checked="false">PJMP3 公共源</button>
-            <button type="button" class="settings-choice" data-music-source-provider-card="kugou" role="radio" aria-checked="false">酷狗 Lite</button>
+            <button type="button" class="settings-choice" data-music-source-provider-card="kugou" role="radio" aria-checked="false">酷狗概念版</button>
           </div>
           <p class="settings-field-hint muted">当前默认搜索、试听、播放与下载都会跟随这里选择的曲库渠道。</p>
         </div>
         <div class="settings-field">
           <span class="settings-field-label">酷狗账号同步</span>
           <div class="settings-inline-stack">
+            <div id="setting-kugou-profile" class="settings-provider-card" hidden>
+              <div id="setting-kugou-avatar" class="settings-provider-card__avatar" aria-hidden="true">K</div>
+              <div class="settings-provider-card__meta">
+                <strong id="setting-kugou-name">酷狗概念版</strong>
+                <span id="setting-kugou-detail" class="muted">未登录</span>
+              </div>
+            </div>
             <div class="settings-inline-row">
               <button type="button" id="btn-kugou-open-import" class="settings-action-button">前往导入歌单</button>
-              <button type="button" id="btn-kugou-logout" class="settings-action-button">退出登录</button>
+              <button type="button" id="btn-kugou-logout" class="settings-action-button" hidden>退出登录</button>
             </div>
-            <p id="setting-kugou-login-status" class="settings-field-hint muted">未登录酷狗 Lite。</p>
+            <p id="setting-kugou-login-status" class="settings-field-hint muted">未登录酷狗概念版。</p>
             <p class="settings-field-hint muted">登录方式、歌单勾选和批量导入已统一收敛到「导入歌单」页面。</p>
           </div>
         </div>

@@ -27,7 +27,7 @@ export function importPageTemplate() {
           <div class="import-method-grid">
             <button type="button" class="import-method-card" data-import-method="local"><span class="import-method-card__icon" aria-hidden="true"></span><span class="import-method-card__title">导入本地目录</span><span class="import-method-card__desc">扫描一个音乐文件夹，把结果带入歌单草稿。</span></button>
             <button type="button" class="import-method-card" data-import-method="share"><span class="import-method-card__icon" aria-hidden="true"></span><span class="import-method-card__title">分享链接导入</span><span class="import-method-card__desc">支持网易云和 QQ 音乐歌单分享链接。</span></button>
-            <button type="button" class="import-method-card" data-import-method="kugou"><span class="import-method-card__icon" aria-hidden="true"></span><span class="import-method-card__title">导入酷狗歌单</span><span class="import-method-card__desc">登录酷狗 Lite 后，可勾选一个或多个歌单直接导入。</span></button>
+            <button type="button" class="import-method-card" data-import-method="kugou"><span class="import-method-card__icon" aria-hidden="true"></span><span class="import-method-card__title">导入酷狗歌单</span><span class="import-method-card__desc">登录酷狗概念版后，可勾选一个或多个歌单直接导入。</span></button>
             <button type="button" class="import-method-card" data-import-method="text"><span class="import-method-card__icon" aria-hidden="true"></span><span class="import-method-card__title">粘贴文本导入</span><span class="import-method-card__desc">适合从聊天记录、TXT、CSV 或 JSON 中整理歌单。</span></button>
           </div>
         </section>

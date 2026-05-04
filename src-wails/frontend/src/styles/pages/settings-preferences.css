@@ -126,6 +126,48 @@
   max-width: 420px;
 }
 
+.settings-provider-card {
+  display: grid;
+  grid-template-columns: 48px minmax(0, 1fr);
+  gap: 12px;
+  align-items: center;
+  padding: 12px 14px;
+  border: 1px solid color-mix(in srgb, var(--border) 84%, transparent);
+  border-radius: 16px;
+  background: color-mix(in srgb, var(--bg-card) 92%, transparent);
+}
+
+.settings-provider-card__avatar {
+  width: 48px;
+  height: 48px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 16px;
+  background: rgba(var(--accent-rgb), 0.12);
+  color: var(--accent);
+  font-size: 20px;
+  font-weight: 700;
+  background-size: cover;
+  background-position: center;
+}
+
+.settings-provider-card__avatar.is-image {
+  color: transparent;
+}
+
+.settings-provider-card__meta {
+  min-width: 0;
+  display: grid;
+  gap: 4px;
+}
+
+.settings-provider-card__meta strong {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
 .lyric-preview {
   position: relative;
   max-width: 520px;

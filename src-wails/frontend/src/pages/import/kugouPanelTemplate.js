@@ -10,7 +10,7 @@ export function kugouImportPanelTemplate() {
           </div>
           <button type="button" id="btn-import-kugou-logout" class="settings-action-button">退出登录</button>
         </div>
-        <p id="import-kugou-login-status" class="import-kugou-status muted" aria-live="polite">正在检查酷狗登录状态…</p>
+        <p id="import-kugou-login-status" class="import-kugou-status muted" aria-live="polite">正在检查酷狗概念版登录状态…</p>
         <div class="import-kugou-mode-switch" role="tablist" aria-label="酷狗登录方式">
           <button type="button" class="import-kugou-mode is-active" data-kugou-login-mode="qr" role="tab" aria-selected="true">二维码登录</button>
           <button type="button" class="import-kugou-mode" data-kugou-login-mode="sms" role="tab" aria-selected="false">手机验证码</button>
@@ -19,7 +19,7 @@ export function kugouImportPanelTemplate() {
           <div class="import-kugou-qr-box">
             <img id="import-kugou-qr-image" class="import-kugou-qr-image" alt="酷狗登录二维码" hidden />
             <div class="import-kugou-qr-meta">
-              <p class="muted">使用酷狗 App 扫码确认后，会自动同步登录状态。</p>
+              <p class="muted">使用酷狗概念版 App 扫码确认后，会自动同步登录状态。</p>
               <div class="import-kugou-actions">
                 <button type="button" id="btn-import-kugou-qr" class="btn-accent">生成二维码</button>
                 <button type="button" id="btn-import-kugou-copy-qr" class="settings-action-button">复制登录链接</button>
@@ -41,7 +41,7 @@ export function kugouImportPanelTemplate() {
               <button type="button" id="btn-import-kugou-captcha" class="settings-action-button">发送验证码</button>
             </div>
             <div class="import-kugou-actions">
-              <button type="button" id="btn-import-kugou-sms-login" class="btn-accent">登录酷狗</button>
+              <button type="button" id="btn-import-kugou-sms-login" class="btn-accent">登录酷狗概念版</button>
             </div>
           </div>
         </section>
