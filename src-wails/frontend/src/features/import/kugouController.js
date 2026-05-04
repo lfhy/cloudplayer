@@ -24,14 +24,18 @@ export function createImportKugouController(deps) {
   }
 
   function setLoginUiVisible(visible) {
+    const head = document.getElementById("import-kugou-head");
     const loginShell = document.getElementById("import-kugou-login-shell");
+    const loginStatus = loginStatusEl();
     const logoutButton = document.getElementById("btn-import-kugou-logout");
     const refreshButton = document.getElementById("btn-import-kugou-refresh");
     const selectAllButton = document.getElementById("btn-import-kugou-select-all");
     const clearButton = document.getElementById("btn-import-kugou-clear");
     const importButton = document.getElementById("btn-import-kugou-import");
     const headCopy = document.getElementById("import-kugou-head-copy");
+    if (head) head.hidden = !visible;
     if (loginShell) loginShell.hidden = !visible;
+    if (loginStatus) loginStatus.hidden = !visible;
     if (logoutButton) logoutButton.hidden = visible;
     if (refreshButton) refreshButton.hidden = visible;
     if (selectAllButton) selectAllButton.hidden = visible;
@@ -102,7 +106,6 @@ export function createImportKugouController(deps) {
     if (!loginStatusEl()) return;
     if (status?.logged_in) {
       setLoginUiVisible(false);
-      loginStatusEl().textContent = `已登录酷狗概念版 · ${status.nickname || status.user_id || status.userId || ""}`;
       return;
     }
     setLoginUiVisible(true);

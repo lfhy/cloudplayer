@@ -3,14 +3,14 @@ export function kugouImportPanelTemplate() {
   return `
     <div id="import-panel-kugou" class="import-panel" hidden>
       <div class="import-kugou-shell">
-        <div class="import-kugou-head">
+        <div id="import-kugou-head" class="import-kugou-head">
           <div>
             <h3>导入酷狗歌单</h3>
             <p id="import-kugou-head-copy" class="muted">登录酷狗概念版后勾选要同步的歌单，导入结果会统一进入保存步骤。</p>
           </div>
           <button type="button" id="btn-import-kugou-logout" class="settings-action-button" hidden>退出登录</button>
         </div>
-        <p id="import-kugou-login-status" class="import-kugou-status muted" aria-live="polite">正在检查酷狗概念版登录状态…</p>
+        <p id="import-kugou-login-status" class="import-kugou-status muted" aria-live="polite" hidden>正在检查酷狗概念版登录状态…</p>
         <section id="import-kugou-login-shell" class="import-kugou-login-shell">
           <div class="import-kugou-mode-switch" role="tablist" aria-label="酷狗登录方式">
             <button type="button" class="import-kugou-mode is-active" data-kugou-login-mode="qr" role="tab" aria-selected="true">二维码登录</button>
