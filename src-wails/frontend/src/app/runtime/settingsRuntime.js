@@ -82,6 +82,19 @@ export function createSettingsRuntime(deps) {
     applySettingsTabUi(normalizeSettingsTab(tab));
   }
 
+  const flow = createImportFlowHelpers({
+    getImportMethod,
+    setImportMethodValue,
+    getImportTracks,
+    setImportTracksValue,
+    setImportShareSuggestedName,
+    setImportDraftDirty,
+    getImportDraftDirty,
+    getNeteaseCookieEnabled,
+    getNeteaseCookieValue,
+    renderImportTable,
+  });
+
   const settings = createSettingsController({
     alertRequestFailed,
     applyAppTheme,
@@ -113,19 +126,9 @@ export function createSettingsRuntime(deps) {
     getDesktopLyricsOpen,
     setLastLibraryFolder,
     setNeteaseCookieState,
-  });
-
-  const flow = createImportFlowHelpers({
-    getImportMethod,
-    setImportMethodValue,
-    getImportTracks,
-    setImportTracksValue,
-    setImportShareSuggestedName,
-    setImportDraftDirty,
-    getImportDraftDirty,
-    getNeteaseCookieEnabled,
-    getNeteaseCookieValue,
-    renderImportTable,
+    setImportDraft: flow.setImportDraft,
+    setImportMethod: flow.setImportMethod,
+    setImportStep: flow.setImportStep,
   });
 
   return {
@@ -138,6 +141,9 @@ export function createSettingsRuntime(deps) {
     setSettingsTab,
     setThemeCardSelection,
     setThemeModeSelection,
+    setImportDraft: flow.setImportDraft,
+    setImportMethod: flow.setImportMethod,
+    setImportStep: flow.setImportStep,
     syncNeteaseCookieUi: flow.syncNeteaseCookieUi,
     wirePreferencesModals: settings.wirePreferencesModals,
     resetImportFlow: flow.resetImportFlow,

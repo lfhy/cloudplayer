@@ -1,0 +1,95 @@
+package main
+
+import (
+	"context"
+	"fmt"
+	"strings"
+
+	"cloudplayer/internal/cloudplayer/importplaylist"
+	"cloudplayer/internal/cloudplayer/musicsource"
+	kg "github.com/lfhy/kugou-music-api"
+)
+
+// Kugou playlist sync reads the logged-in cloud library and maps it into the existing import DTOs.
+func (s *CloudPlayerService) ListKugouPlaylists() ([]KugouPlaylistRow, error) {
+	client, session, err := kugouClientFromSession()
+	if err != nil {
+		return nil, err
+	}
+	userID := kugouInt(session.Cookie["userid"])
+	if userID <= 0 {
+		return nil, fmt.Errorf("请先登录酷狗 Lite")
+	}
+	resp, err := client.UserPlaylist(context.Background(), kg.UserPlaylistRequest{
+		Page:     1,
+		Pagesize: 100,
+		Userid:   userID,
+		Token:    strings.TrimSpace(session.Cookie["token"]),
+	})
+	if err != nil {
+		return nil, err
+	}
+	items := kugouFindPlaylistItems(resp.Body)
+	rows := make([]KugouPlaylistRow, 0, len(items))
+	for _, item := range items {
+		id := int64(kugouMapInt(item, "listid", "list_id", "id"))
+		name := strings.TrimSpace(kugouMapString(item, "listname", "list_name", "name", "title"))
+		if id <= 0 || name == "" {
+			continue
+		}
+		count := kugouMapInt(item, "song_count", "count", "total", "music_count")
+		rows = append(rows, KugouPlaylistRow{
+			ID:         id,
+			Name:       name,
+			CoverURL:   kugouMapCover(item),
+			TrackCount: count,
+		})
+	}
+	return rows, nil
+}
+
+func (s *CloudPlayerService) SyncKugouPlaylist(listID int64) (SharePlaylistResponse, error) {
+	client, _, err := kugouClientFromSession()
+	if err != nil {
+		return SharePlaylistResponse{}, err
+	}
+	if listID <= 0 {
+		return SharePlaylistResponse{}, fmt.Errorf("无效的酷狗歌单 ID")
+	}
+	detailResp, err := client.PlaylistDetail(context.Background(), kg.PlaylistDetailRequest{Ids: fmt.Sprintf("%d", listID)})
+	if err != nil {
+		return SharePlaylistResponse{}, err
+	}
+	tracksResp, err := client.PlaylistTrackAll(context.Background(), kg.PlaylistTrackAllRequest{Id: listID, Page: 1, Pagesize: 500})
+	if err != nil {
+		return SharePlaylistResponse{}, err
+	}
+	name := kugouFindPlaylistName(detailResp.Body)
+	items := kugouFindTrackItems(tracksResp.Body)
+	tracks := make([]importplaylist.ImportedTrackDTO, 0, len(items))
+	for _, item := range items {
+		hash := strings.ToLower(strings.TrimSpace(kugouMapString(item, "hash", "audio_hash", "file_hash", "hash_128")))
+		title := strings.TrimSpace(kugouMapString(item, "songname", "song_name", "filename", "name", "audio_name"))
+		if hash == "" || title == "" {
+			continue
+		}
+		albumAudioID := kugouMapInt(item, "album_audio_id", "mixsongid", "mixsong_id", "albumaudioid")
+		tracks = append(tracks, importplaylist.ImportedTrackDTO{
+			Title:         title,
+			Artist:        strings.TrimSpace(kugouMapString(item, "singername", "singer_name", "author_name", "artist")),
+			Album:         strings.TrimSpace(kugouMapString(item, "album_name", "albumname", "album")),
+			Pjmp3SourceID: musicsource.EncodeSourceID(musicsource.ProviderKugou, encodeKugouImportRawID(hash, albumAudioID)),
+			CoverURL:      kugouMapCoverString(item),
+			DurationMS:    kugouTrackDurationMS(item),
+		})
+	}
+	return SharePlaylistResponse{PlaylistName: name, Tracks: tracks}, nil
+}
+
+func encodeKugouImportRawID(hash string, albumAudioID int) string {
+	hash = strings.ToLower(strings.TrimSpace(hash))
+	if albumAudioID <= 0 {
+		return hash
+	}
+	return fmt.Sprintf("%s|%d", hash, albumAudioID)
+}

@@ -13,6 +13,33 @@ export function sourcePanelTemplate() {
           <p class="settings-field-hint muted">当前默认搜索、试听、播放与下载都会跟随这里选择的曲库渠道。</p>
         </div>
         <div class="settings-field">
+          <span class="settings-field-label">酷狗账号同步</span>
+          <div class="settings-inline-stack">
+            <div class="settings-inline-row">
+              <button type="button" id="btn-kugou-login" class="settings-action-button">登录酷狗 Lite</button>
+              <button type="button" id="btn-kugou-refresh-playlists" class="settings-action-button">同步我的歌单</button>
+              <button type="button" id="btn-kugou-logout" class="settings-action-button">退出登录</button>
+            </div>
+            <p id="setting-kugou-login-status" class="settings-field-hint muted">未登录酷狗 Lite。</p>
+            <div id="settings-kugou-qr" class="settings-kugou-qr" hidden>
+              <img id="settings-kugou-qr-image" class="settings-kugou-qr__image" alt="酷狗登录二维码" />
+              <div class="settings-kugou-qr__meta">
+                <p class="muted">使用酷狗 App 扫码登录，确认后会自动刷新状态。</p>
+                <button type="button" id="btn-kugou-copy-qr-url" class="settings-action-button">复制登录链接</button>
+              </div>
+            </div>
+            <div class="settings-inline-stack">
+              <label for="setting-kugou-playlist-select" class="settings-field-label">我的酷狗歌单</label>
+              <div class="settings-inline-row">
+                <select id="setting-kugou-playlist-select" class="settings-field-control settings-field-control--text">
+                  <option value="">请先同步歌单</option>
+                </select>
+                <button type="button" id="btn-kugou-import-playlist" class="settings-action-button">导入到歌单草稿</button>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="settings-field">
           <label for="setting-netease-api-base" class="settings-field-label">网易云歌词 API 根地址（可选）</label>
           <input type="url" id="setting-netease-api-base" class="settings-field-control settings-field-control--text" spellcheck="false" autocomplete="off" placeholder="https://example.com" aria-describedby="setting-netease-api-base-hint" />
           <p id="setting-netease-api-base-hint" class="settings-field-hint muted">这里只影响网易云歌词获取，不影响当前在线曲库渠道。填写后「netease」歌词源会优先请求 <code>/lyric/new</code> 获取 YRC 逐字歌词；留空则仅用网易云网页门户的行级 LRC。</p>

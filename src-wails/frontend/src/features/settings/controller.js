@@ -37,6 +37,9 @@ export function createSettingsController(deps) {
     getDesktopLyricsOpen,
     setLastLibraryFolder,
     setNeteaseCookieState,
+    setImportDraft,
+    setImportMethod,
+    setImportStep,
   } = deps;
   let settingsFormBaseline = settingsFormBaselineDefaults();
   let settingsSaveTimer = null;
@@ -200,7 +203,7 @@ export function createSettingsController(deps) {
         queueSettingsAutosave(immediate);
       });
     });
-    wireSettingsActionButtons({ alertRequestFailed, invoke });
+    wireSettingsActionButtons({ alertRequestFailed, invoke, setImportDraft, setImportMethod, setImportStep, setPage });
     document.querySelectorAll("[data-theme-mode-card]").forEach((card) => card.addEventListener("click", () => {
       setThemeModeSelection(card.getAttribute("data-theme-mode-card") || "system");
       const current = getSettingsFormValues();
