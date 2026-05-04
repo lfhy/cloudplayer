@@ -1,5 +1,5 @@
 import { coverImgHtml, setCoverImageSource } from "../../app/helpers/covers.js";
-import { collectPlaylistsMissingPlayableData, hasMissingPlayableData } from "./playlistEnrichHelpers.js";
+import { createPlaylistEnrichHelpers } from "./playlistEnrichHelpers.js";
 
 // Playlist controller handles sidebar, hero metadata, and playlist search helpers.
 export function createPlaylistController(deps) {
@@ -25,7 +25,7 @@ export function createPlaylistController(deps) {
     setSelectedPlaylist,
     warnRequestFailed,
   } = deps;
-  const enrichPending = new Set();
+  const enrich = createPlaylistEnrichHelpers({ invoke, warnRequestFailed });
 
   async function refreshPlaylistSelect() {
     const select = document.getElementById("import-merge-playlist");
@@ -128,37 +128,12 @@ export function createPlaylistController(deps) {
     try {
       const rows = await invoke("list_playlist_import_items", { playlistId: id });
       setPlaylistDetailRows(rows || []);
-      void maybeEnrichPlaylist(id, rows || []);
+      void enrich.maybeEnrichPlaylist(id, rows || []);
     } catch (error) {
       setPlaylistDetailRows([]);
       alertRequestFailed(error, "list_playlist_import_items");
     }
     renderPlaylistDetailTable();
-  }
-
-  async function maybeEnrichPlaylist(playlistID, rows, { force = false } = {}) {
-    const normalizedID = Number(playlistID || 0);
-    if (!Number.isFinite(normalizedID) || normalizedID <= 0) return;
-    if (!force && !hasMissingPlayableData(rows)) return;
-    if (enrichPending.has(normalizedID)) return;
-    enrichPending.add(normalizedID);
-    const button = document.getElementById("btn-playlist-enrich");
-    const previousText = button?.textContent || "";
-    if (button) {
-      button.disabled = true;
-      button.textContent = "补全中…";
-    }
-    try {
-      await invoke("start_import_enrich", { playlistId: normalizedID });
-    } catch (error) {
-      warnRequestFailed(error, "start_import_enrich");
-    } finally {
-      enrichPending.delete(normalizedID);
-      if (button) {
-        button.disabled = false;
-        button.textContent = previousText || "补全播放信息";
-      }
-    }
   }
 
   function renderPlaylistDetailTable() {
@@ -222,31 +197,15 @@ export function createPlaylistController(deps) {
     document.getElementById("btn-playlist-enrich")?.addEventListener("click", async () => {
       const playlistID = getSelectedPlaylistId();
       if (playlistID == null) return;
-      await maybeEnrichPlaylist(playlistID, getPlaylistDetailRows(), { force: true });
+      const started = await enrich.maybeEnrichPlaylist(playlistID, getPlaylistDetailRows(), { force: true });
+      if (!started) enrich.setStatus("当前歌单没有检测到缺失的播放信息。");
     });
     document.getElementById("btn-playlist-enrich-all")?.addEventListener("click", async () => {
-      const button = document.getElementById("btn-playlist-enrich-all");
-      const previousText = button?.textContent || "";
-      if (button) {
-        button.disabled = true;
-        button.textContent = "批量补全中…";
-      }
-      try {
-        const missingPlaylists = await collectPlaylistsMissingPlayableData(invoke);
-        for (const playlist of missingPlaylists) {
-          await maybeEnrichPlaylist(playlist.id, playlist.rows, { force: true });
-        }
+      await enrich.runBatchEnrich(async () => {
         if (getSelectedPlaylistId() != null) {
           await loadPlaylistDetail(getSelectedPlaylistId(), getSelectedPlaylistName());
         }
-      } catch (error) {
-        alertRequestFailed(error, "batch playlist enrich");
-      } finally {
-        if (button) {
-          button.disabled = false;
-          button.textContent = previousText || "批量补全缺失歌单";
-        }
-      }
+      });
     });
     document.getElementById("btn-playlist-rename")?.addEventListener("click", async () => {
       if (getSelectedPlaylistId() == null) return;
