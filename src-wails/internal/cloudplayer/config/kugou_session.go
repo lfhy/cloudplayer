@@ -3,8 +3,10 @@ package config
 import (
 	"bytes"
 	"encoding/json"
+	"math/big"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 )
 
@@ -42,6 +44,7 @@ func LoadKugouSession() KugouSession {
 	if session.Cookie == nil {
 		session.Cookie = map[string]string{}
 	}
+	normalizeKugouSessionUserID(&session)
 	return session
 }
 
@@ -49,6 +52,7 @@ func SaveKugouSession(session KugouSession) error {
 	if session.Cookie == nil {
 		session.Cookie = map[string]string{}
 	}
+	normalizeKugouSessionUserID(&session)
 	session.UpdatedAt = time.Now().Format(time.RFC3339)
 	data, err := json.MarshalIndent(session, "", "  ")
 	if err != nil {
@@ -67,4 +71,35 @@ func ClearKugouSession() error {
 		return err
 	}
 	return nil
+}
+
+// normalizeKugouSessionUserID converts persisted scientific-notation user IDs back to plain integers.
+func normalizeKugouSessionUserID(session *KugouSession) {
+	if session == nil || session.Cookie == nil {
+		return
+	}
+	userID := normalizeKugouUserIDString(session.Cookie["userid"])
+	if userID != "" {
+		session.Cookie["userid"] = userID
+		session.LastUserID = userID
+	}
+}
+
+func normalizeKugouUserIDString(raw string) string {
+	trimmed := strings.TrimSpace(raw)
+	if trimmed == "" {
+		return ""
+	}
+	if !strings.ContainsAny(trimmed, ".eE") {
+		return trimmed
+	}
+	value, ok := new(big.Float).SetString(trimmed)
+	if !ok {
+		return trimmed
+	}
+	text := value.Text('f', 0)
+	if text == "" {
+		return trimmed
+	}
+	return text
 }

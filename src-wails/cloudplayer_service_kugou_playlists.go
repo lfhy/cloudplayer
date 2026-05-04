@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"strconv"
 	"strings"
 
 	"cloudplayer/internal/cloudplayer/importplaylist"
@@ -16,14 +17,17 @@ func (s *CloudPlayerService) ListKugouPlaylists() ([]KugouPlaylistRow, error) {
 	if err != nil {
 		return nil, err
 	}
-	userID := kugouInt(session.Cookie["userid"])
+	userID, parseErr := strconv.ParseInt(strings.TrimSpace(session.Cookie["userid"]), 10, 64)
+	if parseErr != nil {
+		return nil, fmt.Errorf("酷狗登录态中的用户 ID 无效")
+	}
 	if userID <= 0 {
 		return nil, fmt.Errorf("请先登录酷狗 Lite")
 	}
 	resp, err := client.UserPlaylist(context.Background(), kg.UserPlaylistRequest{
 		Page:     1,
 		Pagesize: 100,
-		Userid:   userID,
+		Userid:   int(userID),
 		Token:    strings.TrimSpace(session.Cookie["token"]),
 	})
 	if err != nil {
