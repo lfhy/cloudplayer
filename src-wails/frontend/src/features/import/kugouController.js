@@ -23,6 +23,27 @@ export function createImportKugouController(deps) {
     return Array.from(selectedIDs.values());
   }
 
+  function setLoginUiVisible(visible) {
+    const loginShell = document.getElementById("import-kugou-login-shell");
+    const logoutButton = document.getElementById("btn-import-kugou-logout");
+    const refreshButton = document.getElementById("btn-import-kugou-refresh");
+    const selectAllButton = document.getElementById("btn-import-kugou-select-all");
+    const clearButton = document.getElementById("btn-import-kugou-clear");
+    const importButton = document.getElementById("btn-import-kugou-import");
+    const headCopy = document.getElementById("import-kugou-head-copy");
+    if (loginShell) loginShell.hidden = !visible;
+    if (logoutButton) logoutButton.hidden = visible;
+    if (refreshButton) refreshButton.hidden = visible;
+    if (selectAllButton) selectAllButton.hidden = visible;
+    if (clearButton) clearButton.hidden = visible;
+    if (importButton) importButton.hidden = visible;
+    if (headCopy) {
+      headCopy.textContent = visible
+        ? "登录酷狗概念版后勾选要同步的歌单，导入结果会统一进入保存步骤。"
+        : "当前账号已连接，可直接刷新并勾选要导入的歌单。";
+    }
+  }
+
   function setMode(mode = "qr") {
     document.querySelectorAll("[data-kugou-login-mode]").forEach((button) => {
       const active = button.getAttribute("data-kugou-login-mode") === mode;
@@ -80,9 +101,11 @@ export function createImportKugouController(deps) {
   function renderLoginStatus(status) {
     if (!loginStatusEl()) return;
     if (status?.logged_in) {
+      setLoginUiVisible(false);
       loginStatusEl().textContent = `已登录酷狗概念版 · ${status.nickname || status.user_id || status.userId || ""}`;
       return;
     }
+    setLoginUiVisible(true);
     if (status?.status === "scanned") {
       loginStatusEl().textContent = "已扫码，等待确认…";
       return;
@@ -98,6 +121,7 @@ export function createImportKugouController(deps) {
     const status = await session.getLoginStatus();
     renderLoginStatus(status);
     if (status?.logged_in) await refreshPlaylists();
+    else renderPlaylists([]);
     return status;
   }
 
@@ -209,6 +233,7 @@ export function createImportKugouController(deps) {
     wireModeSwitch();
     wireActions();
     setMode("qr");
+    setLoginUiVisible(true);
     void refreshLoginStatus().catch((error) => alertRequestFailed(error, "get_kugou_login_status"));
   }
 
