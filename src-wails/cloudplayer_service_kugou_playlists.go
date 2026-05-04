@@ -6,6 +6,7 @@ import (
 	"strconv"
 	"strings"
 
+	"cloudplayer/internal/cloudplayer/config"
 	"cloudplayer/internal/cloudplayer/importplaylist"
 	"cloudplayer/internal/cloudplayer/musicsource"
 	kg "github.com/lfhy/kugou-music-api"
@@ -60,7 +61,7 @@ func (s *CloudPlayerService) SyncKugouPlaylist(listID int64) (SharePlaylistRespo
 	if listID <= 0 {
 		return SharePlaylistResponse{}, fmt.Errorf("无效的酷狗歌单 ID")
 	}
-	tracksResp, err := client.PlaylistTrackAll(context.Background(), kg.PlaylistTrackAllRequest{Id: listID, Page: 1, Pagesize: 500})
+	items, err := fetchAllKugouPlaylistTracks(client, session, listID)
 	if err != nil {
 		return SharePlaylistResponse{}, err
 	}
@@ -73,13 +74,20 @@ func (s *CloudPlayerService) SyncKugouPlaylist(listID int64) (SharePlaylistRespo
 	if detailErr != nil && !kugouUpstream404(detailErr) {
 		return SharePlaylistResponse{}, detailErr
 	}
-	name := kugouFindPlaylistName(tracksResp.Body)
+	name := ""
 	if detailResp != nil {
 		if detailName := kugouFindPlaylistName(detailResp.Body); strings.TrimSpace(detailName) != "" {
 			name = detailName
 		}
 	}
-	items := kugouFindTrackItems(tracksResp.Body)
+	if name == "酷狗同步歌单" {
+		name = ""
+	}
+	if name == "" {
+		if fallback := s.kugouPlaylistNameByID(listID); fallback != "" {
+			name = fallback
+		}
+	}
 	tracks := make([]importplaylist.ImportedTrackDTO, 0, len(items))
 	for _, item := range items {
 		hash := strings.ToLower(strings.TrimSpace(kugouMapString(item, "hash", "audio_hash", "file_hash", "hash_128")))
@@ -110,4 +118,72 @@ func encodeKugouImportRawID(hash string, albumAudioID int) string {
 
 func kugouUpstream404(err error) bool {
 	return err != nil && strings.Contains(err.Error(), "upstream status 404")
+}
+
+func fetchAllKugouPlaylistTracks(client *kg.Client, session config.KugouSession, listID int64) ([]map[string]any, error) {
+	const pageSize = 100
+	seen := map[string]struct{}{}
+	out := make([]map[string]any, 0, pageSize)
+	for page := 1; page <= 12; page++ {
+		resp, err := client.PlaylistTrackAllNew(context.Background(), kg.PlaylistTrackAllNewRequest{
+			Listid:   listID,
+			Page:     page,
+			Pagesize: pageSize,
+			Token:    strings.TrimSpace(session.Cookie["token"]),
+			Userid:   strings.TrimSpace(session.Cookie["userid"]),
+			Cookie:   session.Cookie,
+		})
+		if err != nil && kugouUpstream404(err) {
+			resp, err = client.PlaylistTrackAll(context.Background(), kg.PlaylistTrackAllRequest{
+				Id:       listID,
+				Page:     page,
+				Pagesize: pageSize,
+				Cookie:   session.Cookie,
+			})
+		}
+		if err != nil {
+			return nil, err
+		}
+		items := kugouFindTrackItems(resp.Body)
+		if len(items) == 0 {
+			break
+		}
+		before := len(out)
+		for _, item := range items {
+			key := kugouTrackKey(item)
+			if key == "" {
+				continue
+			}
+			if _, ok := seen[key]; ok {
+				continue
+			}
+			seen[key] = struct{}{}
+			out = append(out, item)
+		}
+		if len(items) < pageSize || len(out) == before {
+			break
+		}
+	}
+	return out, nil
+}
+
+func kugouTrackKey(item map[string]any) string {
+	hash := strings.ToLower(strings.TrimSpace(kugouMapString(item, "hash", "audio_hash", "file_hash", "hash_128")))
+	if hash == "" {
+		return ""
+	}
+	return fmt.Sprintf("%s|%d", hash, kugouMapInt(item, "mixsongid", "mixsong_id", "album_audio_id", "albumaudioid"))
+}
+
+func (s *CloudPlayerService) kugouPlaylistNameByID(listID int64) string {
+	rows, err := s.ListKugouPlaylists()
+	if err != nil {
+		return ""
+	}
+	for _, row := range rows {
+		if row.ID == listID {
+			return strings.TrimSpace(row.Name)
+		}
+	}
+	return ""
 }
