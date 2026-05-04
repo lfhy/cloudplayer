@@ -52,7 +52,8 @@ function colorLineWords(lineElId, wordLine, currentTime) {
             ? 0
             : 1;
     for (let index = 0; index < charCount; index += 1) {
-      const charProgress = Math.min(1, Math.max(0, progress * charCount - index));
+      const stepped = Math.min(1, Math.max(0, progress * charCount - index));
+      const charProgress = stepped <= 0 ? 0 : stepped >= 1 ? 1 : stepped * stepped * (3 - 2 * stepped);
       if (spans[offset + index]) spans[offset + index].style.color = charColor(charProgress);
     }
     offset += charCount;
@@ -80,7 +81,8 @@ function colorPlainLine(lineElId, startT, endT, currentTime) {
   const spans = document.getElementById(lineElId)?.children ?? [];
   const total = spans.length;
   for (let index = 0; index < total; index += 1) {
-    const charProgress = Math.min(1, Math.max(0, progress * total - index));
+    const stepped = Math.min(1, Math.max(0, progress * total - index));
+    const charProgress = stepped <= 0 ? 0 : stepped >= 1 ? 1 : stepped * stepped * (3 - 2 * stepped);
     spans[index].style.color = charColor(charProgress);
   }
 }
