@@ -17,6 +17,7 @@ export function createNavigationController(deps) {
     onRecentPage,
     onSearchPage,
     onSettingsPage,
+    refreshSidebarPlaylists,
     refreshQuickThemeModeUi,
     renderQueuePanel,
     sidebarMenuItems,
@@ -56,6 +57,7 @@ export function createNavigationController(deps) {
     sidebar.appendChild(renderPlaylistSection());
     sidebar.appendChild(renderAccountSection());
     refreshQuickThemeModeUi();
+    void refreshSidebarPlaylists?.();
   }
 
   function toggleQueuePanel() {
