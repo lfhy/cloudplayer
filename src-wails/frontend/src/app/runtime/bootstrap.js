@@ -201,6 +201,24 @@ export function bootCloudPlayerApp(deps) {
     if (!String(lyricsPayload?.lrcText || "").trim()) {
       return reply(false, "当前候选没有可用歌词。");
     }
+    const audio = player?.getAudioEl?.() ?? null;
+    const durationSeconds = audio?.duration && Number.isFinite(audio.duration) && audio.duration > 0 ? audio.duration : null;
+    try {
+      await invoke("save_lyrics_override", {
+        req: {
+          pjmp3SourceId: current.local_path ? null : (current.source_id || "").trim() || null,
+          title: current.title || "",
+          artist: current.artist || "",
+          album: current.album || "",
+          localPath: current.local_path || null,
+          durationSeconds,
+        },
+        payload: lyricsPayload,
+      });
+    } catch (error) {
+      console.warn("save_lyrics_override", error);
+      return reply(false, "保存歌词失败，请重试。");
+    }
     await applyLyricsPayload(lyricsPayload);
     await reply(true, "");
 

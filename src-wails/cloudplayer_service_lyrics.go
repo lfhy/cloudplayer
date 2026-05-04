@@ -28,6 +28,19 @@ func (s *CloudPlayerService) FetchSongLRCEnriched(req lyrics.FetchRequest) (*lyr
 		}
 		return &cached, nil
 	}
+	if cached, isOverride, ok, err := loadPersistentLyrics(s.state.DB, cacheKey); err == nil && ok {
+		if trace {
+			kind := "cache"
+			if isOverride {
+				kind = "override"
+			}
+			log.Printf("FetchSongLRCEnriched persistent hit: key=%q kind=%s source=%q artist=%q title=%q", cacheKey, kind, sourceID, artist, title)
+		}
+		s.state.LyricsCache.Set(cacheKey, cached, s.state.SearchCacheTTL)
+		return &cached, nil
+	} else if err != nil && trace {
+		log.Printf("FetchSongLRCEnriched persistent load failed: key=%q err=%v", cacheKey, err)
+	}
 	if trace {
 		log.Printf("FetchSongLRCEnriched request: source=%q artist=%q title=%q", sourceID, artist, title)
 	}
@@ -49,8 +62,23 @@ func (s *CloudPlayerService) FetchSongLRCEnriched(req lyrics.FetchRequest) (*lyr
 	}
 	if payload.LRCText != "" || len(payload.WordLines) > 0 {
 		s.state.LyricsCache.Set(cacheKey, *payload, s.state.SearchCacheTTL)
+		if err := savePersistentLyrics(s.state.DB, cacheKey, *payload, false); err != nil && trace {
+			log.Printf("FetchSongLRCEnriched persistent save failed: key=%q err=%v", cacheKey, err)
+		}
 	}
 	return payload, nil
+}
+
+func (s *CloudPlayerService) SaveLyricsOverride(req lyrics.FetchRequest, payload lyrics.LyricsPayload) error {
+	cacheKey := LyricsCacheKey(req)
+	if strings.TrimSpace(cacheKey) == "" {
+		return fmt.Errorf("歌词缓存键无效")
+	}
+	if strings.TrimSpace(payload.LRCText) == "" && len(payload.WordLines) == 0 {
+		return fmt.Errorf("歌词内容为空")
+	}
+	s.state.LyricsCache.Set(cacheKey, payload, s.state.SearchCacheTTL)
+	return savePersistentLyrics(s.state.DB, cacheKey, payload, true)
 }
 
 func (s *CloudPlayerService) LyricsSearchCandidates(keyword string, durationMS *int64, sources []string) ([]lyrics.LyricCandidate, error) {

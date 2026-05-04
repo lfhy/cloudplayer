@@ -16,4 +16,9 @@ export const desktopLyricsState = {
   builtLine2: "",
   baseRgb: { r: 255, g: 255, b: 255 },
   hiRgb: { r: 255, g: 183, b: 212 },
+  baseColor: "rgb(255, 255, 255)",
+  hiColor: "rgb(255, 183, 212)",
+  syncedAudioNow: 0,
+  syncedWallNow: 0,
+  syncToken: "",
 };

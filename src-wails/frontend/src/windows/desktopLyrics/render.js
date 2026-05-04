@@ -85,14 +85,37 @@ function colorPlainLine(lineElId, startT, endT, currentTime) {
   }
 }
 
+function syncedCurrentTime(anchor) {
+  const token = [
+    anchor.line1,
+    anchor.line2,
+    anchor.activeSlot,
+    anchor.line1StartT,
+    anchor.line1EndT,
+    anchor.line2StartT,
+    anchor.line2EndT,
+    anchor.audioNow,
+    anchor.audioPlaying ? 1 : 0,
+  ].join("|");
+  if (desktopLyricsState.syncToken !== token) {
+    desktopLyricsState.syncToken = token;
+    desktopLyricsState.syncedAudioNow = Number(anchor.audioNow) || 0;
+    desktopLyricsState.syncedWallNow = performance.now();
+  }
+  if (!anchor.audioPlaying) {
+    return Number(anchor.audioNow) || 0;
+  }
+  return desktopLyricsState.syncedAudioNow + Math.max(0, performance.now() - desktopLyricsState.syncedWallNow) / 1000;
+}
+
 export function animateLyrics() {
   const anchor = desktopLyricsState.lyAnchor;
   if (anchor) {
     const slot = anchor.activeSlot === 2 ? 2 : 1;
     rebuildLineSpans("line1", anchor.line1, anchor.line1Words);
     rebuildLineSpans("line2", anchor.line2, anchor.line2Words);
-    // Use authoritative audio time from the main player to avoid local drift while paused.
-    const currentTime = anchor.audioNow;
+    // Interpolate between sync ticks so desktop lyrics stay smooth without introducing mid-tone colors.
+    const currentTime = syncedCurrentTime(anchor);
 
     const isIdleSlogan = !!anchor.idleMode;
     if (isIdleSlogan) {

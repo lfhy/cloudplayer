@@ -85,6 +85,14 @@ func OpenAndInit() (*sql.DB, error) {
 			played_at INTEGER NOT NULL
 		);
 		CREATE INDEX IF NOT EXISTS idx_recent_played_at ON recent_plays(played_at DESC);
+
+		CREATE TABLE IF NOT EXISTS lyrics_cache (
+			cache_key TEXT PRIMARY KEY,
+			payload_json TEXT NOT NULL DEFAULT '',
+			is_override INTEGER NOT NULL DEFAULT 0,
+			updated_at INTEGER NOT NULL DEFAULT 0
+		);
+		CREATE INDEX IF NOT EXISTS idx_lyrics_cache_updated_at ON lyrics_cache(updated_at DESC);
 	`); err != nil {
 		return nil, err
 	}

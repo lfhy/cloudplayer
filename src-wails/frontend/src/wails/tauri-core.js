@@ -142,6 +142,7 @@ const invokeMap = {
   rename_playlist: (args) => CloudPlayerService.RenamePlaylist(args.playlistId, args.name),
   replace_playlist_import_items: (args) =>
     CloudPlayerService.ReplacePlaylistImportItems(args.playlistId, args.items),
+  save_lyrics_override: (args) => CloudPlayerService.SaveLyricsOverride(args.req, args.payload),
   resolve_online_play: (args) =>
     CloudPlayerService.ResolveOnlinePlay(args.songId, args.title, args.artist),
   save_settings: (args) => CloudPlayerService.SaveSettings(args.patch),
