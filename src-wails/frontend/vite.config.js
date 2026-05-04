@@ -18,7 +18,6 @@ export default defineConfig({
       input: {
         main: resolve(__dirname, "index.html"),
         desktop_lyrics: resolve(__dirname, "desktop_lyrics.html"),
-        desktop_lyrics_menu: resolve(__dirname, "desktop_lyrics_menu.html"),
         lyrics_replace: resolve(__dirname, "lyrics_replace.html"),
         tray_player: resolve(__dirname, "tray_player.html"),
       },

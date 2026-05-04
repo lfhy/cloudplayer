@@ -64,6 +64,7 @@ func main() {
 	state.Hotkeys = NewHotkeyManager(func(action string) {
 		_ = app.Event.Emit("global-hotkey", action)
 	})
+	lyricsContextMenu := buildDesktopLyricsContextMenu(app)
 	mainWindow := app.Window.NewWithOptions(application.WebviewWindowOptions{
 		Name:             "main",
 		Title:            "CloudPlayer",
@@ -108,6 +109,8 @@ func main() {
 	})
 	app.Event.OnApplicationEvent(events.Common.ApplicationStarted, func(_ *application.ApplicationEvent) {
 		application.InvokeSync(app.Show)
+		lyricsContextMenu.Menu.Update()
+		app.ContextMenu.Add("lyrics", lyricsContextMenu)
 		applyThemeAssets(state, initialSettings.AppTheme, initialSettings.AppThemeCustomAccent)
 		showMainWindow()
 		if _, err := state.Hotkeys.Apply(cloudPlayer.GetGlobalHotkeys()); err != nil {
@@ -140,6 +143,28 @@ func main() {
 	if err := app.Run(); err != nil {
 		log.Fatal(err)
 	}
+}
+
+func buildDesktopLyricsContextMenu(app *application.App) *application.ContextMenu {
+	menu := app.ContextMenu.New()
+	menu.Add("关闭歌词").OnClick(func(ctx *application.Context) {
+		_ = app.Event.Emit("desktop-lyrics-close-request")
+	})
+	menu.Add("更换歌词").OnClick(func(ctx *application.Context) {
+		_ = app.Event.Emit("desktop-lyrics-open-replace")
+	})
+	menu.AddSeparator()
+	menu.Add("缩小字号").OnClick(func(ctx *application.Context) {
+		_ = app.Event.Emit("desktop-lyrics-scale-step", map[string]any{"delta": -0.08, "__tauriTarget": "lyrics"})
+	})
+	menu.Add("放大字号").OnClick(func(ctx *application.Context) {
+		_ = app.Event.Emit("desktop-lyrics-scale-step", map[string]any{"delta": 0.08, "__tauriTarget": "lyrics"})
+	})
+	menu.AddSeparator()
+	menu.Add("锁定歌词窗口").OnClick(func(ctx *application.Context) {
+		_ = app.Event.Emit("desktop-lyrics-request-lock", map[string]any{"locked": true})
+	})
+	return menu
 }
 
 func requestAppQuit() {

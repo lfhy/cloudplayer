@@ -1,5 +1,5 @@
 // Tauri compatibility wrappers map the legacy invoke calls onto Wails service bindings.
-import { CloudPlayerService } from "../../bindings/cloudplayer/index.js";
+import { CloudPlayerService, DesktopService } from "../../bindings/cloudplayer/index.js";
 
 function pickFirstNonEmptyString(...values) {
   for (const value of values) {
@@ -126,6 +126,7 @@ const invokeMap = {
   lyrics_fetch_candidate: (args) => CloudPlayerService.LyricsFetchCandidate(args.candidate),
   lyrics_search_candidates: (args) =>
     CloudPlayerService.LyricsSearchCandidates(args.keyword, args.durationMs ?? null, args.sources ?? []),
+  open_window_context_menu: (args) => DesktopService.OpenWindowContextMenu(args.req),
   parse_import_text: (args) => CloudPlayerService.ParseImportText(args.text, args.fmt),
   cache_preview_for_play: (args) => CloudPlayerService.CachePreviewForPlay(args.songId),
   quit_app: () => CloudPlayerService.QuitApp(),

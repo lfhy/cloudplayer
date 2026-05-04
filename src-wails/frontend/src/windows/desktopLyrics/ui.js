@@ -10,11 +10,6 @@ export function applyLyricsLockUi(locked) {
     lockBtn.title = "锁定桌面歌词";
     lockBtn.setAttribute("aria-label", "锁定桌面歌词");
   }
-  const dragRegionEl = document.getElementById("ly-drag-region");
-  if (dragRegionEl) {
-    if (desktopLyricsState.lyricsLocked) dragRegionEl.removeAttribute("data-tauri-drag-region");
-    else dragRegionEl.setAttribute("data-tauri-drag-region", "");
-  }
   void applyCursorPassthrough(desktopLyricsState.lyricsLocked);
   refreshLyricsHoverUi();
 }

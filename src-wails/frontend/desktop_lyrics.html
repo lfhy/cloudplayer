@@ -57,8 +57,8 @@
         pointer-events: auto;
         cursor: move;
       }
-      [data-tauri-drag-region] {
-        --wails-draggable: drag;
+      [data-wails-drag] {
+        cursor: move;
       }
       .wrap {
         position: relative;
@@ -222,7 +222,7 @@
   </head>
   <body>
     <div class="frame" id="ly-frame">
-      <div class="ly-drag-region" id="ly-drag-region" data-tauri-drag-region aria-hidden="true"></div>
+      <div class="ly-drag-region" id="ly-drag-region" data-wails-drag aria-hidden="true"></div>
       <button type="button" class="ly-lock-btn" id="btn-ly-lock" title="锁定桌面歌词" aria-label="锁定桌面歌词">
         <svg class="ly-icon" viewBox="0 0 24 24" aria-hidden="true">
           <path d="M8.5 10V7.8a3.5 3.5 0 0 1 7 0V10"></path>

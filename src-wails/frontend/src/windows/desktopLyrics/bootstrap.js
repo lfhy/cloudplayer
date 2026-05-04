@@ -5,7 +5,6 @@ import { applyLyricColors } from "./colors.js";
 import { schedulePersistBounds, persistScale, requestMainLyricsSync } from "./persistence.js";
 import { animateLyrics } from "./render.js";
 import { frameEl, MAIN_WW, desktopLyricsState, lyricsWin } from "./state.js";
-import { openDesktopLyricsContextMenuWindow } from "./contextMenuWindow.js";
 import { applyLyricsLockUi, refreshLyricsHoverUi, setLyricsHoverUi, lyricsPreventDragMaximize } from "./ui.js";
 
 const LYRICS_IDLE_LINE1 = "CloudPlayer";
@@ -106,6 +105,7 @@ async function initLyricsWindow() {
 function wireLyricsWindowControls() {
   const closeBtnEl = document.getElementById("ly-close");
   const replaceBtnEl = document.getElementById("ly-replace");
+  const dragRegionEl = document.getElementById("ly-drag-region");
 
   async function requestOpenLyricsReplace() {
     try {
@@ -146,6 +146,7 @@ function wireLyricsWindowControls() {
     true
   );
   frameEl?.addEventListener("dblclick", lyricsPreventDragMaximize, true);
+  dragRegionEl?.setAttribute("data-wails-drag", "");
   wireLyricsHoverTracking();
 
   closeBtnEl?.addEventListener("click", async (event) => {
@@ -195,7 +196,16 @@ function wireLyricsWindowControls() {
     if (desktopLyricsState.lyricsLocked) return;
     event.preventDefault();
     event.stopPropagation();
-    void openDesktopLyricsContextMenuWindow(event.clientX, event.clientY);
+    void invoke("open_window_context_menu", {
+      req: {
+        label: "lyrics",
+        menu: "lyrics",
+        x: Math.round(event.clientX),
+        y: Math.round(event.clientY),
+      },
+    }).catch((error) => {
+      console.warn("open_window_context_menu", error);
+    });
   });
 }
 
