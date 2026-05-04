@@ -52,6 +52,9 @@ func SearchCandidates(client *http.Client, settings config.Settings, keyword str
 				continue
 			}
 			for _, hit := range hits {
+				if kugouCandidateLooksUnavailable(hit) {
+					continue
+				}
 				hash := hit.FileHash
 				dms := hit.DurationMS
 				out = append(out, LyricCandidate{
@@ -103,6 +106,21 @@ func SearchCandidates(client *http.Client, settings config.Settings, keyword str
 		}
 	}
 	return out, nil
+}
+
+func kugouCandidateLooksUnavailable(hit kugouSearchHit) bool {
+	title := strings.ToLower(strings.TrimSpace(hit.Title))
+	artist := strings.ToLower(strings.TrimSpace(hit.Artist))
+	album := strings.ToLower(strings.TrimSpace(hit.Album))
+	if title == "" {
+		return true
+	}
+	for _, token := range []string{"纯音乐", "instrumental", "inst."} {
+		if strings.Contains(title, token) || strings.Contains(album, token) {
+			return true
+		}
+	}
+	return title == "酷狗音乐" || artist == "酷狗音乐"
 }
 
 func FetchCandidate(client *http.Client, settings config.Settings, candidate LyricCandidate) (LyricsPayload, error) {

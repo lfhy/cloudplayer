@@ -65,6 +65,9 @@ func fetchKugouLyricsViaSDK(hit kugouSearchHit) (LyricsPayload, error) {
 
 	if decoded := strings.TrimSpace(lyricResp.DecodedContent()); decoded != "" {
 		if payload, err := krcPlainToPayload(decoded); err == nil && strings.TrimSpace(payload.LRCText) != "" {
+			if looksLikeUnavailableLyric(payload.LRCText) {
+				return LyricsPayload{}, fmt.Errorf("kg sdk lyric unavailable")
+			}
 			return payload, nil
 		}
 	}
@@ -72,6 +75,9 @@ func fetchKugouLyricsViaSDK(hit kugouSearchHit) (LyricsPayload, error) {
 	lrcText := lyricResp.ToLrc()
 	if strings.TrimSpace(lrcText) == "" {
 		return LyricsPayload{}, fmt.Errorf("kg sdk lyric empty lrc")
+	}
+	if looksLikeUnavailableLyric(lrcText) {
+		return LyricsPayload{}, fmt.Errorf("kg sdk lyric unavailable")
 	}
 
 	return lineOnlyPayload(lrcText), nil
