@@ -58,7 +58,7 @@ export function createPlaylistManageModal(deps) {
     if (inputWrapEl()) inputWrapEl().hidden = deleting;
     if (deleteCopyEl()) {
       deleteCopyEl().hidden = !deleting;
-      deleteCopyEl().innerHTML = deleting ? `确定删除歌单「<strong>${escapeHtml(state.playlistName || "未命名歌单")}</strong>」吗？` : "";
+      deleteCopyEl().textContent = deleting ? "确定删除这个歌单吗？" : "";
     }
     if (inputEl()) inputEl().value = deleting ? "" : state.playlistName || "";
     if (confirmEl()) {
@@ -116,13 +116,4 @@ export function createPlaylistManageModal(deps) {
   }
 
   return { openCreate, openDelete, openRename, wire };
-}
-
-function escapeHtml(value) {
-  return String(value ?? "")
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&#39;");
 }
