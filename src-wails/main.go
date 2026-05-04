@@ -121,6 +121,11 @@ func main() {
 	app.Event.OnApplicationEvent(events.Mac.ApplicationShouldHandleReopen, func(_ *application.ApplicationEvent) {
 		showMainWindow()
 	})
+	app.Event.OnApplicationEvent(events.Mac.ApplicationWillTerminate, func(_ *application.ApplicationEvent) {
+		if err := persistDesktopLyricsBoundsNow(); err != nil {
+			log.Printf("persist desktop lyrics bounds on quit failed: %v", err)
+		}
+	})
 
 	trayMenu := app.NewMenu()
 	trayMenu.Add("显示主窗口").OnClick(func(ctx *application.Context) {

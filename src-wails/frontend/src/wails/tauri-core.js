@@ -129,8 +129,10 @@ const invokeMap = {
   open_window_context_menu: (args) => DesktopService.OpenWindowContextMenu(args.req),
   parse_import_text: (args) => CloudPlayerService.ParseImportText(args.text, args.fmt),
   cache_preview_for_play: (args) => CloudPlayerService.CachePreviewForPlay(args.songId),
+  persist_desktop_lyrics_bounds: () => CloudPlayerService.PersistDesktopLyricsBounds(),
   quit_app: () => CloudPlayerService.QuitApp(),
   record_recent_play: (args) => CloudPlayerService.RecordRecentPlay(args.row),
+  reset_desktop_lyrics_bounds: () => CloudPlayerService.ResetDesktopLyricsBounds(),
   rename_playlist: (args) => CloudPlayerService.RenamePlaylist(args.playlistId, args.name),
   replace_playlist_import_items: (args) =>
     CloudPlayerService.ReplacePlaylistImportItems(args.playlistId, args.items),

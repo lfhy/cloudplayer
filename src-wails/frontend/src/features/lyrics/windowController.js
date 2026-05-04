@@ -152,6 +152,11 @@ export function createLyricsWindowController(deps) {
     if (existing) setDesktopLyricsWindow(existing);
     if (existing) {
       if (await existing.isVisible()) {
+        try {
+          await invoke("persist_desktop_lyrics_bounds");
+        } catch (error) {
+          console.warn("persist_desktop_lyrics_bounds before hide", error);
+        }
         await existing.hide();
         setDesktopLyricsOpen(false);
         await setDockLyricsActive(false);
@@ -213,6 +218,11 @@ export function createLyricsWindowController(deps) {
   async function closeDesktopLyrics() {
     const existing = getDesktopLyricsWindow() || (await WebviewWindow.getByLabel("lyrics"));
     if (existing) setDesktopLyricsWindow(existing);
+    try {
+      await invoke("persist_desktop_lyrics_bounds");
+    } catch (error) {
+      console.warn("persist_desktop_lyrics_bounds before close", error);
+    }
     if (existing && (await existing.isVisible())) {
       await existing.hide();
     }

@@ -24,6 +24,13 @@ export function lyricsPanelTemplate() {
             <p class="lyric-preview__line lyric-preview__line--highlight" id="setting-ly-preview-line2">让音乐陪你此刻</p>
           </div>
         </div>
+        <div class="settings-field">
+          <span class="settings-field-label">窗口位置</span>
+          <div class="settings-inline-row">
+            <button type="button" class="settings-action-button" id="btn-reset-desktop-lyrics-bounds">重置歌词位置</button>
+            <span class="settings-inline-row__suffix" id="setting-ly-bounds-status">重启后会恢复到上次停留的位置。</span>
+          </div>
+        </div>
       </div>
     </section>
   `;

@@ -1,6 +1,7 @@
 // Settings controller owns form state, autosave, and modal wiring for preferences.
 import { createHotkeyController } from "./hotkeys.js";
 import { closeCloseConfirmModalDom, openCloseConfirmModalDom, runCloseChoiceFlow } from "./closeFlow.js";
+import { wireSettingsActionButtons } from "./actions.js";
 import { DEFAULT_LYRICS_IDLE_LINE1, DEFAULT_LYRICS_IDLE_LINE2, normalizeLyricHexInput, normalizeLyricsIdleLine, normalizeNeteaseApiBase, normalizeSearchCacheTTLHours, settingsFormBaselineDefaults } from "./formHelpers.js";
 import { renderLyricsPreview } from "./lyricsPreview.js";
 import { canSaveCustomProxyUrl } from "../../app/helpers/platformTheme.js";
@@ -199,15 +200,7 @@ export function createSettingsController(deps) {
         queueSettingsAutosave(immediate);
       });
     });
-    document.getElementById("btn-clear-search-cache")?.addEventListener("click", async () => {
-      const statusEl = document.getElementById("setting-search-cache-status");
-      try {
-        const cleared = await invoke("clear_search_cache");
-        if (statusEl) statusEl.textContent = cleared > 0 ? `已清理 ${cleared} 条搜索缓存。` : "当前没有可清理的搜索缓存。";
-      } catch (error) {
-        alertRequestFailed(error, "clear search cache");
-      }
-    });
+    wireSettingsActionButtons({ alertRequestFailed, invoke });
     document.querySelectorAll("[data-theme-mode-card]").forEach((card) => card.addEventListener("click", () => {
       setThemeModeSelection(card.getAttribute("data-theme-mode-card") || "system");
       const current = getSettingsFormValues();
