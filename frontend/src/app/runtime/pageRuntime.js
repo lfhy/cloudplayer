@@ -83,7 +83,9 @@ export function createPageRuntime(deps) {
 
   const home = createHomeController({
     escapeHtml,
+    formatDurationMs,
     getDownloadTaskCount,
+    getLikedIds,
     getSessionRecentPlays,
     invoke,
     playFromRecentRow,

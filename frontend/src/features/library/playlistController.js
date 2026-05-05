@@ -1,4 +1,5 @@
-import { coverImgHtml, setCoverImageSource } from "../../app/helpers/covers.js";
+import { setCoverImageSource } from "../../app/helpers/covers.js";
+import { renderTrackTableRows } from "./trackTableRenderer.js";
 import { createPlaylistEnrichHelpers } from "./playlistEnrichHelpers.js";
 
 // Playlist controller handles sidebar, hero metadata, and playlist search helpers.
@@ -150,29 +151,18 @@ export function createPlaylistController(deps) {
     if (countEl) countEl.textContent = `共 ${rows.length} 首导入曲目`;
     if (hintEl) hintEl.textContent = `CloudPlayer · ${getSelectedPlaylistName() || "导入歌单"}`;
     setCoverImageSource(coverEl, rows.find((row) => (row.cover_url || "").trim())?.cover_url || "", { size: 120, radius: 12 });
-    if (!rows.length) {
-      tbody.innerHTML = '<tr><td colspan="5" class="muted">暂无导入曲目，或请从左侧选择其它歌单。</td></tr>';
-      return;
-    }
-    tbody.innerHTML = "";
-    rows.forEach((row, index) => {
-      const sourceId = (row.pjmp3_source_id || "").trim();
-      const tr = document.createElement("tr");
-      const cover = coverImgHtml({ src: row.cover_url || "", className: "row-cover", width: 40, height: 40, radius: 4 });
-      tr.innerHTML = `
-        <td class="col-cover">${cover}</td>
-        <td>${row.artist ? `<span class="t-title">${escapeHtml(row.title || "—")}</span><span class="t-art">${escapeHtml(row.artist)}</span>` : `<span class="t-title">${escapeHtml(row.title || "—")}</span>`}</td>
-        <td class="muted">${escapeHtml(row.album || "—")}</td>
-        <td class="col-like muted">${sourceId && getLikedIds().has(sourceId) ? "♥" : "♡"}</td>
-        <td class="muted col-dur">${formatDurationMs(row.duration_ms)}</td>`;
-      tr.style.cursor = sourceId ? "pointer" : "default";
-      tr.title = sourceId ? "双击从该曲起播整单（仅含曲库 id 的曲目入队）" : "无曲库 id：请到「搜索」搜索后播放";
-      if (sourceId) tr.addEventListener("dblclick", () => playFromPlaylistRow(index));
-      tr.addEventListener("contextmenu", (event) => {
-        event.preventDefault();
-        void openPlaylistDetailRowContextMenu(event, index);
-      });
-      tbody.appendChild(tr);
+    renderTrackTableRows(tbody, rows.map((row) => ({
+      ...row,
+      like_source_id: row.pjmp3_source_id,
+      playable: !!(row.pjmp3_source_id || "").trim(),
+    })), {
+      emptyMessage: "暂无导入曲目，或请从左侧选择其它歌单。",
+      escapeHtml,
+      formatDurationMs,
+      getLikedIds,
+      onContextMenu: (event, index) => openPlaylistDetailRowContextMenu(event, index),
+      onDoubleClick: (index) => playFromPlaylistRow(index),
+      rowTitle: (row) => (row.playable ? "双击从该曲起播整单（仅含曲库 id 的曲目入队）" : "无曲库 id：请到「搜索」搜索后播放"),
     });
   }
 

@@ -1,10 +1,13 @@
 // Home controller keeps landing-page recommendations and recents outside main.js.
 import { coverImgHtml } from "../../app/helpers/covers.js";
+import { renderTrackTableRows } from "./trackTableRenderer.js";
 
 export function createHomeController(deps) {
   const {
     escapeHtml,
+    formatDurationMs,
     getDownloadTaskCount,
+    getLikedIds,
     getSessionRecentPlays,
     invoke,
     playFromRecentRow,
@@ -210,16 +213,17 @@ export function createHomeController(deps) {
       stage: "render-table:rows-ready",
       detail: JSON.stringify({ force, rowCount: rows.length }),
     }).catch(() => {});
-    if (!rows.length) {
-      tbody.innerHTML = '<tr><td colspan="4" class="muted">最近播放还不够，先听几首歌再回来生成每日推荐。</td></tr>';
-      return;
-    }
-    tbody.innerHTML = "";
-    rows.forEach((item, index) => {
-      const tr = document.createElement("tr");
-      tr.innerHTML = `<td>${index + 1}</td><td>${escapeHtml(item.title || "—")}</td><td>${escapeHtml(item.artist || "—")}</td><td>${escapeHtml(item.local_path ? "本地" : "在线")}</td>`;
-      tr.addEventListener("dblclick", () => playSingleItem(item));
-      tbody.appendChild(tr);
+    renderTrackTableRows(tbody, rows.map((row) => ({
+      ...row,
+      like_source_id: row.source_id,
+      playable: true,
+    })), {
+      emptyMessage: "最近播放还不够，先听几首歌再回来生成每日推荐。",
+      escapeHtml,
+      formatDurationMs,
+      getLikedIds,
+      onDoubleClick: (index, row) => playSingleItem(row),
+      rowTitle: () => "双击播放该推荐曲目",
     });
   }
 
