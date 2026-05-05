@@ -137,24 +137,8 @@
   display: flex;
   flex-direction: column;
   gap: 6px;
-  overflow-y: auto;
-  overflow-x: hidden;
-  padding-right: 4px;
-  scrollbar-width: thin;
-  scrollbar-color: rgba(100, 100, 110, 0.4) transparent;
-}
-
-.home-col__list::-webkit-scrollbar {
-  width: 8px;
-}
-
-.home-col__list::-webkit-scrollbar-track {
-  background: transparent;
-}
-
-.home-col__list::-webkit-scrollbar-thumb {
-  background: rgba(100, 100, 110, 0.32);
-  border-radius: 999px;
+  overflow: hidden;
+  padding-right: 0;
 }
 
 .home-section-eyebrow {
