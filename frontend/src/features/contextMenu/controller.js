@@ -57,7 +57,7 @@ export function createContextMenuController(deps) {
       renderQueuePanel();
     }));
     root.appendChild(cmSep());
-    const addMenu = buildAddToSubmenu({ title: row.title, artist: row.artist, album: row.album, sourceId: row.source_id, coverUrl: row.cover_url });
+    const addMenu = buildAddToSubmenu({ title: row.title, artist: row.artist, album: row.album, sourceId: row.source_id, coverUrl: row.cover_url, duration_ms: row.duration_ms });
     let hasPlaylist = false;
     playlists.forEach((playlist) => {
       if (playlist.id == null) return;
@@ -71,6 +71,7 @@ export function createContextMenuController(deps) {
             album: row.album || "",
             pjmp3_source_id: row.source_id || "",
             cover_url: row.cover_url || "",
+            duration_ms: Number(row.duration_ms || 0) || 0,
           }],
         });
         await refreshSidebarPlaylists();
@@ -92,7 +93,14 @@ export function createContextMenuController(deps) {
       const rows = await invoke("list_playlist_import_items", { playlistId: playlist.id });
       const playable = (rows || []).filter((item) => (item.pjmp3_source_id || "").trim());
       if (!playable.length) return void alert("歌单为空或没有可播放条目（导入条目需含 pjmp3 曲库 id）。");
-      setPlayQueue(playable.map((item) => ({ source_id: (item.pjmp3_source_id || "").trim(), title: item.title, artist: item.artist || "", cover_url: (item.cover_url || "").trim() || null })));
+      setPlayQueue(playable.map((item) => ({
+        source_id: (item.pjmp3_source_id || "").trim(),
+        title: item.title,
+        artist: item.artist || "",
+        album: item.album || "",
+        cover_url: (item.cover_url || "").trim() || null,
+        duration_ms: Number(item.duration_ms || 0) || 0,
+      })));
       void playFromQueueIndex(0);
       renderQueuePanel();
     }));
@@ -134,7 +142,7 @@ export function createContextMenuController(deps) {
       }
     }, !sourceId));
     root.appendChild(cmSep());
-    const addMenu = buildAddToSubmenu({ title: row.title, artist: row.artist, album: row.album, sourceId: row.pjmp3_source_id, coverUrl: row.cover_url });
+    const addMenu = buildAddToSubmenu({ title: row.title, artist: row.artist, album: row.album, sourceId: row.pjmp3_source_id, coverUrl: row.cover_url, duration_ms: row.duration_ms });
     let hasPlaylist = false;
     playlists.forEach((playlist) => {
       if (playlist.id == null || (getSelectedPlaylistId() != null && Number(playlist.id) === Number(getSelectedPlaylistId()))) return;

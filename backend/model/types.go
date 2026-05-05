@@ -73,18 +73,22 @@ type RecentPlayIn struct {
 	Kind          string  `json:"kind"`
 	Title         string  `json:"title"`
 	Artist        string  `json:"artist"`
+	Album         string  `json:"album"`
 	CoverURL      *string `json:"cover_url"`
 	Pjmp3SourceID *string `json:"pjmp3_source_id"`
 	FilePath      *string `json:"file_path"`
+	DurationMS    int64   `json:"duration_ms"`
 }
 
 type RecentPlayRow struct {
 	Kind          string  `json:"kind"`
 	Title         string  `json:"title"`
 	Artist        string  `json:"artist"`
+	Album         string  `json:"album"`
 	CoverURL      *string `json:"cover_url"`
 	Pjmp3SourceID *string `json:"pjmp3_source_id"`
 	FilePath      *string `json:"file_path"`
+	DurationMS    int64   `json:"duration_ms"`
 	PlayedAt      int64   `json:"played_at"`
 }
 

@@ -12,7 +12,9 @@ function normalizeQueueItem(item) {
     source_id: sourceId,
     title: String(item?.title || "").trim() || "未命名曲目",
     artist: String(item?.artist || "").trim(),
+    album: String(item?.album || "").trim(),
     cover_url: String(item?.cover_url ?? item?.coverUrl ?? "").trim() || null,
+    duration_ms: Number(item?.duration_ms ?? item?.durationMs ?? 0) || 0,
     local_path: localPath,
   };
 }
@@ -27,7 +29,9 @@ export function createPlaybackStatePersistence(deps) {
       source_id: String(item?.source_id || "").trim() || undefined,
       title: String(item?.title || "").trim() || "未命名曲目",
       artist: String(item?.artist || "").trim() || undefined,
+      album: String(item?.album || "").trim() || undefined,
       cover_url: String(item?.cover_url || "").trim() || undefined,
+      duration_ms: Number(item?.duration_ms || 0) || undefined,
       local_path: String(item?.local_path || "").trim() || undefined,
     }));
   }

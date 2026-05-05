@@ -9,7 +9,7 @@ import (
 // Recent-play methods keep dedupe and retention rules away from unrelated service concerns.
 func (s *CloudPlayerService) ListRecentPlays() ([]RecentPlayRow, error) {
 	rows, err := s.state.DB.Query(`
-		SELECT kind, title, artist, cover_url, pjmp3_source_id, file_path, played_at
+		SELECT kind, title, artist, album, cover_url, pjmp3_source_id, file_path, duration_ms, played_at
 		FROM recent_plays
 		ORDER BY played_at DESC
 		LIMIT ?
@@ -22,7 +22,7 @@ func (s *CloudPlayerService) ListRecentPlays() ([]RecentPlayRow, error) {
 	var result []RecentPlayRow
 	for rows.Next() {
 		var row RecentPlayRow
-		if err := rows.Scan(&row.Kind, &row.Title, &row.Artist, &row.CoverURL, &row.Pjmp3SourceID, &row.FilePath, &row.PlayedAt); err != nil {
+		if err := rows.Scan(&row.Kind, &row.Title, &row.Artist, &row.Album, &row.CoverURL, &row.Pjmp3SourceID, &row.FilePath, &row.DurationMS, &row.PlayedAt); err != nil {
 			return nil, err
 		}
 		result = append(result, row)
@@ -60,9 +60,9 @@ func (s *CloudPlayerService) RecordRecentPlay(row RecentPlayIn) error {
 
 	now := time.Now().UnixMilli()
 	if _, err := tx.Exec(`
-		INSERT INTO recent_plays (kind, title, artist, cover_url, pjmp3_source_id, file_path, played_at)
-		VALUES (?, ?, ?, ?, ?, ?, ?)
-	`, kind, row.Title, row.Artist, row.CoverURL, row.Pjmp3SourceID, row.FilePath, now); err != nil {
+		INSERT INTO recent_plays (kind, title, artist, album, cover_url, pjmp3_source_id, file_path, duration_ms, played_at)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+	`, kind, row.Title, row.Artist, row.Album, row.CoverURL, row.Pjmp3SourceID, row.FilePath, row.DurationMS, now); err != nil {
 		return err
 	}
 	if _, err := tx.Exec(`

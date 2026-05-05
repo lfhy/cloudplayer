@@ -87,12 +87,28 @@ export function createContextMenuHelpers(deps) {
   }
 
   function searchResultToQueueItem(row) {
-    return { source_id: row.source_id, title: row.title, artist: row.artist || "", cover_url: row.cover_url || null };
+    return {
+      source_id: row.source_id,
+      title: row.title,
+      artist: row.artist || "",
+      album: row.album || "",
+      cover_url: row.cover_url || null,
+      duration_ms: Number(row.duration_ms || 0) || 0,
+    };
   }
 
   function playlistImportRowToQueueItem(row) {
     const sourceId = (row.pjmp3_source_id || "").trim();
-    return sourceId ? { source_id: sourceId, title: row.title, artist: row.artist || "", cover_url: (row.cover_url || "").trim() || null } : null;
+    return sourceId
+      ? {
+          source_id: sourceId,
+          title: row.title,
+          artist: row.artist || "",
+          album: row.album || "",
+          cover_url: (row.cover_url || "").trim() || null,
+          duration_ms: Number(row.duration_ms || 0) || 0,
+        }
+      : null;
   }
 
   async function listPlaylistsCached() {
@@ -138,7 +154,14 @@ export function createContextMenuHelpers(deps) {
     panel.className = "ctx-menu__subpanel";
     fly.textContent = "添加到";
     const appendQueueItem = () => {
-      const item = { source_id: track.sourceId, title: track.title, artist: track.artist || "", cover_url: track.coverUrl || null };
+      const item = {
+        source_id: track.sourceId,
+        title: track.title,
+        artist: track.artist || "",
+        album: track.album || "",
+        cover_url: track.coverUrl || null,
+        duration_ms: Number(track.durationMs || track.duration_ms || 0) || 0,
+      };
       if (!(item.source_id || "").trim()) return void alert("该条没有曲库 id，无法加入播放队列。");
       setPlayQueue([...getPlayQueue(), item]);
       renderQueuePanel();
@@ -158,6 +181,7 @@ export function createContextMenuHelpers(deps) {
           album: track.album || "",
           pjmp3_source_id: track.sourceId || "",
           cover_url: track.coverUrl || "",
+          duration_ms: Number(track.durationMs || track.duration_ms || 0) || 0,
         }],
       });
       await refreshSidebarPlaylists();

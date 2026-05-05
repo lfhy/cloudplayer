@@ -80,9 +80,11 @@ func OpenAndInit() (*sql.DB, error) {
 			kind TEXT NOT NULL,
 			title TEXT NOT NULL DEFAULT '',
 			artist TEXT NOT NULL DEFAULT '',
+			album TEXT NOT NULL DEFAULT '',
 			cover_url TEXT,
 			pjmp3_source_id TEXT,
 			file_path TEXT,
+			duration_ms INTEGER NOT NULL DEFAULT 0,
 			played_at INTEGER NOT NULL
 		);
 		CREATE INDEX IF NOT EXISTS idx_recent_played_at ON recent_plays(played_at DESC);
@@ -115,6 +117,8 @@ func OpenAndInit() (*sql.DB, error) {
 		"ALTER TABLE playlist_import_items ADD COLUMN cover_cache_path TEXT NOT NULL DEFAULT ''",
 		"ALTER TABLE playlist_import_items ADD COLUMN duration_ms INTEGER NOT NULL DEFAULT 0",
 		"ALTER TABLE playlist_import_items ADD COLUMN audio_cache_path TEXT NOT NULL DEFAULT ''",
+		"ALTER TABLE recent_plays ADD COLUMN album TEXT NOT NULL DEFAULT ''",
+		"ALTER TABLE recent_plays ADD COLUMN duration_ms INTEGER NOT NULL DEFAULT 0",
 	} {
 		if _, err := conn.Exec(statement); err != nil && !isDuplicateColumnError(err) {
 			return nil, err

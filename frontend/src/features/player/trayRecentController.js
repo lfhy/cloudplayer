@@ -1,9 +1,13 @@
+import { renderTrackTableRows } from "../library/trackTableRenderer.js";
+
 // Tray state and recent-play persistence share the same playback snapshot model.
 export function createTrayRecentController(deps) {
   const {
     emitTo,
     escapeHtml,
+    formatDurationMs,
     getAudioEl,
+    getLikedIds,
     getPlayIndex,
     getPlayQueue,
     getSessionRecentPlays,
@@ -65,13 +69,21 @@ export function createTrayRecentController(deps) {
         rows.map((row) => {
           const filePath = row.filePath || row.file_path;
           if ((row.kind || "") === "local" && filePath) {
-            return { title: row.title, artist: row.artist || "", local_path: filePath };
+            return {
+              title: row.title,
+              artist: row.artist || "",
+              album: row.album || "",
+              local_path: filePath,
+              duration_ms: Number(row.durationMs ?? row.duration_ms ?? 0) || 0,
+            };
           }
           return {
             source_id: row.pjmp3SourceId || row.pjmp3_source_id || "",
             title: row.title,
             artist: row.artist || "",
+            album: row.album || "",
             cover_url: row.coverUrl ?? row.cover_url ?? null,
+            duration_ms: Number(row.durationMs ?? row.duration_ms ?? 0) || 0,
           };
         })
       );
@@ -84,19 +96,26 @@ export function createTrayRecentController(deps) {
   function playFromRecentRow(rowIndex) {
     const item = getSessionRecentPlays()[rowIndex];
     if (!item) return;
-    if (item.local_path) {
-      setPlayQueue([{ title: item.title, artist: item.artist || "", local_path: item.local_path, cover_url: null }]);
-    } else {
-      setPlayQueue([
-        {
+    const queueItem = item.local_path
+      ? {
+          title: item.title,
+          artist: item.artist || "",
+          album: item.album || "",
+          local_path: item.local_path,
+          cover_url: null,
+          duration_ms: Number(item.duration_ms || 0) || 0,
+        }
+      : {
           source_id: item.source_id,
           title: item.title,
           artist: item.artist || "",
+          album: item.album || "",
           cover_url: item.cover_url || null,
-        },
-      ]);
-    }
-    void playFromQueueIndex(0);
+          duration_ms: Number(item.duration_ms || 0) || 0,
+        };
+    const nextQueue = [...getPlayQueue(), queueItem];
+    setPlayQueue(nextQueue);
+    void playFromQueueIndex(nextQueue.length - 1);
     renderQueuePanel();
   }
 
@@ -106,16 +125,27 @@ export function createTrayRecentController(deps) {
     const rows = getSessionRecentPlays();
     if (!rows.length) {
       tbody.innerHTML =
-        '<tr><td colspan="4" class="muted">暂无记录。在「搜索」、每日推荐或歌单中播放曲目后将显示在此处。</td></tr>';
+        '<tr><td colspan="5" class="muted">暂无记录。在「搜索」、每日推荐或歌单中播放曲目后将显示在此处。</td></tr>';
       return;
     }
-    tbody.innerHTML = "";
-    rows.forEach((row, index) => {
-      const tr = document.createElement("tr");
-      tr.innerHTML = `<td>${index + 1}</td><td>${escapeHtml(row.title || "—")}</td><td>${escapeHtml(row.artist || "—")}</td><td>${escapeHtml(row.local_path ? "本地" : "在线")}</td>`;
-      tr.addEventListener("dblclick", () => playFromRecentRow(index));
-      tbody.appendChild(tr);
-    });
+    renderTrackTableRows(
+      tbody,
+      rows.map((row) => ({
+        ...row,
+        album: row.album || (row.local_path ? "本地音乐" : "最近播放"),
+        duration_ms: Number(row.duration_ms || 0) || 0,
+        like_source_id: row.source_id || "",
+        playable: true,
+      })),
+      {
+        emptyMessage: "暂无记录。在「搜索」、每日推荐或歌单中播放曲目后将显示在此处。",
+        escapeHtml,
+        formatDurationMs,
+        getLikedIds,
+        onClick: (index) => playFromRecentRow(index),
+        rowTitle: (row) => (row.local_path ? "单击后追加到播放列表并播放" : "单击后追加到播放列表并播放"),
+      }
+    );
   }
 
   function pushSessionRecentFromCurrentTrack() {
@@ -137,7 +167,13 @@ export function createTrayRecentController(deps) {
 
   function buildRecentSnapshot(item) {
     if (item.local_path) {
-      return { title: item.title, artist: item.artist || "", local_path: item.local_path };
+      return {
+        title: item.title,
+        artist: item.artist || "",
+        album: item.album || "",
+        local_path: item.local_path,
+        duration_ms: Number(item.duration_ms || 0) || 0,
+      };
     }
     const sourceId = String(item.source_id || "").trim();
     if (!sourceId) return null;
@@ -145,7 +181,9 @@ export function createTrayRecentController(deps) {
       source_id: sourceId,
       title: item.title,
       artist: item.artist || "",
+      album: item.album || "",
       cover_url: item.cover_url || null,
+      duration_ms: Number(item.duration_ms || 0) || 0,
     };
   }
 
@@ -157,9 +195,11 @@ export function createTrayRecentController(deps) {
             kind: "local",
             title: snapshot.title,
             artist: snapshot.artist || "",
+            album: snapshot.album || "",
             cover_url: null,
             pjmp3_source_id: null,
             file_path: snapshot.local_path,
+            duration_ms: Number(snapshot.duration_ms || 0) || 0,
           },
         });
         return;
@@ -169,9 +209,11 @@ export function createTrayRecentController(deps) {
           kind: "online",
           title: snapshot.title,
           artist: snapshot.artist || "",
+          album: snapshot.album || "",
           cover_url: snapshot.cover_url ?? null,
           pjmp3_source_id: snapshot.source_id,
           file_path: null,
+          duration_ms: Number(snapshot.duration_ms || 0) || 0,
         },
       });
     } catch (error) {

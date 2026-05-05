@@ -118,7 +118,9 @@ export function createPlaybackController(deps) {
         source_id: row.source_id,
         title: row.title,
         artist: row.artist || "",
+        album: row.album || "",
         cover_url: row.cover_url || null,
+        duration_ms: Number(row.duration_ms || 0) || 0,
       }))
     );
     void playFromQueueIndex(rowIndex);

@@ -27,7 +27,9 @@ export function createBasePlayerRuntime(deps) {
   const recent = createTrayRecentController({
     emitTo: deps.emitTo,
     escapeHtml: deps.escapeHtml,
+    formatDurationMs: deps.formatDurationMs,
     getAudioEl: deps.getAudioEl,
+    getLikedIds: deps.getLikedIds,
     getPlayIndex: deps.getPlayIndex,
     getPlayQueue: deps.getPlayQueue,
     getSessionRecentPlays: deps.getSessionRecentPlays,

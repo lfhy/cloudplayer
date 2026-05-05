@@ -208,7 +208,14 @@ export function createPlaylistController(deps) {
     if (!sourceId) return void alert("该条没有曲库 id，请使用顶栏搜索歌名后播放。");
     const queue = rows
       .filter((item) => (item.pjmp3_source_id || "").trim())
-      .map((item) => ({ source_id: (item.pjmp3_source_id || "").trim(), title: item.title, artist: item.artist || "", cover_url: (item.cover_url || "").trim() || null }));
+      .map((item) => ({
+        source_id: (item.pjmp3_source_id || "").trim(),
+        title: item.title,
+        artist: item.artist || "",
+        album: item.album || "",
+        cover_url: (item.cover_url || "").trim() || null,
+        duration_ms: Number(item.duration_ms || 0) || 0,
+      }));
     if (!queue.length) return void alert("没有可播放条目（导入条目需含 pjmp3 曲库 id）。");
     let startInQueue = 0;
     for (let index = 0; index < rowIdx; index += 1) {
@@ -242,7 +249,14 @@ export function createPlaylistController(deps) {
     document.getElementById("btn-playlist-play-all")?.addEventListener("click", () => {
       const playable = getPlaylistDetailRows().filter((row) => (row.pjmp3_source_id || "").trim());
       if (!playable.length) return void alert("没有可播放条目（导入条目需含 pjmp3 曲库 id；可先使用「搜索」搜索）。");
-      setPlayQueue(playable.map((row) => ({ source_id: (row.pjmp3_source_id || "").trim(), title: row.title, artist: row.artist || "", cover_url: (row.cover_url || "").trim() || null })));
+      setPlayQueue(playable.map((row) => ({
+        source_id: (row.pjmp3_source_id || "").trim(),
+        title: row.title,
+        artist: row.artist || "",
+        album: row.album || "",
+        cover_url: (row.cover_url || "").trim() || null,
+        duration_ms: Number(row.duration_ms || 0) || 0,
+      })));
       void playFromQueueIndex(0);
       renderQueuePanel();
     });

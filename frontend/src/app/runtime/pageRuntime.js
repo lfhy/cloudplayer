@@ -96,17 +96,9 @@ export function createPageRuntime(deps) {
       await playlist.loadPlaylistDetail(playlistId, playlistName);
       setPage("playlist");
     },
-    playAllDailyItems: (rows) => { setPlayQueue(rows.map((item) => (item.local_path ? { title: item.title, artist: item.artist || "", local_path: item.local_path, cover_url: item.cover_url || null } : { source_id: item.source_id, title: item.title, artist: item.artist || "", cover_url: item.cover_url || null }))); void playFromQueueIndex(0); renderQueuePanel(); },
+    playAllDailyItems: (rows) => { setPlayQueue(rows.map((item) => (item.local_path ? { title: item.title, artist: item.artist || "", album: item.album || "", local_path: item.local_path, cover_url: item.cover_url || null, duration_ms: Number(item.duration_ms || 0) || 0 } : { source_id: item.source_id, title: item.title, artist: item.artist || "", album: item.album || "", cover_url: item.cover_url || null, duration_ms: Number(item.duration_ms || 0) || 0 }))); void playFromQueueIndex(0); renderQueuePanel(); },
     playFromRecentRow,
-    playSingleItem: (item) => {
-      setPlayQueue(
-        item.local_path
-          ? [{ title: item.title, artist: item.artist || "", local_path: item.local_path, cover_url: null }]
-          : [{ source_id: item.source_id, title: item.title, artist: item.artist || "", cover_url: item.cover_url || null }]
-      );
-      void playFromQueueIndex(0);
-      renderQueuePanel();
-    },
+    playSingleItem: (item) => { setPlayQueue(item.local_path ? [{ title: item.title, artist: item.artist || "", album: item.album || "", local_path: item.local_path, cover_url: null, duration_ms: Number(item.duration_ms || 0) || 0 }] : [{ source_id: item.source_id, title: item.title, artist: item.artist || "", album: item.album || "", cover_url: item.cover_url || null, duration_ms: Number(item.duration_ms || 0) || 0 }]); void playFromQueueIndex(0); renderQueuePanel(); },
   });
 
   playlist = createPlaylistController({
@@ -168,7 +160,9 @@ export function createPageRuntime(deps) {
           source_id: row.source_id,
           title: row.title,
           artist: row.artist || "",
+          album: row.album || "",
           cover_url: row.cover_url || null,
+          duration_ms: Number(row.duration_ms || 0) || 0,
         }))
       );
       void playFromQueueIndex(0);
