@@ -40,6 +40,7 @@ export function startDesktopRuntime(deps) {
     renderQueuePanel: deps.renderQueuePanel,
     renderSearchTable: deps.pages.renderSearchTable,
     renderSidebar: deps.pages.renderSidebar,
+    restorePlaybackState: deps.restorePlaybackState,
     searchState: deps.searchState,
     playAllDailyRecommendations: deps.pages.playAllDailyRecommendations,
     setPage: deps.setPage,

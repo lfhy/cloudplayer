@@ -38,6 +38,7 @@ export function bootCloudPlayerApp(deps) {
     renderQueuePanel,
     renderSearchTable,
     playAllDailyRecommendations,
+    restorePlaybackState,
     saveDailyRecommendationsAsPlaylist,
     setPage,
     setSearchScope,
@@ -88,7 +89,9 @@ export function bootCloudPlayerApp(deps) {
     refreshLyricsLockMenuLabel();
     bindRuntimeEvents();
     void loadRecentPlaysFromDb();
-    loadSettings();
+    void loadSettings().finally(() => {
+      void restorePlaybackState?.();
+    });
     void broadcastTrayPlayerState();
   });
 

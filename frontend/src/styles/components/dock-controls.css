@@ -35,6 +35,10 @@
   gap: 10px;
 }
 
+.dock-mode--queue {
+  margin-left: 2px;
+}
+
 .dock-tbtn {
   width: 38px;
   height: 38px;

@@ -29,10 +29,9 @@ export const SETTINGS_TABS = new Set(["appearance", "network", "source", "contro
 export const QUICK_THEME_MODE_LABELS = { system: "跟随系统", light: "浅色", dark: "深色" };
 
 export const PLAY_MODES = [
-  { key: "sequential", icon: "playlist-minimalistic-2-bold", tip: "顺序播放（点击切换模式）" },
   { key: "loop_list", icon: "repeat-bold", tip: "列表循环" },
   { key: "one", icon: "repeat-one-bold", tip: "单曲循环" },
-  { key: "shuffle", icon: "shuffle-outline", tip: "随机播放" },
+  { key: "shuffle", icon: "shuffle-outline", tip: "随机循环" },
 ];
 
 export const QUALITY_LABELS = { flac: "无损", "320": "HQ", "128": "标准" };

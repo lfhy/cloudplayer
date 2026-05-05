@@ -39,6 +39,7 @@ export function createDockRuntime(deps) {
     removeCurrentFromQueue: deps.removeCurrentFromQueue,
     renderPlayerNav: deps.renderPlayerNav,
     saveLikedIds: deps.saveLikedIds,
+    scheduleSavePlaybackState: deps.scheduleSavePlaybackState,
     setDesktopLyricsLocked: deps.setDesktopLyricsLocked,
     setPlayModeIndex: deps.setPlayModeIndex,
     setQualityPref: deps.setQualityPref,

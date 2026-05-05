@@ -66,12 +66,14 @@ export function createNavigationController(deps) {
   function toggleQueuePanel() {
     const panel = document.getElementById("queue-panel");
     const button = document.getElementById("queue-toggle");
+    const launcher = document.getElementById("btn-dock-queue");
     if (!panel || !button) return;
     panel.classList.toggle("collapsed");
     const collapsed = panel.classList.contains("collapsed");
     panel.setAttribute("aria-hidden", collapsed ? "true" : "false");
-    button.textContent = collapsed ? "展开" : "收起";
     button.setAttribute("aria-expanded", collapsed ? "false" : "true");
+    launcher?.setAttribute("aria-expanded", collapsed ? "false" : "true");
+    launcher?.classList.toggle("is-on", !collapsed);
     renderQueuePanel();
   }
 

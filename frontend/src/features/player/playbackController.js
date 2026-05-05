@@ -21,6 +21,7 @@ export function createPlaybackController(deps) {
     onLyricsReady,
     refreshFavButton,
     renderQueuePanel,
+    scheduleSavePlaybackState,
     setAudioSourceGeneration,
     setPlayIndex,
     setPlayLoadGeneration,
@@ -31,9 +32,10 @@ export function createPlaybackController(deps) {
   } = deps;
 
   function removeCurrentFromQueue() {
-    const queue = getPlayQueue();
+    const queue = getPlayQueue().slice();
     if (!queue.length) return;
     queue.splice(getPlayIndex(), 1);
+    setPlayQueue(queue);
     const audio = getAudioEl();
     if (!queue.length) {
       setPlayIndex(0);
@@ -52,6 +54,7 @@ export function createPlaybackController(deps) {
     renderQueuePanel();
     setPlayerNavEnabled();
     refreshFavButton();
+    scheduleSavePlaybackState?.();
   }
 
   async function playFromQueueIndex(index) {
@@ -122,6 +125,39 @@ export function createPlaybackController(deps) {
     renderQueuePanel();
   }
 
+  function restorePlaybackSelection() {
+    const queue = getPlayQueue();
+    const current = queue[getPlayIndex()] || null;
+    const audio = getAudioEl();
+    const playButton = document.getElementById("btn-player-play");
+    if (audio) {
+      audio.pause();
+      audio.removeAttribute("src");
+      audio.load();
+    }
+    if (!current) {
+      updatePlayerChrome({ title: "未播放", sub: "选择曲目或搜索后双击列表", coverUrl: null });
+      setPlayButtonIcon(playButton, false);
+      if (playButton) playButton.disabled = true;
+      setPlayerNavEnabled();
+      syncSeekUi();
+      renderQueuePanel();
+      refreshFavButton();
+      return;
+    }
+    updatePlayerChrome({
+      title: current.title || "未命名曲目",
+      sub: current.artist || "",
+      coverUrl: current.cover_url || null,
+    });
+    setPlayButtonIcon(playButton, false);
+    if (playButton) playButton.disabled = false;
+    setPlayerNavEnabled();
+    syncSeekUi();
+    renderQueuePanel();
+    refreshFavButton();
+  }
+
   async function resolvePlaybackUrl(item, generation) {
     if (item.local_path) {
       return resolveLocalPlayback(item, generation);
@@ -187,5 +223,5 @@ export function createPlaybackController(deps) {
     throw new Error("resolve_online_play: 无效结果");
   }
 
-  return { playFromQueueIndex, playFromSearchRow, removeCurrentFromQueue };
+  return { playFromQueueIndex, playFromSearchRow, removeCurrentFromQueue, restorePlaybackSelection };
 }

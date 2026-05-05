@@ -82,6 +82,7 @@ export function createBasePlayerRuntime(deps) {
     onLyricsReady: () => lyrics.syncDesktopLyrics(),
     refreshFavButton: (...args) => deps.refreshFavButton(...args),
     renderQueuePanel: (...args) => deps.renderQueuePanel(...args),
+    scheduleSavePlaybackState: deps.scheduleSavePlaybackState,
     setAudioSourceGeneration: deps.setAudioSourceGeneration,
     setPlayIndex: deps.setPlayIndex,
     setPlayLoadGeneration: deps.setPlayLoadGeneration,
@@ -121,6 +122,7 @@ export function createBasePlayerRuntime(deps) {
     playFromQueueIndex: playback.playFromQueueIndex,
     playFromSearchRow: playback.playFromSearchRow,
     removeCurrentFromQueue: playback.removeCurrentFromQueue,
+    restorePlaybackSelection: playback.restorePlaybackSelection,
     wireAudio: audio.wireAudio,
   };
 }

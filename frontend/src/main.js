@@ -17,6 +17,7 @@ import { createPageRuntime } from "./app/runtime/pageRuntime.js";
 import { createSettingsRuntime } from "./app/runtime/settingsRuntime.js";
 import { startDesktopRuntime } from "./app/runtime/startupRuntime.js";
 import { renderMainShell } from "./layout/renderMainShell.js";
+import { createPlaybackStatePersistence } from "./features/player/playbackStatePersistence.js";
 
 // Composition root: only shared mutable state and runtime assembly stay here.
 const searchState = { keyword: "", page: 1, hasNext: false, results: [], scope: "catalog", busy: false, playlistResults: [], view: "home" };
@@ -28,8 +29,33 @@ const downloadTasksBySourceId = new Map(), logPlayEventDesktop = createPlayEvent
 let likedIds = loadLikedSet(), setPage = () => {}, renderHomePage = () => {}, renderDailyTable = () => {}, renderRecentPlaysTable = () => {};
 let renderQueuePanel = () => {}, refreshFavButton = () => {}, randomNextIndex = () => 0, refreshQuickThemeModeUi = () => {}, renderImportTable = () => {}, loadPlaylistDetail = async () => {};
 let openAccountCenter = () => {}, refreshAccountCenter = () => {}, wireAccountCenter = () => {};
+let scheduleSavePlaybackState = () => {}, restorePlaybackState = async () => {};
 
 function audioEl() { return document.getElementById("audio-player"); }
+
+function setPlayModeIndexValue(value) {
+  const next = Number(value);
+  playModeIndex = Number.isFinite(next) && next >= 0 && next < PLAY_MODES.length ? next : 0;
+  scheduleSavePlaybackState();
+}
+
+function setPlayQueueValue(rows) {
+  playQueue = Array.isArray(rows) ? rows : [];
+  if (playIndex >= playQueue.length) playIndex = playQueue.length ? playQueue.length - 1 : 0;
+  scheduleSavePlaybackState();
+}
+
+function setPlayIndexValue(value) {
+  const next = Number(value);
+  if (!playQueue.length) {
+    playIndex = 0;
+  } else if (!Number.isFinite(next)) {
+    playIndex = 0;
+  } else {
+    playIndex = Math.max(0, Math.min(playQueue.length - 1, Math.round(next)));
+  }
+  scheduleSavePlaybackState();
+}
 
 function shouldIgnoreGlobalHotkeyAction() {
   const active = document.activeElement;
@@ -73,8 +99,9 @@ const player = createBasePlayerRuntime({
   open, playModeItems: PLAY_MODES, randomNextIndex: (...args) => randomNextIndex(...args), refreshFavButton: (...args) => refreshFavButton(...args), renderQueuePanel: (...args) => renderQueuePanel(...args),
   setAudioProgressLogLastTs: (value) => { audioProgressLogLastTs = value; }, setAudioSourceGeneration: (value) => { audioSourceGeneration = value; },
   setDesktopLyricsLocked: (value) => { desktopLyricsLocked = value; }, setDesktopLyricsOpen: (value) => { desktopLyricsOpen = value; }, setDesktopLyricsWindow: (value) => { desktopLyricsWindow = value; },
-  setLocalLibraryRows: (rows) => { localLibraryRows = Array.isArray(rows) ? rows : []; }, setPlayIndex: (value) => { playIndex = value; }, setPlayLoadGeneration: (value) => { playLoadGeneration = value; },
-  setPlayQueue: (rows) => { playQueue = Array.isArray(rows) ? rows : []; }, setSeekDragging: (value) => { seekDragging = value; }, setSessionRecentPlays: (rows) => { sessionRecentPlays = Array.isArray(rows) ? rows : []; },
+  setLocalLibraryRows: (rows) => { localLibraryRows = Array.isArray(rows) ? rows : []; }, setPlayIndex: (value) => { setPlayIndexValue(value); }, setPlayLoadGeneration: (value) => { playLoadGeneration = value; },
+  setPlayQueue: (rows) => { setPlayQueueValue(rows); }, setSeekDragging: (value) => { seekDragging = value; }, setSessionRecentPlays: (rows) => { sessionRecentPlays = Array.isArray(rows) ? rows : []; },
+  scheduleSavePlaybackState: () => scheduleSavePlaybackState(),
   trayPlayerTarget: TRAY_PLAYER_TARGET, warnRequestFailed, WebviewWindow,
 });
 
@@ -103,7 +130,7 @@ const pages = createPageRuntime({
   renderQueuePanel: (...args) => renderQueuePanel(...args), renderRecentPlaysTable: (...args) => renderRecentPlaysTable(...args), resetImportFlow: settings.resetImportFlow, searchState,
   refreshKugouSettingsStatus: (...args) => settings.refreshKugouSettingsStatus(...args),
   setImportDraft: settings.setImportDraft, setImportConfigHeader: settings.setImportConfigHeader, setImportMethod: settings.setImportMethod, setImportStep: settings.setImportStep, setLastLibraryFolder: (value) => { lastLibraryFolder = value; },
-  setNeteaseCookieState: ({ enabled, value }) => { neteaseCookieEnabled = !!enabled; neteaseCookieValue = String(value || ""); }, setPlayQueue: (rows) => { playQueue = Array.isArray(rows) ? rows : []; },
+  setNeteaseCookieState: ({ enabled, value }) => { neteaseCookieEnabled = !!enabled; neteaseCookieValue = String(value || ""); }, setPlayQueue: (rows) => { setPlayQueueValue(rows); },
   setTableMutedMessage,
   setPlaylistDetailRows: (rows) => { playlistDetailRows = Array.isArray(rows) ? rows : []; }, setSelectedPlaylist: (id, name) => { selectedPlaylistId = id; selectedPlaylistName = name || ""; },
   sidebarMenuItems: SIDEBAR_MENU_NAV, syncNeteaseCookieUi: settings.syncNeteaseCookieUi, warnRequestFailed,
@@ -118,16 +145,33 @@ const { dock, dockTheme, hotkeys } = createDockRuntime({
   broadcastDesktopLyricsLock: (...args) => player.broadcastDesktopLyricsLock(...args), closeContextMenu: (...args) => pages.closeContextMenu(...args), enqueueDownloadForTrack: (...args) => pages.enqueueDownloadForTrack(...args),
   openLyricsReplaceWindow: (...args) => player.openLyricsReplaceWindow(...args), playFromQueueIndex: (...args) => player.playFromQueueIndex(...args), refreshLyricsLockMenuLabel: (...args) => player.refreshLyricsLockMenuLabel(...args),
   removeCurrentFromQueue: (...args) => player.removeCurrentFromQueue(...args), renderPlayerNav: (...args) => player.setPlayerNavEnabled(...args), toggleDesktopLyrics: (...args) => player.toggleDesktopLyrics(...args),
-  toggleQueuePanel: (...args) => pages.toggleQueuePanel(...args), setDesktopLyricsLocked: (value) => { desktopLyricsLocked = value; }, setPlayModeIndex: (value) => { playModeIndex = value; }, setQualityPref: (value) => { qualityPref = value; },
+  toggleQueuePanel: (...args) => pages.toggleQueuePanel(...args), setDesktopLyricsLocked: (value) => { desktopLyricsLocked = value; }, setPlayModeIndex: (value) => { setPlayModeIndexValue(value); }, setQualityPref: (value) => { qualityPref = value; },
+  scheduleSavePlaybackState: () => scheduleSavePlaybackState(),
 });
 refreshQuickThemeModeUi = dockTheme.refreshQuickThemeModeUi; renderQueuePanel = dock.renderQueuePanel; refreshFavButton = dock.refreshFavButton; randomNextIndex = dock.randomNextIndex;
+const playbackState = createPlaybackStatePersistence({
+  getPlayIndex: () => playIndex,
+  getPlayModeIndex: () => playModeIndex,
+  getPlayQueue: () => playQueue,
+  invoke,
+  playModeItems: PLAY_MODES,
+  restorePlaybackUi: () => {
+    dock.refreshPlayModeButton?.();
+    player.restorePlaybackSelection?.();
+  },
+  setPlayIndex: (value) => { setPlayIndexValue(value); },
+  setPlayModeIndex: (value) => { setPlayModeIndexValue(value); },
+  setPlayQueue: (rows) => { setPlayQueueValue(rows); },
+});
+scheduleSavePlaybackState = playbackState.scheduleSavePlaybackState;
+restorePlaybackState = playbackState.restorePlaybackState;
 
 startDesktopRuntime({
   alertRequestFailed, applyAppTheme, applyPlatformClassNames, dock, emitTo, getMainWindowCloseAction: () => mainWindowCloseAction, getPlayIndex: () => playIndex, getPlayLoadGeneration: () => playLoadGeneration,
   getPlayQueue: () => playQueue, getSelectedPlaylistId: () => selectedPlaylistId, getSelectedPlaylistName: () => selectedPlaylistName, hotkeys, invoke, listen, loadPlaylistDetail,
   lyricsReplaceTarget: LYRICS_REPLACE_TARGET, normalizeAppThemeMode,
   onLyricsLockSync: (locked) => { desktopLyricsLocked = locked; player.refreshLyricsLockMenuLabel(); },
-  pages, player, renderDailyTable, renderImportTable, renderMainShell, renderQueuePanel: (...args) => renderQueuePanel(...args), searchState, setPage: (...args) => setPage(...args), settings, systemDarkMedia,
+  pages, player, renderDailyTable, renderImportTable, renderMainShell, renderQueuePanel: (...args) => renderQueuePanel(...args), restorePlaybackState: () => restorePlaybackState(), searchState, setPage: (...args) => setPage(...args), settings, systemDarkMedia,
   syncTrayCommand: async (action, payload = {}) => {
     if (action === "toggle") document.getElementById("btn-player-play")?.click();
     else if (action === "prev") document.getElementById("btn-player-prev")?.click();

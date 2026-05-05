@@ -7,7 +7,7 @@ export function queuePanelTemplate() {
           <span class="queue-header__title">播放队列</span>
           <span id="queue-count" class="queue-header__count">0 首</span>
         </div>
-        <button type="button" id="queue-toggle" class="queue-toggle" aria-expanded="false">展开</button>
+        <button type="button" id="queue-toggle" class="queue-toggle" aria-expanded="false">收起</button>
       </div>
       <div id="queue-body" class="queue-body">
         <ul id="queue-list" class="queue-list"></ul>

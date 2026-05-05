@@ -25,6 +25,7 @@ export function playerDockTemplate() {
           <button type="button" id="btn-player-prev" class="dock-tbtn" disabled title="上一首" aria-label="上一首">⏮</button>
           <button type="button" id="btn-player-play" class="dock-tbtn dock-tbtn--main" disabled title="播放" aria-label="播放">${playIcon}</button>
           <button type="button" id="btn-player-next" class="dock-tbtn" disabled title="下一首" aria-label="下一首">⏭</button>
+          <button type="button" id="btn-dock-queue" class="dock-mode dock-mode--queue" title="播放队列" aria-label="播放队列" aria-expanded="false">☰</button>
         </div>
         <div class="dock-player__timeline">
           <button type="button" id="btn-play-mode" class="dock-mode" title="顺序播放（点击切换模式）" aria-label="顺序播放（点击切换模式）"></button>
@@ -37,7 +38,6 @@ export function playerDockTemplate() {
         <div class="dock-menu-anchor"><button type="button" id="dock-quality" class="dock-chip" title="音质偏好（展示；下载以菜单为准）">标准</button><div id="popover-quality" class="dock-menu dock-menu--up dock-menu--right" role="menu" hidden><button type="button" class="dock-menu__item" data-quality="flac">无损</button><button type="button" class="dock-menu__item" data-quality="320">HQ</button><button type="button" class="dock-menu__item" data-quality="128">标准</button></div></div>
         <button type="button" id="btn-dock-lyrics" class="dock-ic dock-ic--accent" title="桌面歌词（独立窗口）">词</button>
         <button type="button" id="btn-dock-lyrics-lock" class="dock-ic dock-ic--lock" title="桌面歌词锁定" aria-label="桌面歌词锁定" disabled></button>
-        <button type="button" id="btn-dock-queue" class="dock-ic" title="播放列表">☰</button>
         <label class="dock-vol" title="音量"><span class="dock-vol__icon" aria-hidden="true">◇</span><input id="volume" type="range" min="0" max="100" value="70" class="dock-vol__range" /></label>
       </div>
     </footer>

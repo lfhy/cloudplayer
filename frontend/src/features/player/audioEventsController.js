@@ -124,7 +124,12 @@ export function createAudioEventsController(deps) {
 
   function wireTransport(audio, playButton) {
     playButton?.addEventListener("click", async () => {
-      if (!audio.src) return;
+      if (!audio.src) {
+        if (getPlayQueue().length) {
+          void playFromQueueIndex(getPlayIndex());
+        }
+        return;
+      }
       try {
         if (audio.paused) await audio.play();
         else audio.pause();

@@ -16,11 +16,14 @@
   overflow: hidden;
   transform: translateY(0);
   opacity: 1;
+  pointer-events: auto;
   transition: transform 0.24s ease, opacity 0.24s ease, box-shadow 0.24s ease;
 }
 
 .queue-panel.collapsed {
-  transform: translateY(calc(100% - 54px));
+  transform: translateY(calc(100% + 18px));
+  opacity: 0;
+  pointer-events: none;
   box-shadow: 0 14px 36px rgba(15, 23, 42, 0.16);
 }
 
@@ -68,11 +71,6 @@
   overflow: auto;
   opacity: 1;
   transition: opacity 0.18s ease;
-}
-
-.queue-panel.collapsed .queue-body {
-  opacity: 0;
-  pointer-events: none;
 }
 
 .queue-list {
@@ -167,7 +165,7 @@
   .queue-panel {
     right: 12px;
     left: 12px;
-    bottom: 84px;
+    bottom: 92px;
     width: auto;
     height: min(66vh, 640px);
   }

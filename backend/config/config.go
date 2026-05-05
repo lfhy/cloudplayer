@@ -18,39 +18,42 @@ const (
 )
 
 type Settings struct {
-	WindowGeometryB64           *string       `json:"window_geometry_b64,omitempty"`
-	WindowStateB64              *string       `json:"window_state_b64,omitempty"`
-	Volume                      float64       `json:"volume"`
-	LastLibraryFolder           string        `json:"last_library_folder"`
-	DailyDownloadLimit          int64         `json:"daily_download_limit"`
-	DesktopLyricsVisible        bool          `json:"desktop_lyrics_visible"`
-	DesktopLyricsLocked         bool          `json:"desktop_lyrics_locked"`
-	DesktopLyricsX              *int          `json:"desktop_lyrics_x,omitempty"`
-	DesktopLyricsY              *int          `json:"desktop_lyrics_y,omitempty"`
-	DesktopLyricsWidth          *int          `json:"desktop_lyrics_width,omitempty"`
-	DesktopLyricsHeight         *int          `json:"desktop_lyrics_height,omitempty"`
-	DesktopLyricsScale          float64       `json:"desktop_lyrics_scale"`
-	DownloadFolder              string        `json:"download_folder"`
-	DownloadsTodayDate          string        `json:"downloads_today_date"`
-	DownloadsTodayCount         int64         `json:"downloads_today_count"`
-	LyricsNeteaseAPIBase        string        `json:"lyrics_netease_api_base"`
-	NetworkProxyMode            string        `json:"network_proxy_mode"`
-	NetworkProxyURL             string        `json:"network_proxy_url"`
-	LyricsLRCLibEnabled         bool          `json:"lyrics_lrclib_enabled"`
-	LyricsProviderOrder         string        `json:"lyrics_provider_order"`
-	MainWindowCloseAction       string        `json:"main_window_close_action"`
-	AppTheme                    string        `json:"app_theme"`
-	AppThemeMode                string        `json:"app_theme_mode"`
-	AppThemeCustomAccent        string        `json:"app_theme_custom_accent"`
-	GlobalHotkeys               GlobalHotkeys `json:"global_hotkeys"`
-	DesktopLyricsColorBase      string        `json:"desktop_lyrics_color_base"`
-	DesktopLyricsColorHighlight string        `json:"desktop_lyrics_color_highlight"`
-	DesktopLyricsIdleLine1      string        `json:"desktop_lyrics_idle_line1"`
-	DesktopLyricsIdleLine2      string        `json:"desktop_lyrics_idle_line2"`
-	ShareNeteaseCookieEnabled   bool          `json:"share_netease_cookie_enabled"`
-	ShareNeteaseCookie          string        `json:"share_netease_cookie"`
-	MusicSourceProvider         string        `json:"music_source_provider"`
-	SearchCacheTTLHours         int           `json:"search_cache_ttl_hours"`
+	WindowGeometryB64           *string             `json:"window_geometry_b64,omitempty"`
+	WindowStateB64              *string             `json:"window_state_b64,omitempty"`
+	Volume                      float64             `json:"volume"`
+	PlayMode                    string              `json:"play_mode"`
+	PlayQueue                   []PlaybackQueueItem `json:"play_queue,omitempty"`
+	PlayQueueIndex              int                 `json:"play_queue_index"`
+	LastLibraryFolder           string              `json:"last_library_folder"`
+	DailyDownloadLimit          int64               `json:"daily_download_limit"`
+	DesktopLyricsVisible        bool                `json:"desktop_lyrics_visible"`
+	DesktopLyricsLocked         bool                `json:"desktop_lyrics_locked"`
+	DesktopLyricsX              *int                `json:"desktop_lyrics_x,omitempty"`
+	DesktopLyricsY              *int                `json:"desktop_lyrics_y,omitempty"`
+	DesktopLyricsWidth          *int                `json:"desktop_lyrics_width,omitempty"`
+	DesktopLyricsHeight         *int                `json:"desktop_lyrics_height,omitempty"`
+	DesktopLyricsScale          float64             `json:"desktop_lyrics_scale"`
+	DownloadFolder              string              `json:"download_folder"`
+	DownloadsTodayDate          string              `json:"downloads_today_date"`
+	DownloadsTodayCount         int64               `json:"downloads_today_count"`
+	LyricsNeteaseAPIBase        string              `json:"lyrics_netease_api_base"`
+	NetworkProxyMode            string              `json:"network_proxy_mode"`
+	NetworkProxyURL             string              `json:"network_proxy_url"`
+	LyricsLRCLibEnabled         bool                `json:"lyrics_lrclib_enabled"`
+	LyricsProviderOrder         string              `json:"lyrics_provider_order"`
+	MainWindowCloseAction       string              `json:"main_window_close_action"`
+	AppTheme                    string              `json:"app_theme"`
+	AppThemeMode                string              `json:"app_theme_mode"`
+	AppThemeCustomAccent        string              `json:"app_theme_custom_accent"`
+	GlobalHotkeys               GlobalHotkeys       `json:"global_hotkeys"`
+	DesktopLyricsColorBase      string              `json:"desktop_lyrics_color_base"`
+	DesktopLyricsColorHighlight string              `json:"desktop_lyrics_color_highlight"`
+	DesktopLyricsIdleLine1      string              `json:"desktop_lyrics_idle_line1"`
+	DesktopLyricsIdleLine2      string              `json:"desktop_lyrics_idle_line2"`
+	ShareNeteaseCookieEnabled   bool                `json:"share_netease_cookie_enabled"`
+	ShareNeteaseCookie          string              `json:"share_netease_cookie"`
+	MusicSourceProvider         string              `json:"music_source_provider"`
+	SearchCacheTTLHours         int                 `json:"search_cache_ttl_hours"`
 }
 
 type GlobalHotkeys struct {
@@ -65,6 +68,7 @@ type GlobalHotkeys struct {
 func DefaultSettings() Settings {
 	return Settings{
 		Volume:                      0.7,
+		PlayMode:                    PlayModeLoopList,
 		DailyDownloadLimit:          50,
 		DesktopLyricsLocked:         true,
 		DesktopLyricsScale:          1.0,
@@ -138,6 +142,18 @@ func LoadSettings() Settings {
 		return DefaultSettings()
 	}
 	result.SearchCacheTTLHours = NormalizeSearchCacheTTLHours(result.SearchCacheTTLHours)
+	result.PlayMode = NormalizePlayMode(result.PlayMode)
+	result.PlayQueue = NormalizePlaybackQueue(result.PlayQueue)
+	if result.PlayQueueIndex < 0 {
+		result.PlayQueueIndex = 0
+	}
+	if result.PlayQueueIndex >= len(result.PlayQueue) {
+		if len(result.PlayQueue) == 0 {
+			result.PlayQueueIndex = 0
+		} else {
+			result.PlayQueueIndex = len(result.PlayQueue) - 1
+		}
+	}
 	defaults := DefaultSettings()
 	result.DesktopLyricsIdleLine1 = NormalizeDesktopLyricsIdleLine(result.DesktopLyricsIdleLine1, defaults.DesktopLyricsIdleLine1)
 	result.DesktopLyricsIdleLine2 = NormalizeDesktopLyricsIdleLine(result.DesktopLyricsIdleLine2, defaults.DesktopLyricsIdleLine2)

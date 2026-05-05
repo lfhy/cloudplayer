@@ -25,6 +25,7 @@ export function createDockController(deps) {
     renderPlayerNav,
     broadcastDesktopLyricsLock,
     saveLikedIds,
+    scheduleSavePlaybackState,
     setDesktopLyricsLocked,
     setPlayModeIndex,
     setQualityPref,
@@ -111,6 +112,16 @@ export function createDockController(deps) {
     });
   }
 
+  function refreshPlayModeButton() {
+    const modeBtn = document.getElementById("btn-play-mode");
+    if (!modeBtn) return;
+    const mode = playModeItems[getPlayModeIndex()];
+    modeBtn.innerHTML = iconSvgByName(mode.icon);
+    modeBtn.title = mode.tip;
+    modeBtn.setAttribute("aria-label", mode.tip);
+    modeBtn.dataset.playMode = mode.key;
+  }
+
   function toggleDockMenu(menuEl) {
     const willOpen = menuEl.hidden;
     closeAllDockMenus();
@@ -120,13 +131,6 @@ export function createDockController(deps) {
   function wireDockBar() {
     const modeBtn = document.getElementById("btn-play-mode");
     if (modeBtn) {
-      const refreshPlayModeButton = () => {
-        const mode = playModeItems[getPlayModeIndex()];
-        modeBtn.innerHTML = iconSvgByName(mode.icon);
-        modeBtn.title = mode.tip;
-        modeBtn.setAttribute("aria-label", mode.tip);
-        modeBtn.dataset.playMode = mode.key;
-      };
       refreshPlayModeButton();
       modeBtn.addEventListener("click", () => {
         setPlayModeIndex((getPlayModeIndex() + 1) % playModeItems.length);
@@ -136,6 +140,7 @@ export function createDockController(deps) {
         refreshPlayModeButton();
         window.setTimeout(() => modeBtn.classList.remove("is-switching"), 220);
         renderPlayerNav();
+        scheduleSavePlaybackState?.();
       });
     }
     const qualityBtn = document.getElementById("dock-quality");
@@ -240,5 +245,5 @@ export function createDockController(deps) {
     });
   }
 
-  return { closeAllDockMenus, randomNextIndex, refreshFavButton, renderQueuePanel, toggleDockMenu, wireDockBar };
+  return { closeAllDockMenus, randomNextIndex, refreshFavButton, refreshPlayModeButton, renderQueuePanel, toggleDockMenu, wireDockBar };
 }

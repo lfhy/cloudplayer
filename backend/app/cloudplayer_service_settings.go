@@ -78,6 +78,43 @@ func (s *CloudPlayerService) SaveSettings(patch SettingsPatch) error {
 	if patch.Volume != nil {
 		settings.Volume = clampFloat(*patch.Volume, 0, 1)
 	}
+	if patch.PlayMode != nil {
+		settings.PlayMode = config.NormalizePlayMode(*patch.PlayMode)
+	}
+	if patch.PlayQueue != nil {
+		rows := make([]config.PlaybackQueueItem, 0, len(*patch.PlayQueue))
+		for _, item := range *patch.PlayQueue {
+			rows = append(rows, config.PlaybackQueueItem{
+				SourceID:  item.SourceID,
+				Title:     item.Title,
+				Artist:    item.Artist,
+				CoverURL:  item.CoverURL,
+				LocalPath: item.LocalPath,
+			})
+		}
+		settings.PlayQueue = config.NormalizePlaybackQueue(rows)
+		if settings.PlayQueueIndex >= len(settings.PlayQueue) {
+			if len(settings.PlayQueue) == 0 {
+				settings.PlayQueueIndex = 0
+			} else {
+				settings.PlayQueueIndex = len(settings.PlayQueue) - 1
+			}
+		}
+	}
+	if patch.PlayQueueIndex != nil {
+		if *patch.PlayQueueIndex < 0 {
+			settings.PlayQueueIndex = 0
+		} else {
+			settings.PlayQueueIndex = *patch.PlayQueueIndex
+		}
+		if settings.PlayQueueIndex >= len(settings.PlayQueue) {
+			if len(settings.PlayQueue) == 0 {
+				settings.PlayQueueIndex = 0
+			} else {
+				settings.PlayQueueIndex = len(settings.PlayQueue) - 1
+			}
+		}
+	}
 	if patch.LastLibraryFolder != nil {
 		settings.LastLibraryFolder = *patch.LastLibraryFolder
 	}
