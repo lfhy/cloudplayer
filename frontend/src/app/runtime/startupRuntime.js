@@ -41,6 +41,7 @@ export function startDesktopRuntime(deps) {
     renderSearchTable: deps.pages.renderSearchTable,
     renderSidebar: deps.pages.renderSidebar,
     searchState: deps.searchState,
+    playAllDailyRecommendations: deps.pages.playAllDailyRecommendations,
     setPage: deps.setPage,
     setSearchScope: deps.pages.setSearchScope,
     syncDesktopLyricsState: deps.player.syncDesktopLyricsState,

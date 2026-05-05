@@ -8,6 +8,7 @@ export function dailyPageTemplate() {
           <p class="page-hint">每天自动从在线源获取每日推荐歌曲，应用重启后依然保留。点击重新生成可刷新。</p>
         </div>
         <div class="page-heading__actions">
+          <button type="button" id="btn-play-daily-all" class="btn-accent">▶ 播放全部</button>
           <button type="button" id="btn-save-daily-playlist" class="btn-outline">保存为歌单</button>
           <button type="button" id="btn-refresh-daily" class="btn-outline">重新生成</button>
         </div>

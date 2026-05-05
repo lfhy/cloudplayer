@@ -12,6 +12,7 @@ export function createHomeController(deps) {
     getSessionRecentPlays,
     invoke,
     onDailySaved,
+    playAllDailyItems,
     playFromRecentRow,
     playSingleItem,
   } = deps;
@@ -216,6 +217,7 @@ export function createHomeController(deps) {
       stage: "render-table:rows-ready",
       detail: JSON.stringify({ force, rowCount: rows.length }),
     }).catch(() => {});
+    document.getElementById("btn-play-daily-all")?.toggleAttribute("disabled", !rows.length);
     document.getElementById("btn-save-daily-playlist")?.toggleAttribute("disabled", !rows.length || dailySaveInFlight);
     renderTrackTableRows(tbody, rows.map((row) => ({
       ...row,
@@ -228,6 +230,12 @@ export function createHomeController(deps) {
       getLikedIds,
       onClick: (index, row) => playSingleItem(row),
     });
+  }
+
+  async function playAllDailyRecommendations() {
+    const rows = await ensureDailyRecommendations();
+    if (!rows.length) return;
+    playAllDailyItems?.(rows);
   }
 
   async function saveDailyRecommendationsAsPlaylist(playlistName) {
@@ -261,5 +269,5 @@ export function createHomeController(deps) {
     }
   }
 
-  return { renderDailyTable, renderHomePage, saveDailyRecommendationsAsPlaylist };
+  return { playAllDailyRecommendations, renderDailyTable, renderHomePage, saveDailyRecommendationsAsPlaylist };
 }

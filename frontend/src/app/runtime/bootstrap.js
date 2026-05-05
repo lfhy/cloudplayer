@@ -37,6 +37,7 @@ export function bootCloudPlayerApp(deps) {
     renderPlaylistSearchResults,
     renderQueuePanel,
     renderSearchTable,
+    playAllDailyRecommendations,
     saveDailyRecommendationsAsPlaylist,
     setPage,
     setSearchScope,
@@ -64,7 +65,7 @@ export function bootCloudPlayerApp(deps) {
     applyPlatformClassNames();
     deps.renderSidebar();
     setPage("home");
-    wireHomeShortcuts(setPage, renderDailyTable, saveDailyRecommendationsAsPlaylist, invoke);
+    wireHomeShortcuts(setPage, renderDailyTable, playAllDailyRecommendations, saveDailyRecommendationsAsPlaylist, invoke);
     wireQueueToggle();
     wireAccountCenter();
     wireDockBar();
@@ -237,11 +238,14 @@ export function bootCloudPlayerApp(deps) {
   }
 }
 
-function wireHomeShortcuts(setPage, renderDailyTable, saveDailyRecommendationsAsPlaylist, invoke) {
+function wireHomeShortcuts(setPage, renderDailyTable, playAllDailyRecommendations, saveDailyRecommendationsAsPlaylist, invoke) {
   document.getElementById("btn-home-search")?.addEventListener("click", () => setPage("search"));
   document.getElementById("btn-home-import")?.addEventListener("click", () => setPage("import"));
   document.getElementById("btn-home-open-recent")?.addEventListener("click", () => setPage("recent"));
   document.getElementById("btn-home-open-daily")?.addEventListener("click", () => setPage("daily"));
+  document.getElementById("btn-play-daily-all")?.addEventListener("click", () => {
+    void playAllDailyRecommendations?.();
+  });
   document.getElementById("btn-save-daily-playlist")?.addEventListener("click", () => {
     void saveDailyRecommendationsAsPlaylist?.();
   });

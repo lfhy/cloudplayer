@@ -96,6 +96,7 @@ export function createPageRuntime(deps) {
       await playlist.loadPlaylistDetail(playlistId, playlistName);
       setPage("playlist");
     },
+    playAllDailyItems: (rows) => { setPlayQueue(rows.map((item) => (item.local_path ? { title: item.title, artist: item.artist || "", local_path: item.local_path, cover_url: item.cover_url || null } : { source_id: item.source_id, title: item.title, artist: item.artist || "", cover_url: item.cover_url || null }))); void playFromQueueIndex(0); renderQueuePanel(); },
     playFromRecentRow,
     playSingleItem: (item) => {
       setPlayQueue(
@@ -280,7 +281,7 @@ export function createPageRuntime(deps) {
     renderPlaylistSearchResults: search.renderPlaylistSearchResults,
     renderSearchTable: search.renderSearchTable,
     renderSidebar: navigation.renderSidebar,
-    saveDailyRecommendationsAsPlaylist: () => playlistManageModal.openCreate(dailyPlaylistName(), { subtitle: "将当前每日推荐保存为新歌单。", onSubmit: (name) => home.saveDailyRecommendationsAsPlaylist(name) }),
+    playAllDailyRecommendations: home.playAllDailyRecommendations, saveDailyRecommendationsAsPlaylist: () => playlistManageModal.openCreate(dailyPlaylistName(), { subtitle: "将当前每日推荐保存为新歌单。", onSubmit: (name) => home.saveDailyRecommendationsAsPlaylist(name) }),
     searchLocalPlaylists: playlist.searchLocalPlaylists,
     setPage,
     setSearchScope: search.setSearchScope,
