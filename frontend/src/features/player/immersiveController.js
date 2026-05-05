@@ -1,69 +1,79 @@
 import { setCoverImageSource } from "../../app/helpers/covers.js";
-import { escapeHtml } from "../../app/helpers/text.js";
-import { lyricDisplayForDesktop, parseLrc, currentPlayableKey } from "../lyrics/model.js";
+import { currentPlayableKey } from "../lyrics/model.js";
+import { buildLyricLineHtml } from "./immersiveLyricsView.js";
 import { setPlayButtonIcon } from "./playButtonIcon.js";
 
-// Immersive controller keeps the in-app lyrics overlay synced with playback state.
+// Immersive mode renders from the shared lyrics snapshot using stable line-level sync.
 export function createImmersiveController(deps) {
-  const { formatTime, getAudioEl, getPlayIndex, getPlayQueue, getSeekDragging, invoke, setSeekDragging } = deps;
-  let open = false, lrcEntries = [], wordLines = null, lrcCacheKey = null, lrcLoadInFlight = null;
-  let currentMetaKey = "", syncTimer = 0;
+  const { formatTime, getAudioEl, getCurrentLyricsSnapshot, getPlayIndex, getPlayQueue, getSeekDragging, readCurrentLyricsSnapshot, setSeekDragging } = deps;
+  let activeLineIndex = -1, closeTimer = 0, currentMetaKey = "", open = false, renderedWindowKey = "", syncTimer = 0;
+  let lyricsSnapshot = null, snapshotKey = "", snapshotLoadingKey = "", snapshotPromise = null;
+  let lyricAnchor = null;
+  let manualScrollUntil = 0;
 
   function currentTrack() { return getPlayQueue()[getPlayIndex()] || null; }
+  function lyricBox() { return document.getElementById("immersive-lyrics"); }
+  function panelEl() { return document.getElementById("immersive-player"); }
+  function pauseAutoScroll(ms = 2400) { manualScrollUntil = Date.now() + ms; }
 
-  function lrcEntriesFromWordLines(lines) {
-    if (!Array.isArray(lines) || !lines.length) return [];
-    return lines.map((l) => {
-      const t = Number(l?.startMs);
-      const text = (Array.isArray(l?.words) ? l.words : []).map((w) => String(w?.text ?? "")).join("").trim();
-      return Number.isFinite(t) && t >= 0 && text ? { t: t / 1000, text } : null;
-    }).filter(Boolean).sort((a, b) => a.t - b.t);
+  function applySnapshot(snapshot) {
+    lyricsSnapshot = snapshot || null;
+    snapshotKey = currentPlayableKey(snapshot?.currentTrack) || "";
+    lyricAnchor = lyricsSnapshot?.payload || null;
   }
 
-  async function fetchLyricsForCurrent() {
-    const track = currentTrack();
-    const key = currentPlayableKey(track);
-    if (!key || lrcCacheKey === key) return;
-    if (lrcLoadInFlight?.key === key) { await lrcLoadInFlight.promise; return; }
-    lrcEntries = []; wordLines = null;
-    const p = doFetchLyrics(track, key).finally(() => { if (lrcLoadInFlight?.promise === p) lrcLoadInFlight = null; });
-    lrcLoadInFlight = { key, promise: p };
-    await p;
-  }
-
-  async function doFetchLyrics(track, cacheKey) {
-    if (!track) { lrcCacheKey = null; return; }
-    try {
-      const audio = getAudioEl();
-      const dur = audio?.duration && Number.isFinite(audio.duration) && audio.duration > 0 ? audio.duration : null;
-      const raw = await invoke("fetch_song_lrc_enriched", {
-        req: {
-          pjmp3SourceId: track.local_path ? null : (track.source_id || "").trim() || null,
-          title: track.title || "", artist: track.artist || "", album: track.album || "",
-          localPath: track.local_path || null, durationSeconds: dur,
-        },
+  function ensureSnapshot(trackKey = currentPlayableKey(currentTrack())) {
+    if (!trackKey) {
+      applySnapshot(null);
+      return Promise.resolve(null);
+    }
+    if (snapshotKey === trackKey && lyricsSnapshot) return Promise.resolve(lyricsSnapshot);
+    if (snapshotLoadingKey === trackKey && snapshotPromise) return snapshotPromise;
+    snapshotLoadingKey = trackKey;
+    snapshotPromise = getCurrentLyricsSnapshot()
+      .then((snapshot) => {
+        if ((currentPlayableKey(snapshot?.currentTrack) || "") === trackKey) applySnapshot(snapshot);
+        renderedWindowKey = "";
+        if (open) renderLyricsFrame(true);
+        return snapshot;
+      })
+      .finally(() => {
+        if (snapshotLoadingKey === trackKey) {
+          snapshotLoadingKey = "";
+          snapshotPromise = null;
+        }
       });
-      if (currentPlayableKey(currentTrack()) !== cacheKey) return;
-      if (raw && typeof raw === "object") {
-        const wl = Array.isArray(raw.wordLines) ? raw.wordLines : null;
-        const parsed = raw.lrcText ? parseLrc(String(raw.lrcText)) : [];
-        lrcEntries = parsed.length ? parsed : lrcEntriesFromWordLines(wl);
-        wordLines = wl;
-      } else if (typeof raw === "string") { lrcEntries = parseLrc(raw); wordLines = null; }
-      lrcCacheKey = cacheKey;
-    } catch { lrcCacheKey = cacheKey; lrcEntries = []; wordLines = null; }
-    if (open) renderLyrics();
+    return snapshotPromise;
   }
 
-  function setOpen(next) {
-    open = !!next;
-    const panel = document.getElementById("immersive-player");
+  function refreshSnapshot() {
+    const snapshot = readCurrentLyricsSnapshot?.() || null;
+    if (!snapshot) return;
+    applySnapshot(snapshot);
+  }
+
+  function setOpen(nextOpen) {
+    const panel = panelEl();
     if (!panel) return;
-    panel.hidden = !open;
+    window.clearTimeout(closeTimer);
+    open = !!nextOpen;
     panel.setAttribute("aria-hidden", open ? "false" : "true");
-    document.body.classList.toggle("immersive-player-open", open);
-    if (open) syncAll();
+    if (open) {
+      panel.hidden = false;
+      requestAnimationFrame(() => panel.classList.add("is-visible"));
+      document.body.classList.add("immersive-player-open");
+      manualScrollUntil = 0;
+      syncMeta();
+      syncTransport();
+      syncSeekUi();
+      renderLyricsFrame(true);
+      scheduleLoop();
+      return;
+    }
+    panel.classList.remove("is-visible");
+    document.body.classList.remove("immersive-player-open");
     scheduleLoop();
+    closeTimer = window.setTimeout(() => { if (!open) panel.hidden = true; }, 260);
   }
 
   function toggle() { setOpen(!open); }
@@ -80,98 +90,165 @@ export function createImmersiveController(deps) {
     if (artistEl) artistEl.textContent = track?.artist || (track ? "未知艺术家" : "选择曲目开始播放");
     if (albumEl) albumEl.textContent = track?.album || (track?.local_path ? "本地音乐" : track ? "正在聆听" : "在这里查看歌词沉浸模式");
     if (coverEl) setCoverImageSource(coverEl, track?.cover_url || "", { size: 240, radius: 24 });
-    if (key !== currentMetaKey) { currentMetaKey = key; void fetchLyricsForCurrent(); }
+    if (key !== currentMetaKey) {
+      currentMetaKey = key;
+      renderedWindowKey = "";
+      activeLineIndex = -1;
+      void ensureSnapshot(key);
+    } else {
+      refreshSnapshot();
+    }
   }
 
   function syncTransport() {
     const audio = getAudioEl();
-    const has = getPlayQueue().length > 0;
+    const hasQueue = getPlayQueue().length > 0;
     setPlayButtonIcon(document.getElementById("btn-immersive-play"), !!audio && !audio.paused);
     ["btn-immersive-play", "btn-immersive-prev", "btn-immersive-next"].forEach((id) => {
-      const el = document.getElementById(id); if (el) el.disabled = !has;
+      const button = document.getElementById(id);
+      if (button) button.disabled = !hasQueue;
     });
   }
 
   function syncSeekUi() {
     const audio = getAudioEl();
     const seek = document.getElementById("immersive-seek");
-    const cur = document.getElementById("immersive-time-current");
-    const tot = document.getElementById("immersive-time-total");
-    if (!seek || !cur || !tot) return;
+    const currentEl = document.getElementById("immersive-time-current");
+    const totalEl = document.getElementById("immersive-time-total");
+    if (!seek || !currentEl || !totalEl) return;
     const duration = audio?.duration;
-    cur.textContent = formatTime(audio?.currentTime || 0);
+    currentEl.textContent = formatTime(audio?.currentTime || 0);
     if (duration && Number.isFinite(duration) && duration > 0) {
-      tot.textContent = formatTime(duration);
+      totalEl.textContent = formatTime(duration);
       if (!getSeekDragging()) seek.value = String(Math.min(1000, Math.floor(((audio?.currentTime || 0) / duration) * 1000)));
       seek.disabled = false;
       seek.style.setProperty("--seek-progress", `${Number(seek.value) / 10}%`);
       return;
     }
-    tot.textContent = "0:00"; seek.value = "0"; seek.disabled = !(audio && audio.src);
+    totalEl.textContent = "0:00";
+    seek.value = "0";
+    seek.disabled = !(audio && audio.src);
     seek.style.setProperty("--seek-progress", "0%");
   }
 
-  function renderLyrics() {
-    const box = document.getElementById("immersive-lyrics");
-    if (!box) return;
+  function renderLyricsFrame(force = false) {
+    const box = lyricBox();
     const track = currentTrack();
-    if (!track) { box.innerHTML = '<p class="immersive-player__lyrics-empty">选择歌曲后即可进入沉浸歌词模式</p>'; return; }
-    if (!lrcEntries.length) {
-      box.innerHTML = `<p class="immersive-player__lyrics-line is-active">${escapeHtml(track.title || "当前歌曲")}</p><p class="immersive-player__lyrics-line">${escapeHtml(track.artist || "暂无滚动歌词")}</p>`;
+    const snapshot = lyricsSnapshot;
+    const anchor = lyricAnchor;
+    if (!box) return;
+    if (!track) {
+      if (force || renderedWindowKey !== "idle") {
+        renderedWindowKey = "idle";
+        activeLineIndex = -1;
+        box.innerHTML = '<p class="immersive-player__lyrics-empty">选择歌曲后即可进入沉浸歌词模式</p>';
+      }
       return;
     }
-    const now = getAudioEl()?.currentTime || 0;
-    const payload = lyricDisplayForDesktop({ currentTrack: track, currentTime: now, lrcEntries, wordLines, idleLine1: "CloudPlayer", idleLine2: "让音乐陪你此刻" });
-    const activeText = payload.activeSlot === 2 ? payload.line2 : payload.line1;
-    const activeT = payload.activeSlot === 2 ? payload.line2StartT : payload.line1StartT;
-    const idx = lrcEntries.findIndex((e) => e.text === activeText && Math.abs(e.t - activeT) < 0.25);
-    const s = Math.max(0, idx - 5), end = Math.min(lrcEntries.length, idx >= 0 ? idx + 7 : 10);
-    box.innerHTML = lrcEntries.slice(s, end).map((e, i) =>
-      `<p class="immersive-player__lyrics-line${s + i === idx ? " is-active" : ""}">${escapeHtml(e.text || "\u00a0")}</p>`
-    ).join("");
-    box.querySelector(".immersive-player__lyrics-line.is-active")?.scrollIntoView({ block: "center", behavior: "smooth" });
+    const entries = Array.isArray(snapshot?.lrcEntries) ? snapshot.lrcEntries : [];
+    if (!entries.length || !anchor) {
+      const waiting = snapshotLoadingKey === currentMetaKey || snapshotKey !== currentMetaKey;
+      const mode = waiting ? "loading" : "fallback";
+      if (force || renderedWindowKey !== mode) {
+        renderedWindowKey = mode;
+        activeLineIndex = -1;
+        box.innerHTML = waiting
+          ? '<p class="immersive-player__lyrics-empty">歌词加载中...</p>'
+          : [buildLyricLineHtml({ text: track.title || "当前歌曲" }, 0), buildLyricLineHtml({ text: track.artist || "暂无滚动歌词" }, 1)].join("");
+        if (!waiting) box.querySelector('.immersive-player__lyrics-line[data-lyric-index="0"]')?.classList.add("is-active");
+      }
+      return;
+    }
+    const index = Number.isInteger(anchor.activeIndex) ? anchor.activeIndex : -1;
+    const windowKey = `${currentMetaKey}|full|${entries.length}`;
+    if (force || renderedWindowKey !== windowKey) {
+      renderedWindowKey = windowKey;
+      box.innerHTML = entries.map((entry, absoluteIndex) => buildLyricLineHtml(entry, absoluteIndex)).join("");
+    }
+    updateVisibleLineState(box, { entries, index, payload: anchor });
   }
 
-  function tick() { if (!open) return; syncSeekUi(); renderLyrics(); syncTimer = requestAnimationFrame(tick); }
-  function scheduleLoop() { if (syncTimer) { cancelAnimationFrame(syncTimer); syncTimer = 0; } if (open) syncTimer = requestAnimationFrame(tick); }
-  function syncAll() { if (!open) return; syncMeta(); syncTransport(); syncSeekUi(); renderLyrics(); }
-
-  function applyLyricsPayload(raw) {
-    const wl = Array.isArray(raw?.wordLines) ? raw.wordLines : null;
-    const parsed = String(raw?.lrcText || "").trim() ? parseLrc(raw.lrcText) : [];
-    lrcEntries = parsed.length ? parsed : lrcEntriesFromWordLines(wl);
-    wordLines = wl; lrcCacheKey = currentPlayableKey(currentTrack()) || null;
-    if (open) renderLyrics();
+  function updateVisibleLineState(box, state) {
+    box.querySelectorAll(".immersive-player__lyrics-line").forEach((line) => {
+      const index = Number(line.getAttribute("data-lyric-index"));
+      line.classList.toggle("is-active", index === state.index);
+      line.classList.toggle("is-past", index < state.index);
+      line.classList.toggle("is-future", index > state.index);
+      const ratio = index <= state.index ? 1 : 0;
+      line.style.setProperty("--line-progress", `${Math.max(0, Math.min(1, ratio)) * 100}%`);
+    });
+    if (state.index !== activeLineIndex) {
+      activeLineIndex = state.index;
+      if (Date.now() >= manualScrollUntil) {
+        const activeLine = box.querySelector(`.immersive-player__lyrics-line[data-lyric-index="${state.index}"]`);
+        if (activeLine) {
+          const targetTop = activeLine.offsetTop - (box.clientHeight - activeLine.offsetHeight) / 2;
+          box.scrollTo({ top: Math.max(0, targetTop), behavior: "smooth" });
+        }
+      }
+    }
   }
 
-  function clearLyrics() { lrcEntries = []; wordLines = null; lrcCacheKey = null; if (open) renderLyrics(); }
+  function tick() {
+    if (!open) return;
+    syncSeekUi();
+    renderLyricsFrame();
+    syncTimer = requestAnimationFrame(tick);
+  }
+
+  function scheduleLoop() {
+    if (syncTimer) cancelAnimationFrame(syncTimer);
+    syncTimer = open ? requestAnimationFrame(tick) : 0;
+  }
+
+  function syncAll() {
+    if (!open) return;
+    syncMeta();
+    syncTransport();
+    syncSeekUi();
+    renderLyricsFrame(true);
+  }
 
   function wire() {
     document.getElementById("btn-dock-immersive")?.addEventListener("click", toggle);
     document.getElementById("btn-immersive-close")?.addEventListener("click", close);
-    document.getElementById("immersive-player")?.querySelector(".immersive-player__backdrop")?.addEventListener("click", close);
-    document.addEventListener("keydown", (e) => { if (e.key === "Escape" && open) close(); });
+    panelEl()?.querySelector(".immersive-player__backdrop")?.addEventListener("click", close);
+    document.addEventListener("keydown", (event) => { if (event.key === "Escape" && open) close(); });
     document.getElementById("btn-immersive-play")?.addEventListener("click", () => document.getElementById("btn-player-play")?.click());
     document.getElementById("btn-immersive-prev")?.addEventListener("click", () => document.getElementById("btn-player-prev")?.click());
     document.getElementById("btn-immersive-next")?.addEventListener("click", () => document.getElementById("btn-player-next")?.click());
     const seek = document.getElementById("immersive-seek");
+    const lyrics = lyricBox();
     seek?.addEventListener("pointerdown", () => setSeekDragging(true));
-    seek?.addEventListener("pointerup", () => { setSeekDragging(false); syncSeekUi(); renderLyrics(); });
+    seek?.addEventListener("pointerup", () => { setSeekDragging(false); syncSeekUi(); refreshSnapshot(); renderLyricsFrame(); });
     seek?.addEventListener("input", () => {
-      const audio = getAudioEl(), dur = audio?.duration;
-      if (audio && dur && Number.isFinite(dur) && dur > 0) { audio.currentTime = (Number(seek.value) / 1000) * dur; syncSeekUi(); renderLyrics(); }
+      const audio = getAudioEl();
+      const duration = audio?.duration;
+      if (audio && duration && Number.isFinite(duration) && duration > 0) {
+        audio.currentTime = (Number(seek.value) / 1000) * duration;
+        syncSeekUi();
+        refreshSnapshot();
+        renderLyricsFrame();
+      }
     });
-    // Observe audio element for play/pause/ended
+    lyrics?.addEventListener("wheel", (event) => {
+      if (lyrics.scrollHeight <= lyrics.clientHeight) return;
+      pauseAutoScroll();
+      event.preventDefault();
+      lyrics.scrollTop += event.deltaY;
+    }, { passive: false });
+    lyrics?.addEventListener("scroll", () => pauseAutoScroll(1800), { passive: true });
     const observe = () => {
       const audio = getAudioEl();
-      if (!audio) { requestAnimationFrame(observe); return; }
-      audio.addEventListener("play", () => { if (open) { syncTransport(); scheduleLoop(); } });
-      audio.addEventListener("pause", () => { if (open) { syncTransport(); scheduleLoop(); } });
-      audio.addEventListener("ended", () => { if (open) syncTransport(); });
-      audio.addEventListener("loadedmetadata", () => { if (open) syncAll(); });
+      if (!audio) return requestAnimationFrame(observe);
+      audio.addEventListener("timeupdate", () => { refreshSnapshot(); if (open) renderLyricsFrame(); });
+      audio.addEventListener("play", () => { refreshSnapshot(); if (open) { syncTransport(); scheduleLoop(); renderLyricsFrame(); } });
+      audio.addEventListener("pause", () => { refreshSnapshot(); if (open) { syncTransport(); renderLyricsFrame(); } });
+      audio.addEventListener("ended", () => { refreshSnapshot(); if (open) { syncTransport(); renderLyricsFrame(); } });
+      audio.addEventListener("loadedmetadata", () => { refreshSnapshot(); if (open) syncAll(); });
     };
     observe();
   }
 
-  return { applyLyricsPayload, clearLyrics, close, getOpen: () => open, syncAll, syncMeta, syncSeekUi, syncTransport, toggle, wire };
+  return { close, getOpen: () => open, syncAll, syncMeta, syncSeekUi, syncTransport, toggle, wire };
 }

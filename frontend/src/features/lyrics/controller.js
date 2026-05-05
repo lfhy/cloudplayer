@@ -34,6 +34,7 @@ export function createLyricsController(deps) {
   let lrcLoadInFlight = null;
   let lyricTraceLastTs = 0;
   let idleText = normalizeDesktopLyricsIdleText(DESKTOP_LYRICS_IDLE_LINE1, DESKTOP_LYRICS_IDLE_LINE2);
+  let lastSnapshot = null;
 
   function lrcEntriesFromWordLines(lines) {
     if (!Array.isArray(lines) || !lines.length) return [];
@@ -177,21 +178,21 @@ export function createLyricsController(deps) {
     await promise;
   }
 
+  function buildCurrentLyricsSnapshot() {
+    const currentTrack = getPlayQueue()[getPlayIndex()] || null;
+    const audioEl = getAudioEl();
+    const audioNow = audioEl?.currentTime ?? 0;
+    const payload = lyricDisplayForDesktop({ currentTrack, currentTime: audioNow, lrcEntries, wordLines, idleLine1: idleText.line1, idleLine2: idleText.line2 });
+    payload.audioPlaying = !!audioEl && !audioEl.paused;
+    lastSnapshot = { currentTrack, lrcEntries, payload, wordLines };
+    return lastSnapshot;
+  }
+
   async function syncDesktopLyrics() {
     if (!getDesktopLyricsOpen() && !trayLabel.isEnabled()) return;
     await ensureLrcLoadedForCurrentTrackDedup(getPlayLoadGeneration());
-    const current = getPlayQueue()[getPlayIndex()] || null;
-    const audioEl = getAudioEl();
-    const audioNow = audioEl?.currentTime ?? 0;
-    const payload = lyricDisplayForDesktop({
-      currentTrack: current,
-      currentTime: audioNow,
-      lrcEntries,
-      wordLines,
-      idleLine1: idleText.line1,
-      idleLine2: idleText.line2,
-    });
-    payload.audioPlaying = !!audioEl && !audioEl.paused;
+    const { currentTrack: current, payload } = buildCurrentLyricsSnapshot();
+    const audioNow = Number(payload.audioNow) || 0;
     await pushDesktopLyricsLines(payload);
     await trayLabel.sync(payload, current, payload.audioPlaying);
 
@@ -231,6 +232,7 @@ export function createLyricsController(deps) {
   function clearLyricsCache() {
     lrcCacheKey = null;
     wordLines = null;
+    lastSnapshot = null;
   }
 
   function setDesktopLyricsIdleText(line1, line2) {
@@ -248,9 +250,16 @@ export function createLyricsController(deps) {
     lrcEntries = parsedLrcEntries.length ? parsedLrcEntries : lrcEntriesFromWordLines(parsedWordLines);
     wordLines = parsedWordLines;
     lrcCacheKey = currentPlayableKey(current) || null;
+    buildCurrentLyricsSnapshot();
     await syncDesktopLyrics();
   }
 
+  function refreshCurrentLyricsSnapshot() { buildCurrentLyricsSnapshot(); }
+  function readCurrentLyricsSnapshot() { return lastSnapshot; }
+  async function getCurrentLyricsSnapshot() {
+    await ensureLrcLoadedForCurrentTrackDedup(getPlayLoadGeneration());
+    return buildCurrentLyricsSnapshot();
+  }
   const windows = createLyricsWindowController({
     WebviewWindow,
     getAudioEl,
@@ -264,6 +273,7 @@ export function createLyricsController(deps) {
     setDesktopLyricsWindow,
     setDockLyricsActive,
     ensureLrcLoadedForCurrentTrack,
+    getCurrentLyricsSnapshot,
     syncDesktopLyricsState,
   });
 
@@ -274,11 +284,14 @@ export function createLyricsController(deps) {
     clearLyricsCache,
     currentPlayableKey,
     ensureLrcLoadedForCurrentTrack,
+    getCurrentLyricsSnapshot,
     openDesktopLyricsFromSettingsIfNeeded: windows.openDesktopLyricsFromSettingsIfNeeded,
     closeDesktopLyrics: windows.closeDesktopLyrics,
     openLyricsReplaceWindow: windows.openLyricsReplaceWindow,
     refreshLyricsLockMenuLabel,
+    refreshCurrentLyricsSnapshot,
     scheduleDesktopLyricsStateSync: windows.scheduleDesktopLyricsStateSync,
+    readCurrentLyricsSnapshot,
     setDesktopLyricsIdleText,
     syncDesktopLyrics,
     syncDesktopLyricsState,

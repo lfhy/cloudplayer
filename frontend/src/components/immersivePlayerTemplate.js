@@ -4,11 +4,16 @@ import { iconSvgByName } from "../app/helpers/icons.js";
 // Immersive player template renders the large two-column listening experience overlay.
 export function immersivePlayerTemplate() {
   const fallbackCover = fallbackCoverDataUri(320, 32);
+  const collapseIcon = `
+    <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+      <path d="m6 9 6 6 6-6"></path>
+    </svg>
+  `;
   return `
     <section id="immersive-player" class="immersive-player" hidden aria-hidden="true">
       <div class="immersive-player__backdrop"></div>
       <div class="immersive-player__content">
-        <button type="button" id="btn-immersive-close" class="immersive-player__close" aria-label="退出沉浸模式" title="退出沉浸模式">${iconSvgByName("close-linear")}</button>
+        <button type="button" id="btn-immersive-close" class="immersive-player__close" aria-label="收起沉浸模式" title="收起沉浸模式">${collapseIcon}</button>
         <div class="immersive-player__panel immersive-player__panel--meta">
           <div class="immersive-player__cover-wrap">
             <img id="immersive-cover" class="immersive-player__cover" src="${fallbackCover}" alt="" width="320" height="320" />

@@ -108,6 +108,7 @@ export function createBasePlayerRuntime(deps) {
     playFromQueueIndex: (...args) => playback.playFromQueueIndex(...args),
     playModeItems: deps.playModeItems,
     randomNextIndex: (...args) => deps.randomNextIndex(...args),
+    refreshCurrentLyricsSnapshot: () => lyrics.refreshCurrentLyricsSnapshot(),
     setAudioProgressLogLastTs: deps.setAudioProgressLogLastTs,
     setSeekDragging: deps.setSeekDragging,
     syncDesktopLyrics: () => lyrics.syncDesktopLyrics(),

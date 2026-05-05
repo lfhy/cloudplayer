@@ -34,9 +34,11 @@ export function createPlayerChromeController(deps) {
   function syncSeekUi() {
     const audio = getAudioEl();
     const seek = document.getElementById("seek");
+    const current = document.getElementById("time-current");
     const total = document.getElementById("time-total");
-    if (!audio || !seek || !total) return;
+    if (!audio || !seek || !current || !total) return;
     const duration = audio.duration;
+    current.textContent = formatTime(audio.currentTime || 0);
     if (duration && Number.isFinite(duration) && duration > 0) {
       total.textContent = formatTime(duration);
       if (!getSeekDragging()) {
@@ -47,6 +49,7 @@ export function createPlayerChromeController(deps) {
       seek.style.setProperty("--seek-progress", `${Number(seek.value) / 10}%`);
       return;
     }
+    current.textContent = "0:00";
     total.textContent = "0:00";
     seek.value = "0";
     seek.disabled = !audio.src;

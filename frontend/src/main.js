@@ -182,10 +182,11 @@ restorePlaybackState = playbackState.restorePlaybackState;
 const immersive = createImmersiveController({
   formatTime,
   getAudioEl: audioEl,
+  getCurrentLyricsSnapshot: (...args) => player.getCurrentLyricsSnapshot(...args),
   getPlayIndex: () => playIndex,
   getPlayQueue: () => playQueue,
   getSeekDragging: () => seekDragging,
-  invoke,
+  readCurrentLyricsSnapshot: (...args) => player.readCurrentLyricsSnapshot(...args),
   setSeekDragging: (value) => { seekDragging = value; },
 });
 startDesktopRuntime({

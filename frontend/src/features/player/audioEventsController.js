@@ -18,6 +18,7 @@ export function createAudioEventsController(deps) {
     playFromQueueIndex,
     playModeItems,
     randomNextIndex,
+    refreshCurrentLyricsSnapshot,
     setAudioProgressLogLastTs,
     setSeekDragging,
     syncDesktopLyrics,
@@ -33,6 +34,7 @@ export function createAudioEventsController(deps) {
     let lastTrayBroadcastTs = 0;
     audio.addEventListener("timeupdate", () => {
       syncSeekUi();
+      refreshCurrentLyricsSnapshot?.();
       void syncDesktopLyrics();
       const now = Date.now();
       if (now - lastTrayBroadcastTs >= 1000) {
@@ -42,6 +44,7 @@ export function createAudioEventsController(deps) {
     });
     audio.addEventListener("loadedmetadata", () => {
       syncSeekUi();
+      refreshCurrentLyricsSnapshot?.();
       if (getAudioSourceGeneration() === getPlayLoadGeneration()) {
         void logPlayEventDesktop("audio_loadedmetadata", {
           url: audio.src || null,
@@ -49,8 +52,14 @@ export function createAudioEventsController(deps) {
         });
       }
     });
-    audio.addEventListener("durationchange", () => syncSeekUi());
-    audio.addEventListener("canplay", () => syncSeekUi());
+    audio.addEventListener("durationchange", () => {
+      syncSeekUi();
+      refreshCurrentLyricsSnapshot?.();
+    });
+    audio.addEventListener("canplay", () => {
+      syncSeekUi();
+      refreshCurrentLyricsSnapshot?.();
+    });
     audio.addEventListener("progress", () => {
       if (getAudioSourceGeneration() !== getPlayLoadGeneration()) return;
       const now = Date.now();
@@ -69,6 +78,7 @@ export function createAudioEventsController(deps) {
       });
     });
     audio.addEventListener("ended", () => {
+      refreshCurrentLyricsSnapshot?.();
       if (getAudioSourceGeneration() === getPlayLoadGeneration()) {
         void logPlayEventDesktop("audio_ended", {
           url: audio.src || null,
@@ -80,11 +90,13 @@ export function createAudioEventsController(deps) {
     });
     audio.addEventListener("play", () => {
       setPlayButtonIcon(playButton, true);
+      refreshCurrentLyricsSnapshot?.();
       void broadcastTrayPlayerState();
       void syncDesktopLyrics();
     });
     audio.addEventListener("pause", () => {
       setPlayButtonIcon(playButton, false);
+      refreshCurrentLyricsSnapshot?.();
       void broadcastTrayPlayerState();
       void syncDesktopLyrics();
     });

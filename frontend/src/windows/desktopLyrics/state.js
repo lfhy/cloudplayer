@@ -20,5 +20,6 @@ export const desktopLyricsState = {
   hiColor: "rgb(255, 183, 212)",
   syncedAudioNow: 0,
   syncedWallNow: 0,
+  lastReportedAudioNow: 0,
   syncToken: "",
 };

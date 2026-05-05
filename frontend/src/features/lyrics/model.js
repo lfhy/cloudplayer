@@ -43,10 +43,10 @@ export function lyricDisplayForDesktop({ currentTrack, currentTime, lrcEntries, 
   const idleLine1Text = String(idleLine1 || LYRICS_IDLE_LINE1).trim() || LYRICS_IDLE_LINE1;
   const idleLine2Text = String(idleLine2 || LYRICS_IDLE_LINE2).trim() || LYRICS_IDLE_LINE2;
   if (!currentTrack) {
-    return { line1: idleLine1Text, line2: idleLine2Text, idleMode: true, activeSlot: 1, line1StartT: 0, line1EndT: 1, line2StartT: 0, line2EndT: 1, line1Words: null, line2Words: null, audioNow: now };
+    return { line1: idleLine1Text, line2: idleLine2Text, idleMode: true, activeIndex: -1, activeSlot: 1, line1Index: -1, line1StartT: 0, line1EndT: 1, line2Index: -1, line2StartT: 0, line2EndT: 1, line1Words: null, line2Words: null, audioNow: now };
   }
   if (!lrcEntries.length) {
-    return { line1: currentTrack.title || "—", line2: currentTrack.artist || "在线试听", activeSlot: 1, line1StartT: 0, line1EndT: 1, line2StartT: 0, line2EndT: 1, line1Words: null, line2Words: null, audioNow: now };
+    return { line1: currentTrack.title || "—", line2: currentTrack.artist || "在线试听", activeIndex: -1, activeSlot: 1, line1Index: -1, line1StartT: 0, line1EndT: 1, line2Index: -1, line2StartT: 0, line2EndT: 1, line1Words: null, line2Words: null, audioNow: now };
   }
   let index = 0;
   for (let cursor = 0; cursor < lrcEntries.length; cursor += 1) {
@@ -59,7 +59,7 @@ export function lyricDisplayForDesktop({ currentTrack, currentTime, lrcEntries, 
   const startT = currentLine?.t ?? 0;
   const endT = nextLine ? nextLine.t : startT + 4;
   if (index % 2 === 0) {
-    return { line1: currentLine?.text || "—", line2: nextLine?.text || "\u00a0", activeSlot: 1, line1StartT: startT, line1EndT: endT, line2StartT: 0, line2EndT: 0, line1Words: wordLines?.[index] ?? null, line2Words: nextLine ? wordLines?.[index + 1] ?? null : null, audioNow: now };
+    return { line1: currentLine?.text || "—", line2: nextLine?.text || "\u00a0", activeIndex: index, activeSlot: 1, line1Index: index, line1StartT: startT, line1EndT: endT, line2Index: nextLine ? index + 1 : -1, line2StartT: 0, line2EndT: 0, line1Words: wordLines?.[index] ?? null, line2Words: nextLine ? wordLines?.[index + 1] ?? null : null, audioNow: now };
   }
-  return { line1: prevLine?.text || "\u00a0", line2: currentLine?.text || "—", activeSlot: 2, line1StartT: 0, line1EndT: 0, line2StartT: startT, line2EndT: endT, line1Words: prevLine ? wordLines?.[index - 1] ?? null : null, line2Words: wordLines?.[index] ?? null, audioNow: now };
+  return { line1: prevLine?.text || "\u00a0", line2: currentLine?.text || "—", activeIndex: index, activeSlot: 2, line1Index: prevLine ? index - 1 : -1, line1StartT: 0, line1EndT: 0, line2Index: index, line2StartT: startT, line2EndT: endT, line1Words: prevLine ? wordLines?.[index - 1] ?? null : null, line2Words: wordLines?.[index] ?? null, audioNow: now };
 }

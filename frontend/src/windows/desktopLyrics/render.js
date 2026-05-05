@@ -120,18 +120,31 @@ function syncedCurrentTime(anchor) {
     anchor.line1EndT,
     anchor.line2StartT,
     anchor.line2EndT,
-    anchor.audioNow,
     anchor.audioPlaying ? 1 : 0,
   ].join("|");
+  const reportedNow = Number(anchor.audioNow) || 0;
+  const now = performance.now();
   if (desktopLyricsState.syncToken !== token) {
     desktopLyricsState.syncToken = token;
-    desktopLyricsState.syncedAudioNow = Number(anchor.audioNow) || 0;
-    desktopLyricsState.syncedWallNow = performance.now();
+    desktopLyricsState.syncedAudioNow = reportedNow;
+    desktopLyricsState.syncedWallNow = now;
+    desktopLyricsState.lastReportedAudioNow = reportedNow;
   }
   if (!anchor.audioPlaying) {
-    return Number(anchor.audioNow) || 0;
+    desktopLyricsState.syncedAudioNow = reportedNow;
+    desktopLyricsState.syncedWallNow = now;
+    desktopLyricsState.lastReportedAudioNow = reportedNow;
+    return reportedNow;
   }
-  return desktopLyricsState.syncedAudioNow + Math.max(0, performance.now() - desktopLyricsState.syncedWallNow) / 1000;
+  if (Math.abs(reportedNow - desktopLyricsState.lastReportedAudioNow) > 0.0005) {
+    const projectedNow = desktopLyricsState.syncedAudioNow + Math.max(0, now - desktopLyricsState.syncedWallNow) / 1000;
+    const drift = reportedNow - projectedNow;
+    // Small negative drift is just IPC/update jitter; clamp it so the fill never visibly rewinds.
+    desktopLyricsState.syncedAudioNow = drift >= -0.18 ? Math.max(projectedNow, reportedNow) : reportedNow;
+    desktopLyricsState.syncedWallNow = now;
+    desktopLyricsState.lastReportedAudioNow = reportedNow;
+  }
+  return desktopLyricsState.syncedAudioNow + Math.max(0, now - desktopLyricsState.syncedWallNow) / 1000;
 }
 
 export function animateLyrics() {
