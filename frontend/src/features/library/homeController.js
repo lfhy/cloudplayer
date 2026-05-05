@@ -20,6 +20,7 @@ export function createHomeController(deps) {
   let dailyRecommendationDate = "";
   let midnightRefreshTimer = null;
   let dailySaveInFlight = false;
+  let homeRenderSeq = 0;
 
   function logDailyFlow(stage, detail = {}) {
     console.info("[daily]", stage, {
@@ -146,8 +147,9 @@ export function createHomeController(deps) {
     button.className = "home-row-item";
     const cover = coverImgHtml({ src: item.cover_url || "", className: "home-row-item__cover", width: 44, height: 44, radius: 10, alt: item.title || "" });
     const artist = item.artist || (item.local_path ? "本地音乐" : "在线曲目");
+    const rank = String(index + 1).padStart(2, "0");
     button.innerHTML = `
-      <span class="home-row-item__idx">${index + 1}</span>
+      <span class="home-row-item__idx">${rank}</span>
       ${cover}
       <span class="home-row-item__info">
         <strong>${escapeHtml(item.title || "—")}</strong>
@@ -161,6 +163,7 @@ export function createHomeController(deps) {
   }
 
   async function renderHomePage() {
+    const renderSeq = ++homeRenderSeq;
     const playlistCountEl = document.getElementById("home-playlist-count");
     const recentCountEl = document.getElementById("home-recent-count");
     const downloadCountEl = document.getElementById("home-download-count");
@@ -168,8 +171,9 @@ export function createHomeController(deps) {
     const dailyList = document.getElementById("home-daily-grid");
     const greetingEl = document.getElementById("home-greeting");
     const dateLineEl = document.getElementById("home-date-line");
-    const recentRows = getSessionRecentPlays();
     const recommendations = await ensureDailyRecommendations();
+    if (renderSeq !== homeRenderSeq) return;
+    const recentRows = getSessionRecentPlays();
     const hour = new Date().getHours();
     if (greetingEl) greetingEl.textContent = hour < 11 ? "早上好" : hour < 18 ? "下午好" : "晚上好";
     if (dateLineEl) dateLineEl.textContent = `${new Date().toLocaleDateString("zh-CN", { weekday: "long", month: "long", day: "numeric" })} · ${recentRows.length ? `共 ${recentRows.length} 首播放记录` : "先开始听几首歌吧"}`;
@@ -180,7 +184,7 @@ export function createHomeController(deps) {
       if (!recommendations.length) {
         dailyList.innerHTML = '<p class="home-empty muted">需要一些播放记录后才会生成每日推荐。</p>';
       } else {
-        recommendations.slice(0, 10).forEach((item, index) => dailyList.appendChild(createListRow(item, index, "daily")));
+        recommendations.slice(0, 12).forEach((item, index) => dailyList.appendChild(createListRow(item, index, "daily")));
       }
     }
     if (recentList) {
@@ -188,7 +192,7 @@ export function createHomeController(deps) {
       if (!recentRows.length) {
         recentList.innerHTML = '<p class="home-empty muted">还没有最近播放，去搜索或导入歌单开始吧。</p>';
       } else {
-        recentRows.slice(0, 10).forEach((item, index) => recentList.appendChild(createListRow(item, index, "recent")));
+        recentRows.slice(0, 12).forEach((item, index) => recentList.appendChild(createListRow(item, index, "recent")));
       }
     }
     void invoke("list_playlists")
