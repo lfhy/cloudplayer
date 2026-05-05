@@ -7,6 +7,7 @@ export function renderTrackTableRows(tbody, rows, options) {
     escapeHtml,
     formatDurationMs,
     getLikedIds,
+    onClick,
     onContextMenu,
     onDoubleClick,
     rowTitle,
@@ -29,7 +30,11 @@ export function renderTrackTableRows(tbody, rows, options) {
       <td class="col-like muted">${likeSourceId && likedIds.has(likeSourceId) ? "♥" : "♡"}</td>
       <td class="muted col-dur">${formatDurationMs(row.duration_ms)}</td>`;
     tr.style.cursor = row.playable ? "pointer" : "default";
-    tr.title = typeof rowTitle === "function" ? rowTitle(row, index) : "";
+    const title = typeof rowTitle === "function" ? rowTitle(row, index) : "";
+    if (title) tr.title = title;
+    if (row.playable && typeof onClick === "function") {
+      tr.addEventListener("click", () => onClick(index, row));
+    }
     if (row.playable && typeof onDoubleClick === "function") {
       tr.addEventListener("dblclick", () => onDoubleClick(index, row));
     }

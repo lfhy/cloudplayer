@@ -226,8 +226,7 @@ export function createHomeController(deps) {
       escapeHtml,
       formatDurationMs,
       getLikedIds,
-      onDoubleClick: (index, row) => playSingleItem(row),
-      rowTitle: () => "双击播放该推荐曲目",
+      onClick: (index, row) => playSingleItem(row),
     });
   }
 
