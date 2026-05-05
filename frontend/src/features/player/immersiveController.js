@@ -1,14 +1,19 @@
 import { setCoverImageSource } from "../../app/helpers/covers.js";
 import { currentPlayableKey } from "../lyrics/model.js";
-import { buildLyricLineHtml } from "./immersiveLyricsView.js";
+import { buildLyricLineHtml, lineProgressRatio } from "./immersiveLyricsView.js";
+import { applyActiveLyricProgress, applyLyricLineStates, captureLyricLineElements, centerActiveLyricLine } from "./lyricsMotionController.js";
+import { createLyricTimingSmoother } from "./lyricTimingSmoother.js";
 import { setPlayButtonIcon } from "./playButtonIcon.js";
 
 // Immersive mode renders from the shared lyrics snapshot using stable line-level sync.
 export function createImmersiveController(deps) {
   const { formatTime, getAudioEl, getCurrentLyricsSnapshot, getPlayIndex, getPlayQueue, getSeekDragging, readCurrentLyricsSnapshot, setSeekDragging } = deps;
+  const timing = createLyricTimingSmoother();
   let activeLineIndex = -1, closeTimer = 0, currentMetaKey = "", open = false, renderedWindowKey = "", syncTimer = 0;
   let lyricsSnapshot = null, snapshotKey = "", snapshotLoadingKey = "", snapshotPromise = null;
   let lyricAnchor = null;
+  let lyricLineElements = [];
+  let activeLineProgress = -1;
   let manualScrollUntil = 0;
 
   function currentTrack() { return getPlayQueue()[getPlayIndex()] || null; }
@@ -141,6 +146,9 @@ export function createImmersiveController(deps) {
       if (force || renderedWindowKey !== "idle") {
         renderedWindowKey = "idle";
         activeLineIndex = -1;
+        activeLineProgress = -1;
+        lyricLineElements = [];
+        timing.resetProgress();
         box.innerHTML = '<p class="immersive-player__lyrics-empty">选择歌曲后即可进入沉浸歌词模式</p>';
       }
       return;
@@ -152,9 +160,12 @@ export function createImmersiveController(deps) {
       if (force || renderedWindowKey !== mode) {
         renderedWindowKey = mode;
         activeLineIndex = -1;
+        activeLineProgress = -1;
+        timing.resetProgress();
         box.innerHTML = waiting
           ? '<p class="immersive-player__lyrics-empty">歌词加载中...</p>'
           : [buildLyricLineHtml({ text: track.title || "当前歌曲" }, 0), buildLyricLineHtml({ text: track.artist || "暂无滚动歌词" }, 1)].join("");
+        lyricLineElements = captureLyricLineElements(box, ".immersive-player__lyrics-line");
         if (!waiting) box.querySelector('.immersive-player__lyrics-line[data-lyric-index="0"]')?.classList.add("is-active");
       }
       return;
@@ -164,27 +175,34 @@ export function createImmersiveController(deps) {
     if (force || renderedWindowKey !== windowKey) {
       renderedWindowKey = windowKey;
       box.innerHTML = entries.map((entry, absoluteIndex) => buildLyricLineHtml(entry, absoluteIndex)).join("");
+      lyricLineElements = captureLyricLineElements(box, ".immersive-player__lyrics-line");
+      activeLineIndex = -1;
+      activeLineProgress = -1;
+      timing.resetProgress();
     }
     updateVisibleLineState(box, { entries, index, payload: anchor });
   }
 
   function updateVisibleLineState(box, state) {
-    box.querySelectorAll(".immersive-player__lyrics-line").forEach((line) => {
-      const index = Number(line.getAttribute("data-lyric-index"));
-      line.classList.toggle("is-active", index === state.index);
-      line.classList.toggle("is-past", index < state.index);
-      line.classList.toggle("is-future", index > state.index);
-      const ratio = index <= state.index ? 1 : 0;
-      line.style.setProperty("--line-progress", `${Math.max(0, Math.min(1, ratio)) * 100}%`);
-    });
+    const token = [currentMetaKey, state.index, state?.payload?.line1, state?.payload?.line2, state?.payload?.line1StartT, state?.payload?.line2StartT].join("|");
+    const currentTime = timing.syncedCurrentTime(token, state?.payload);
+    const wordLines = Array.isArray(lyricsSnapshot?.wordLines) ? lyricsSnapshot.wordLines : null;
+    const rawRatio = lineProgressRatio({ index: state.index, activeIndex: state.index, entries: state.entries, wordLines, currentTime });
+    const activeEntry = state.entries[state.index];
+    const nextEntry = state.entries[state.index + 1];
+    const lineKey = `${currentMetaKey}|${state.index}|${activeEntry?.text || ""}|${activeEntry?.t || 0}|${nextEntry?.t || (activeEntry?.t || 0) + 4}`;
+    const ratio = timing.monotonicProgress(lineKey, currentTime, rawRatio);
+    if (state.index !== activeLineIndex) {
+      applyLyricLineStates(lyricLineElements, state.index, ratio);
+      activeLineProgress = ratio;
+    } else if (Math.abs(ratio - activeLineProgress) > 0.003) {
+      applyActiveLyricProgress(lyricLineElements, state.index, ratio);
+      activeLineProgress = ratio;
+    }
     if (state.index !== activeLineIndex) {
       activeLineIndex = state.index;
       if (Date.now() >= manualScrollUntil) {
-        const activeLine = box.querySelector(`.immersive-player__lyrics-line[data-lyric-index="${state.index}"]`);
-        if (activeLine) {
-          const targetTop = activeLine.offsetTop - (box.clientHeight - activeLine.offsetHeight) / 2;
-          box.scrollTo({ top: Math.max(0, targetTop), behavior: "smooth" });
-        }
+        centerActiveLyricLine(box, lyricLineElements, state.index);
       }
     }
   }

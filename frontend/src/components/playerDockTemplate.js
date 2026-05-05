@@ -5,6 +5,7 @@ import { iconSvgByName } from "../app/helpers/icons.js";
 export function playerDockTemplate() {
   const fallbackCover = fallbackCoverDataUri(52, 10);
   const playIcon = iconSvgByName("play-bold");
+  const miniIcon = iconSvgByName("to-pip-linear");
   return `
     <footer class="dock-player" aria-label="播放控制">
       <div class="dock-player__left">
@@ -35,6 +36,7 @@ export function playerDockTemplate() {
         </div>
       </div>
       <div class="dock-player__tools">
+        <button type="button" id="btn-dock-mini" class="dock-ic" title="进入 Mini 模式" aria-label="进入 Mini 模式">${miniIcon}</button>
         <div class="dock-menu-anchor"><button type="button" id="dock-theme-mode" class="dock-chip dock-chip--icon" title="界面模式" aria-label="界面模式"></button></div>
         <div class="dock-menu-anchor"><button type="button" id="dock-quality" class="dock-chip" title="音质偏好（展示；下载以菜单为准）">标准</button><div id="popover-quality" class="dock-menu dock-menu--up dock-menu--right" role="menu" hidden><button type="button" class="dock-menu__item" data-quality="flac">无损</button><button type="button" class="dock-menu__item" data-quality="320">HQ</button><button type="button" class="dock-menu__item" data-quality="128">标准</button></div></div>
         <button type="button" id="btn-dock-lyrics" class="dock-ic dock-ic--accent" title="桌面歌词（独立窗口）">词</button>

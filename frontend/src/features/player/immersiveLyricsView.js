@@ -40,6 +40,18 @@ export function plainCoverageRatio(startT, endT, currentTime) {
   return duration > 0 ? Math.min(1, Math.max(0, (currentTime - startT) / duration)) : 1;
 }
 
+export function lineProgressRatio({ index, activeIndex, entries, wordLines, currentTime }) {
+  if (index < activeIndex) return 1;
+  if (index > activeIndex) return 0;
+  const entry = entries[index];
+  const nextEntry = entries[index + 1];
+  const wordLine = Array.isArray(wordLines) ? wordLines[index] : null;
+  const ratio = wordLine
+    ? wordCoverageRatio(wordLine, currentTime)
+    : plainCoverageRatio(entry?.t || 0, nextEntry?.t || (entry?.t || 0) + 4, currentTime);
+  return ratio < 0 ? 0 : Math.max(0, Math.min(1, ratio));
+}
+
 export function lyricViewportState({ currentTrack, currentTime, lrcEntries, wordLines }) {
   if (!currentTrack || !lrcEntries.length) return null;
   const payload = lyricDisplayForDesktop({

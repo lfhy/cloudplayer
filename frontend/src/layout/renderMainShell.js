@@ -4,6 +4,7 @@ import { closeConfirmModalTemplate } from "../components/closeConfirmModalTempla
 import { kugouPlaylistPreviewModalTemplate } from "../components/kugouPlaylistPreviewModalTemplate.js";
 import { playlistManageModalTemplate } from "../components/playlistManageModalTemplate.js";
 import { immersivePlayerTemplate } from "../components/immersivePlayerTemplate.js";
+import { miniPlayerTemplate } from "../components/miniPlayerTemplate.js";
 import { playerDockTemplate } from "../components/playerDockTemplate.js";
 import { queuePanelTemplate } from "../components/queuePanelTemplate.js";
 import { dailyPageTemplate } from "../pages/dailyPageTemplate.js";
@@ -43,6 +44,7 @@ export function renderMainShell(root = document.getElementById("app")) {
         ${immersivePlayerTemplate()}
       </div>
     </div>
+    ${miniPlayerTemplate()}
     ${accountCenterModalTemplate()}
     ${closeConfirmModalTemplate()}
     ${kugouPlaylistPreviewModalTemplate()}

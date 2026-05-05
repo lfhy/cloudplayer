@@ -19,6 +19,7 @@ import { startDesktopRuntime } from "./app/runtime/startupRuntime.js";
 import { renderMainShell } from "./layout/renderMainShell.js";
 import { createPlaybackStatePersistence } from "./features/player/playbackStatePersistence.js";
 import { createImmersiveController } from "./features/player/immersiveController.js";
+import { createMiniModeController } from "./features/player/miniModeController.js";
 
 // Composition root: only shared mutable state and runtime assembly stay here.
 const searchState = { keyword: "", page: 1, hasNext: false, results: [], scope: "catalog", busy: false, playlistResults: [], view: "home" };
@@ -189,6 +190,17 @@ const immersive = createImmersiveController({
   readCurrentLyricsSnapshot: (...args) => player.readCurrentLyricsSnapshot(...args),
   setSeekDragging: (value) => { seekDragging = value; },
 });
+const miniMode = createMiniModeController({
+  closeImmersive: () => immersive.close(),
+  formatTime,
+  getAudioEl: audioEl,
+  getCurrentLyricsSnapshot: (...args) => player.getCurrentLyricsSnapshot(...args),
+  getPlayIndex: () => playIndex,
+  getPlayQueue: () => playQueue,
+  getSeekDragging: () => seekDragging,
+  readCurrentLyricsSnapshot: (...args) => player.readCurrentLyricsSnapshot(...args),
+  setSeekDragging: (value) => { seekDragging = value; },
+});
 startDesktopRuntime({
   alertRequestFailed, applyAppTheme, applyPlatformClassNames, dock, emitTo, getMainWindowCloseAction: () => mainWindowCloseAction, getPlayIndex: () => playIndex, getPlayLoadGeneration: () => playLoadGeneration,
   getPlayQueue: () => playQueue, getSelectedPlaylistId: () => selectedPlaylistId, getSelectedPlaylistName: () => selectedPlaylistName, hotkeys, invoke, listen, loadPlaylistDetail,
@@ -211,4 +223,7 @@ startDesktopRuntime({
     else if (action === "open-main") await invoke("show_main_window").catch((error) => console.warn("show_main_window from tray-player-command", error));
   },
   wireAccountCenter: (...args) => wireAccountCenter(...args),
+});
+document.addEventListener("DOMContentLoaded", () => {
+  miniMode.wire();
 });
