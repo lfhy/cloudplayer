@@ -1,3 +1,4 @@
+import { navIconSvg } from "../../app/helpers/icons.js";
 import { setCoverImageSource } from "../../app/helpers/covers.js";
 import { renderTrackTableRows } from "./trackTableRenderer.js";
 import { createPlaylistEnrichHelpers } from "./playlistEnrichHelpers.js";
@@ -29,6 +30,18 @@ export function createPlaylistController(deps) {
     warnRequestFailed,
   } = deps;
   const enrich = createPlaylistEnrichHelpers({ invoke, warnRequestFailed });
+
+  function syncSidebarPlaylistActiveState(playlistID = getSelectedPlaylistId(), forceActive = false) {
+    const list = document.getElementById("sidebar-playlist-list");
+    if (!list) return;
+    const playlistPageActive =
+      forceActive || document.querySelector('.page[data-page="playlist"]')?.classList.contains("page-active") === true;
+    list.querySelectorAll(".sidebar-pl-item").forEach((item) => {
+      const itemPlaylistID = Number(item.getAttribute("data-playlist-id") || 0);
+      const active = playlistPageActive && playlistID != null && itemPlaylistID === Number(playlistID);
+      item.classList.toggle("is-active", active);
+    });
+  }
 
   async function refreshPlaylistSelect() {
     const select = document.getElementById("import-merge-playlist");
@@ -81,14 +94,16 @@ export function createPlaylistController(deps) {
     playlists.forEach((playlist) => {
       const li = document.createElement("li");
       li.className = "sidebar-pl-item";
-      if (getSelectedPlaylistId() === playlist.id) li.classList.add("is-active");
-      li.textContent = playlist.name?.trim() || `歌单 ${playlist.id}`;
+      li.setAttribute("data-playlist-id", String(playlist.id));
+      li.innerHTML = `
+        <span class="sidebar-pl-item__icon" aria-hidden="true">${navIconSvg("playlist")}</span>
+        <span class="sidebar-pl-item__label">${escapeHtml(playlist.name?.trim() || `歌单 ${playlist.id}`)}</span>
+      `;
       li.title = `id=${playlist.id} · 查看导入曲目`;
       li.addEventListener("click", () => {
         setSelectedPlaylist(playlist.id, playlist.name || "");
-        list.querySelectorAll(".sidebar-pl-item").forEach((item) => item.classList.remove("is-active"));
-        li.classList.add("is-active");
         setPage("playlist");
+        syncSidebarPlaylistActiveState(playlist.id);
       });
       li.addEventListener("contextmenu", (event) => {
         event.preventDefault();
@@ -96,6 +111,7 @@ export function createPlaylistController(deps) {
       });
       list.appendChild(li);
     });
+    syncSidebarPlaylistActiveState();
     if (document.querySelector('.page[data-page="home"]')?.classList.contains("page-active")) renderHomePage();
   }
 
@@ -126,6 +142,7 @@ export function createPlaylistController(deps) {
 
   async function loadPlaylistDetail(id, name) {
     setSelectedPlaylist(id, name || "");
+    syncSidebarPlaylistActiveState(id, true);
     const titleEl = document.getElementById("playlist-page-title");
     if (titleEl) titleEl.textContent = name || "歌单";
     try {
@@ -219,6 +236,7 @@ export function createPlaylistController(deps) {
     refreshSidebarPlaylists,
     renderPlaylistDetailTable,
     searchLocalPlaylists,
+    syncSidebarPlaylistActiveState,
     wirePlaylistPage,
   };
 }

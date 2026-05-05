@@ -27,6 +27,9 @@ export function createNavigationController(deps) {
     document.querySelectorAll(".nav-item").forEach((button) => {
       button.classList.toggle("active", button.dataset.page === pageId);
     });
+    document.querySelectorAll(".sidebar-pl-item").forEach((item) => {
+      if (pageId !== "playlist") item.classList.remove("is-active");
+    });
     document.querySelectorAll(".page").forEach((page) => {
       page.classList.toggle("page-active", page.dataset.page === pageId);
     });
