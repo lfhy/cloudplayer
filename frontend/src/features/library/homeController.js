@@ -1,5 +1,6 @@
 // Home controller keeps landing-page recommendations and recents outside main.js.
 import { coverImgHtml } from "../../app/helpers/covers.js";
+import { renderFittedHomeRows } from "./homeListFit.js";
 import { renderTrackTableRows } from "./trackTableRenderer.js";
 
 export function createHomeController(deps) {
@@ -184,7 +185,7 @@ export function createHomeController(deps) {
       if (!recommendations.length) {
         dailyList.innerHTML = '<p class="home-empty muted">需要一些播放记录后才会生成每日推荐。</p>';
       } else {
-        recommendations.slice(0, 12).forEach((item, index) => dailyList.appendChild(createListRow(item, index, "daily")));
+        renderFittedHomeRows(dailyList, recommendations.slice(0, 12), (item, index) => createListRow(item, index, "daily"));
       }
     }
     if (recentList) {
@@ -192,7 +193,7 @@ export function createHomeController(deps) {
       if (!recentRows.length) {
         recentList.innerHTML = '<p class="home-empty muted">还没有最近播放，去搜索或导入歌单开始吧。</p>';
       } else {
-        recentRows.slice(0, 12).forEach((item, index) => recentList.appendChild(createListRow(item, index, "recent")));
+        renderFittedHomeRows(recentList, recentRows.slice(0, 12), (item, index) => createListRow(item, index, "recent"));
       }
     }
     void invoke("list_playlists")
