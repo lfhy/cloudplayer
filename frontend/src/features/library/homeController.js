@@ -231,7 +231,7 @@ export function createHomeController(deps) {
     });
   }
 
-  async function saveDailyRecommendationsAsPlaylist() {
+  async function saveDailyRecommendationsAsPlaylist(playlistName) {
     if (dailySaveInFlight) return;
     dailySaveInFlight = true;
     const button = document.getElementById("btn-save-daily-playlist");
@@ -240,8 +240,8 @@ export function createHomeController(deps) {
       const rows = await ensureDailyRecommendations();
       if (!rows.length) return;
       const today = new Date().toISOString().slice(0, 10);
-      const playlistName = `每日推荐 ${today}`;
-      const playlistId = await invoke("create_playlist", { name: playlistName });
+      const finalName = String(playlistName || "").trim() || `每日推荐 ${today}`;
+      const playlistId = await invoke("create_playlist", { name: finalName });
       await invoke("replace_playlist_import_items", {
         playlistId,
         items: rows.map((row) => ({
@@ -253,7 +253,7 @@ export function createHomeController(deps) {
           duration_ms: Number(row.duration_ms || 0) || 0,
         })),
       });
-      await onDailySaved?.({ playlistId, playlistName, trackCount: rows.length });
+      await onDailySaved?.({ playlistId, playlistName: finalName, trackCount: rows.length });
     } catch (error) {
       alertRequestFailed?.(error, "save_daily_recommendations");
     } finally {

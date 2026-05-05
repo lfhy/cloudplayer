@@ -1,7 +1,7 @@
 // Playlist manage modal centralizes create, rename and delete confirmations without relying on prompt/confirm.
 export function createPlaylistManageModal(deps) {
   const { alertRequestFailed, invoke, onChanged } = deps;
-  let state = { mode: "create", playlistId: null, playlistName: "" };
+  let state = { mode: "create", playlistId: null, playlistName: "", subtitle: "", onSubmit: null };
   let wired = false;
   let submitting = false;
 
@@ -20,20 +20,26 @@ export function createPlaylistManageModal(deps) {
     statusEl().dataset.tone = tone;
   }
 
-  function openCreate(defaultName = "新歌单") {
-    state = { mode: "create", playlistId: null, playlistName: defaultName };
+  function openCreate(defaultName = "新歌单", options = {}) {
+    state = {
+      mode: "create",
+      playlistId: null,
+      playlistName: defaultName,
+      subtitle: options.subtitle || "",
+      onSubmit: typeof options.onSubmit === "function" ? options.onSubmit : null,
+    };
     render();
     show();
   }
 
   function openRename(playlistId, playlistName) {
-    state = { mode: "rename", playlistId, playlistName: playlistName || "" };
+    state = { mode: "rename", playlistId, playlistName: playlistName || "", subtitle: "", onSubmit: null };
     render();
     show();
   }
 
   function openDelete(playlistId) {
-    state = { mode: "delete", playlistId, playlistName: "" };
+    state = { mode: "delete", playlistId, playlistName: "", subtitle: "", onSubmit: null };
     render();
     show();
   }
@@ -58,7 +64,7 @@ export function createPlaylistManageModal(deps) {
     const deleting = state.mode === "delete";
     const renaming = state.mode === "rename";
     if (titleEl()) titleEl().textContent = deleting ? "删除歌单" : renaming ? "重命名歌单" : "新建歌单";
-    if (subtitleEl()) subtitleEl().textContent = deleting ? "删除后歌单内导入条目也会一起移除。" : "";
+    if (subtitleEl()) subtitleEl().textContent = deleting ? "删除后歌单内导入条目也会一起移除。" : (state.subtitle || "");
     if (inputWrapEl()) inputWrapEl().hidden = deleting;
     if (deleteCopyEl()) {
       deleteCopyEl().hidden = !deleting;
@@ -85,11 +91,14 @@ export function createPlaylistManageModal(deps) {
     if (confirmEl()) confirmEl().disabled = true;
     setStatus(deleting ? "正在删除歌单…" : "正在保存歌单…");
     try {
-      if (state.mode === "create") await invoke("create_playlist", { name: value });
+      if (state.mode === "create" && state.onSubmit) await state.onSubmit(value);
+      else if (state.mode === "create") await invoke("create_playlist", { name: value });
       if (state.mode === "rename") await invoke("rename_playlist", { playlistId: state.playlistId, name: value });
       if (state.mode === "delete") await invoke("delete_playlist", { playlistId: state.playlistId });
       hide();
-      await onChanged?.({ ...state, nextName: value || state.playlistName || "" });
+      if (!(state.mode === "create" && state.onSubmit)) {
+        await onChanged?.({ ...state, nextName: value || state.playlistName || "" });
+      }
     } catch (error) {
       setStatus("操作失败，请稍后重试。", "error");
       alertRequestFailed(error, `playlist_manage_${state.mode}`);

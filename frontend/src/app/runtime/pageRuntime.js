@@ -54,9 +54,8 @@ export function createPageRuntime(deps) {
     syncNeteaseCookieUi,
     warnRequestFailed,
   } = deps;
-  const settingsRefresh = async () => {
-    await deps.refreshKugouSettingsStatus?.();
-  };
+  const settingsRefresh = async () => { await deps.refreshKugouSettingsStatus?.(); };
+  const dailyPlaylistName = () => `每日推荐 ${new Date().toISOString().slice(0, 10)}`;
   let setPage = () => {};
   let playlist = null;
   const playlistManageModal = createPlaylistManageModal({
@@ -281,7 +280,7 @@ export function createPageRuntime(deps) {
     renderPlaylistSearchResults: search.renderPlaylistSearchResults,
     renderSearchTable: search.renderSearchTable,
     renderSidebar: navigation.renderSidebar,
-    saveDailyRecommendationsAsPlaylist: home.saveDailyRecommendationsAsPlaylist,
+    saveDailyRecommendationsAsPlaylist: () => playlistManageModal.openCreate(dailyPlaylistName(), { subtitle: "将当前每日推荐保存为新歌单。", onSubmit: (name) => home.saveDailyRecommendationsAsPlaylist(name) }),
     searchLocalPlaylists: playlist.searchLocalPlaylists,
     setPage,
     setSearchScope: search.setSearchScope,
