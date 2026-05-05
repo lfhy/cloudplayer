@@ -1,13 +1,16 @@
 /* Playback queue drawer expands over the app with cover-rich rows and motion. */
 .queue-panel {
+  --queue-dock-clearance: 104px;
+  --queue-fade-height: 34px;
   position: fixed;
   right: 20px;
-  bottom: 88px;
+  bottom: var(--queue-dock-clearance);
   z-index: 35;
   width: min(66vw, 920px);
   height: min(66vh, 720px);
   display: flex;
   flex-direction: column;
+  isolation: isolate;
   border: 1px solid rgba(15, 23, 42, 0.08);
   border-radius: 22px;
   background: color-mix(in srgb, var(--bg-card) 92%, transparent);
@@ -17,14 +20,31 @@
   transform: translateY(0);
   opacity: 1;
   pointer-events: auto;
+  transform-origin: bottom center;
   transition: transform 0.24s ease, opacity 0.24s ease, box-shadow 0.24s ease;
 }
 
 .queue-panel.collapsed {
-  transform: translateY(calc(100% + 18px));
+  transform: translateY(12px) scale(0.985);
   opacity: 0;
   pointer-events: none;
   box-shadow: 0 14px 36px rgba(15, 23, 42, 0.16);
+}
+
+.queue-panel::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: var(--queue-fade-height);
+  pointer-events: none;
+  background: linear-gradient(
+    to bottom,
+    rgba(255, 255, 255, 0),
+    color-mix(in srgb, var(--bg-card) 84%, transparent) 58%,
+    color-mix(in srgb, var(--bg-card) 96%, transparent)
+  );
 }
 
 .queue-header {
@@ -67,7 +87,7 @@
 .queue-body {
   flex: 1;
   min-height: 0;
-  padding: 12px 14px 16px;
+  padding: 12px 14px calc(16px + var(--queue-fade-height));
   overflow: auto;
   opacity: 1;
   transition: opacity 0.18s ease;
@@ -163,9 +183,10 @@
 
 @media (max-width: 900px) {
   .queue-panel {
+    --queue-dock-clearance: 108px;
     right: 12px;
     left: 12px;
-    bottom: 92px;
+    bottom: var(--queue-dock-clearance);
     width: auto;
     height: min(66vh, 640px);
   }
