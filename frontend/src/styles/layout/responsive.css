@@ -2,8 +2,6 @@
 @media (max-width: 1080px) {
   .search-hero,
   .search-results-topbar,
-  .home-hero,
-  .home-grid,
   .import-method-grid,
   .search-category-grid {
     grid-template-columns: 1fr;

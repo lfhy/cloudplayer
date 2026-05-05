@@ -1,4 +1,6 @@
-// Home controller keeps recommendations and landing-page summaries outside main.js.
+// Home controller keeps landing-page recommendations and recents outside main.js.
+import { coverImgHtml } from "../../app/helpers/covers.js";
+
 export function createHomeController(deps) {
   const {
     escapeHtml,
@@ -29,44 +31,55 @@ export function createHomeController(deps) {
     return dailyRecommendationRows;
   }
 
+  function createListRow(item, index, mode) {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "home-row-item";
+    const cover = coverImgHtml({ src: item.cover_url || "", className: "home-row-item__cover", width: 44, height: 44, radius: 10, alt: item.title || "" });
+    const artist = item.artist || (item.local_path ? "本地音乐" : "在线曲目");
+    button.innerHTML = `
+      <span class="home-row-item__idx">${mode === "daily" ? index + 1 : index + 1}</span>
+      ${cover}
+      <span class="home-row-item__info">
+        <strong>${escapeHtml(item.title || "—")}</strong>
+        <span>${escapeHtml(artist)}</span>
+      </span>`;
+    button.addEventListener("click", () => {
+      if (mode === "daily") playSingleItem(item);
+      else playFromRecentRow(index);
+    });
+    return button;
+  }
+
   function renderHomePage() {
     const playlistCountEl = document.getElementById("home-playlist-count");
     const recentCountEl = document.getElementById("home-recent-count");
     const downloadCountEl = document.getElementById("home-download-count");
-    const recentList = document.getElementById("home-recent-list");
-    const dailyList = document.getElementById("home-daily-list");
+    const recentList = document.getElementById("home-recent-row");
+    const dailyList = document.getElementById("home-daily-grid");
+    const greetingEl = document.getElementById("home-greeting");
+    const dateLineEl = document.getElementById("home-date-line");
     const recentRows = getSessionRecentPlays();
     const recommendations = getDailyRecommendations();
+    const hour = new Date().getHours();
+    if (greetingEl) greetingEl.textContent = hour < 11 ? "早上好" : hour < 18 ? "下午好" : "晚上好";
+    if (dateLineEl) dateLineEl.textContent = `${new Date().toLocaleDateString("zh-CN", { weekday: "long", month: "long", day: "numeric" })} · ${recentRows.length ? `共 ${recentRows.length} 首播放记录` : "先开始听几首歌吧"}`;
     if (recentCountEl) recentCountEl.textContent = String(recentRows.length);
     if (downloadCountEl) downloadCountEl.textContent = String(getDownloadTaskCount());
-    if (recentList) {
-      recentList.innerHTML = "";
-      if (!recentRows.length) {
-        recentList.innerHTML = '<p class="home-list__empty muted">还没有最近播放。去搜索或导入一张歌单开始吧。</p>';
-      } else {
-        recentRows.slice(0, 4).forEach((item, index) => {
-          const button = document.createElement("button");
-          button.type = "button";
-          button.className = "home-list__item";
-          button.innerHTML = `<span class="home-list__index">${index + 1}</span><span class="home-list__meta"><strong>${escapeHtml(item.title || "—")}</strong><span>${escapeHtml(item.artist || (item.local_path ? "本地音乐" : "在线曲目"))}</span></span>`;
-          button.addEventListener("click", () => playFromRecentRow(index));
-          recentList.appendChild(button);
-        });
-      }
-    }
     if (dailyList) {
       dailyList.innerHTML = "";
       if (!recommendations.length) {
-        dailyList.innerHTML = '<p class="home-list__empty muted">需要一些最近播放记录后，主页才会生成今日推荐。</p>';
+        dailyList.innerHTML = '<p class="home-empty muted">需要一些播放记录后才会生成每日推荐。</p>';
       } else {
-        recommendations.slice(0, 4).forEach((item) => {
-          const button = document.createElement("button");
-          button.type = "button";
-          button.className = "home-list__item";
-          button.innerHTML = `<span class="home-list__badge">推荐</span><span class="home-list__meta"><strong>${escapeHtml(item.title || "—")}</strong><span>${escapeHtml(item.artist || (item.local_path ? "本地音乐" : "在线曲目"))}</span></span>`;
-          button.addEventListener("click", () => playSingleItem(item));
-          dailyList.appendChild(button);
-        });
+        recommendations.slice(0, 10).forEach((item, index) => dailyList.appendChild(createListRow(item, index, "daily")));
+      }
+    }
+    if (recentList) {
+      recentList.innerHTML = "";
+      if (!recentRows.length) {
+        recentList.innerHTML = '<p class="home-empty muted">还没有最近播放，去搜索或导入歌单开始吧。</p>';
+      } else {
+        recentRows.slice(0, 10).forEach((item, index) => recentList.appendChild(createListRow(item, index, "recent")));
       }
     }
     void invoke("list_playlists")
