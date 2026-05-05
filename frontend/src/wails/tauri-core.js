@@ -156,6 +156,7 @@ const invokeMap = {
     normalizeSearchResponse(await CloudPlayerService.SearchSongs(args.keyword, args.page)),
   set_desktop_lyrics_click_through: (args) =>
     CloudPlayerService.SetDesktopLyricsClickThrough(args.ignoreCursorEvents),
+  set_tray_label: (args) => CloudPlayerService.SetTrayLabel(args.text ?? ""),
   show_main_window: () => CloudPlayerService.ShowMainWindow(),
   start_import_enrich: (args) => CloudPlayerService.StartImportEnrich(args.playlistId),
   sync_kugou_playlist: (args) => CloudPlayerService.SyncKugouPlaylist(args.listId),

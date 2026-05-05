@@ -70,14 +70,17 @@ export function createAudioEventsController(deps) {
         });
       }
       handleEnded(audio, playButton);
+      void syncDesktopLyrics();
     });
     audio.addEventListener("play", () => {
       setPlayButtonIcon(playButton, true);
       void broadcastTrayPlayerState();
+      void syncDesktopLyrics();
     });
     audio.addEventListener("pause", () => {
       setPlayButtonIcon(playButton, false);
       void broadcastTrayPlayerState();
+      void syncDesktopLyrics();
     });
     audio.addEventListener("error", () => {
       const error = audio.error;

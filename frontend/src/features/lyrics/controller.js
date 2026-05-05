@@ -1,5 +1,6 @@
 // Lyrics controller composes sync, idle-state and window lifecycle for desktop lyrics.
 import { currentPlayableKey, isSamePlayableIdentity, lyricDisplayForDesktop, parseLrc } from "./model.js";
+import { createTrayLabelSync } from "./trayLabelSync.js";
 import { createLyricsWindowController } from "./windowController.js";
 import {
   DESKTOP_LYRICS_IDLE_LINE1,
@@ -28,6 +29,7 @@ export function createLyricsController(deps) {
 
   let lrcEntries = [];
   let wordLines = null;
+  const trayLabel = createTrayLabelSync({ invoke });
   let lrcCacheKey = null;
   let lrcLoadInFlight = null;
   let lyricTraceLastTs = 0;
@@ -176,7 +178,7 @@ export function createLyricsController(deps) {
   }
 
   async function syncDesktopLyrics() {
-    if (!getDesktopLyricsOpen()) return;
+    if (!getDesktopLyricsOpen() && !trayLabel.isEnabled()) return;
     await ensureLrcLoadedForCurrentTrackDedup(getPlayLoadGeneration());
     const current = getPlayQueue()[getPlayIndex()] || null;
     const audioEl = getAudioEl();
@@ -191,9 +193,10 @@ export function createLyricsController(deps) {
     });
     payload.audioPlaying = !!audioEl && !audioEl.paused;
     await pushDesktopLyricsLines(payload);
+    await trayLabel.sync(payload, current, payload.audioPlaying);
 
     const nowMs = Date.now();
-    if (nowMs - lyricTraceLastTs < 1200) return;
+    if (!getDesktopLyricsOpen() || nowMs - lyricTraceLastTs < 1200) return;
     lyricTraceLastTs = nowMs;
     try {
       await invoke("log_play_event", {
