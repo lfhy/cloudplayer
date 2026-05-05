@@ -28,3 +28,5 @@
 @import "./styles/pages/settings-preferences.css";
 @import "./styles/pages/settings-hotkeys.css";
 @import "./styles/layout/responsive.css";
+
+@import "./styles/components/immersive-player.css";

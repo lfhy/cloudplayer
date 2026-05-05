@@ -3,6 +3,7 @@ import { accountCenterModalTemplate } from "../components/accountCenterModalTemp
 import { closeConfirmModalTemplate } from "../components/closeConfirmModalTemplate.js";
 import { kugouPlaylistPreviewModalTemplate } from "../components/kugouPlaylistPreviewModalTemplate.js";
 import { playlistManageModalTemplate } from "../components/playlistManageModalTemplate.js";
+import { immersivePlayerTemplate } from "../components/immersivePlayerTemplate.js";
 import { playerDockTemplate } from "../components/playerDockTemplate.js";
 import { queuePanelTemplate } from "../components/queuePanelTemplate.js";
 import { dailyPageTemplate } from "../pages/dailyPageTemplate.js";
@@ -39,6 +40,7 @@ export function renderMainShell(root = document.getElementById("app")) {
         <main id="stack" class="stack">${mainPagesTemplate()}</main>
         ${queuePanelTemplate()}
         ${playerDockTemplate()}
+        ${immersivePlayerTemplate()}
       </div>
     </div>
     ${accountCenterModalTemplate()}

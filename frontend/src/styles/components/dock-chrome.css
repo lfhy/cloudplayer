@@ -27,9 +27,13 @@
   flex-shrink: 0;
   width: 52px;
   height: 52px;
+  padding: 0;
+  border: none;
   border-radius: 10px;
   overflow: hidden;
   box-shadow: 0 0 0 1px var(--dock-edge);
+  background: transparent;
+  cursor: pointer;
 }
 
 .dock-player__art img {

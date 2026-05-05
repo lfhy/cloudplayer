@@ -8,7 +8,7 @@ export function playerDockTemplate() {
   return `
     <footer class="dock-player" aria-label="播放控制">
       <div class="dock-player__left">
-        <div class="dock-player__art"><img id="dock-cover" width="52" height="52" alt="" src="${fallbackCover}" /></div>
+        <button type="button" class="dock-player__art" id="btn-dock-immersive" title="进入沉浸模式" aria-label="进入沉浸模式"><img id="dock-cover" width="52" height="52" alt="" src="${fallbackCover}" /></button>
         <div class="dock-player__meta-col">
           <div id="dock-title" class="dock-player__title">未播放</div>
           <div id="dock-sub" class="dock-player__sub">选择曲目或搜索后双击列表</div>

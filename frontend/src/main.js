@@ -18,6 +18,7 @@ import { createSettingsRuntime } from "./app/runtime/settingsRuntime.js";
 import { startDesktopRuntime } from "./app/runtime/startupRuntime.js";
 import { renderMainShell } from "./layout/renderMainShell.js";
 import { createPlaybackStatePersistence } from "./features/player/playbackStatePersistence.js";
+import { createImmersiveController } from "./features/player/immersiveController.js";
 
 // Composition root: only shared mutable state and runtime assembly stay here.
 const searchState = { keyword: "", page: 1, hasNext: false, results: [], scope: "catalog", busy: false, playlistResults: [], view: "home" };
@@ -26,7 +27,8 @@ let playModeIndex = 0, qualityPref = "128", importTracks = [], desktopLyricsOpen
 let mainWindowCloseAction = "ask", selectedPlaylistId = null, selectedPlaylistName = "", playlistDetailRows = [], importShareSuggestedName = "";
 let neteaseCookieEnabled = false, neteaseCookieValue = "", importMethod = "", importDraftDirty = false, sessionRecentPlays = [], localLibraryRows = [], lastLibraryFolder = "";
 const downloadTasksBySourceId = new Map(), logPlayEventDesktop = createPlayEventLogger(invoke);
-let likedIds = loadLikedSet(), setPage = () => {}, renderHomePage = () => {}, renderDailyTable = () => {}, renderRecentPlaysTable = () => {};
+let likedIds = loadLikedSet();
+let setPage = () => {}, renderHomePage = () => {}, renderDailyTable = () => {}, renderRecentPlaysTable = () => {};
 let renderQueuePanel = () => {}, refreshFavButton = () => {}, randomNextIndex = () => 0, refreshQuickThemeModeUi = () => {}, renderImportTable = () => {}, loadPlaylistDetail = async () => {};
 let openAccountCenter = () => {}, refreshAccountCenter = () => {}, wireAccountCenter = () => {};
 let scheduleSavePlaybackState = () => {}, restorePlaybackState = async () => {};
@@ -177,11 +179,19 @@ const playbackState = createPlaybackStatePersistence({
 scheduleSavePlaybackState = playbackState.scheduleSavePlaybackState;
 restorePlaybackState = playbackState.restorePlaybackState;
 
-void syncLikedIdsFromBackend();
-
+const immersive = createImmersiveController({
+  formatTime,
+  getAudioEl: audioEl,
+  getPlayIndex: () => playIndex,
+  getPlayQueue: () => playQueue,
+  getSeekDragging: () => seekDragging,
+  invoke,
+  setSeekDragging: (value) => { seekDragging = value; },
+});
 startDesktopRuntime({
   alertRequestFailed, applyAppTheme, applyPlatformClassNames, dock, emitTo, getMainWindowCloseAction: () => mainWindowCloseAction, getPlayIndex: () => playIndex, getPlayLoadGeneration: () => playLoadGeneration,
   getPlayQueue: () => playQueue, getSelectedPlaylistId: () => selectedPlaylistId, getSelectedPlaylistName: () => selectedPlaylistName, hotkeys, invoke, listen, loadPlaylistDetail,
+  immersive,
   lyricsReplaceTarget: LYRICS_REPLACE_TARGET, normalizeAppThemeMode,
   onLyricsLockSync: (locked) => { desktopLyricsLocked = locked; player.refreshLyricsLockMenuLabel(); },
   pages, player, renderDailyTable, renderImportTable, renderMainShell, renderQueuePanel: (...args) => renderQueuePanel(...args), restorePlaybackState: () => restorePlaybackState(), searchState, setPage: (...args) => setPage(...args), settings, systemDarkMedia,

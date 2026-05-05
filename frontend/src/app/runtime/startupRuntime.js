@@ -7,6 +7,7 @@ export function startDesktopRuntime(deps) {
     applyAppTheme: deps.applyAppTheme,
     applyPlatformClassNames: deps.applyPlatformClassNames,
     applyLyricsPayload: deps.player.applyLyricsPayload,
+    immersive: deps.immersive,
     broadcastDesktopLyricsLock: deps.player.broadcastDesktopLyricsLock,
     broadcastTrayPlayerState: deps.player.broadcastTrayPlayerState,
     emitTo: deps.emitTo,

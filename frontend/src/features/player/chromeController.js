@@ -15,9 +15,17 @@ export function createPlayerChromeController(deps) {
     const titleEl = document.getElementById("dock-title");
     const subEl = document.getElementById("dock-sub");
     const coverEl = document.getElementById("dock-cover");
+    const immersiveTitleEl = document.getElementById("immersive-title");
+    const immersiveArtistEl = document.getElementById("immersive-artist");
+    const immersiveAlbumEl = document.getElementById("immersive-album");
+    const immersiveCoverEl = document.getElementById("immersive-cover");
     if (title !== undefined && titleEl) titleEl.textContent = title;
+    if (title !== undefined && immersiveTitleEl) immersiveTitleEl.textContent = title;
     if (sub !== undefined && subEl) subEl.textContent = sub;
+    if (sub !== undefined && immersiveArtistEl) immersiveArtistEl.textContent = sub;
     if (touchCover && coverEl && coverUrl !== undefined) setCoverImageSource(coverEl, coverUrl, { size: 52, radius: 10 });
+    if (touchCover && immersiveCoverEl && coverUrl !== undefined) setCoverImageSource(immersiveCoverEl, coverUrl, { size: 320, radius: 32 });
+    if (immersiveAlbumEl && patch.album !== undefined) immersiveAlbumEl.textContent = patch.album || "正在聆听";
     queueMicrotask(() => {
       void broadcastTrayPlayerState();
     });

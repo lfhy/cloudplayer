@@ -16,6 +16,7 @@ export function bootCloudPlayerApp(deps) {
     getSelectedPlaylistId,
     getSelectedPlaylistName,
     getSettingsFormValues,
+    immersive,
     invoke,
     listen,
     loadPlaylistDetail,
@@ -63,6 +64,7 @@ export function bootCloudPlayerApp(deps) {
 
   document.addEventListener("DOMContentLoaded", () => {
     renderMainShell();
+    immersive?.wire();
     applyPlatformClassNames();
     deps.renderSidebar();
     setPage("home");
