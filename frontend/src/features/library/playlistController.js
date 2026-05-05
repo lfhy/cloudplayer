@@ -31,6 +31,21 @@ export function createPlaylistController(deps) {
   } = deps;
   const enrich = createPlaylistEnrichHelpers({ invoke, warnRequestFailed });
 
+  let cachedSidebarPlaylists = [];
+
+  function currentSelectedPlaylist() {
+    return cachedSidebarPlaylists.find((item) => Number(item.id) === Number(getSelectedPlaylistId())) || null;
+  }
+
+  function refreshPlaylistActionState() {
+    const playlist = currentSelectedPlaylist();
+    const renameBtn = document.getElementById("btn-playlist-rename");
+    if (!renameBtn) return;
+    const builtin = playlist?.is_builtin === true;
+    renameBtn.disabled = getSelectedPlaylistId() == null || builtin;
+    renameBtn.hidden = builtin;
+  }
+
   function syncSidebarPlaylistActiveState(playlistID = getSelectedPlaylistId(), forceActive = false) {
     const list = document.getElementById("sidebar-playlist-list");
     if (!list) return;
@@ -57,6 +72,7 @@ export function createPlaylistController(deps) {
     } catch (error) {
       console.warn("list_playlists", error);
     }
+    cachedSidebarPlaylists = Array.isArray(playlists) ? playlists : [];
     playlists.forEach((playlist) => {
       const option = document.createElement("option");
       option.value = String(playlist.id);
@@ -91,15 +107,16 @@ export function createPlaylistController(deps) {
       list.appendChild(li);
       return;
     }
+    cachedSidebarPlaylists = Array.isArray(playlists) ? playlists : [];
     playlists.forEach((playlist) => {
       const li = document.createElement("li");
       li.className = "sidebar-pl-item";
       li.setAttribute("data-playlist-id", String(playlist.id));
       li.innerHTML = `
-        <span class="sidebar-pl-item__icon" aria-hidden="true">${navIconSvg("playlist")}</span>
+        <span class="sidebar-pl-item__icon" aria-hidden="true">${navIconSvg(playlist.is_builtin ? "favorites" : "playlist")}</span>
         <span class="sidebar-pl-item__label">${escapeHtml(playlist.name?.trim() || `歌单 ${playlist.id}`)}</span>
       `;
-      li.title = `id=${playlist.id} · 查看导入曲目`;
+      li.title = playlist.is_builtin ? `系统歌单 · id=${playlist.id} · 查看导入曲目` : `id=${playlist.id} · 查看导入曲目`;
       li.addEventListener("click", () => {
         setSelectedPlaylist(playlist.id, playlist.name || "");
         setPage("playlist");
@@ -112,6 +129,7 @@ export function createPlaylistController(deps) {
       list.appendChild(li);
     });
     syncSidebarPlaylistActiveState();
+    refreshPlaylistActionState();
     if (document.querySelector('.page[data-page="home"]')?.classList.contains("page-active")) renderHomePage();
   }
 
@@ -166,7 +184,7 @@ export function createPlaylistController(deps) {
     const hintEl = document.getElementById("playlist-page-hint");
     const coverEl = document.getElementById("playlist-hero-cover");
     if (countEl) countEl.textContent = `共 ${rows.length} 首导入曲目`;
-    if (hintEl) hintEl.textContent = `CloudPlayer · ${getSelectedPlaylistName() || "导入歌单"}`;
+    if (hintEl) hintEl.textContent = "";
     setCoverImageSource(coverEl, rows.find((row) => (row.cover_url || "").trim())?.cover_url || "", { size: 120, radius: 12 });
     renderTrackTableRows(tbody, rows.map((row) => ({
       ...row,
@@ -218,6 +236,7 @@ export function createPlaylistController(deps) {
     });
     document.getElementById("btn-playlist-rename")?.addEventListener("click", async () => {
       if (getSelectedPlaylistId() == null) return;
+      if (currentSelectedPlaylist()?.is_builtin) return;
       showRenamePlaylistModal?.(getSelectedPlaylistId(), getSelectedPlaylistName() || "歌单");
     });
     document.getElementById("btn-playlist-play-all")?.addEventListener("click", () => {
@@ -236,6 +255,7 @@ export function createPlaylistController(deps) {
     refreshSidebarPlaylists,
     renderPlaylistDetailTable,
     searchLocalPlaylists,
+    refreshPlaylistActionState,
     syncSidebarPlaylistActiveState,
     wirePlaylistPage,
   };

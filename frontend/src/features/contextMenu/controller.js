@@ -96,12 +96,14 @@ export function createContextMenuController(deps) {
       void playFromQueueIndex(0);
       renderQueuePanel();
     }));
-    root.appendChild(cmBtn("重命名", async () => {
-      openRenamePlaylistModal?.(playlist.id, playlist.name || "");
-    }));
-    root.appendChild(cmBtn("删除歌单", async () => {
-      openDeletePlaylistModal?.(playlist.id);
-    }));
+    if (!playlist.is_builtin) {
+      root.appendChild(cmBtn("重命名", async () => {
+        openRenamePlaylistModal?.(playlist.id, playlist.name || "");
+      }));
+      root.appendChild(cmBtn("删除歌单", async () => {
+        openDeletePlaylistModal?.(playlist.id);
+      }));
+    }
     mountContextMenuAt(event.clientX, event.clientY, root);
   }
 

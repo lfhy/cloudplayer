@@ -138,6 +138,11 @@
   max-width: 520px;
 }
 
+.dock-timeline__spacer {
+  width: 20px;
+  flex: 0 0 20px;
+}
+
 .dock-mode {
   flex: 0 0 auto;
 }

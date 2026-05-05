@@ -26,8 +26,19 @@ type ResolveOnlinePlayOut struct {
 }
 
 type PlaylistRow struct {
-	ID   int64  `json:"id"`
-	Name string `json:"name"`
+	ID        int64  `json:"id"`
+	Name      string `json:"name"`
+	IsBuiltin bool   `json:"is_builtin"`
+}
+
+// FavoriteTrackIn represents one online track that can be stored in the built-in favorites playlist.
+type FavoriteTrackIn struct {
+	Title         string `json:"title"`
+	Artist        string `json:"artist"`
+	Album         string `json:"album"`
+	Pjmp3SourceID string `json:"pjmp3_source_id"`
+	CoverURL      string `json:"cover_url"`
+	DurationMS    int64  `json:"duration_ms"`
 }
 
 type PlaylistImportItemRow struct {
@@ -78,7 +89,7 @@ type RecentPlayRow struct {
 }
 
 type DailyRecommendationResponse struct {
-	Date  string                     `json:"date"`
-	Rows  []musicsource.SearchResult `json:"rows"`
-	Source string                    `json:"source"`
+	Date   string                     `json:"date"`
+	Rows   []musicsource.SearchResult `json:"rows"`
+	Source string                     `json:"source"`
 }

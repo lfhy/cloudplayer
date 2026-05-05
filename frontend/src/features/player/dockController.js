@@ -172,17 +172,35 @@ export function createDockController(deps) {
         window.setTimeout(() => themeBtn.classList.remove("is-switching"), 220);
       });
     }
-    document.getElementById("btn-dock-fav")?.addEventListener("click", (event) => {
+    document.getElementById("btn-dock-fav")?.addEventListener("click", async (event) => {
       event.stopPropagation();
       const current = getPlayQueue()[getPlayIndex()];
       if (!current) return;
       const sourceId = (current.source_id || "").trim();
       if (!sourceId || current.local_path) return void alert("仅在线试听曲目支持「喜欢」（需曲库 id）。");
       const likedIds = getLikedIds();
-      if (likedIds.has(sourceId)) likedIds.delete(sourceId);
-      else likedIds.add(sourceId);
-      saveLikedIds(likedIds);
-      refreshFavButton();
+      try {
+        if (likedIds.has(sourceId)) {
+          await invoke("remove_favorite_track", { sourceId });
+          likedIds.delete(sourceId);
+        } else {
+          await invoke("add_favorite_track", {
+            track: {
+              title: current.title || "",
+              artist: current.artist || "",
+              album: current.album || "",
+              pjmp3_source_id: sourceId,
+              cover_url: current.cover_url || "",
+              duration_ms: Number(current.duration_ms) || 0,
+            },
+          });
+          likedIds.add(sourceId);
+        }
+        saveLikedIds(likedIds);
+        refreshFavButton();
+      } catch (error) {
+        deps.alertRequestFailed(error, "toggle favorite track");
+      }
     });
     document.getElementById("btn-dock-dl")?.addEventListener("click", (event) => {
       event.stopPropagation();

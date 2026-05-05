@@ -12,6 +12,7 @@ type SearchSongMetadataRow = model.SearchSongMetadataRow
 type ResolveOnlinePlayOut = model.ResolveOnlinePlayOut
 type PlaylistRow = model.PlaylistRow
 type PlaylistImportItemRow = model.PlaylistImportItemRow
+type FavoriteTrackIn = model.FavoriteTrackIn
 type SharePlaylistResponse = model.SharePlaylistResponse
 type LocalSongRow = model.LocalSongRow
 type ScanMusicFolderResult = model.ScanMusicFolderResult

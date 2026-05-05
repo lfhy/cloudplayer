@@ -33,6 +33,17 @@ let scheduleSavePlaybackState = () => {}, restorePlaybackState = async () => {};
 
 function audioEl() { return document.getElementById("audio-player"); }
 
+async function syncLikedIdsFromBackend() {
+  try {
+    await invoke("ensure_favorites_playlist");
+    const sourceIds = await invoke("list_favorite_source_ids");
+    likedIds = new Set(Array.isArray(sourceIds) ? sourceIds.map((item) => String(item || "").trim()).filter(Boolean) : []);
+    saveLikedSet(likedIds);
+  } catch (error) {
+    console.warn("sync favorites from backend", error);
+  }
+}
+
 function setPlayModeIndexValue(value) {
   const next = Number(value);
   playModeIndex = Number.isFinite(next) && next >= 0 && next < PLAY_MODES.length ? next : 0;
@@ -165,6 +176,8 @@ const playbackState = createPlaybackStatePersistence({
 });
 scheduleSavePlaybackState = playbackState.scheduleSavePlaybackState;
 restorePlaybackState = playbackState.restorePlaybackState;
+
+void syncLikedIdsFromBackend();
 
 startDesktopRuntime({
   alertRequestFailed, applyAppTheme, applyPlatformClassNames, dock, emitTo, getMainWindowCloseAction: () => mainWindowCloseAction, getPlayIndex: () => playIndex, getPlayLoadGeneration: () => playLoadGeneration,

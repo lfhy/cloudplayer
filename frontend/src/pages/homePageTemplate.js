@@ -27,21 +27,19 @@ export function homePageTemplate() {
       <div class="home-columns">
         <section class="home-col">
           <div class="home-col-head">
-            <div>
+            <button type="button" id="btn-home-open-daily" class="home-col-link">
               <p class="home-section-eyebrow">每日推荐</p>
               <h2 class="home-section-title">今天听这些</h2>
-            </div>
-            <button type="button" id="btn-home-open-daily" class="home-btn home-btn--ghost">查看全部</button>
+            </button>
           </div>
           <div id="home-daily-grid" class="home-col__list"></div>
         </section>
         <section class="home-col">
           <div class="home-col-head">
-            <div>
+            <button type="button" id="btn-home-open-recent" class="home-col-link">
               <p class="home-section-eyebrow">继续收听</p>
               <h2 class="home-section-title">最近播放</h2>
-            </div>
-            <button type="button" id="btn-home-open-recent" class="home-btn home-btn--ghost">查看全部</button>
+            </button>
           </div>
           <div id="home-recent-row" class="home-col__list"></div>
         </section>

@@ -108,6 +108,10 @@ const invokeMap = {
   delete_playlist_import_item: (args) =>
     CloudPlayerService.DeletePlaylistImportItem(args.playlistId, args.itemId),
   enqueue_download: (args) => CloudPlayerService.EnqueueDownload(args),
+  ensure_favorites_playlist: () => CloudPlayerService.EnsureFavoritesPlaylist(),
+  add_favorite_track: (args) => CloudPlayerService.AddFavoriteTrack(args.track),
+  remove_favorite_track: (args) => CloudPlayerService.RemoveFavoriteTrack(args.sourceId),
+  list_favorite_source_ids: () => CloudPlayerService.ListFavoriteSourceIDs(),
   fetch_share_playlist: (args) => CloudPlayerService.FetchSharePlaylist(args.url),
   fetch_song_lrc_enriched: (args) => CloudPlayerService.FetchSongLRCEnriched(args.req),
   get_search_song_metadata: async (args) =>

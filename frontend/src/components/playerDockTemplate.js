@@ -29,6 +29,7 @@ export function playerDockTemplate() {
           <button type="button" id="btn-dock-queue" class="dock-mode dock-mode--queue" title="播放队列" aria-label="播放队列" aria-expanded="false">☰</button>
         </div>
         <div class="dock-player__timeline">
+          <span class="dock-timeline__spacer" aria-hidden="true"></span>
           <input type="range" id="seek" class="dock-seek" min="0" max="1000" value="0" step="1" disabled aria-label="进度" />
           <span id="time-total" class="dock-time">0:00</span>
         </div>

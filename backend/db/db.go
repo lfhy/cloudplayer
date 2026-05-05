@@ -39,7 +39,8 @@ func OpenAndInit() (*sql.DB, error) {
 
 		CREATE TABLE IF NOT EXISTS playlists (
 			id INTEGER PRIMARY KEY AUTOINCREMENT,
-			name TEXT NOT NULL
+			name TEXT NOT NULL,
+			is_builtin INTEGER NOT NULL DEFAULT 0
 		);
 
 		CREATE TABLE IF NOT EXISTS playlist_songs (
@@ -106,6 +107,7 @@ func OpenAndInit() (*sql.DB, error) {
 	}
 
 	for _, statement := range []string{
+		"ALTER TABLE playlists ADD COLUMN is_builtin INTEGER NOT NULL DEFAULT 0",
 		"ALTER TABLE playlist_import_items ADD COLUMN album TEXT NOT NULL DEFAULT ''",
 		"ALTER TABLE playlist_import_items ADD COLUMN play_url TEXT NOT NULL DEFAULT ''",
 		"ALTER TABLE playlist_import_items ADD COLUMN pjmp3_source_id TEXT NOT NULL DEFAULT ''",

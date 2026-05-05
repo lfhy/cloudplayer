@@ -126,9 +126,33 @@
 .home-col-head {
   display: flex;
   align-items: flex-end;
-  justify-content: space-between;
   gap: 12px;
   flex-shrink: 0;
+}
+
+.home-col-link {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.home-col-link:hover .home-section-title,
+.home-col-link:focus-visible .home-section-title {
+  color: var(--accent);
+}
+
+.home-col-link:focus-visible {
+  outline: 2px solid rgba(var(--accent-rgb), 0.22);
+  outline-offset: 6px;
+  border-radius: 10px;
 }
 
 .home-col__list {

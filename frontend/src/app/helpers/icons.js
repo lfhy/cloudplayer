@@ -66,6 +66,7 @@ export function navIconSvg(name) {
     library: "library-linear",
     settings: "settings-linear",
     playlist: "playlist-minimalistic-2-linear",
+    favorites: "heart-bold",
     "chevron-up-down": "alt-arrow-up-line-duotone",
     appearance: "moon-fog-linear",
     "appearance-light": "sun-2-bold",

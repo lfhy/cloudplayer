@@ -10,7 +10,10 @@ import (
 
 // Playlist methods own import rows and background enrichment orchestration.
 func (s *CloudPlayerService) ListPlaylists() ([]PlaylistRow, error) {
-	rows, err := s.state.DB.Query(`SELECT id, name FROM playlists ORDER BY name COLLATE NOCASE`)
+	if _, err := s.ensureFavoritesPlaylist(); err != nil {
+		return nil, err
+	}
+	rows, err := s.state.DB.Query(`SELECT id, name, is_builtin FROM playlists ORDER BY is_builtin DESC, id ASC`)
 	if err != nil {
 		return nil, err
 	}
@@ -19,7 +22,7 @@ func (s *CloudPlayerService) ListPlaylists() ([]PlaylistRow, error) {
 	var result []PlaylistRow
 	for rows.Next() {
 		var row PlaylistRow
-		if err := rows.Scan(&row.ID, &row.Name); err != nil {
+		if err := rows.Scan(&row.ID, &row.Name, &row.IsBuiltin); err != nil {
 			return nil, err
 		}
 		result = append(result, row)
@@ -55,7 +58,7 @@ func (s *CloudPlayerService) CreatePlaylist(name string) (int64, error) {
 	if name == "" {
 		return 0, fmt.Errorf("歌单名称不能为空")
 	}
-	result, err := s.state.DB.Exec(`INSERT INTO playlists (name) VALUES (?)`, name)
+	result, err := s.state.DB.Exec(`INSERT INTO playlists (name, is_builtin) VALUES (?, 0)`, name)
 	if err != nil {
 		return 0, err
 	}
@@ -66,6 +69,11 @@ func (s *CloudPlayerService) RenamePlaylist(playlistID int64, name string) error
 	name = strings.TrimSpace(name)
 	if name == "" {
 		return fmt.Errorf("歌单名称不能为空")
+	}
+	if builtin, err := s.isBuiltinPlaylist(playlistID); err != nil {
+		return err
+	} else if builtin {
+		return fmt.Errorf("系统歌单不支持重命名")
 	}
 	result, err := s.state.DB.Exec(`UPDATE playlists SET name = ? WHERE id = ?`, name, playlistID)
 	if err != nil {
@@ -82,6 +90,11 @@ func (s *CloudPlayerService) RenamePlaylist(playlistID int64, name string) error
 }
 
 func (s *CloudPlayerService) DeletePlaylist(playlistID int64) error {
+	if builtin, err := s.isBuiltinPlaylist(playlistID); err != nil {
+		return err
+	} else if builtin {
+		return fmt.Errorf("系统歌单不支持删除")
+	}
 	tx, err := s.state.DB.Begin()
 	if err != nil {
 		return err
@@ -196,4 +209,13 @@ func (s *CloudPlayerService) StartImportEnrich(playlistID int64) error {
 	}
 	importenrich.SpawnPlaylistEnrich(s.state.DB, s.state.HTTP(), s.state.RateLimiter, playlistID)
 	return nil
+}
+
+func (s *CloudPlayerService) isBuiltinPlaylist(playlistID int64) (bool, error) {
+	var builtin bool
+	err := s.state.DB.QueryRow(`SELECT is_builtin FROM playlists WHERE id = ?`, playlistID).Scan(&builtin)
+	if err != nil {
+		return false, err
+	}
+	return builtin, nil
 }
