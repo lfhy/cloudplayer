@@ -28,6 +28,7 @@ type SearchResult struct {
 type Provider interface {
 	Key() string
 	Search(client *http.Client, keyword string, page uint32) ([]SearchResult, bool, error)
+	FetchDailyRecommendations(client *http.Client, limit int) ([]SearchResult, error)
 	FetchPreviewURL(client *http.Client, rawID string) (string, error)
 	CachePreviewAudioFile(client *http.Client, rawID string) (string, error)
 	PreviewCachePathIfExists(rawID string) string
@@ -189,6 +190,10 @@ func (pjmp3Provider) Search(client *http.Client, keyword string, page uint32) ([
 		})
 	}
 	return mapped, hasNext, nil
+}
+
+func (pjmp3Provider) FetchDailyRecommendations(_ *http.Client, _ int) ([]SearchResult, error) {
+	return nil, fmt.Errorf("%s does not support daily recommendations", ProviderPJMP3)
 }
 
 func (pjmp3Provider) FetchPreviewURL(client *http.Client, rawID string) (string, error) {

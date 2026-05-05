@@ -2,6 +2,7 @@ package musicsource
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	"strings"
 
@@ -51,6 +52,36 @@ func (kugouProvider) Search(_ *http.Client, keyword string, page uint32) ([]Sear
 	}
 	hasNext := len(results) >= 30
 	return results, hasNext, nil
+}
+
+func (kugouProvider) FetchDailyRecommendations(_ *http.Client, limit int) ([]SearchResult, error) {
+	client, err := newKugouClient()
+	if err != nil {
+		return nil, err
+	}
+	resp, err := client.GetDailyRecommendGuest(context.Background(), map[string]string{})
+	if err != nil {
+		return nil, err
+	}
+	if resp == nil || resp.Body == nil {
+		return nil, fmt.Errorf("empty daily recommend response")
+	}
+	items := kugouFindTrackItems(resp.Body)
+	results := make([]SearchResult, 0, len(items))
+	for _, item := range items {
+		row, ok := kugouDailyTrackToSearchResult(item)
+		if !ok {
+			continue
+		}
+		results = append(results, row)
+	}
+	if len(results) == 0 {
+		return nil, fmt.Errorf("no valid tracks parsed from daily recommend")
+	}
+	if limit > 0 && len(results) > limit {
+		results = results[:limit]
+	}
+	return results, nil
 }
 
 func kugouPage(page uint32) int {
