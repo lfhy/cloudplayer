@@ -29,22 +29,19 @@ export function createPlayerChromeController(deps) {
   function syncSeekUi() {
     const audio = getAudioEl();
     const seek = document.getElementById("seek");
-    const current = document.getElementById("time-current");
     const total = document.getElementById("time-total");
-    if (!audio || !seek || !current || !total) return;
+    if (!audio || !seek || !total) return;
     const duration = audio.duration;
     if (duration && Number.isFinite(duration) && duration > 0) {
       total.textContent = formatTime(duration);
       if (!getSeekDragging()) {
         seek.value = String(Math.min(1000, Math.floor((audio.currentTime / duration) * 1000)));
       }
-      current.textContent = formatTime(audio.currentTime);
       seek.disabled = false;
       // Reflect played progress via a CSS variable so the filled and unfilled track use different colors.
       seek.style.setProperty("--seek-progress", `${Number(seek.value) / 10}%`);
       return;
     }
-    current.textContent = "0:00";
     total.textContent = "0:00";
     seek.value = "0";
     seek.disabled = !audio.src;

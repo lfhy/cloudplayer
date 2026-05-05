@@ -135,9 +135,6 @@
   color: var(--dock-muted);
   width: 38px;
   flex-shrink: 0;
-}
-
-.dock-time:first-of-type {
   text-align: right;
 }
 
