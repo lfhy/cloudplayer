@@ -28,6 +28,8 @@
 
 - Do not write compiled binaries or build artifacts to the `src-wails` repository root.
 - Route local Go and Wails build outputs to `bin/` or tool-managed build directories instead.
+- For ad-hoc Go smoke validation from the repository root, do not run bare `go build .`.
+- Use `go build -o codex-smoke-test .` instead, and remove `codex-smoke-test` after validation if it was created.
 - Do not add ignore rules that broadly match source package directory names such as `cloudplayer`.
 - If a root-level build artifact must be ignored, use an anchored path rule that cannot match source directories.
 
