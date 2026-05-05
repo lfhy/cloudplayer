@@ -28,6 +28,7 @@ export function playerDockTemplate() {
           <button type="button" id="btn-player-next" class="dock-tbtn" disabled title="下一首" aria-label="下一首">⏭</button>
         </div>
         <div class="dock-player__timeline">
+          <span class="dock-time dock-time--spacer" aria-hidden="true"></span>
           <input type="range" id="seek" class="dock-seek" min="0" max="1000" value="0" step="1" disabled aria-label="进度" />
           <span id="time-total" class="dock-time">0:00</span>
         </div>

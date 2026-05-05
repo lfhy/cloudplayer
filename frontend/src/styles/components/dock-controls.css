@@ -138,6 +138,10 @@
   text-align: right;
 }
 
+.dock-time--spacer {
+  visibility: hidden;
+}
+
 .dock-seek {
   --seek-progress: 0%;
   flex: 1;
