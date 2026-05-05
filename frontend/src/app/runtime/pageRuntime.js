@@ -57,8 +57,8 @@ export function createPageRuntime(deps) {
   const settingsRefresh = async () => {
     await deps.refreshKugouSettingsStatus?.();
   };
-
   let setPage = () => {};
+  let playlist = null;
   const playlistManageModal = createPlaylistManageModal({
     alertRequestFailed,
     invoke,
@@ -82,12 +82,21 @@ export function createPageRuntime(deps) {
   });
 
   const home = createHomeController({
+    alertRequestFailed,
     escapeHtml,
     formatDurationMs,
     getDownloadTaskCount,
     getLikedIds,
     getSessionRecentPlays,
     invoke,
+    onDailySaved: async ({ playlistId, playlistName }) => {
+      if (!playlist) return;
+      setSelectedPlaylist(playlistId, playlistName);
+      await playlist.refreshPlaylistSelect();
+      await playlist.refreshSidebarPlaylists();
+      await playlist.loadPlaylistDetail(playlistId, playlistName);
+      setPage("playlist");
+    },
     playFromRecentRow,
     playSingleItem: (item) => {
       setPlayQueue(
@@ -100,7 +109,7 @@ export function createPageRuntime(deps) {
     },
   });
 
-  const playlist = createPlaylistController({
+  playlist = createPlaylistController({
     alertRequestFailed,
     escapeHtml,
     formatDurationMs,
@@ -272,6 +281,7 @@ export function createPageRuntime(deps) {
     renderPlaylistSearchResults: search.renderPlaylistSearchResults,
     renderSearchTable: search.renderSearchTable,
     renderSidebar: navigation.renderSidebar,
+    saveDailyRecommendationsAsPlaylist: home.saveDailyRecommendationsAsPlaylist,
     searchLocalPlaylists: playlist.searchLocalPlaylists,
     setPage,
     setSearchScope: search.setSearchScope,

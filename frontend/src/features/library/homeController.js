@@ -4,18 +4,21 @@ import { renderTrackTableRows } from "./trackTableRenderer.js";
 
 export function createHomeController(deps) {
   const {
+    alertRequestFailed,
     escapeHtml,
     formatDurationMs,
     getDownloadTaskCount,
     getLikedIds,
     getSessionRecentPlays,
     invoke,
+    onDailySaved,
     playFromRecentRow,
     playSingleItem,
   } = deps;
   let dailyRecommendationRows = [];
   let dailyRecommendationDate = "";
   let midnightRefreshTimer = null;
+  let dailySaveInFlight = false;
 
   function logDailyFlow(stage, detail = {}) {
     console.info("[daily]", stage, {
@@ -213,6 +216,7 @@ export function createHomeController(deps) {
       stage: "render-table:rows-ready",
       detail: JSON.stringify({ force, rowCount: rows.length }),
     }).catch(() => {});
+    document.getElementById("btn-save-daily-playlist")?.toggleAttribute("disabled", !rows.length || dailySaveInFlight);
     renderTrackTableRows(tbody, rows.map((row) => ({
       ...row,
       like_source_id: row.source_id,
@@ -227,5 +231,36 @@ export function createHomeController(deps) {
     });
   }
 
-  return { renderDailyTable, renderHomePage };
+  async function saveDailyRecommendationsAsPlaylist() {
+    if (dailySaveInFlight) return;
+    dailySaveInFlight = true;
+    const button = document.getElementById("btn-save-daily-playlist");
+    if (button) button.disabled = true;
+    try {
+      const rows = await ensureDailyRecommendations();
+      if (!rows.length) return;
+      const today = new Date().toISOString().slice(0, 10);
+      const playlistName = `每日推荐 ${today}`;
+      const playlistId = await invoke("create_playlist", { name: playlistName });
+      await invoke("replace_playlist_import_items", {
+        playlistId,
+        items: rows.map((row) => ({
+          title: row.title || "",
+          artist: row.artist || "",
+          album: row.album || "",
+          pjmp3_source_id: row.source_id || "",
+          cover_url: row.cover_url || "",
+          duration_ms: Number(row.duration_ms || 0) || 0,
+        })),
+      });
+      await onDailySaved?.({ playlistId, playlistName, trackCount: rows.length });
+    } catch (error) {
+      alertRequestFailed?.(error, "save_daily_recommendations");
+    } finally {
+      dailySaveInFlight = false;
+      if (button) button.disabled = !dailyRecommendationRows.length;
+    }
+  }
+
+  return { renderDailyTable, renderHomePage, saveDailyRecommendationsAsPlaylist };
 }

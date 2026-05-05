@@ -37,6 +37,7 @@ export function bootCloudPlayerApp(deps) {
     renderPlaylistSearchResults,
     renderQueuePanel,
     renderSearchTable,
+    saveDailyRecommendationsAsPlaylist,
     setPage,
     setSearchScope,
     syncDesktopLyricsState,
@@ -63,7 +64,7 @@ export function bootCloudPlayerApp(deps) {
     applyPlatformClassNames();
     deps.renderSidebar();
     setPage("home");
-    wireHomeShortcuts(setPage, renderDailyTable, invoke);
+    wireHomeShortcuts(setPage, renderDailyTable, saveDailyRecommendationsAsPlaylist, invoke);
     wireQueueToggle();
     wireAccountCenter();
     wireDockBar();
@@ -236,11 +237,14 @@ export function bootCloudPlayerApp(deps) {
   }
 }
 
-function wireHomeShortcuts(setPage, renderDailyTable, invoke) {
+function wireHomeShortcuts(setPage, renderDailyTable, saveDailyRecommendationsAsPlaylist, invoke) {
   document.getElementById("btn-home-search")?.addEventListener("click", () => setPage("search"));
   document.getElementById("btn-home-import")?.addEventListener("click", () => setPage("import"));
   document.getElementById("btn-home-open-recent")?.addEventListener("click", () => setPage("recent"));
   document.getElementById("btn-home-open-daily")?.addEventListener("click", () => setPage("daily"));
+  document.getElementById("btn-save-daily-playlist")?.addEventListener("click", () => {
+    void saveDailyRecommendationsAsPlaylist?.();
+  });
   document.addEventListener("click", (event) => {
     const target = event.target instanceof Element ? event.target.closest("#btn-refresh-daily") : null;
     if (!target) return;
