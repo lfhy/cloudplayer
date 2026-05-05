@@ -64,11 +64,11 @@ const player = createBasePlayerRuntime({
   getDesktopLyricsOpen: () => desktopLyricsOpen, getDesktopLyricsWindow: () => desktopLyricsWindow, getDownloadTasks: () => downloadTasksBySourceId, getPlayIndex: () => playIndex,
   getPlayLoadGeneration: () => playLoadGeneration, getPlayModeIndex: () => playModeIndex, getPlayQueue: () => playQueue, getSearchState: () => searchState,
   getSeekDragging: () => seekDragging, getSessionRecentPlays: () => sessionRecentPlays, maxSessionRecent: RECENT_SESSION_MAX, messageRequestFailed: MSG_REQUEST_FAILED,
-  onHomeQueueChanged: () => { if (document.querySelector('.page[data-page="home"]')?.classList.contains("page-active")) renderHomePage(); },
+  onHomeQueueChanged: () => { if (document.querySelector('.page[data-page="home"]')?.classList.contains("page-active")) void renderHomePage(); },
   onRecentChanged: () => {
     if (document.querySelector('.page[data-page="recent"]')?.classList.contains("page-active")) renderRecentPlaysTable();
-    if (document.querySelector('.page[data-page="home"]')?.classList.contains("page-active")) renderHomePage();
-    if (document.querySelector('.page[data-page="daily"]')?.classList.contains("page-active")) renderDailyTable();
+    if (document.querySelector('.page[data-page="home"]')?.classList.contains("page-active")) void renderHomePage();
+    if (document.querySelector('.page[data-page="daily"]')?.classList.contains("page-active")) void renderDailyTable();
   },
   open, playModeItems: PLAY_MODES, randomNextIndex: (...args) => randomNextIndex(...args), refreshFavButton: (...args) => refreshFavButton(...args), renderQueuePanel: (...args) => renderQueuePanel(...args),
   setAudioProgressLogLastTs: (value) => { audioProgressLogLastTs = value; }, setAudioSourceGeneration: (value) => { audioSourceGeneration = value; },

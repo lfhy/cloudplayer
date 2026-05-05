@@ -93,6 +93,14 @@ func OpenAndInit() (*sql.DB, error) {
 			updated_at INTEGER NOT NULL DEFAULT 0
 		);
 		CREATE INDEX IF NOT EXISTS idx_lyrics_cache_updated_at ON lyrics_cache(updated_at DESC);
+
+		CREATE TABLE IF NOT EXISTS daily_recommendations (
+			rec_date TEXT PRIMARY KEY,
+			source TEXT NOT NULL DEFAULT '',
+			payload_json TEXT NOT NULL DEFAULT '',
+			updated_at INTEGER NOT NULL DEFAULT 0
+		);
+		CREATE INDEX IF NOT EXISTS idx_daily_rec_updated_at ON daily_recommendations(updated_at DESC);
 	`); err != nil {
 		return nil, err
 	}

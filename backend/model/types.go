@@ -76,3 +76,9 @@ type RecentPlayRow struct {
 	FilePath      *string `json:"file_path"`
 	PlayedAt      int64   `json:"played_at"`
 }
+
+type DailyRecommendationResponse struct {
+	Date  string                     `json:"date"`
+	Rows  []musicsource.SearchResult `json:"rows"`
+	Source string                    `json:"source"`
+}

@@ -241,5 +241,5 @@ function wireHomeShortcuts(setPage, renderDailyTable) {
   document.getElementById("btn-home-import")?.addEventListener("click", () => setPage("import"));
   document.getElementById("btn-home-open-recent")?.addEventListener("click", () => setPage("recent"));
   document.getElementById("btn-home-open-daily")?.addEventListener("click", () => setPage("daily"));
-  document.getElementById("btn-refresh-daily")?.addEventListener("click", () => renderDailyTable());
+  document.getElementById("btn-refresh-daily")?.addEventListener("click", () => void renderDailyTable(true));
 }

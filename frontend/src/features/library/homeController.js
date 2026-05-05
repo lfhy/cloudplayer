@@ -11,8 +11,10 @@ export function createHomeController(deps) {
     playSingleItem,
   } = deps;
   let dailyRecommendationRows = [];
+  let dailyRecommendationDate = "";
+  let midnightRefreshTimer = null;
 
-  function getDailyRecommendations() {
+  function getLocalDailyRecommendations() {
     const base = getSessionRecentPlays().filter((item) => !!(item?.title || "").trim());
     const dedup = [];
     const seen = new Set();
@@ -23,12 +25,48 @@ export function createHomeController(deps) {
       dedup.push(item);
     }
     const daySeed = new Date().toISOString().slice(0, 10).replace(/-/g, "");
-    dailyRecommendationRows = dedup
+    return dedup
       .map((item, index) => ({ item, score: Number(daySeed) % (index + 7) }))
       .sort((a, b) => a.score - b.score)
       .map((entry) => entry.item)
       .slice(0, 24);
+  }
+
+  async function ensureDailyRecommendations(force = false) {
+    const today = new Date().toISOString().slice(0, 10);
+    if (!force && dailyRecommendationDate === today && dailyRecommendationRows.length) return dailyRecommendationRows;
+    try {
+      const payload = await invoke("get_daily_recommendation");
+      const rows = Array.isArray(payload?.rows) ? payload.rows : [];
+      if (rows.length) {
+        dailyRecommendationRows = rows.map((item) => ({
+          title: item.title || "",
+          artist: item.artist || "",
+          album: item.album || "",
+          duration_ms: item.duration_ms || 0,
+          cover_url: item.cover_url || "",
+          source_id: item.source_id || "",
+        }));
+        dailyRecommendationDate = payload?.date || today;
+        return dailyRecommendationRows;
+      }
+    } catch {
+    }
+    dailyRecommendationRows = getLocalDailyRecommendations();
+    dailyRecommendationDate = today;
     return dailyRecommendationRows;
+  }
+
+  function scheduleMidnightRefresh(render) {
+    if (midnightRefreshTimer) clearTimeout(midnightRefreshTimer);
+    const now = new Date();
+    const next = new Date(now);
+    next.setHours(24, 0, 0, 0);
+    midnightRefreshTimer = window.setTimeout(() => {
+      dailyRecommendationDate = "";
+      dailyRecommendationRows = [];
+      void ensureDailyRecommendations(true).then(() => render()).finally(() => scheduleMidnightRefresh(render));
+    }, Math.max(1000, next.getTime() - now.getTime()));
   }
 
   function createListRow(item, index, mode) {
@@ -38,7 +76,7 @@ export function createHomeController(deps) {
     const cover = coverImgHtml({ src: item.cover_url || "", className: "home-row-item__cover", width: 44, height: 44, radius: 10, alt: item.title || "" });
     const artist = item.artist || (item.local_path ? "本地音乐" : "在线曲目");
     button.innerHTML = `
-      <span class="home-row-item__idx">${mode === "daily" ? index + 1 : index + 1}</span>
+      <span class="home-row-item__idx">${index + 1}</span>
       ${cover}
       <span class="home-row-item__info">
         <strong>${escapeHtml(item.title || "—")}</strong>
@@ -51,7 +89,7 @@ export function createHomeController(deps) {
     return button;
   }
 
-  function renderHomePage() {
+  async function renderHomePage() {
     const playlistCountEl = document.getElementById("home-playlist-count");
     const recentCountEl = document.getElementById("home-recent-count");
     const downloadCountEl = document.getElementById("home-download-count");
@@ -60,7 +98,7 @@ export function createHomeController(deps) {
     const greetingEl = document.getElementById("home-greeting");
     const dateLineEl = document.getElementById("home-date-line");
     const recentRows = getSessionRecentPlays();
-    const recommendations = getDailyRecommendations();
+    const recommendations = await ensureDailyRecommendations();
     const hour = new Date().getHours();
     if (greetingEl) greetingEl.textContent = hour < 11 ? "早上好" : hour < 18 ? "下午好" : "晚上好";
     if (dateLineEl) dateLineEl.textContent = `${new Date().toLocaleDateString("zh-CN", { weekday: "long", month: "long", day: "numeric" })} · ${recentRows.length ? `共 ${recentRows.length} 首播放记录` : "先开始听几首歌吧"}`;
@@ -89,12 +127,13 @@ export function createHomeController(deps) {
       .catch(() => {
         if (playlistCountEl) playlistCountEl.textContent = "0";
       });
+    scheduleMidnightRefresh(renderHomePage);
   }
 
-  function renderDailyTable() {
+  async function renderDailyTable(force = false) {
     const tbody = document.querySelector("#daily-table tbody");
     if (!tbody) return;
-    const rows = getDailyRecommendations();
+    const rows = await ensureDailyRecommendations(force);
     if (!rows.length) {
       tbody.innerHTML = '<tr><td colspan="4" class="muted">最近播放还不够，先听几首歌再回来生成每日推荐。</td></tr>';
       return;
