@@ -75,8 +75,8 @@ func Run(assets fs.FS, trayTemplateIcon []byte) error {
 		Title:            "CloudPlayer",
 		Width:            1100,
 		Height:           700,
-		MinWidth:         1100,
-		MinHeight:        700,
+		MinWidth:         1000,
+		MinHeight:        680,
 		URL:              "/",
 		BackgroundColour: application.NewRGB(24, 26, 31),
 		Mac: application.MacWindow{
