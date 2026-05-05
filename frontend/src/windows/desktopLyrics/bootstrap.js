@@ -43,6 +43,9 @@ async function initLyricsWindow() {
 
   await lyricsWin.listen("desktop-lyrics-lines", (event) => {
     const payload = event?.payload ?? {};
+    const syncSeq = Number(payload.syncSeq ?? payload.sync_seq ?? 0);
+    if (syncSeq && syncSeq < desktopLyricsState.lastSyncSeq) return;
+    if (syncSeq) desktopLyricsState.lastSyncSeq = syncSeq;
     const activeSlot = Number(payload.activeSlot ?? payload.active_slot);
     const line1 = String(payload.line1 ?? "").trim();
     const line2 = String(payload.line2 ?? "").trim();

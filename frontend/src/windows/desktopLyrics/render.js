@@ -86,6 +86,19 @@ function plainCoverageRatio(startT, endT, currentTime) {
   return duration > 0 ? Math.min(1, Math.max(0, (currentTime - startT) / duration)) : 1;
 }
 
+function monotonicLineProgress(anchor, lineElId, text, startT, endT, rawRatio) {
+  const clamped = Math.min(1, Math.max(0, Number.isFinite(rawRatio) ? rawRatio : 0));
+  const lineKey = `${lineElId}|${text}|${startT}|${endT}`;
+  const audioNow = Number(anchor.audioNow) || 0;
+  const sameLine = desktopLyricsState.progressLineKey === lineKey;
+  const backwardSeek = sameLine && audioNow < desktopLyricsState.progressAudioNow - 0.35;
+  // Keep progress monotonic within one lyric line; only reset on line change or an actual seek backward.
+  desktopLyricsState.progressValue = sameLine && !backwardSeek ? Math.max(desktopLyricsState.progressValue, clamped) : clamped;
+  desktopLyricsState.progressLineKey = lineKey;
+  desktopLyricsState.progressAudioNow = audioNow;
+  return desktopLyricsState.progressValue;
+}
+
 function applyLineCoverage(lineElId, ratio) {
   const layers = ensureLineLayers(lineElId);
   if (!layers) return;
@@ -120,7 +133,6 @@ function syncedCurrentTime(anchor) {
     anchor.line1EndT,
     anchor.line2StartT,
     anchor.line2EndT,
-    anchor.audioPlaying ? 1 : 0,
   ].join("|");
   const reportedNow = Number(anchor.audioNow) || 0;
   const now = performance.now();
@@ -130,14 +142,21 @@ function syncedCurrentTime(anchor) {
     desktopLyricsState.syncedWallNow = now;
     desktopLyricsState.lastReportedAudioNow = reportedNow;
   }
+  const projectedNow = desktopLyricsState.syncedAudioNow + Math.max(0, now - desktopLyricsState.syncedWallNow) / 1000;
   if (!anchor.audioPlaying) {
-    desktopLyricsState.syncedAudioNow = reportedNow;
+    if (desktopLyricsState.wasAudioPlaying) {
+      const drift = reportedNow - projectedNow;
+      desktopLyricsState.syncedAudioNow = drift >= -0.18 ? Math.max(projectedNow, reportedNow) : reportedNow;
+    } else if (Math.abs(reportedNow - desktopLyricsState.lastReportedAudioNow) > 0.18) {
+      desktopLyricsState.syncedAudioNow = reportedNow;
+    }
     desktopLyricsState.syncedWallNow = now;
     desktopLyricsState.lastReportedAudioNow = reportedNow;
-    return reportedNow;
+    desktopLyricsState.wasAudioPlaying = false;
+    return desktopLyricsState.syncedAudioNow;
   }
+  desktopLyricsState.wasAudioPlaying = true;
   if (Math.abs(reportedNow - desktopLyricsState.lastReportedAudioNow) > 0.0005) {
-    const projectedNow = desktopLyricsState.syncedAudioNow + Math.max(0, now - desktopLyricsState.syncedWallNow) / 1000;
     const drift = reportedNow - projectedNow;
     // Small negative drift is just IPC/update jitter; clamp it so the fill never visibly rewinds.
     desktopLyricsState.syncedAudioNow = drift >= -0.18 ? Math.max(projectedNow, reportedNow) : reportedNow;
@@ -159,6 +178,7 @@ export function animateLyrics() {
     const isIdleSlogan = !!anchor.idleMode;
     if (isIdleSlogan) {
       // Idle slogan uses split state: line1 as unplayed color, line2 as played color.
+      desktopLyricsState.progressLineKey = "";
       setLineRawColor("line1", desktopLyricsState.baseColor);
       setLineRawColor("line2", desktopLyricsState.hiColor);
       requestAnimationFrame(animateLyrics);
@@ -168,13 +188,13 @@ export function animateLyrics() {
     if (slot === 1) {
       const useWords = anchor.line1Words?.words?.length && wordsJoinForTiming(anchor.line1Words) === anchor.line1;
       const ratio = useWords ? wordCoverageRatio(anchor.line1Words, currentTime) : -1;
-      applyLineCoverage("line1", ratio >= 0 ? ratio : plainCoverageRatio(anchor.line1StartT, anchor.line1EndT, currentTime));
+      applyLineCoverage("line1", monotonicLineProgress(anchor, "line1", anchor.line1, anchor.line1StartT, anchor.line1EndT, ratio >= 0 ? ratio : plainCoverageRatio(anchor.line1StartT, anchor.line1EndT, currentTime)));
       setLineUniform("line2", 0);
     } else {
       setLineUniform("line1", 1);
       const useWords = anchor.line2Words?.words?.length && wordsJoinForTiming(anchor.line2Words) === anchor.line2;
       const ratio = useWords ? wordCoverageRatio(anchor.line2Words, currentTime) : -1;
-      applyLineCoverage("line2", ratio >= 0 ? ratio : plainCoverageRatio(anchor.line2StartT, anchor.line2EndT, currentTime));
+      applyLineCoverage("line2", monotonicLineProgress(anchor, "line2", anchor.line2, anchor.line2StartT, anchor.line2EndT, ratio >= 0 ? ratio : plainCoverageRatio(anchor.line2StartT, anchor.line2EndT, currentTime)));
     }
   }
   requestAnimationFrame(animateLyrics);

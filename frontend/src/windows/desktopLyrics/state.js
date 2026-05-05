@@ -18,8 +18,13 @@ export const desktopLyricsState = {
   hiRgb: { r: 255, g: 183, b: 212 },
   baseColor: "rgb(255, 255, 255)",
   hiColor: "rgb(255, 183, 212)",
+  lastSyncSeq: 0,
+  progressLineKey: "",
+  progressValue: 0,
+  progressAudioNow: 0,
   syncedAudioNow: 0,
   syncedWallNow: 0,
   lastReportedAudioNow: 0,
+  wasAudioPlaying: false,
   syncToken: "",
 };

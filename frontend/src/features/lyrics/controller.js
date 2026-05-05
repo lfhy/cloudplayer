@@ -2,12 +2,7 @@
 import { currentPlayableKey, isSamePlayableIdentity, lyricDisplayForDesktop, parseLrc } from "./model.js";
 import { createTrayLabelSync } from "./trayLabelSync.js";
 import { createLyricsWindowController } from "./windowController.js";
-import {
-  DESKTOP_LYRICS_IDLE_LINE1,
-  DESKTOP_LYRICS_IDLE_LINE2,
-  idleDesktopLyricsPayload,
-  normalizeDesktopLyricsIdleText,
-} from "./idleText.js";
+import { DESKTOP_LYRICS_IDLE_LINE1, DESKTOP_LYRICS_IDLE_LINE2, idleDesktopLyricsPayload, normalizeDesktopLyricsIdleText } from "./idleText.js";
 
 export function createLyricsController(deps) {
   const {
@@ -35,6 +30,7 @@ export function createLyricsController(deps) {
   let lyricTraceLastTs = 0;
   let idleText = normalizeDesktopLyricsIdleText(DESKTOP_LYRICS_IDLE_LINE1, DESKTOP_LYRICS_IDLE_LINE2);
   let lastSnapshot = null;
+  let desktopEmitSeq = 0, desktopSyncSeq = 0;
 
   function lrcEntriesFromWordLines(lines) {
     if (!Array.isArray(lines) || !lines.length) return [];
@@ -95,7 +91,7 @@ export function createLyricsController(deps) {
     try {
       const win = getDesktopLyricsWindow() || (await WebviewWindow.getByLabel("lyrics"));
       if (win) setDesktopLyricsWindow(win);
-      await emitTo({ kind: "WebviewWindow", label: "lyrics" }, "desktop-lyrics-lines", payload);
+      await emitTo({ kind: "WebviewWindow", label: "lyrics" }, "desktop-lyrics-lines", { ...payload, syncSeq: ++desktopEmitSeq });
     } catch (error) {
       console.warn("emit lyrics", error);
       setDesktopLyricsOpen(false);
@@ -190,10 +186,14 @@ export function createLyricsController(deps) {
 
   async function syncDesktopLyrics() {
     if (!getDesktopLyricsOpen() && !trayLabel.isEnabled()) return;
+    const syncSeq = ++desktopSyncSeq;
     await ensureLrcLoadedForCurrentTrackDedup(getPlayLoadGeneration());
+    if (syncSeq !== desktopSyncSeq) return;
     const { currentTrack: current, payload } = buildCurrentLyricsSnapshot();
+    if (syncSeq !== desktopSyncSeq) return;
     const audioNow = Number(payload.audioNow) || 0;
     await pushDesktopLyricsLines(payload);
+    if (syncSeq !== desktopSyncSeq) return;
     await trayLabel.sync(payload, current, payload.audioPlaying);
 
     const nowMs = Date.now();
@@ -222,12 +222,7 @@ export function createLyricsController(deps) {
     }
   }
 
-  async function syncDesktopLyricsState() {
-    if (!getDesktopLyricsOpen()) return;
-    await syncDesktopLyrics();
-    await broadcastDesktopLyricsLock();
-    await broadcastDesktopLyricsColors();
-  }
+  async function syncDesktopLyricsState() { if (getDesktopLyricsOpen()) { await syncDesktopLyrics(); await broadcastDesktopLyricsLock(); await broadcastDesktopLyricsColors(); } }
 
   function clearLyricsCache() {
     lrcCacheKey = null;
