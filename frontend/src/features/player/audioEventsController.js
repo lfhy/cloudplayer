@@ -145,11 +145,7 @@ export function createAudioEventsController(deps) {
         void playFromQueueIndex((getPlayIndex() - 1 + length) % length);
         return;
       }
-      if (mode === "loop_list" && getPlayIndex() === 0) {
-        void playFromQueueIndex(length - 1);
-        return;
-      }
-      if (getPlayIndex() > 0) void playFromQueueIndex(getPlayIndex() - 1);
+      void playFromQueueIndex((getPlayIndex() - 1 + length) % length);
     });
     document.getElementById("btn-player-next")?.addEventListener("click", () => {
       const length = getPlayQueue().length;
@@ -159,11 +155,7 @@ export function createAudioEventsController(deps) {
         void playFromQueueIndex(randomNextIndex());
         return;
       }
-      if (mode === "loop_list" && getPlayIndex() === length - 1) {
-        void playFromQueueIndex(0);
-        return;
-      }
-      if (getPlayIndex() < length - 1) void playFromQueueIndex(getPlayIndex() + 1);
+      void playFromQueueIndex((getPlayIndex() + 1) % length);
     });
   }
 

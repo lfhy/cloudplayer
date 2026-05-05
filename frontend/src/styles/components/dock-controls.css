@@ -39,6 +39,11 @@
   margin-left: 2px;
 }
 
+.dock-mode--transport {
+  width: 38px;
+  height: 38px;
+}
+
 .dock-tbtn {
   width: 38px;
   height: 38px;
@@ -128,7 +133,7 @@
 .dock-player__timeline {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
   width: 100%;
   max-width: 520px;
 }

@@ -6,11 +6,8 @@ export function createPlayerChromeController(deps) {
     broadcastTrayPlayerState,
     formatTime,
     getAudioEl,
-    getPlayIndex,
-    getPlayModeIndex,
     getPlayQueue,
     getSeekDragging,
-    playModeItems,
   } = deps;
 
   function updatePlayerChrome(patch = {}) {
@@ -52,25 +49,12 @@ export function createPlayerChromeController(deps) {
     const prev = document.getElementById("btn-player-prev");
     const next = document.getElementById("btn-player-next");
     const length = getPlayQueue().length;
-    const mode = playModeItems[getPlayModeIndex()].key;
     if (!length) {
       if (prev) prev.disabled = true;
       if (next) next.disabled = true;
-      return;
     }
-    if (mode === "loop_list" || mode === "shuffle") {
-      if (prev) prev.disabled = false;
-      if (next) next.disabled = false;
-      return;
-    }
-    if (mode === "one") {
-      const disabled = length <= 1;
-      if (prev) prev.disabled = disabled;
-      if (next) next.disabled = disabled;
-      return;
-    }
-    if (prev) prev.disabled = getPlayIndex() <= 0;
-    if (next) next.disabled = getPlayIndex() >= length - 1;
+    if (prev) prev.disabled = !length;
+    if (next) next.disabled = !length;
     queueMicrotask(() => {
       void broadcastTrayPlayerState();
     });
