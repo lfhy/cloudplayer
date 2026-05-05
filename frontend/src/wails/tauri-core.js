@@ -114,6 +114,7 @@ const invokeMap = {
     (await CloudPlayerService.GetSearchSongMetadata(args.songIds ?? [])).map((row) => normalizeSearchMetadataRow(row)),
   get_app_log_path: () => CloudPlayerService.GetAppLogPath(),
   get_global_hotkeys: () => CloudPlayerService.GetGlobalHotkeys(),
+  get_daily_recommendation: (args) => CloudPlayerService.GetDailyRecommendation(!!args.force),
   get_kugou_login_status: () => CloudPlayerService.GetKugouLoginStatus(),
   get_preview_url: (args) => CloudPlayerService.GetPreviewURL(args.songId),
   get_settings: () => CloudPlayerService.GetSettings(),
@@ -127,6 +128,7 @@ const invokeMap = {
   local_path_accessible: (args) => CloudPlayerService.LocalPathAccessible(args.path),
   log_play_event: (args) =>
     CloudPlayerService.LogPlayEvent(args.stage, args.url ?? null, args.error_code ?? null, args.message ?? null, args.extra ?? null),
+  log_frontend_debug: (args) => CloudPlayerService.LogFrontendDebug(args.scope, args.stage, args.detail),
   login_kugou_by_cellphone: (args) => CloudPlayerService.LoginKugouByCellphone(args.mobile, args.code),
   logout_kugou: () => CloudPlayerService.LogoutKugou(),
   lyrics_fetch_candidate: (args) => CloudPlayerService.LyricsFetchCandidate(args.candidate),

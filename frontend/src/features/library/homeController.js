@@ -14,6 +14,14 @@ export function createHomeController(deps) {
   let dailyRecommendationDate = "";
   let midnightRefreshTimer = null;
 
+  function logDailyFlow(stage, detail = {}) {
+    console.info("[daily]", stage, {
+      cachedDate: dailyRecommendationDate,
+      cachedCount: dailyRecommendationRows.length,
+      ...detail,
+    });
+  }
+
   function getLocalDailyRecommendations() {
     const base = getSessionRecentPlays().filter((item) => !!(item?.title || "").trim());
     const dedup = [];
@@ -34,10 +42,42 @@ export function createHomeController(deps) {
 
   async function ensureDailyRecommendations(force = false) {
     const today = new Date().toISOString().slice(0, 10);
-    if (!force && dailyRecommendationDate === today && dailyRecommendationRows.length) return dailyRecommendationRows;
+    logDailyFlow("ensure:start", { force, today });
+    void invoke("log_frontend_debug", {
+      scope: "daily",
+      stage: "ensure:start",
+      detail: JSON.stringify({ force, today, cachedDate: dailyRecommendationDate, cachedCount: dailyRecommendationRows.length }),
+    }).catch(() => {});
+    if (!force && dailyRecommendationDate === today && dailyRecommendationRows.length) {
+      logDailyFlow("ensure:memory-cache-hit", { today });
+      void invoke("log_frontend_debug", {
+        scope: "daily",
+        stage: "ensure:memory-cache-hit",
+        detail: JSON.stringify({ today, cachedCount: dailyRecommendationRows.length }),
+      }).catch(() => {});
+      return dailyRecommendationRows;
+    }
     try {
       const payload = await invoke("get_daily_recommendation", { force: !!force });
       const rows = Array.isArray(payload?.rows) ? payload.rows : [];
+      logDailyFlow("ensure:backend-response", {
+        force,
+        today,
+        source: payload?.source || "unknown",
+        responseCount: rows.length,
+        responseDate: payload?.date || "",
+      });
+      void invoke("log_frontend_debug", {
+        scope: "daily",
+        stage: "ensure:backend-response",
+        detail: JSON.stringify({
+          force,
+          today,
+          source: payload?.source || "unknown",
+          responseCount: rows.length,
+          responseDate: payload?.date || "",
+        }),
+      }).catch(() => {});
       if (rows.length) {
         dailyRecommendationRows = rows.map((item) => ({
           title: item.title || "",
@@ -48,13 +88,36 @@ export function createHomeController(deps) {
           source_id: item.source_id || "",
         }));
         dailyRecommendationDate = payload?.date || today;
+        logDailyFlow("ensure:backend-applied", { source: payload?.source || "unknown", appliedCount: dailyRecommendationRows.length });
+        void invoke("log_frontend_debug", {
+          scope: "daily",
+          stage: "ensure:backend-applied",
+          detail: JSON.stringify({ source: payload?.source || "unknown", appliedCount: dailyRecommendationRows.length }),
+        }).catch(() => {});
         return dailyRecommendationRows;
       }
     } catch (err) {
       console.warn("get_daily_recommendation failed:", err);
+      void invoke("log_frontend_debug", {
+        scope: "daily",
+        stage: "ensure:failed",
+        detail: JSON.stringify({ force, today, message: String(err?.message || err) }),
+      }).catch(() => {});
     }
+    logDailyFlow("ensure:fallback-local", { force, today, recentCount: getSessionRecentPlays().length });
+    void invoke("log_frontend_debug", {
+      scope: "daily",
+      stage: "ensure:fallback-local",
+      detail: JSON.stringify({ force, today, recentCount: getSessionRecentPlays().length }),
+    }).catch(() => {});
     dailyRecommendationRows = getLocalDailyRecommendations();
     dailyRecommendationDate = today;
+    logDailyFlow("ensure:fallback-applied", { appliedCount: dailyRecommendationRows.length });
+    void invoke("log_frontend_debug", {
+      scope: "daily",
+      stage: "ensure:fallback-applied",
+      detail: JSON.stringify({ appliedCount: dailyRecommendationRows.length }),
+    }).catch(() => {});
     return dailyRecommendationRows;
   }
 
@@ -134,7 +197,19 @@ export function createHomeController(deps) {
   async function renderDailyTable(force = false) {
     const tbody = document.querySelector("#daily-table tbody");
     if (!tbody) return;
+    logDailyFlow("render-table:start", { force });
+    void invoke("log_frontend_debug", {
+      scope: "daily",
+      stage: "render-table:start",
+      detail: JSON.stringify({ force }),
+    }).catch(() => {});
     const rows = await ensureDailyRecommendations(force);
+    logDailyFlow("render-table:rows-ready", { force, rowCount: rows.length });
+    void invoke("log_frontend_debug", {
+      scope: "daily",
+      stage: "render-table:rows-ready",
+      detail: JSON.stringify({ force, rowCount: rows.length }),
+    }).catch(() => {});
     if (!rows.length) {
       tbody.innerHTML = '<tr><td colspan="4" class="muted">最近播放还不够，先听几首歌再回来生成每日推荐。</td></tr>';
       return;

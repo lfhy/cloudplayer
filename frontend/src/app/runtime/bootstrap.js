@@ -63,7 +63,7 @@ export function bootCloudPlayerApp(deps) {
     applyPlatformClassNames();
     deps.renderSidebar();
     setPage("home");
-    wireHomeShortcuts(setPage, renderDailyTable);
+    wireHomeShortcuts(setPage, renderDailyTable, invoke);
     wireQueueToggle();
     wireAccountCenter();
     wireDockBar();
@@ -236,10 +236,41 @@ export function bootCloudPlayerApp(deps) {
   }
 }
 
-function wireHomeShortcuts(setPage, renderDailyTable) {
+function wireHomeShortcuts(setPage, renderDailyTable, invoke) {
   document.getElementById("btn-home-search")?.addEventListener("click", () => setPage("search"));
   document.getElementById("btn-home-import")?.addEventListener("click", () => setPage("import"));
   document.getElementById("btn-home-open-recent")?.addEventListener("click", () => setPage("recent"));
   document.getElementById("btn-home-open-daily")?.addEventListener("click", () => setPage("daily"));
-  document.getElementById("btn-refresh-daily")?.addEventListener("click", () => void renderDailyTable(true));
+  document.addEventListener("click", (event) => {
+    const target = event.target instanceof Element ? event.target.closest("#btn-refresh-daily") : null;
+    if (!target) return;
+    console.info("[daily] refresh button clicked");
+    void invoke?.("log_frontend_debug", {
+      scope: "daily",
+      stage: "refresh-click",
+      detail: JSON.stringify({
+        pageActive: document.querySelector('.page[data-page="daily"]')?.classList.contains("page-active") || false,
+        visible: target instanceof HTMLElement ? !target.hidden : true,
+      }),
+    }).catch(() => {});
+    void renderDailyTable(true)
+      .then(() => {
+        console.info("[daily] refresh completed");
+        void invoke?.("log_frontend_debug", {
+          scope: "daily",
+          stage: "refresh-completed",
+          detail: JSON.stringify({
+            pageActive: document.querySelector('.page[data-page="daily"]')?.classList.contains("page-active") || false,
+          }),
+        }).catch(() => {});
+      })
+      .catch((error) => {
+        console.warn("[daily] refresh failed", error);
+        void invoke?.("log_frontend_debug", {
+          scope: "daily",
+          stage: "refresh-failed",
+          detail: JSON.stringify({ message: String(error?.message || error) }),
+        }).catch(() => {});
+      });
+  });
 }

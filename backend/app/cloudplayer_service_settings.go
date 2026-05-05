@@ -2,6 +2,7 @@ package cloudplayer
 
 import (
 	"fmt"
+	"log"
 	"os"
 	"strings"
 
@@ -17,6 +18,12 @@ func (s *CloudPlayerService) GetAppLogPath() (string, error) {
 
 func (s *CloudPlayerService) LogPlayEvent(stage string, url *string, errorCode *int, message *string, extra *string) error {
 	LogPlayEvent(stage, url, errorCode, message, extra)
+	return nil
+}
+
+// Frontend debug messages funnel through the backend logger so UI repros land in the app log file.
+func (s *CloudPlayerService) LogFrontendDebug(scope, stage, detail string) error {
+	log.Printf("frontend debug scope=%s stage=%s detail=%s", strings.TrimSpace(scope), strings.TrimSpace(stage), strings.TrimSpace(detail))
 	return nil
 }
 

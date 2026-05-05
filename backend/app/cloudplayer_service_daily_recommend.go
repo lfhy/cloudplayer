@@ -25,6 +25,7 @@ var (
 // all caches and fetches fresh data from the current provider.
 func (s *CloudPlayerService) GetDailyRecommendation(force bool) (model.DailyRecommendationResponse, error) {
 	today := time.Now().Format("2006-01-02")
+	log.Printf("daily recommend: request force=%v today=%s", force, today)
 
 	if !force {
 		dailyRecMu.Lock()
@@ -32,6 +33,7 @@ func (s *CloudPlayerService) GetDailyRecommendation(force bool) (model.DailyReco
 			rows := cloneSearchResults(dailyRecRows)
 			src := dailyRecSrc
 			dailyRecMu.Unlock()
+			log.Printf("daily recommend: memory cache hit source=%s count=%d", src, len(rows))
 			return model.DailyRecommendationResponse{Date: today, Rows: rows, Source: src}, nil
 		}
 		dailyRecMu.Unlock()
@@ -45,17 +47,20 @@ func (s *CloudPlayerService) GetDailyRecommendation(force bool) (model.DailyReco
 			dailyRecRows = cloneSearchResults(dbRows)
 			dailyRecSrc = dbSrc
 			dailyRecMu.Unlock()
+			log.Printf("daily recommend: db cache hit source=%s count=%d", dbSrc, len(dbRows))
 			return model.DailyRecommendationResponse{Date: today, Rows: dbRows, Source: dbSrc}, nil
 		}
 	}
 
 	provider := musicsource.Current()
+	log.Printf("daily recommend: fetching provider=%s force=%v", provider.Key(), force)
 	rows, err := provider.FetchDailyRecommendations(nil, dailyRecLimit)
 	if err != nil {
 		log.Printf("daily recommend: provider %q fetch failed: %v", provider.Key(), err)
 		return model.DailyRecommendationResponse{Date: today, Rows: nil, Source: "none"}, nil
 	}
 	source := provider.Key()
+	log.Printf("daily recommend: fetched source=%s count=%d", source, len(rows))
 
 	if saveErr := saveDailyRecommendation(s.state.DB, today, source, rows); saveErr != nil {
 		log.Printf("daily recommend: db save failed: %v", saveErr)
