@@ -21,30 +21,32 @@ var (
 	dailyRecSrc  string
 )
 
-// GetDailyRecommendation returns today's picks. It checks the in-memory cache
-// first, then the SQLite table, and only calls the current provider when neither has data.
-func (s *CloudPlayerService) GetDailyRecommendation() (model.DailyRecommendationResponse, error) {
+// GetDailyRecommendation returns today's picks. When force is true it bypasses
+// all caches and fetches fresh data from the current provider.
+func (s *CloudPlayerService) GetDailyRecommendation(force bool) (model.DailyRecommendationResponse, error) {
 	today := time.Now().Format("2006-01-02")
 
-	dailyRecMu.Lock()
-	if dailyRecDate == today && len(dailyRecRows) > 0 {
-		rows := cloneSearchResults(dailyRecRows)
-		src := dailyRecSrc
-		dailyRecMu.Unlock()
-		return model.DailyRecommendationResponse{Date: today, Rows: rows, Source: src}, nil
-	}
-	dailyRecMu.Unlock()
-
-	dbRows, dbSrc, found, err := loadDailyRecommendation(s.state.DB, today)
-	if err != nil {
-		log.Printf("daily recommend: db load failed: %v", err)
-	} else if found && len(dbRows) > 0 {
+	if !force {
 		dailyRecMu.Lock()
-		dailyRecDate = today
-		dailyRecRows = cloneSearchResults(dbRows)
-		dailyRecSrc = dbSrc
+		if dailyRecDate == today && len(dailyRecRows) > 0 {
+			rows := cloneSearchResults(dailyRecRows)
+			src := dailyRecSrc
+			dailyRecMu.Unlock()
+			return model.DailyRecommendationResponse{Date: today, Rows: rows, Source: src}, nil
+		}
 		dailyRecMu.Unlock()
-		return model.DailyRecommendationResponse{Date: today, Rows: dbRows, Source: dbSrc}, nil
+
+		dbRows, dbSrc, found, err := loadDailyRecommendation(s.state.DB, today)
+		if err != nil {
+			log.Printf("daily recommend: db load failed: %v", err)
+		} else if found && len(dbRows) > 0 {
+			dailyRecMu.Lock()
+			dailyRecDate = today
+			dailyRecRows = cloneSearchResults(dbRows)
+			dailyRecSrc = dbSrc
+			dailyRecMu.Unlock()
+			return model.DailyRecommendationResponse{Date: today, Rows: dbRows, Source: dbSrc}, nil
+		}
 	}
 
 	provider := musicsource.Current()

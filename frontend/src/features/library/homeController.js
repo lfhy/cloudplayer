@@ -36,7 +36,7 @@ export function createHomeController(deps) {
     const today = new Date().toISOString().slice(0, 10);
     if (!force && dailyRecommendationDate === today && dailyRecommendationRows.length) return dailyRecommendationRows;
     try {
-      const payload = await invoke("get_daily_recommendation");
+      const payload = await invoke("get_daily_recommendation", { force: !!force });
       const rows = Array.isArray(payload?.rows) ? payload.rows : [];
       if (rows.length) {
         dailyRecommendationRows = rows.map((item) => ({
@@ -50,7 +50,8 @@ export function createHomeController(deps) {
         dailyRecommendationDate = payload?.date || today;
         return dailyRecommendationRows;
       }
-    } catch {
+    } catch (err) {
+      console.warn("get_daily_recommendation failed:", err);
     }
     dailyRecommendationRows = getLocalDailyRecommendations();
     dailyRecommendationDate = today;
