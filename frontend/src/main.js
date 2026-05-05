@@ -128,10 +128,18 @@ startDesktopRuntime({
   lyricsReplaceTarget: LYRICS_REPLACE_TARGET, normalizeAppThemeMode,
   onLyricsLockSync: (locked) => { desktopLyricsLocked = locked; player.refreshLyricsLockMenuLabel(); },
   pages, player, renderDailyTable, renderImportTable, renderMainShell, renderQueuePanel: (...args) => renderQueuePanel(...args), searchState, setPage: (...args) => setPage(...args), settings, systemDarkMedia,
-  syncTrayCommand: async (action) => {
+  syncTrayCommand: async (action, payload = {}) => {
     if (action === "toggle") document.getElementById("btn-player-play")?.click();
     else if (action === "prev") document.getElementById("btn-player-prev")?.click();
     else if (action === "next") document.getElementById("btn-player-next")?.click();
+    else if (action === "seek") {
+      const audio = audioEl();
+      const duration = audio?.duration;
+      if (audio && duration && Number.isFinite(duration) && duration > 0) {
+        const value = Number(payload?.value);
+        if (Number.isFinite(value)) audio.currentTime = (Math.max(0, Math.min(1000, value)) / 1000) * duration;
+      }
+    }
     else if (action === "open-main") await invoke("show_main_window").catch((error) => console.warn("show_main_window from tray-player-command", error));
   },
   wireAccountCenter: (...args) => wireAccountCenter(...args),

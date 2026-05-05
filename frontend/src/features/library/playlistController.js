@@ -177,9 +177,9 @@ export function createPlaylistController(deps) {
       escapeHtml,
       formatDurationMs,
       getLikedIds,
+      onClick: (index) => playFromPlaylistRow(index),
       onContextMenu: (event, index) => openPlaylistDetailRowContextMenu(event, index),
-      onDoubleClick: (index) => playFromPlaylistRow(index),
-      rowTitle: (row) => (row.playable ? "双击从该曲起播整单（仅含曲库 id 的曲目入队）" : "无曲库 id：请到「搜索」搜索后播放"),
+      rowTitle: (row) => (row.playable ? "" : "无曲库 id：请到「搜索」搜索后播放"),
     });
   }
 

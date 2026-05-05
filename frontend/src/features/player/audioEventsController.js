@@ -30,9 +30,15 @@ export function createAudioEventsController(deps) {
     const seek = document.getElementById("seek");
     if (!audio) return;
 
+    let lastTrayBroadcastTs = 0;
     audio.addEventListener("timeupdate", () => {
       syncSeekUi();
       void syncDesktopLyrics();
+      const now = Date.now();
+      if (now - lastTrayBroadcastTs >= 1000) {
+        lastTrayBroadcastTs = now;
+        void broadcastTrayPlayerState();
+      }
     });
     audio.addEventListener("loadedmetadata", () => {
       syncSeekUi();

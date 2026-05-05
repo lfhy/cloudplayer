@@ -122,7 +122,7 @@ export function bootCloudPlayerApp(deps) {
       await broadcastTrayPlayerState();
     });
     listen("tray-player-command", async (event) => {
-      await syncTrayCommand(event?.payload?.action);
+      await syncTrayCommand(event?.payload?.action, event?.payload);
     });
     listen("download-task-changed", (event) => {
       onDownloadTaskChanged(event?.payload);

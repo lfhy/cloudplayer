@@ -40,12 +40,15 @@ export function createPlayerChromeController(deps) {
       }
       current.textContent = formatTime(audio.currentTime);
       seek.disabled = false;
+      // Reflect played progress via a CSS variable so the filled and unfilled track use different colors.
+      seek.style.setProperty("--seek-progress", `${Number(seek.value) / 10}%`);
       return;
     }
     current.textContent = "0:00";
     total.textContent = "0:00";
     seek.value = "0";
     seek.disabled = !audio.src;
+    seek.style.setProperty("--seek-progress", "0%");
   }
 
   function setPlayerNavEnabled() {

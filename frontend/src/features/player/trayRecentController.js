@@ -32,6 +32,8 @@ export function createTrayRecentController(deps) {
     const currentTime = audio?.currentTime ?? 0;
     const progressPct =
       duration && Number.isFinite(duration) && duration > 0 ? (currentTime / duration) * 100 : 0;
+    const progressValue =
+      duration && Number.isFinite(duration) && duration > 0 ? Math.min(1000, Math.floor((currentTime / duration) * 1000)) : 0;
     return {
       hasTrack: !!current,
       title,
@@ -41,6 +43,7 @@ export function createTrayRecentController(deps) {
       hasPrev: !prevDisabled,
       hasNext: !nextDisabled,
       progressPct,
+      progressValue,
       accent,
       accentRgb,
     };

@@ -142,12 +142,19 @@
 }
 
 .dock-seek {
+  --seek-progress: 0%;
   flex: 1;
   min-width: 0;
   height: 6px;
   border-radius: 3px;
   appearance: none;
-  background: var(--dock-edge);
+  background: linear-gradient(
+    to right,
+    var(--dock-accent) 0%,
+    var(--dock-accent) var(--seek-progress),
+    var(--dock-edge) var(--seek-progress),
+    var(--dock-edge) 100%
+  );
   accent-color: var(--dock-accent);
   cursor: pointer;
 }
@@ -170,7 +177,7 @@
 .dock-seek::-webkit-slider-runnable-track {
   height: 6px;
   border-radius: 3px;
-  background: var(--dock-edge);
+  background: transparent;
 }
 
 .dock-vol {
