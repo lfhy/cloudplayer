@@ -1,3 +1,6 @@
+import { coverImgHtml } from "../../app/helpers/covers.js";
+import { escapeHtml } from "../../app/helpers/text.js";
+
 // Dock controller owns queue rendering, favorite state, and dock popovers.
 export function createDockController(deps) {
   const {
@@ -41,22 +44,43 @@ export function createDockController(deps) {
 
   function renderQueuePanel() {
     const list = document.getElementById("queue-list");
+    const count = document.getElementById("queue-count");
     const queue = getPlayQueue();
     if (!list) return;
+    if (count) count.textContent = `${queue.length} 首`;
     list.innerHTML = "";
     if (!queue.length) {
       const li = document.createElement("li");
-      li.textContent = "（空）去「搜索」页找歌，或从导入歌单开始建立你的播放队列";
+      li.className = "queue-empty";
+      li.textContent = "播放队列为空";
       list.appendChild(li);
       return;
     }
     queue.forEach((item, index) => {
       const li = document.createElement("li");
-      const label = item.local_path ? `${item.title}${item.artist ? ` — ${item.artist}` : ""}` : item.artist ? `${item.title} — ${item.artist}` : item.title;
-      if (index === getPlayIndex()) li.classList.add("is-current");
-      li.textContent = label;
-      li.title = item.local_path ? String(item.local_path) : `id=${item.source_id} · 双击播放`;
-      li.addEventListener("dblclick", () => void playFromQueueIndex(index));
+      const button = document.createElement("button");
+      const cover = coverImgHtml({
+        src: item.cover_url || "",
+        className: "queue-item__cover",
+        width: 48,
+        height: 48,
+        radius: 12,
+        alt: item.title || "",
+      });
+      const rank = String(index + 1).padStart(2, "0");
+      const sub = item.artist || (item.local_path ? "本地音乐" : "在线曲目");
+      button.type = "button";
+      button.className = "queue-item";
+      if (index === getPlayIndex()) button.classList.add("is-current");
+      button.innerHTML = `
+        <span class="queue-item__idx">${rank}</span>
+        ${cover}
+        <span class="queue-item__meta">
+          <span class="queue-item__title">${escapeHtml(item.title || "未命名曲目")}</span>
+          <span class="queue-item__sub">${escapeHtml(sub)}</span>
+        </span>`;
+      button.addEventListener("click", () => void playFromQueueIndex(index));
+      li.appendChild(button);
       list.appendChild(li);
     });
   }

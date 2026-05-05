@@ -68,7 +68,10 @@ export function createNavigationController(deps) {
     const button = document.getElementById("queue-toggle");
     if (!panel || !button) return;
     panel.classList.toggle("collapsed");
-    button.textContent = panel.classList.contains("collapsed") ? "展开" : "收起";
+    const collapsed = panel.classList.contains("collapsed");
+    panel.setAttribute("aria-hidden", collapsed ? "true" : "false");
+    button.textContent = collapsed ? "展开" : "收起";
+    button.setAttribute("aria-expanded", collapsed ? "false" : "true");
     renderQueuePanel();
   }
 
