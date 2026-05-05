@@ -22,13 +22,12 @@ export function playerDockTemplate() {
       </div>
       <div class="dock-player__center">
         <div class="dock-player__transport">
-          <button type="button" id="btn-play-mode" class="dock-mode" title="顺序播放（点击切换模式）" aria-label="顺序播放（点击切换模式）"></button>
           <button type="button" id="btn-player-prev" class="dock-tbtn" disabled title="上一首" aria-label="上一首">⏮</button>
           <button type="button" id="btn-player-play" class="dock-tbtn dock-tbtn--main" disabled title="播放" aria-label="播放">${playIcon}</button>
           <button type="button" id="btn-player-next" class="dock-tbtn" disabled title="下一首" aria-label="下一首">⏭</button>
         </div>
         <div class="dock-player__timeline">
-          <span class="dock-time dock-time--spacer" aria-hidden="true"></span>
+          <button type="button" id="btn-play-mode" class="dock-mode" title="顺序播放（点击切换模式）" aria-label="顺序播放（点击切换模式）"></button>
           <input type="range" id="seek" class="dock-seek" min="0" max="1000" value="0" step="1" disabled aria-label="进度" />
           <span id="time-total" class="dock-time">0:00</span>
         </div>
