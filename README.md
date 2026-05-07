@@ -126,6 +126,7 @@ task dev
 task build
 task package
 wails3 task release:desktop
+wails3 task release:github
 ```
 
 桌面多平台发布包：
@@ -141,7 +142,16 @@ wails3 task release:desktop
 - `macos/amd64`
 - `macos/arm64`
 
-产物会整理到 `bin/releases/` 下，Windows 默认生成 NSIS 安装包，macOS 会保留 `.app` 并额外输出 `.zip` 归档。
+产物会整理到 `bin/releases/` 下，Windows 默认生成 NSIS 安装包，macOS 会保留 `.app`，并额外输出 `.zip` 与 `.dmg`。
+
+当目标同时包含 `windows/amd64` 和 `windows/arm64` 时，脚本还会额外生成一个双架构 NSIS 安装包：
+
+- `bin/releases/windows/dual/CloudPlayer-windows-amd64-arm64-installer.exe`
+
+当命令包含 `--include-macos-universal` 时，还会额外生成一套 macOS universal 产物：
+
+- `bin/releases/macos/universal/CloudPlayer-darwin-universal.dmg`
+- `bin/releases/macos/universal/CloudPlayer-darwin-universal.zip`
 
 常见示例：
 
@@ -152,8 +162,14 @@ wails3 task release:desktop
 # 只打 Windows 双架构
 ./scripts/build_desktop_packages.sh --targets windows/amd64,windows/arm64
 
+# 只打 Windows 双架构，但跳过 combined installer
+./scripts/build_desktop_packages.sh --targets windows/amd64,windows/arm64 --skip-windows-dual
+
 # 同时额外生成 macOS universal 包
 ./scripts/build_desktop_packages.sh --include-macos-universal
+
+# 直接生成适合 GitHub Releases 上传的一整套桌面产物
+wails3 task release:github
 
 # 只打印将执行的命令
 wails3 task release:desktop:dry-run

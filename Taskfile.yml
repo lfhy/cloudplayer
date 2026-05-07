@@ -39,10 +39,15 @@ tasks:
     cmds:
       - ./scripts/build_desktop_packages.sh {{if .TARGETS}}--targets {{.TARGETS}}{{end}} {{if .WINDOWS_FORMAT}}--windows-format {{.WINDOWS_FORMAT}}{{end}} {{if .RELEASE_DIR}}--release-dir {{.RELEASE_DIR}}{{end}} {{if eq .INCLUDE_MACOS_UNIVERSAL "true"}}--include-macos-universal{{end}} {{if eq .USE_WINDOWS_CGO "1"}}--use-windows-cgo{{end}} {{if eq .SKIP_CLEAN "true"}}--skip-clean{{end}}
 
+  release:github:
+    summary: Builds all desktop artifacts for GitHub Releases
+    cmds:
+      - ./scripts/build_desktop_packages.sh --targets windows/amd64,windows/arm64,macos/amd64,macos/arm64 --include-macos-universal {{if .WINDOWS_FORMAT}}--windows-format {{.WINDOWS_FORMAT}}{{end}} {{if .RELEASE_DIR}}--release-dir {{.RELEASE_DIR}}{{end}} {{if eq .USE_WINDOWS_CGO "1"}}--use-windows-cgo{{end}} {{if eq .SKIP_CLEAN "true"}}--skip-clean{{end}}
+
   release:desktop:dry-run:
     summary: Prints the desktop release commands without executing them
     cmds:
-      - ./scripts/build_desktop_packages.sh --dry-run {{if .TARGETS}}--targets {{.TARGETS}}{{end}} {{if .WINDOWS_FORMAT}}--windows-format {{.WINDOWS_FORMAT}}{{end}} {{if eq .INCLUDE_MACOS_UNIVERSAL "true"}}--include-macos-universal{{end}}
+      - ./scripts/build_desktop_packages.sh --dry-run {{if .TARGETS}}--targets {{.TARGETS}}{{end}} {{if .WINDOWS_FORMAT}}--windows-format {{.WINDOWS_FORMAT}}{{end}} {{if eq .INCLUDE_MACOS_UNIVERSAL "true"}}--include-macos-universal{{end}} {{if eq .INCLUDE_WINDOWS_DUAL "false"}}--skip-windows-dual{{end}}
 
   setup:docker:
     summary: Builds Docker image for cross-compilation (~800MB download)

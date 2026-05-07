@@ -135,6 +135,20 @@ tasks:
     cmds:
       - task: create:app:bundle
 
+  package:dmg:
+    summary: Packages the application into a `.dmg`
+    deps:
+      - task: package
+    cmds:
+      - task: create:dmg
+
+  package:dmg:universal:
+    summary: Packages a universal application into a `.dmg`
+    deps:
+      - task: package:universal
+    cmds:
+      - task: create:dmg
+
 
   create:app:bundle:
     summary: Creates an `.app` bundle
@@ -151,6 +165,17 @@ tasks:
       - cp "{{.BIN_DIR}}/{{.APP_NAME}}" "{{.BIN_DIR}}/{{.APP_NAME}}.app/Contents/MacOS"
       - cp build/darwin/Info.plist "{{.BIN_DIR}}/{{.APP_NAME}}.app/Contents"
       - task: '{{if eq OS "darwin"}}codesign:adhoc{{else}}codesign:skip{{end}}'
+
+  create:dmg:
+    summary: Creates a `.dmg` from the app bundle
+    cmds:
+      - rm -rf "{{.BIN_DIR}}/dmg-root"
+      - mkdir -p "{{.BIN_DIR}}/dmg-root"
+      - cp -R "{{.BIN_DIR}}/{{.APP_NAME}}.app" "{{.BIN_DIR}}/dmg-root/{{.APP_NAME}}.app"
+      - ln -sfn /Applications "{{.BIN_DIR}}/dmg-root/Applications"
+      - rm -f "{{.BIN_DIR}}/{{.APP_NAME}}.dmg"
+      - hdiutil create -volname "{{.APP_NAME}}" -srcfolder "{{.BIN_DIR}}/dmg-root" -ov -format UDZO "{{.BIN_DIR}}/{{.APP_NAME}}.dmg"
+      - rm -rf "{{.BIN_DIR}}/dmg-root"
 
   codesign:adhoc:
     summary: Ad-hoc signs the app bundle (macOS only)

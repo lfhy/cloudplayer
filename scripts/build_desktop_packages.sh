@@ -9,6 +9,7 @@ TARGETS_CSV="${TARGETS:-windows/amd64,windows/arm64,macos/amd64,macos/arm64}"
 WINDOWS_FORMAT="${WINDOWS_FORMAT:-nsis}"
 INCLUDE_MACOS_UNIVERSAL="${INCLUDE_MACOS_UNIVERSAL:-false}"
 USE_WINDOWS_CGO="${USE_WINDOWS_CGO:-0}"
+INCLUDE_WINDOWS_DUAL="${INCLUDE_WINDOWS_DUAL:-true}"
 DRY_RUN=false
 SKIP_CLEAN=false
 
@@ -22,6 +23,7 @@ Options:
   --windows-format <format>    Windows package format: nsis or msix
   --release-dir <path>         Output directory, default: bin/releases
   --include-macos-universal    Also build a universal macOS package
+  --skip-windows-dual          Skip the combined Windows dual-arch installer
   --use-windows-cgo            Enable CGO for Windows builds
   --skip-clean                 Keep existing release directory contents
   --dry-run                    Print commands without executing
@@ -56,15 +58,17 @@ archive_macos_bundle() {
   local archive_path="$2"
   local parent_dir
   local bundle_name
+  local archive_name
   parent_dir="$(dirname "$bundle_path")"
   bundle_name="$(basename "$bundle_path")"
+  archive_name="$(basename "$archive_path")"
   rm -f "$archive_path"
   if command -v ditto >/dev/null 2>&1; then
-    (cd "$parent_dir" && ditto -c -k --sequesterRsrc --keepParent "$bundle_name" "$archive_path")
+    (cd "$parent_dir" && ditto -c -k --sequesterRsrc --keepParent "$bundle_name" "$archive_name")
     return
   fi
   command -v zip >/dev/null 2>&1 || fail "zip or ditto is required to archive macOS bundles"
-  (cd "$parent_dir" && zip -qry "$archive_path" "$bundle_name")
+  (cd "$parent_dir" && zip -qry "$archive_name" "$bundle_name")
 }
 
 ensure_prerequisites() {
@@ -149,18 +153,36 @@ stage_windows_package() {
   fi
 }
 
+stage_windows_dual_package() {
+  local target_dir="$RELEASE_DIR/windows/dual"
+  local installer_path="$ROOT_DIR/bin/$APP_NAME-amd64_arm64-installer.exe"
+  log "Building Windows dual-arch package"
+  run_task windows:package:dual "FORMAT=$WINDOWS_FORMAT" "CGO_ENABLED=$USE_WINDOWS_CGO"
+  [[ "$DRY_RUN" == "true" ]] && return
+  [[ "$WINDOWS_FORMAT" == "nsis" ]] || fail "Windows dual package currently supports nsis only"
+  [[ -f "$installer_path" ]] || fail "Windows dual-arch installer was not created"
+  mkdir -p "$target_dir"
+  cp "$installer_path" "$target_dir/$APP_NAME-windows-amd64-arm64-installer.exe"
+  [[ -f "$target_dir/$APP_NAME-windows-amd64-arm64-installer.exe" ]] || fail "Dual-arch installer copy failed"
+}
+
 stage_macos_package() {
   local arch="$1"
   local target_dir="$RELEASE_DIR/macos/$arch"
   local bundle_copy="$target_dir/$APP_NAME.app"
+  local dmg_path="$ROOT_DIR/bin/$APP_NAME.dmg"
   log "Building macOS ${arch} package"
-  run_task darwin:package "ARCH=$arch"
+  run_task darwin:package:dmg "ARCH=$arch"
   [[ "$DRY_RUN" == "true" ]] && return
   [[ -d "$ROOT_DIR/bin/$APP_NAME.app" ]] || fail "macOS ${arch} app bundle was not created"
+  [[ -f "$dmg_path" ]] || fail "macOS ${arch} dmg was not created"
   rm -rf "$bundle_copy"
   mkdir -p "$target_dir"
   cp -R "$ROOT_DIR/bin/$APP_NAME.app" "$bundle_copy"
   archive_macos_bundle "$bundle_copy" "$target_dir/$APP_NAME-darwin-$arch.zip"
+  [[ -f "$target_dir/$APP_NAME-darwin-$arch.zip" ]] || fail "macOS ${arch} zip was not created"
+  cp "$dmg_path" "$target_dir/$APP_NAME-darwin-$arch.dmg"
+  [[ -f "$target_dir/$APP_NAME-darwin-$arch.dmg" ]] || fail "macOS ${arch} dmg copy failed"
   if [[ -f "$ROOT_DIR/bin/$APP_NAME" ]]; then
     cp "$ROOT_DIR/bin/$APP_NAME" "$target_dir/$APP_NAME-darwin-$arch"
   fi
@@ -169,14 +191,19 @@ stage_macos_package() {
 stage_macos_universal_package() {
   local target_dir="$RELEASE_DIR/macos/universal"
   local bundle_copy="$target_dir/$APP_NAME.app"
+  local dmg_path="$ROOT_DIR/bin/$APP_NAME.dmg"
   log "Building macOS universal package"
-  run_task darwin:package:universal
+  run_task darwin:package:dmg:universal
   [[ "$DRY_RUN" == "true" ]] && return
   [[ -d "$ROOT_DIR/bin/$APP_NAME.app" ]] || fail "macOS universal app bundle was not created"
+  [[ -f "$dmg_path" ]] || fail "macOS universal dmg was not created"
   rm -rf "$bundle_copy"
   mkdir -p "$target_dir"
   cp -R "$ROOT_DIR/bin/$APP_NAME.app" "$bundle_copy"
   archive_macos_bundle "$bundle_copy" "$target_dir/$APP_NAME-darwin-universal.zip"
+  [[ -f "$target_dir/$APP_NAME-darwin-universal.zip" ]] || fail "macOS universal zip was not created"
+  cp "$dmg_path" "$target_dir/$APP_NAME-darwin-universal.dmg"
+  [[ -f "$target_dir/$APP_NAME-darwin-universal.dmg" ]] || fail "macOS universal dmg copy failed"
   if [[ -f "$ROOT_DIR/bin/$APP_NAME" ]]; then
     cp "$ROOT_DIR/bin/$APP_NAME" "$target_dir/$APP_NAME-darwin-universal"
   fi
@@ -198,6 +225,10 @@ while [[ $# -gt 0 ]]; do
       ;;
     --include-macos-universal)
       INCLUDE_MACOS_UNIVERSAL="true"
+      shift
+      ;;
+    --skip-windows-dual)
+      INCLUDE_WINDOWS_DUAL="false"
       shift
       ;;
     --use-windows-cgo)
@@ -243,6 +274,20 @@ for target in "${TARGETS[@]}"; do
       ;;
   esac
 done
+
+if [[ "$INCLUDE_WINDOWS_DUAL" == "true" ]]; then
+  for target in "${TARGETS[@]}"; do
+    if [[ "$target" == "windows/amd64" ]]; then
+      has_windows_amd64=true
+    fi
+    if [[ "$target" == "windows/arm64" ]]; then
+      has_windows_arm64=true
+    fi
+  done
+  if [[ "${has_windows_amd64:-false}" == "true" && "${has_windows_arm64:-false}" == "true" ]]; then
+    stage_windows_dual_package
+  fi
+fi
 
 if [[ "$INCLUDE_MACOS_UNIVERSAL" == "true" ]]; then
   stage_macos_universal_package
