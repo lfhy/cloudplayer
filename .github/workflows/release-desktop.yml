@@ -217,11 +217,19 @@ jobs:
       - macos-universal
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - uses: actions/download-artifact@v4
         with:
           path: dist/release
           merge-multiple: true
+
+      - name: Generate release body
+        env:
+          TARGET_TAG: ${{ github.event.inputs.tag_name || github.ref_name }}
+          OUTPUT_FILE: dist/release-body.md
+        run: ./scripts/generate_release_body.sh
 
       - name: Show collected assets
         run: find dist/release -type f | sort
@@ -241,6 +249,6 @@ jobs:
         with:
           tag_name: ${{ github.event.inputs.tag_name || github.ref_name }}
           name: CloudPlayer ${{ github.event.inputs.tag_name || github.ref_name }}
-          body_path: .github/release-body-zh.md
+          body_path: dist/release-body.md
           files: dist/release/**/*
           fail_on_unmatched_files: true

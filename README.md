@@ -180,6 +180,8 @@ GitHub Actions 自动发布：
 - Workflow 文件：`.github/workflows/release-desktop.yml`
 - 触发方式：推送 `v*` tag，或手动触发并填写 `tag_name`
 - 发布内容：Windows `amd64` / `arm64` 的 `.exe` 与 `installer.exe`，以及 macOS `amd64` / `arm64` / `universal` 的 `.dmg`
+- 发布正文：自动按 tag 范围里的提交信息生成中文更新日志
+- macOS 首次打开若提示“已损坏”，release 正文会自动附带 `xattr -dr com.apple.quarantine /Applications/CloudPlayer.app` 处理方法
 
 Windows 打包前需要安装 `makensis`；如果在非 macOS 主机上构建 macOS 包，则还需要 Docker 和 `wails-cross` 镜像：
 
