@@ -77,6 +77,7 @@ export function createBasePlayerRuntime(deps) {
     getPlayLoadGeneration: deps.getPlayLoadGeneration,
     getPlayQueue: deps.getPlayQueue,
     getSearchState: deps.getSearchState,
+    hasPendingPlaybackResume: deps.hasPendingPlaybackResume,
     invoke: deps.invoke,
     logPlayEventDesktop: deps.logPlayEventDesktop,
     messageRequestFailed: deps.messageRequestFailed,
@@ -95,6 +96,7 @@ export function createBasePlayerRuntime(deps) {
   });
 
   const audio = createAudioEventsController({
+    applyPendingPlaybackResume: deps.applyPendingPlaybackResume,
     alertRequestFailed: deps.alertRequestFailed,
     audioDiagPayload: deps.audioDiagPayload,
     broadcastTrayPlayerState: recent.broadcastTrayPlayerState,
@@ -111,6 +113,8 @@ export function createBasePlayerRuntime(deps) {
     playModeItems: deps.playModeItems,
     randomNextIndex: (...args) => deps.randomNextIndex(...args),
     refreshCurrentLyricsSnapshot: () => lyrics.refreshCurrentLyricsSnapshot(),
+    savePlaybackProgressNow: deps.savePlaybackProgressNow,
+    scheduleSavePlaybackProgress: deps.scheduleSavePlaybackProgress,
     setAudioProgressLogLastTs: deps.setAudioProgressLogLastTs,
     setSeekDragging: deps.setSeekDragging,
     syncDesktopLyrics: () => lyrics.syncDesktopLyrics(),

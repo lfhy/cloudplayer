@@ -9,6 +9,7 @@ import (
 	"strings"
 )
 
+// Settings persists app-wide preferences and lightweight playback resume state to disk.
 const BaseURL = "https://pjmp3.com"
 
 const (
@@ -24,6 +25,9 @@ type Settings struct {
 	PlayMode                    string              `json:"play_mode"`
 	PlayQueue                   []PlaybackQueueItem `json:"play_queue,omitempty"`
 	PlayQueueIndex              int                 `json:"play_queue_index"`
+	PlaybackPositionMS          int64               `json:"playback_position_ms"`
+	PlaybackDurationMS          int64               `json:"playback_duration_ms"`
+	PlaybackTrackKey            string              `json:"playback_track_key"`
 	LastLibraryFolder           string              `json:"last_library_folder"`
 	DailyDownloadLimit          int64               `json:"daily_download_limit"`
 	DesktopLyricsVisible        bool                `json:"desktop_lyrics_visible"`
@@ -159,6 +163,11 @@ func LoadSettings() Settings {
 	defaults := DefaultSettings()
 	result.DesktopLyricsIdleLine1 = NormalizeDesktopLyricsIdleLine(result.DesktopLyricsIdleLine1, defaults.DesktopLyricsIdleLine1)
 	result.DesktopLyricsIdleLine2 = NormalizeDesktopLyricsIdleLine(result.DesktopLyricsIdleLine2, defaults.DesktopLyricsIdleLine2)
+	result.PlaybackTrackKey, result.PlaybackPositionMS, result.PlaybackDurationMS = NormalizePlaybackSnapshot(
+		result.PlaybackTrackKey,
+		result.PlaybackPositionMS,
+		result.PlaybackDurationMS,
+	)
 	return result
 }
 

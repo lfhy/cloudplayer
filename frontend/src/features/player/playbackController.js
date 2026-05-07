@@ -14,6 +14,7 @@ export function createPlaybackController(deps) {
     getPlayLoadGeneration,
     getPlayQueue,
     getSearchState,
+    hasPendingPlaybackResume,
     invoke,
     logPlayEventDesktop,
     messageRequestFailed,
@@ -58,6 +59,11 @@ export function createPlaybackController(deps) {
   }
 
   async function playFromQueueIndex(index) {
+    await loadQueueIndex(index, { autoplay: true, quiet: false, recordRecent: true });
+  }
+
+  async function loadQueueIndex(index, options = {}) {
+    const { autoplay = true, quiet = false, recordRecent = false } = options;
     const queue = getPlayQueue();
     if (!queue.length || index < 0 || index >= queue.length) return;
     const generation = getPlayLoadGeneration() + 1;
@@ -72,7 +78,7 @@ export function createPlaybackController(deps) {
     const playButton = document.getElementById("btn-player-play");
     const audio = getAudioEl();
     try {
-      const { assetUrl, playLogExtra } = await resolvePlaybackUrl(item, generation);
+      const { assetUrl, playLogExtra } = await resolvePlaybackUrl(item, generation, { quiet });
       if (generation !== getPlayLoadGeneration()) return;
       await logPlayEventDesktop("play_start", { url: assetUrl, extra: playLogExtra });
       audio.pause();
@@ -80,16 +86,17 @@ export function createPlaybackController(deps) {
       audio.load();
       audio.src = assetUrl;
       setAudioSourceGeneration(generation);
-      await audio.play();
+      if (autoplay) await audio.play();
+      else audio.load();
       if (generation !== getPlayLoadGeneration()) return;
-      onAfterQueueChanged();
+      if (recordRecent) onAfterQueueChanged();
       updatePlayerChrome({
         title: item.title,
         sub: item.artist || "",
         coverUrl: item.cover_url || null,
       });
       if (playButton) {
-        setPlayButtonIcon(playButton, true);
+        setPlayButtonIcon(playButton, autoplay);
         playButton.disabled = false;
       }
       setPlayerNavEnabled();
@@ -97,7 +104,7 @@ export function createPlaybackController(deps) {
       renderQueuePanel();
       refreshFavButton();
       clearLyricsCache();
-      if (getDesktopLyricsOpen()) {
+      if (getDesktopLyricsOpen() || hasPendingPlaybackResume?.(item)) {
         void ensureLrcLoadedForCurrentTrack(generation).then(() => {
           if (generation !== getPlayLoadGeneration()) return;
           void onLyricsReady();
@@ -105,8 +112,12 @@ export function createPlaybackController(deps) {
       }
     } catch (error) {
       if (generation !== getPlayLoadGeneration()) return;
-      updatePlayerChrome({ title: item.title, sub: messageRequestFailed, touchCover: false });
-      alertRequestFailed(error, "playFromQueueIndex");
+      if (!quiet) {
+        updatePlayerChrome({ title: item.title, sub: messageRequestFailed, touchCover: false });
+        alertRequestFailed(error, "playFromQueueIndex");
+      } else {
+        console.warn("restore playback source", error);
+      }
     }
   }
 
@@ -158,16 +169,19 @@ export function createPlaybackController(deps) {
     syncSeekUi();
     renderQueuePanel();
     refreshFavButton();
-  }
-
-  async function resolvePlaybackUrl(item, generation) {
-    if (item.local_path) {
-      return resolveLocalPlayback(item, generation);
+    if (hasPendingPlaybackResume?.(current)) {
+      void loadQueueIndex(getPlayIndex(), { autoplay: false, quiet: true, recordRecent: false });
     }
-    return resolveOnlinePlayback(item, generation);
   }
 
-  async function resolveLocalPlayback(item, generation) {
+  async function resolvePlaybackUrl(item, generation, options = {}) {
+    if (item.local_path) {
+      return resolveLocalPlayback(item, generation, options);
+    }
+    return resolveOnlinePlayback(item, generation, options);
+  }
+
+  async function resolveLocalPlayback(item, generation, options = {}) {
     let pathOk = false;
     try {
       pathOk = await invoke("local_path_accessible", { path: item.local_path });
@@ -176,12 +190,14 @@ export function createPlaybackController(deps) {
     }
     if (!pathOk) {
       if (generation !== getPlayLoadGeneration()) return { assetUrl: "", playLogExtra: null };
-      updatePlayerChrome({
-        title: item.title,
-        sub: `${item.artist ? `${item.artist} · ` : ""}本地文件不可用`,
-        touchCover: false,
-      });
-      alert(`本地文件不存在或无法访问：\n${String(item.local_path || "").trim() || "（路径为空）"}`);
+      if (!options.quiet) {
+        updatePlayerChrome({
+          title: item.title,
+          sub: `${item.artist ? `${item.artist} · ` : ""}本地文件不可用`,
+          touchCover: false,
+        });
+        alert(`本地文件不存在或无法访问：\n${String(item.local_path || "").trim() || "（路径为空）"}`);
+      }
       throw new Error("local_path_accessible failed");
     }
     return { assetUrl: convertFileSrc(item.local_path), playLogExtra: { kind: "local" } };

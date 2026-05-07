@@ -20,11 +20,13 @@ type RecentPlayIn = model.RecentPlayIn
 type RecentPlayRow = model.RecentPlayRow
 
 type PlaybackQueueItem struct {
-	SourceID  string `json:"source_id,omitempty"`
-	Title     string `json:"title"`
-	Artist    string `json:"artist,omitempty"`
-	CoverURL  string `json:"cover_url,omitempty"`
-	LocalPath string `json:"local_path,omitempty"`
+	SourceID   string `json:"source_id,omitempty"`
+	Title      string `json:"title"`
+	Artist     string `json:"artist,omitempty"`
+	Album      string `json:"album,omitempty"`
+	CoverURL   string `json:"cover_url,omitempty"`
+	DurationMS int64  `json:"duration_ms,omitempty"`
+	LocalPath  string `json:"local_path,omitempty"`
 }
 
 type SettingsPatch struct {
@@ -32,6 +34,9 @@ type SettingsPatch struct {
 	PlayMode                    *string              `json:"play_mode,omitempty"`
 	PlayQueue                   *[]PlaybackQueueItem `json:"play_queue,omitempty"`
 	PlayQueueIndex              *int                 `json:"play_queue_index,omitempty"`
+	PlaybackPositionMS          *int64               `json:"playback_position_ms,omitempty"`
+	PlaybackDurationMS          *int64               `json:"playback_duration_ms,omitempty"`
+	PlaybackTrackKey            *string              `json:"playback_track_key,omitempty"`
 	LastLibraryFolder           *string              `json:"last_library_folder,omitempty"`
 	DailyDownloadLimit          *int64               `json:"daily_download_limit,omitempty"`
 	DesktopLyricsVisible        *bool                `json:"desktop_lyrics_visible,omitempty"`

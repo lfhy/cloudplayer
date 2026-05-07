@@ -34,6 +34,8 @@ let setPage = () => {}, renderHomePage = () => {}, renderDailyTable = () => {}, 
 let renderQueuePanel = () => {}, refreshFavButton = () => {}, randomNextIndex = () => 0, refreshQuickThemeModeUi = () => {}, renderImportTable = () => {}, loadPlaylistDetail = async () => {};
 let openAccountCenter = () => {}, refreshAccountCenter = () => {}, wireAccountCenter = () => {};
 let scheduleSavePlaybackState = () => {}, restorePlaybackState = async () => {};
+let scheduleSavePlaybackProgress = () => {}, savePlaybackProgressNow = async () => {};
+let hasPendingPlaybackResume = () => false, applyPendingPlaybackResume = () => false;
 
 function setMusicOnlineModeEnabledValue(value) {
   musicOnlineModeEnabled = !!value;
@@ -140,6 +142,8 @@ const player = createBasePlayerRuntime({
   setDesktopLyricsLocked: (value) => { desktopLyricsLocked = value; }, setDesktopLyricsOpen: (value) => { desktopLyricsOpen = value; }, setDesktopLyricsWindow: (value) => { desktopLyricsWindow = value; },
   setLocalLibraryRows: (rows) => { localLibraryRows = Array.isArray(rows) ? rows : []; }, setPlayIndex: (value) => { setPlayIndexValue(value); }, setPlayLoadGeneration: (value) => { playLoadGeneration = value; },
   setPlayQueue: (rows) => { setPlayQueueValue(rows); }, setSeekDragging: (value) => { seekDragging = value; }, setSessionRecentPlays: (rows) => { sessionRecentPlays = Array.isArray(rows) ? rows : []; },
+  applyPendingPlaybackResume: (...args) => applyPendingPlaybackResume(...args), hasPendingPlaybackResume: (...args) => hasPendingPlaybackResume(...args),
+  savePlaybackProgressNow: (...args) => savePlaybackProgressNow(...args), scheduleSavePlaybackProgress: () => scheduleSavePlaybackProgress(),
   scheduleSavePlaybackState: () => scheduleSavePlaybackState(),
   trayPlayerTarget: TRAY_PLAYER_TARGET, warnRequestFailed, WebviewWindow,
 });
@@ -190,11 +194,13 @@ const { dock, dockTheme, hotkeys } = createDockRuntime({
 });
 refreshQuickThemeModeUi = dockTheme.refreshQuickThemeModeUi; renderQueuePanel = dock.renderQueuePanel; refreshFavButton = dock.refreshFavButton; randomNextIndex = dock.randomNextIndex;
 const playbackState = createPlaybackStatePersistence({
+  getAudioEl: audioEl,
   getPlayIndex: () => playIndex,
   getPlayModeIndex: () => playModeIndex,
   getPlayQueue: () => playQueue,
   invoke,
   playModeItems: PLAY_MODES,
+  refreshCurrentLyricsSnapshot: () => player.refreshCurrentLyricsSnapshot?.(),
   restorePlaybackUi: () => {
     dock.refreshPlayModeButton?.();
     player.restorePlaybackSelection?.();
@@ -202,9 +208,16 @@ const playbackState = createPlaybackStatePersistence({
   setPlayIndex: (value) => { setPlayIndexValue(value); },
   setPlayModeIndex: (value) => { setPlayModeIndexValue(value); },
   setPlayQueue: (rows) => { setPlayQueueValue(rows); },
+  syncDesktopLyrics: () => player.syncDesktopLyrics?.(),
+  syncSeekUi: () => player.syncSeekUi?.(),
 });
+applyPendingPlaybackResume = playbackState.applyPendingPlaybackResume;
+hasPendingPlaybackResume = playbackState.hasPendingPlaybackResume;
+savePlaybackProgressNow = playbackState.savePlaybackProgressNow;
+scheduleSavePlaybackProgress = playbackState.scheduleSavePlaybackProgress;
 scheduleSavePlaybackState = playbackState.scheduleSavePlaybackState;
 restorePlaybackState = playbackState.restorePlaybackState;
+playbackState.wirePersistenceLifecycle?.();
 
 const immersive = createImmersiveController({
   formatTime,

@@ -85,11 +85,13 @@ func (s *CloudPlayerService) SaveSettings(patch SettingsPatch) error {
 		rows := make([]config.PlaybackQueueItem, 0, len(*patch.PlayQueue))
 		for _, item := range *patch.PlayQueue {
 			rows = append(rows, config.PlaybackQueueItem{
-				SourceID:  item.SourceID,
-				Title:     item.Title,
-				Artist:    item.Artist,
-				CoverURL:  item.CoverURL,
-				LocalPath: item.LocalPath,
+				SourceID:   item.SourceID,
+				Title:      item.Title,
+				Artist:     item.Artist,
+				Album:      item.Album,
+				CoverURL:   item.CoverURL,
+				DurationMS: item.DurationMS,
+				LocalPath:  item.LocalPath,
 			})
 		}
 		settings.PlayQueue = config.NormalizePlaybackQueue(rows)
@@ -114,6 +116,21 @@ func (s *CloudPlayerService) SaveSettings(patch SettingsPatch) error {
 				settings.PlayQueueIndex = len(settings.PlayQueue) - 1
 			}
 		}
+	}
+	if patch.PlaybackPositionMS != nil || patch.PlaybackDurationMS != nil || patch.PlaybackTrackKey != nil {
+		trackKey := settings.PlaybackTrackKey
+		positionMS := settings.PlaybackPositionMS
+		durationMS := settings.PlaybackDurationMS
+		if patch.PlaybackTrackKey != nil {
+			trackKey = *patch.PlaybackTrackKey
+		}
+		if patch.PlaybackPositionMS != nil {
+			positionMS = *patch.PlaybackPositionMS
+		}
+		if patch.PlaybackDurationMS != nil {
+			durationMS = *patch.PlaybackDurationMS
+		}
+		settings.PlaybackTrackKey, settings.PlaybackPositionMS, settings.PlaybackDurationMS = config.NormalizePlaybackSnapshot(trackKey, positionMS, durationMS)
 	}
 	if patch.LastLibraryFolder != nil {
 		settings.LastLibraryFolder = *patch.LastLibraryFolder

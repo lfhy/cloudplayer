@@ -3,6 +3,7 @@ import { setPlayButtonIcon } from "./playButtonIcon.js";
 
 export function createAudioEventsController(deps) {
   const {
+    applyPendingPlaybackResume,
     alertRequestFailed,
     audioDiagPayload,
     broadcastTrayPlayerState,
@@ -19,6 +20,8 @@ export function createAudioEventsController(deps) {
     playModeItems,
     randomNextIndex,
     refreshCurrentLyricsSnapshot,
+    savePlaybackProgressNow,
+    scheduleSavePlaybackProgress,
     setAudioProgressLogLastTs,
     setSeekDragging,
     syncDesktopLyrics,
@@ -36,6 +39,7 @@ export function createAudioEventsController(deps) {
       syncSeekUi();
       refreshCurrentLyricsSnapshot?.();
       void syncDesktopLyrics();
+      scheduleSavePlaybackProgress?.();
       const now = Date.now();
       if (now - lastTrayBroadcastTs >= 1000) {
         lastTrayBroadcastTs = now;
@@ -45,6 +49,7 @@ export function createAudioEventsController(deps) {
     audio.addEventListener("loadedmetadata", () => {
       syncSeekUi();
       refreshCurrentLyricsSnapshot?.();
+      applyPendingPlaybackResume?.();
       if (getAudioSourceGeneration() === getPlayLoadGeneration()) {
         void logPlayEventDesktop("audio_loadedmetadata", {
           url: audio.src || null,
@@ -59,6 +64,13 @@ export function createAudioEventsController(deps) {
     audio.addEventListener("canplay", () => {
       syncSeekUi();
       refreshCurrentLyricsSnapshot?.();
+      applyPendingPlaybackResume?.();
+    });
+    audio.addEventListener("seeked", () => {
+      syncSeekUi();
+      refreshCurrentLyricsSnapshot?.();
+      void syncDesktopLyrics();
+      void savePlaybackProgressNow?.(true);
     });
     audio.addEventListener("progress", () => {
       if (getAudioSourceGeneration() !== getPlayLoadGeneration()) return;
@@ -79,6 +91,7 @@ export function createAudioEventsController(deps) {
     });
     audio.addEventListener("ended", () => {
       refreshCurrentLyricsSnapshot?.();
+      void savePlaybackProgressNow?.(true);
       if (getAudioSourceGeneration() === getPlayLoadGeneration()) {
         void logPlayEventDesktop("audio_ended", {
           url: audio.src || null,
@@ -91,12 +104,14 @@ export function createAudioEventsController(deps) {
     audio.addEventListener("play", () => {
       setPlayButtonIcon(playButton, true);
       refreshCurrentLyricsSnapshot?.();
+      void savePlaybackProgressNow?.(true);
       void broadcastTrayPlayerState();
       void syncDesktopLyrics();
     });
     audio.addEventListener("pause", () => {
       setPlayButtonIcon(playButton, false);
       refreshCurrentLyricsSnapshot?.();
+      void savePlaybackProgressNow?.(true);
       void broadcastTrayPlayerState();
       void syncDesktopLyrics();
     });
@@ -125,6 +140,7 @@ export function createAudioEventsController(deps) {
     seek.addEventListener("pointerup", () => {
       setSeekDragging(false);
       syncSeekUi();
+      void savePlaybackProgressNow?.(true);
     });
     seek.addEventListener("input", () => {
       const duration = audio.duration;
@@ -152,6 +168,7 @@ export function createAudioEventsController(deps) {
     document.getElementById("btn-player-prev")?.addEventListener("click", () => {
       const length = getPlayQueue().length;
       if (!length) return;
+      void savePlaybackProgressNow?.(true);
       const mode = playModeItems[getPlayModeIndex()].key;
       if (mode === "shuffle") {
         void playFromQueueIndex((getPlayIndex() - 1 + length) % length);
@@ -162,6 +179,7 @@ export function createAudioEventsController(deps) {
     document.getElementById("btn-player-next")?.addEventListener("click", () => {
       const length = getPlayQueue().length;
       if (!length) return;
+      void savePlaybackProgressNow?.(true);
       const mode = playModeItems[getPlayModeIndex()].key;
       if (mode === "shuffle") {
         void playFromQueueIndex(randomNextIndex());

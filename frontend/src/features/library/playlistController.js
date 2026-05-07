@@ -103,19 +103,14 @@ export function createPlaylistController(deps) {
       playlists = await invoke(force ? "refresh_playlists" : "list_playlists");
     } catch (error) {
       warnRequestFailed(error, "list_playlists sidebar");
-      const li = document.createElement("li");
-      li.className = "sidebar-pl-empty muted";
-      li.textContent = MSG_REQUEST_FAILED;
-      list.appendChild(li);
+      list.innerHTML = `<li class="sidebar-pl-empty muted">${escapeHtml(MSG_REQUEST_FAILED)}</li>`;
       return;
     }
     if (!playlists.length) {
-      const li = document.createElement("li");
-      li.className = "sidebar-pl-empty muted";
-      li.textContent = playlistSidebarEmptyText(getMusicOnlineModeEnabled?.());
-      list.appendChild(li);
+      list.innerHTML = `<li class="sidebar-pl-empty muted">${escapeHtml(playlistSidebarEmptyText(getMusicOnlineModeEnabled?.()))}</li>`;
       return;
     }
+    list.innerHTML = "";
     cachedSidebarPlaylists = Array.isArray(playlists) ? playlists : [];
     playlists.forEach((playlist) => {
       const li = buildSidebarPlaylistItem(playlist, escapeHtml);
