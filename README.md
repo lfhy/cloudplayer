@@ -175,6 +175,12 @@ wails3 task release:github
 wails3 task release:desktop:dry-run
 ```
 
+GitHub Actions 自动发布：
+
+- Workflow 文件：`.github/workflows/release-desktop.yml`
+- 触发方式：推送 `v*` tag，或手动触发并填写 `tag_name`
+- 发布内容：Windows `amd64` / `arm64` / dual installer，以及 macOS `amd64` / `arm64` / `universal` 的 `.dmg`、`.zip` 和二进制
+
 Windows 打包前需要安装 `makensis`；如果在非 macOS 主机上构建 macOS 包，则还需要 Docker 和 `wails-cross` 镜像：
 
 ```bash

@@ -1,0 +1,117 @@
+# Builds desktop release assets and publishes them on tagged releases.
+name: desktop-release
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+    inputs:
+      tag_name:
+        description: "Release tag to publish"
+        required: true
+        type: string
+
+permissions:
+  contents: write
+
+concurrency:
+  group: desktop-release-${{ github.ref }}
+  cancel-in-progress: false
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  build-windows:
+    name: Build Windows artifacts
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install Wails CLI
+        run: |
+          go install github.com/wailsapp/wails/v3/cmd/wails3@v3.0.0-alpha.74
+          echo "$(go env GOPATH)/bin" >> "$GITHUB_PATH"
+
+      - name: Install NSIS
+        run: choco install nsis -y --no-progress
+
+      - name: Build release assets
+        run: ./scripts/build_desktop_packages.sh --targets windows/amd64,windows/arm64 --release-dir bin/releases-github
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: desktop-release-windows
+          path: bin/releases-github/windows
+          if-no-files-found: error
+
+  build-macos:
+    name: Build macOS artifacts
+    runs-on: macos-14
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install Wails CLI
+        run: |
+          go install github.com/wailsapp/wails/v3/cmd/wails3@v3.0.0-alpha.74
+          echo "$(go env GOPATH)/bin" >> "$GITHUB_PATH"
+
+      - name: Install DMG tools
+        run: brew install makensis
+
+      - name: Build release assets
+        run: ./scripts/build_desktop_packages.sh --targets macos/amd64,macos/arm64 --include-macos-universal --release-dir bin/releases-github
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: desktop-release-macos
+          path: bin/releases-github/macos
+          if-no-files-found: error
+
+  publish:
+    name: Publish GitHub Release
+    runs-on: ubuntu-latest
+    needs:
+      - build-windows
+      - build-macos
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: dist/release
+          merge-multiple: true
+
+      - name: Show collected assets
+        run: find dist/release -type f | sort
+
+      - name: Publish release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.event.inputs.tag_name || github.ref_name }}
+          name: CloudPlayer ${{ github.event.inputs.tag_name || github.ref_name }}
+          files: dist/release/**/*
+          generate_release_notes: true
+          fail_on_unmatched_files: true
