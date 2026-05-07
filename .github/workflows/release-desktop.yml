@@ -47,7 +47,20 @@ jobs:
           echo "$(go env GOPATH)/bin" >> "$GITHUB_PATH"
 
       - name: Install NSIS
-        run: choco install nsis -y --no-progress
+        shell: pwsh
+        run: |
+          choco install nsis -y --no-progress
+          $nsisDir = "${env:ProgramFiles(x86)}\NSIS"
+          if (!(Test-Path "$nsisDir\makensis.exe")) {
+            throw "makensis.exe not found in $nsisDir"
+          }
+          $nsisDir | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+
+      - name: Verify Windows packaging tools
+        run: |
+          command -v makensis
+          makensis /VERSION
+          command -v wails3
 
       - name: Build release assets
         run: ./scripts/build_desktop_packages.sh --targets windows/amd64,windows/arm64 --release-dir bin/releases-github
