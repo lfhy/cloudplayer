@@ -247,6 +247,7 @@ export function createPageRuntime(deps) {
     onSettingsPage: () => {
       void settingsRefresh();
     },
+    onRefreshPlaylists: () => playlist.refreshSidebarPlaylists(true),
     refreshQuickThemeModeUi: deps.refreshQuickThemeModeUi,
     refreshSidebarPlaylists: playlist.refreshSidebarPlaylists,
     renderQueuePanel,

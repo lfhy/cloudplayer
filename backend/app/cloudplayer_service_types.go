@@ -57,6 +57,7 @@ type SettingsPatch struct {
 	DesktopLyricsIdleLine2      *string              `json:"desktop_lyrics_idle_line2,omitempty"`
 	ShareNeteaseCookieEnabled   *bool                `json:"share_netease_cookie_enabled,omitempty"`
 	ShareNeteaseCookie          *string              `json:"share_netease_cookie,omitempty"`
+	MusicOnlineMode             *bool                `json:"music_online_mode,omitempty"`
 	MusicSourceProvider         *string              `json:"music_source_provider,omitempty"`
 	SearchCacheTTLHours         *int                 `json:"search_cache_ttl_hours,omitempty"`
 }

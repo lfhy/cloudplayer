@@ -4,6 +4,7 @@ import { closeCloseConfirmModalDom, openCloseConfirmModalDom, runCloseChoiceFlow
 import { wireSettingsActionButtons } from "./actions.js";
 import { DEFAULT_LYRICS_IDLE_LINE1, DEFAULT_LYRICS_IDLE_LINE2, normalizeLyricHexInput, normalizeLyricsIdleLine, normalizeNeteaseApiBase, normalizeSearchCacheTTLHours, settingsFormBaselineDefaults } from "./formHelpers.js";
 import { applyLyricsSourceSelectionToDom, readLyricsSourceSettingsFromDom, wireLyricsSourceSelection } from "./lyricSources.js";
+import { createKugouSettingsStatusRefresher, isMusicSourceOnlineModeSelected, setMusicSourceOnlineModeAvailability, setMusicSourceOnlineModeSelection, wireMusicSourceOnlineModeSelection } from "./sourceMode.js";
 import { renderLyricsPreview } from "./lyricsPreview.js";
 import { canSaveCustomProxyUrl } from "../../app/helpers/platformTheme.js";
 
@@ -61,6 +62,7 @@ export function createSettingsController(deps) {
       proxyURL: normalizeNetworkProxyUrl(document.getElementById("setting-network-proxy-url")?.value),
       action: normalizeCloseAction(document.getElementById("setting-close-action")?.value),
       musicSourceProvider: normalizeMusicSourceProvider(document.getElementById("setting-music-source-provider")?.value),
+      musicOnlineMode: isMusicSourceOnlineModeSelected(),
       searchCacheTTLHours: normalizeSearchCacheTTLHours(document.getElementById("setting-search-cache-ttl-hours")?.value),
       idleLine1: normalizeLyricsIdleLine(document.getElementById("setting-ly-idle-line1")?.value, DEFAULT_LYRICS_IDLE_LINE1),
       idleLine2: normalizeLyricsIdleLine(document.getElementById("setting-ly-idle-line2")?.value, DEFAULT_LYRICS_IDLE_LINE2),
@@ -75,7 +77,7 @@ export function createSettingsController(deps) {
 
   function settingsFormIsDirty() {
     const current = getSettingsFormValues();
-    return ["theme", "mode", "customAccent", "proxyMode", "proxyURL", "action", "musicSourceProvider", "searchCacheTTLHours", "idleLine1", "idleLine2", "lyricsProviderOrder", "lyricsLRCLibEnabled", "base", "highlight", "neteaseApiBase", "hotkeysSig"].some((key) => current[key] !== settingsFormBaseline[key]);
+    return ["theme", "mode", "customAccent", "proxyMode", "proxyURL", "action", "musicSourceProvider", "musicOnlineMode", "searchCacheTTLHours", "idleLine1", "idleLine2", "lyricsProviderOrder", "lyricsLRCLibEnabled", "base", "highlight", "neteaseApiBase", "hotkeysSig"].some((key) => current[key] !== settingsFormBaseline[key]);
   }
 
   function syncSettingsFormBaselineFromDom() {
@@ -100,6 +102,7 @@ export function createSettingsController(deps) {
     setThemeCardSelection(theme);
     setNetworkProxyModeSelection(proxyMode);
     setMusicSourceProviderSelection(settings?.music_source_provider ?? settings?.musicSourceProvider ?? "pjmp3");
+    setMusicSourceOnlineModeSelection(settings?.music_online_mode ?? settings?.musicOnlineMode ?? false);
     applyAppTheme(theme, customAccent, mode);
     const closeAction = normalizeCloseAction(settings?.main_window_close_action ?? settings?.mainWindowCloseAction);
     const closeActionEl = document.getElementById("setting-close-action");
@@ -161,7 +164,7 @@ export function createSettingsController(deps) {
         const report = await invoke("apply_global_hotkeys", { cfg: current.globalHotkeys });
         if (report) hotkeys.renderHotkeyStatusFromReport(report);
       }
-      await invoke("save_settings", { patch: { app_theme: current.theme, app_theme_mode: current.mode, app_theme_custom_accent: current.customAccent, network_proxy_mode: current.proxyMode, network_proxy_url: proxyURLForSave, main_window_close_action: current.action, music_source_provider: current.musicSourceProvider, search_cache_ttl_hours: current.searchCacheTTLHours, desktop_lyrics_idle_line1: current.idleLine1, desktop_lyrics_idle_line2: current.idleLine2, desktop_lyrics_color_base: current.base, desktop_lyrics_color_highlight: current.highlight, lyrics_provider_order: current.lyricsProviderOrder, lyrics_lrclib_enabled: current.lyricsLRCLibEnabled, lyrics_netease_api_base: current.neteaseApiBase } });
+      await invoke("save_settings", { patch: { app_theme: current.theme, app_theme_mode: current.mode, app_theme_custom_accent: current.customAccent, network_proxy_mode: current.proxyMode, network_proxy_url: proxyURLForSave, main_window_close_action: current.action, music_online_mode: current.musicOnlineMode, music_source_provider: current.musicSourceProvider, search_cache_ttl_hours: current.searchCacheTTLHours, desktop_lyrics_idle_line1: current.idleLine1, desktop_lyrics_idle_line2: current.idleLine2, desktop_lyrics_color_base: current.base, desktop_lyrics_color_highlight: current.highlight, lyrics_provider_order: current.lyricsProviderOrder, lyrics_lrclib_enabled: current.lyricsLRCLibEnabled, lyrics_netease_api_base: current.neteaseApiBase } });
       applyAppTheme(current.theme, current.customAccent, current.mode);
       setMainWindowCloseAction(current.action);
       syncSettingsFormBaselineFromDom();
@@ -209,7 +212,7 @@ export function createSettingsController(deps) {
       });
     });
     const actionButtons = wireSettingsActionButtons({ alertRequestFailed, invoke, openAccountCenter, setImportDraft, setImportMethod, setImportStep, setPage });
-    refreshKugouSettingsStatus = actionButtons?.refreshKugouSettingsStatus || (() => {});
+    refreshKugouSettingsStatus = createKugouSettingsStatusRefresher({ actionButtons, isMusicSourceOnlineModeSelected, queueSettingsAutosave, setMusicSourceOnlineModeAvailability, setMusicSourceOnlineModeSelection });
     document.querySelectorAll("[data-theme-mode-card]").forEach((card) => card.addEventListener("click", () => {
       setThemeModeSelection(card.getAttribute("data-theme-mode-card") || "system");
       const current = getSettingsFormValues();
@@ -243,6 +246,7 @@ export function createSettingsController(deps) {
       setMusicSourceProviderSelection(card.getAttribute("data-music-source-provider-card") || "pjmp3");
       queueSettingsAutosave(true);
     }));
+    wireMusicSourceOnlineModeSelection(() => queueSettingsAutosave(true));
     wireLyricsSourceSelection(() => queueSettingsAutosave(true));
     hotkeys.wireHotkeySettingsUi();
     document.getElementById("close-choice-tray")?.addEventListener("click", () => void runCloseChoiceFlow("tray", { alertRequestFailed, invoke, setMainWindowCloseAction }));
@@ -277,6 +281,7 @@ export function createSettingsController(deps) {
       }
       if (settings?.desktop_lyrics_visible) queueMicrotask(() => void openDesktopLyricsFromSettingsIfNeeded(settings));
       renderLyricsPreview(getSettingsFormValues());
+      void refreshKugouSettingsStatus();
     } catch (error) {
       console.warn("get_settings", error);
     }

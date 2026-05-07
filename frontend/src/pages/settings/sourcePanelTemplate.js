@@ -1,4 +1,4 @@
-// Source settings isolate configurable upstream endpoints for future multi-source expansion.
+// Source settings keep the base provider and the Kugou-only online gate in one place.
 export function sourcePanelTemplate() {
   return `
     <section class="settings-panel" data-settings-panel="source" role="tabpanel" hidden>
@@ -10,7 +10,17 @@ export function sourcePanelTemplate() {
             <button type="button" class="settings-choice" data-music-source-provider-card="pjmp3" role="radio" aria-checked="false">PJMP3 公共源</button>
             <button type="button" class="settings-choice" data-music-source-provider-card="kugou" role="radio" aria-checked="false">酷狗概念版</button>
           </div>
-          <p class="settings-field-hint muted">当前默认搜索、试听、播放与下载都会跟随这里选择的曲库渠道。</p>
+          <p class="settings-field-hint muted">当前默认搜索、试听、播放与下载都会跟随这里选择的曲库渠道；在线模式开启后会临时切到云端。</p>
+        </div>
+        <div id="setting-music-online-mode-wrap" class="settings-field" hidden>
+          <span class="settings-field-label">在线模式</span>
+          <div class="settings-inline-stack">
+            <div class="settings-choice-group" role="radiogroup" aria-label="在线模式">
+              <input type="hidden" id="setting-music-online-mode" value="0" />
+              <button type="button" id="btn-music-online-mode" class="settings-choice" role="switch" aria-checked="false">在线模式</button>
+            </div>
+            <p id="setting-music-online-mode-status" class="settings-field-hint muted">开启后，搜索、播放、补全都会优先使用酷狗云端曲库。</p>
+          </div>
         </div>
         <div class="settings-field">
           <span class="settings-field-label">酷狗账号同步</span>

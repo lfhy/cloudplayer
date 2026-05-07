@@ -52,6 +52,7 @@ type Settings struct {
 	DesktopLyricsIdleLine2      string              `json:"desktop_lyrics_idle_line2"`
 	ShareNeteaseCookieEnabled   bool                `json:"share_netease_cookie_enabled"`
 	ShareNeteaseCookie          string              `json:"share_netease_cookie"`
+	MusicOnlineMode             bool                `json:"music_online_mode"`
 	MusicSourceProvider         string              `json:"music_source_provider"`
 	SearchCacheTTLHours         int                 `json:"search_cache_ttl_hours"`
 }
@@ -84,6 +85,7 @@ func DefaultSettings() Settings {
 		DesktopLyricsColorHighlight: "#ffb7d4",
 		DesktopLyricsIdleLine1:      "CloudPlayer",
 		DesktopLyricsIdleLine2:      "让音乐陪你此刻",
+		MusicOnlineMode:             false,
 		MusicSourceProvider:         "pjmp3",
 		SearchCacheTTLHours:         24,
 	}

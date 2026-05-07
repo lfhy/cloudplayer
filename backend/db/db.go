@@ -104,6 +104,32 @@ func OpenAndInit() (*sql.DB, error) {
 			updated_at INTEGER NOT NULL DEFAULT 0
 		);
 		CREATE INDEX IF NOT EXISTS idx_daily_rec_updated_at ON daily_recommendations(updated_at DESC);
+
+		CREATE TABLE IF NOT EXISTS kugou_playlist_cache (
+			user_id TEXT NOT NULL,
+			playlist_id INTEGER NOT NULL,
+			sort_order INTEGER NOT NULL DEFAULT 0,
+			name TEXT NOT NULL DEFAULT '',
+			cover_url TEXT NOT NULL DEFAULT '',
+			track_count INTEGER NOT NULL DEFAULT 0,
+			fetched_at INTEGER NOT NULL DEFAULT 0,
+			PRIMARY KEY (user_id, playlist_id)
+		);
+		CREATE INDEX IF NOT EXISTS idx_kugou_playlist_cache_user_order ON kugou_playlist_cache(user_id, sort_order ASC, playlist_id ASC);
+
+		CREATE TABLE IF NOT EXISTS kugou_playlist_cache_items (
+			user_id TEXT NOT NULL,
+			playlist_id INTEGER NOT NULL,
+			sort_order INTEGER NOT NULL DEFAULT 0,
+			title TEXT NOT NULL DEFAULT '',
+			artist TEXT NOT NULL DEFAULT '',
+			album TEXT NOT NULL DEFAULT '',
+			pjmp3_source_id TEXT NOT NULL DEFAULT '',
+			cover_url TEXT NOT NULL DEFAULT '',
+			duration_ms INTEGER NOT NULL DEFAULT 0,
+			fetched_at INTEGER NOT NULL DEFAULT 0
+		);
+		CREATE INDEX IF NOT EXISTS idx_kugou_playlist_cache_items_playlist ON kugou_playlist_cache_items(user_id, playlist_id, sort_order ASC);
 	`); err != nil {
 		return nil, err
 	}

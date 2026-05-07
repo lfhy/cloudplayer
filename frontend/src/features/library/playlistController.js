@@ -40,10 +40,14 @@ export function createPlaylistController(deps) {
   function refreshPlaylistActionState() {
     const playlist = currentSelectedPlaylist();
     const renameBtn = document.getElementById("btn-playlist-rename");
+    const enrichBtn = document.getElementById("btn-playlist-enrich");
+    const enrichAllBtn = document.getElementById("btn-playlist-enrich-all");
     if (!renameBtn) return;
     const builtin = playlist?.is_builtin === true;
     renameBtn.disabled = getSelectedPlaylistId() == null || builtin;
     renameBtn.hidden = builtin;
+    if (enrichBtn) enrichBtn.hidden = builtin;
+    if (enrichAllBtn) enrichAllBtn.hidden = builtin;
   }
 
   function syncSidebarPlaylistActiveState(playlistID = getSelectedPlaylistId(), forceActive = false) {
@@ -58,17 +62,17 @@ export function createPlaylistController(deps) {
     });
   }
 
-  async function refreshPlaylistSelect() {
+  async function refreshPlaylistSelect(force = false) {
     const select = document.getElementById("import-merge-playlist");
     const mergeBtn = document.getElementById("btn-import-merge");
     if (!select) {
-      await refreshSidebarPlaylists();
+      await refreshSidebarPlaylists(force);
       return;
     }
     select.innerHTML = "";
     let playlists = [];
     try {
-      playlists = await invoke("list_playlists");
+      playlists = await invoke(force ? "refresh_playlists" : "list_playlists");
     } catch (error) {
       console.warn("list_playlists", error);
     }
@@ -82,16 +86,16 @@ export function createPlaylistController(deps) {
     const hasPlaylists = playlists.length > 0;
     select.disabled = !hasPlaylists;
     if (mergeBtn) mergeBtn.disabled = !hasPlaylists || getImportTracks().length === 0;
-    await refreshSidebarPlaylists();
+    await refreshSidebarPlaylists(force);
   }
 
-  async function refreshSidebarPlaylists() {
+  async function refreshSidebarPlaylists(force = false) {
     const list = document.getElementById("sidebar-playlist-list");
     if (!list) return;
     list.innerHTML = "";
     let playlists = [];
     try {
-      playlists = await invoke("list_playlists");
+      playlists = await invoke(force ? "refresh_playlists" : "list_playlists");
     } catch (error) {
       warnRequestFailed(error, "list_playlists sidebar");
       const li = document.createElement("li");
@@ -158,20 +162,21 @@ export function createPlaylistController(deps) {
     return results;
   }
 
-  async function loadPlaylistDetail(id, name) {
+  async function loadPlaylistDetail(id, name, force = false) {
     setSelectedPlaylist(id, name || "");
     syncSidebarPlaylistActiveState(id, true);
     const titleEl = document.getElementById("playlist-page-title");
     if (titleEl) titleEl.textContent = name || "歌单";
     try {
-      const rows = await invoke("list_playlist_import_items", { playlistId: id });
+      const rows = await invoke(force ? "refresh_playlist_import_items" : "list_playlist_import_items", { playlistId: id });
       setPlaylistDetailRows(rows || []);
-      void enrich.maybeEnrichPlaylist(id, rows || []);
+      if (!currentSelectedPlaylist()?.is_builtin) void enrich.maybeEnrichPlaylist(id, rows || []);
     } catch (error) {
       setPlaylistDetailRows([]);
       alertRequestFailed(error, "list_playlist_import_items");
     }
     renderPlaylistDetailTable();
+    refreshPlaylistActionState();
   }
 
   function renderPlaylistDetailTable() {
@@ -228,6 +233,12 @@ export function createPlaylistController(deps) {
 
   function wirePlaylistPage() {
     document.getElementById("btn-playlist-back")?.addEventListener("click", () => setPage("home"));
+    document.getElementById("btn-playlist-refresh")?.addEventListener("click", async () => {
+      const playlistID = getSelectedPlaylistId();
+      if (playlistID == null) return;
+      await refreshSidebarPlaylists(true);
+      await loadPlaylistDetail(playlistID, getSelectedPlaylistName(), true);
+    });
     document.getElementById("btn-playlist-enrich")?.addEventListener("click", async () => {
       const playlistID = getSelectedPlaylistId();
       if (playlistID == null) return;

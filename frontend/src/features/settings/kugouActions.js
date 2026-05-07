@@ -33,7 +33,7 @@ export function wireKugouSettingsActions(deps) {
     if (detailEl()) detailEl().textContent = loggedIn ? `已登录 · ${userID || "当前账号"}` : `登录已过期 · ${userID || "请重新登录"}`;
     if (statusEl()) {
       statusEl().textContent = loggedIn
-        ? `已连接酷狗概念版账号，可直接去导入歌单页面同步歌单。`
+        ? `已连接酷狗概念版账号，可直接同步歌单并开启在线模式。`
         : "酷狗概念版登录已过期，请重新进入导入歌单页登录。";
     }
     if (avatarEl()) {
@@ -48,9 +48,11 @@ export function wireKugouSettingsActions(deps) {
     try {
       const status = await session.getLoginStatus();
       renderStatus(status);
+      return status;
     } catch (error) {
       renderGuest();
       alertRequestFailed(error, "get_kugou_login_status");
+      return null;
     }
   }
 
@@ -61,7 +63,7 @@ export function wireKugouSettingsActions(deps) {
   document.getElementById("btn-kugou-logout")?.addEventListener("click", async () => {
     try {
       await session.logout();
-      renderGuest();
+      await refreshStatus();
     } catch (error) {
       alertRequestFailed(error, "logout_kugou");
     }

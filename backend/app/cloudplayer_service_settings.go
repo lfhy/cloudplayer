@@ -209,6 +209,18 @@ func (s *CloudPlayerService) SaveSettings(patch SettingsPatch) error {
 	if patch.ShareNeteaseCookie != nil {
 		settings.ShareNeteaseCookie = *patch.ShareNeteaseCookie
 	}
+	if patch.MusicOnlineMode != nil {
+		if *patch.MusicOnlineMode {
+			status, err := s.GetKugouLoginStatus()
+			if err != nil {
+				return err
+			}
+			if !status.LoggedIn {
+				return fmt.Errorf("请先登录酷狗概念版后再开启在线模式")
+			}
+		}
+		settings.MusicOnlineMode = *patch.MusicOnlineMode
+	}
 	if patch.MusicSourceProvider != nil {
 		settings.MusicSourceProvider = config.NormalizeMusicSourceProvider(*patch.MusicSourceProvider)
 	}

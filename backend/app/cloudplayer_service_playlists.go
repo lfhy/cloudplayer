@@ -4,12 +4,20 @@ import (
 	"fmt"
 	"strings"
 
+	"cloudplayer/backend/config"
 	"cloudplayer/backend/importenrich"
 	"cloudplayer/backend/importplaylist"
 )
 
 // Playlist methods own import rows and background enrichment orchestration.
 func (s *CloudPlayerService) ListPlaylists() ([]PlaylistRow, error) {
+	if config.LoadSettings().MusicOnlineMode {
+		rows, err := s.loadKugouPlaylistRows(false)
+		if err != nil {
+			return nil, err
+		}
+		return toPlaylistRows(rows), nil
+	}
 	if _, err := s.ensureFavoritesPlaylist(); err != nil {
 		return nil, err
 	}
@@ -31,6 +39,9 @@ func (s *CloudPlayerService) ListPlaylists() ([]PlaylistRow, error) {
 }
 
 func (s *CloudPlayerService) ListPlaylistImportItems(playlistID int64) ([]PlaylistImportItemRow, error) {
+	if config.LoadSettings().MusicOnlineMode {
+		return s.loadKugouPlaylistItems(playlistID, false)
+	}
 	rows, err := s.state.DB.Query(`
 		SELECT id, sort_order, title, artist, album, pjmp3_source_id, cover_url, duration_ms
 		FROM playlist_import_items

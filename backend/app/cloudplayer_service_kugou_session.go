@@ -106,5 +106,15 @@ func (s *CloudPlayerService) PollKugouLoginQRCode(key string) (KugouLoginStatus,
 }
 
 func (s *CloudPlayerService) LogoutKugou() error {
-	return config.ClearKugouSession()
+	if err := config.ClearKugouSession(); err != nil {
+		return err
+	}
+	settings := config.LoadSettings()
+	if settings.MusicOnlineMode {
+		settings.MusicOnlineMode = false
+		if err := config.SaveSettings(settings); err != nil {
+			return err
+		}
+	}
+	return nil
 }

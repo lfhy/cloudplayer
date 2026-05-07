@@ -68,6 +68,7 @@ export function navIconSvg(name) {
     playlist: "playlist-minimalistic-2-linear",
     favorites: "heart-bold",
     "chevron-up-down": "alt-arrow-up-line-duotone",
+    refresh: "refresh-linear",
     appearance: "moon-fog-linear",
     "appearance-light": "sun-2-bold",
     "appearance-dark": "moon-stars-bold",

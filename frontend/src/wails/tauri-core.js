@@ -162,6 +162,8 @@ const invokeMap = {
     CloudPlayerService.SetDesktopLyricsClickThrough(args.ignoreCursorEvents),
   set_tray_label: (args) => CloudPlayerService.SetTrayLabel(args.text ?? ""),
   show_main_window: () => CloudPlayerService.ShowMainWindow(),
+  refresh_playlist_import_items: (args) => CloudPlayerService.RefreshPlaylistImportItems(args.playlistId),
+  refresh_playlists: () => CloudPlayerService.RefreshPlaylists(),
   start_import_enrich: (args) => CloudPlayerService.StartImportEnrich(args.playlistId),
   sync_kugou_playlist: (args) => CloudPlayerService.SyncKugouPlaylist(args.listId),
   sync_kugou_playlists: (args) => CloudPlayerService.SyncKugouPlaylists(args.listIds ?? []),

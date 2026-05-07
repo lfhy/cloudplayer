@@ -13,6 +13,7 @@ export function createNavigationController(deps) {
     onImportPage,
     onLoginAccount,
     onNewPlaylist,
+    onRefreshPlaylists,
     onPlaylistPage,
     onRecentPage,
     onSearchPage,
@@ -95,6 +96,8 @@ export function createNavigationController(deps) {
     const title = document.createElement("div");
     title.className = "sidebar-playlist-title";
     title.textContent = "我的歌单";
+    const actions = document.createElement("div");
+    actions.className = "sidebar-playlist-actions";
     const button = document.createElement("button");
     button.type = "button";
     button.id = "btn-sidebar-new-playlist";
@@ -103,8 +106,18 @@ export function createNavigationController(deps) {
     button.setAttribute("aria-label", "新建歌单");
     button.innerHTML = navIconSvg("playlist");
     button.addEventListener("click", onCreatePlaylist);
+    const refresh = document.createElement("button");
+    refresh.type = "button";
+    refresh.id = "btn-sidebar-refresh-playlists";
+    refresh.className = "sidebar-pl-add";
+    refresh.title = "刷新歌单";
+    refresh.setAttribute("aria-label", "刷新歌单");
+    refresh.innerHTML = navIconSvg("refresh");
+    refresh.addEventListener("click", () => void onRefreshPlaylists?.());
+    actions.appendChild(refresh);
+    actions.appendChild(button);
     header.appendChild(title);
-    header.appendChild(button);
+    header.appendChild(actions);
     const list = document.createElement("ul");
     list.id = "sidebar-playlist-list";
     list.className = "sidebar-playlist-list";
