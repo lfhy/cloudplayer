@@ -13,6 +13,8 @@
 - 
 
 ## 附件说明
+- Windows：`cloudplayer-windows-amd64.exe`
+- Windows：`cloudplayer-windows-arm64.exe`
 - Windows：`cloudplayer-windows-amd64-installer.exe`
 - Windows：`cloudplayer-windows-arm64-installer.exe`
 - Windows：`cloudplayer-windows-amd64-arm64-installer.exe`
