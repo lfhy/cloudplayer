@@ -63,7 +63,9 @@ jobs:
       - uses: actions/upload-artifact@v4
         with:
           name: cloudplayer-windows-amd64
-          path: bin/releases-github/windows/amd64
+          path: |
+            bin/releases-github/windows/amd64/cloudplayer-windows-amd64.exe
+            bin/releases-github/windows/amd64/cloudplayer-windows-amd64-installer.exe
           if-no-files-found: error
 
   windows-arm64:
@@ -105,7 +107,9 @@ jobs:
       - uses: actions/upload-artifact@v4
         with:
           name: cloudplayer-windows-arm64
-          path: bin/releases-github/windows/arm64
+          path: |
+            bin/releases-github/windows/arm64/cloudplayer-windows-arm64.exe
+            bin/releases-github/windows/arm64/cloudplayer-windows-arm64-installer.exe
           if-no-files-found: error
 
   windows-dual:
@@ -147,7 +151,7 @@ jobs:
       - uses: actions/upload-artifact@v4
         with:
           name: cloudplayer-windows-amd64-arm64-installer
-          path: bin/releases-github/windows/dual
+          path: bin/releases-github/windows/dual/cloudplayer-windows-amd64-arm64-installer.exe
           if-no-files-found: error
 
   macos-amd64:
@@ -178,7 +182,7 @@ jobs:
       - uses: actions/upload-artifact@v4
         with:
           name: cloudplayer-darwin-amd64
-          path: bin/releases-github/macos/amd64
+          path: bin/releases-github/macos/amd64/cloudplayer-darwin-amd64.dmg
           if-no-files-found: error
 
   macos-arm64:
@@ -209,7 +213,7 @@ jobs:
       - uses: actions/upload-artifact@v4
         with:
           name: cloudplayer-darwin-arm64
-          path: bin/releases-github/macos/arm64
+          path: bin/releases-github/macos/arm64/cloudplayer-darwin-arm64.dmg
           if-no-files-found: error
 
   macos-universal:
@@ -240,7 +244,7 @@ jobs:
       - uses: actions/upload-artifact@v4
         with:
           name: cloudplayer-darwin-universal
-          path: bin/releases-github/macos/universal
+          path: bin/releases-github/macos/universal/cloudplayer-darwin-universal.dmg
           if-no-files-found: error
 
   publish:
