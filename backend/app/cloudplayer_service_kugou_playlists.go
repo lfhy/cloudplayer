@@ -182,6 +182,7 @@ func fetchAllKugouPlaylistTracks(client *kg.Client, session config.KugouSession,
 			break
 		}
 	}
+	sortKugouPlaylistTracksByTime(out)
 	return out, nil
 }
 
