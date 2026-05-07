@@ -34,6 +34,16 @@ tasks:
     cmds:
       - wails3 dev -config ./build/config.yml -port {{.VITE_PORT}}
 
+  release:desktop:
+    summary: Builds Windows and macOS release packages across architectures
+    cmds:
+      - ./scripts/build_desktop_packages.sh {{if .TARGETS}}--targets {{.TARGETS}}{{end}} {{if .WINDOWS_FORMAT}}--windows-format {{.WINDOWS_FORMAT}}{{end}} {{if .RELEASE_DIR}}--release-dir {{.RELEASE_DIR}}{{end}} {{if eq .INCLUDE_MACOS_UNIVERSAL "true"}}--include-macos-universal{{end}} {{if eq .USE_WINDOWS_CGO "1"}}--use-windows-cgo{{end}} {{if eq .SKIP_CLEAN "true"}}--skip-clean{{end}}
+
+  release:desktop:dry-run:
+    summary: Prints the desktop release commands without executing them
+    cmds:
+      - ./scripts/build_desktop_packages.sh --dry-run {{if .TARGETS}}--targets {{.TARGETS}}{{end}} {{if .WINDOWS_FORMAT}}--windows-format {{.WINDOWS_FORMAT}}{{end}} {{if eq .INCLUDE_MACOS_UNIVERSAL "true"}}--include-macos-universal{{end}}
+
   setup:docker:
     summary: Builds Docker image for cross-compilation (~800MB download)
     cmds:

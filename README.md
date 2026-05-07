@@ -115,7 +115,8 @@ npm run build:dev -q
 Go 后端构建：
 
 ```bash
-go build .
+go build -o bin/codex-smoke-test .
+rm -f bin/codex-smoke-test
 ```
 
 Task 任务入口：
@@ -124,6 +125,44 @@ Task 任务入口：
 task dev
 task build
 task package
+wails3 task release:desktop
+```
+
+桌面多平台发布包：
+
+```bash
+./scripts/build_desktop_packages.sh
+```
+
+默认会输出以下目标：
+
+- `windows/amd64`
+- `windows/arm64`
+- `macos/amd64`
+- `macos/arm64`
+
+产物会整理到 `bin/releases/` 下，Windows 默认生成 NSIS 安装包，macOS 会保留 `.app` 并额外输出 `.zip` 归档。
+
+常见示例：
+
+```bash
+# 只打 macOS 双架构
+./scripts/build_desktop_packages.sh --targets macos/amd64,macos/arm64
+
+# 只打 Windows 双架构
+./scripts/build_desktop_packages.sh --targets windows/amd64,windows/arm64
+
+# 同时额外生成 macOS universal 包
+./scripts/build_desktop_packages.sh --include-macos-universal
+
+# 只打印将执行的命令
+wails3 task release:desktop:dry-run
+```
+
+Windows 打包前需要安装 `makensis`；如果在非 macOS 主机上构建 macOS 包，则还需要 Docker 和 `wails-cross` 镜像：
+
+```bash
+wails3 task setup:docker
 ```
 
 ## 目录结构
