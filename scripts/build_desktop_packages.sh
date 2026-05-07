@@ -4,6 +4,7 @@ set -euo pipefail
 # This script orchestrates the existing Wails tasks into a repeatable desktop release flow.
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 APP_NAME="${APP_NAME:-CloudPlayer}"
+ARTIFACT_PREFIX="${ARTIFACT_PREFIX:-cloudplayer}"
 RELEASE_DIR="${RELEASE_DIR:-$ROOT_DIR/bin/releases}"
 TARGETS_CSV="${TARGETS:-windows/amd64,windows/arm64,macos/amd64,macos/arm64}"
 WINDOWS_FORMAT="${WINDOWS_FORMAT:-nsis}"
@@ -122,6 +123,8 @@ stage_windows_package() {
   local target_dir="$RELEASE_DIR/windows/$arch"
   local installer_path=""
   local arch_upper
+  local artifact_prefix
+  artifact_prefix="$ARTIFACT_PREFIX"
   arch_upper="$(printf '%s' "$arch" | tr '[:lower:]' '[:upper:]')"
   log "Building Windows ${arch} package"
   run_task windows:package "ARCH=$arch" "FORMAT=$WINDOWS_FORMAT" "CGO_ENABLED=$USE_WINDOWS_CGO"
@@ -137,33 +140,35 @@ stage_windows_package() {
         installer_path="$(find "$ROOT_DIR/bin" -maxdepth 1 -type f -name "$APP_NAME-*-installer.exe" | sort | tail -n 1)"
       fi
       [[ -n "$installer_path" && -f "$installer_path" ]] || fail "Windows ${arch} installer was not created"
-      cp "$installer_path" "$target_dir/$APP_NAME-windows-$arch-installer.exe"
+      cp "$installer_path" "$target_dir/$artifact_prefix-windows-$arch-installer.exe"
       ;;
     msix)
       installer_path="$ROOT_DIR/bin/$APP_NAME-$arch.msix"
       [[ -f "$installer_path" ]] || fail "Windows ${arch} MSIX package was not created"
-      cp "$installer_path" "$target_dir/$APP_NAME-windows-$arch.msix"
+      cp "$installer_path" "$target_dir/$artifact_prefix-windows-$arch.msix"
       ;;
     *)
       fail "Unsupported windows format: $WINDOWS_FORMAT"
       ;;
   esac
   if [[ -f "$ROOT_DIR/bin/$APP_NAME.exe" ]]; then
-    cp "$ROOT_DIR/bin/$APP_NAME.exe" "$target_dir/$APP_NAME-windows-$arch.exe"
+    cp "$ROOT_DIR/bin/$APP_NAME.exe" "$target_dir/$artifact_prefix-windows-$arch.exe"
   fi
 }
 
 stage_windows_dual_package() {
   local target_dir="$RELEASE_DIR/windows/dual"
   local installer_path="$ROOT_DIR/bin/$APP_NAME-amd64_arm64-installer.exe"
+  local artifact_prefix
+  artifact_prefix="$ARTIFACT_PREFIX"
   log "Building Windows dual-arch package"
   run_task windows:package:dual "FORMAT=$WINDOWS_FORMAT" "CGO_ENABLED=$USE_WINDOWS_CGO"
   [[ "$DRY_RUN" == "true" ]] && return
   [[ "$WINDOWS_FORMAT" == "nsis" ]] || fail "Windows dual package currently supports nsis only"
   [[ -f "$installer_path" ]] || fail "Windows dual-arch installer was not created"
   mkdir -p "$target_dir"
-  cp "$installer_path" "$target_dir/$APP_NAME-windows-amd64-arm64-installer.exe"
-  [[ -f "$target_dir/$APP_NAME-windows-amd64-arm64-installer.exe" ]] || fail "Dual-arch installer copy failed"
+  cp "$installer_path" "$target_dir/$artifact_prefix-windows-amd64-arm64-installer.exe"
+  [[ -f "$target_dir/$artifact_prefix-windows-amd64-arm64-installer.exe" ]] || fail "Dual-arch installer copy failed"
 }
 
 stage_macos_package() {
@@ -171,6 +176,8 @@ stage_macos_package() {
   local target_dir="$RELEASE_DIR/macos/$arch"
   local bundle_copy="$target_dir/$APP_NAME.app"
   local dmg_path="$ROOT_DIR/bin/$APP_NAME.dmg"
+  local artifact_prefix
+  artifact_prefix="$ARTIFACT_PREFIX"
   log "Building macOS ${arch} package"
   run_task darwin:package:dmg "ARCH=$arch"
   [[ "$DRY_RUN" == "true" ]] && return
@@ -179,12 +186,12 @@ stage_macos_package() {
   rm -rf "$bundle_copy"
   mkdir -p "$target_dir"
   cp -R "$ROOT_DIR/bin/$APP_NAME.app" "$bundle_copy"
-  archive_macos_bundle "$bundle_copy" "$target_dir/$APP_NAME-darwin-$arch.zip"
-  [[ -f "$target_dir/$APP_NAME-darwin-$arch.zip" ]] || fail "macOS ${arch} zip was not created"
-  cp "$dmg_path" "$target_dir/$APP_NAME-darwin-$arch.dmg"
-  [[ -f "$target_dir/$APP_NAME-darwin-$arch.dmg" ]] || fail "macOS ${arch} dmg copy failed"
+  archive_macos_bundle "$bundle_copy" "$target_dir/$artifact_prefix-darwin-$arch.zip"
+  [[ -f "$target_dir/$artifact_prefix-darwin-$arch.zip" ]] || fail "macOS ${arch} zip was not created"
+  cp "$dmg_path" "$target_dir/$artifact_prefix-darwin-$arch.dmg"
+  [[ -f "$target_dir/$artifact_prefix-darwin-$arch.dmg" ]] || fail "macOS ${arch} dmg copy failed"
   if [[ -f "$ROOT_DIR/bin/$APP_NAME" ]]; then
-    cp "$ROOT_DIR/bin/$APP_NAME" "$target_dir/$APP_NAME-darwin-$arch"
+    cp "$ROOT_DIR/bin/$APP_NAME" "$target_dir/$artifact_prefix-darwin-$arch"
   fi
 }
 
@@ -192,6 +199,8 @@ stage_macos_universal_package() {
   local target_dir="$RELEASE_DIR/macos/universal"
   local bundle_copy="$target_dir/$APP_NAME.app"
   local dmg_path="$ROOT_DIR/bin/$APP_NAME.dmg"
+  local artifact_prefix
+  artifact_prefix="$ARTIFACT_PREFIX"
   log "Building macOS universal package"
   run_task darwin:package:dmg:universal
   [[ "$DRY_RUN" == "true" ]] && return
@@ -200,12 +209,12 @@ stage_macos_universal_package() {
   rm -rf "$bundle_copy"
   mkdir -p "$target_dir"
   cp -R "$ROOT_DIR/bin/$APP_NAME.app" "$bundle_copy"
-  archive_macos_bundle "$bundle_copy" "$target_dir/$APP_NAME-darwin-universal.zip"
-  [[ -f "$target_dir/$APP_NAME-darwin-universal.zip" ]] || fail "macOS universal zip was not created"
-  cp "$dmg_path" "$target_dir/$APP_NAME-darwin-universal.dmg"
-  [[ -f "$target_dir/$APP_NAME-darwin-universal.dmg" ]] || fail "macOS universal dmg copy failed"
+  archive_macos_bundle "$bundle_copy" "$target_dir/$artifact_prefix-darwin-universal.zip"
+  [[ -f "$target_dir/$artifact_prefix-darwin-universal.zip" ]] || fail "macOS universal zip was not created"
+  cp "$dmg_path" "$target_dir/$artifact_prefix-darwin-universal.dmg"
+  [[ -f "$target_dir/$artifact_prefix-darwin-universal.dmg" ]] || fail "macOS universal dmg copy failed"
   if [[ -f "$ROOT_DIR/bin/$APP_NAME" ]]; then
-    cp "$ROOT_DIR/bin/$APP_NAME" "$target_dir/$APP_NAME-darwin-universal"
+    cp "$ROOT_DIR/bin/$APP_NAME" "$target_dir/$artifact_prefix-darwin-universal"
   fi
 }
 

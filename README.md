@@ -146,12 +146,12 @@ wails3 task release:github
 
 当目标同时包含 `windows/amd64` 和 `windows/arm64` 时，脚本还会额外生成一个双架构 NSIS 安装包：
 
-- `bin/releases/windows/dual/CloudPlayer-windows-amd64-arm64-installer.exe`
+- `bin/releases/windows/dual/cloudplayer-windows-amd64-arm64-installer.exe`
 
 当命令包含 `--include-macos-universal` 时，还会额外生成一套 macOS universal 产物：
 
-- `bin/releases/macos/universal/CloudPlayer-darwin-universal.dmg`
-- `bin/releases/macos/universal/CloudPlayer-darwin-universal.zip`
+- `bin/releases/macos/universal/cloudplayer-darwin-universal.dmg`
+- `bin/releases/macos/universal/cloudplayer-darwin-universal.zip`
 
 常见示例：
 
