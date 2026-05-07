@@ -23,6 +23,7 @@ export function createContextMenuController(deps) {
     getSearchResults,
     getSelectedPlaylistId,
     getSelectedPlaylistName,
+    getMusicOnlineModeEnabled,
     invoke,
     loadPlaylistDetail,
     openDeletePlaylistModal,
@@ -63,6 +64,9 @@ export function createContextMenuController(deps) {
       if (playlist.id == null) return;
       hasPlaylist = true;
       addMenu.sub.appendChild(cmBtn((playlist.name || "").trim() || `#${playlist.id}`, async () => {
+        if (getMusicOnlineModeEnabled?.() && !(row.source_id || "").startsWith("kugou:")) {
+          throw new Error("在线模式下只能添加酷狗云端歌曲到云歌单");
+        }
         await invoke("append_playlist_import_items", {
           playlistId: playlist.id,
           items: [{
@@ -148,6 +152,9 @@ export function createContextMenuController(deps) {
       if (playlist.id == null || (getSelectedPlaylistId() != null && Number(playlist.id) === Number(getSelectedPlaylistId()))) return;
       hasPlaylist = true;
       addMenu.sub.appendChild(cmBtn((playlist.name || "").trim() || `#${playlist.id}`, async () => {
+        if (getMusicOnlineModeEnabled?.() && !(row.pjmp3_source_id || "").startsWith("kugou:")) {
+          throw new Error("在线模式下只能添加酷狗云端歌曲到云歌单");
+        }
         await invoke("append_playlist_import_items", {
           playlistId: playlist.id,
           items: [{

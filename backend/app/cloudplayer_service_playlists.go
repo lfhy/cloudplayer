@@ -69,6 +69,9 @@ func (s *CloudPlayerService) CreatePlaylist(name string) (int64, error) {
 	if name == "" {
 		return 0, fmt.Errorf("歌单名称不能为空")
 	}
+	if config.LoadSettings().MusicOnlineMode {
+		return s.createKugouPlaylist(name)
+	}
 	result, err := s.state.DB.Exec(`INSERT INTO playlists (name, is_builtin) VALUES (?, 0)`, name)
 	if err != nil {
 		return 0, err
@@ -80,6 +83,9 @@ func (s *CloudPlayerService) RenamePlaylist(playlistID int64, name string) error
 	name = strings.TrimSpace(name)
 	if name == "" {
 		return fmt.Errorf("歌单名称不能为空")
+	}
+	if config.LoadSettings().MusicOnlineMode {
+		return s.renameKugouPlaylist(playlistID, name)
 	}
 	if builtin, err := s.isBuiltinPlaylist(playlistID); err != nil {
 		return err
@@ -101,6 +107,9 @@ func (s *CloudPlayerService) RenamePlaylist(playlistID int64, name string) error
 }
 
 func (s *CloudPlayerService) DeletePlaylist(playlistID int64) error {
+	if config.LoadSettings().MusicOnlineMode {
+		return s.deleteKugouPlaylist(playlistID)
+	}
 	if builtin, err := s.isBuiltinPlaylist(playlistID); err != nil {
 		return err
 	} else if builtin {
@@ -132,6 +141,9 @@ func (s *CloudPlayerService) DeletePlaylist(playlistID int64) error {
 }
 
 func (s *CloudPlayerService) DeletePlaylistImportItem(playlistID, itemID int64) error {
+	if config.LoadSettings().MusicOnlineMode {
+		return s.deleteKugouPlaylistImportItem(playlistID, itemID)
+	}
 	result, err := s.state.DB.Exec(`DELETE FROM playlist_import_items WHERE id = ? AND playlist_id = ?`, itemID, playlistID)
 	if err != nil {
 		return err
@@ -147,6 +159,9 @@ func (s *CloudPlayerService) DeletePlaylistImportItem(playlistID, itemID int64) 
 }
 
 func (s *CloudPlayerService) ReplacePlaylistImportItems(playlistID int64, items []importplaylist.ImportedTrackDTO) error {
+	if config.LoadSettings().MusicOnlineMode {
+		return s.replaceKugouPlaylistItems(playlistID, items)
+	}
 	tx, err := s.state.DB.Begin()
 	if err != nil {
 		return err
@@ -178,6 +193,9 @@ func (s *CloudPlayerService) ReplacePlaylistImportItems(playlistID int64, items 
 }
 
 func (s *CloudPlayerService) AppendPlaylistImportItems(playlistID int64, items []importplaylist.ImportedTrackDTO) error {
+	if config.LoadSettings().MusicOnlineMode {
+		return s.appendKugouPlaylistItems(playlistID, items)
+	}
 	tx, err := s.state.DB.Begin()
 	if err != nil {
 		return err

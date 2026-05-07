@@ -107,6 +107,7 @@ export function createPageRuntime(deps) {
     formatDurationMs,
     getImportTracks,
     getLikedIds,
+    getMusicOnlineModeEnabled: deps.getMusicOnlineModeEnabled,
     getPlaylistDetailRows,
     getSelectedPlaylistId,
     getSelectedPlaylistName,
@@ -128,12 +129,14 @@ export function createPageRuntime(deps) {
 
   const context = createContextMenuController({
     alertRequestFailed,
+    getMusicOnlineModeEnabled: deps.getMusicOnlineModeEnabled,
     getPlayIndex: deps.getPlayIndex,
     getPlayQueue: deps.getPlayQueue,
     getPlaylistDetailRows,
     getSearchResults: () => searchState.results,
     getSelectedPlaylistId,
     getSelectedPlaylistName,
+    getMusicOnlineModeEnabled: deps.getMusicOnlineModeEnabled,
     invoke,
     loadPlaylistDetail: playlist.loadPlaylistDetail,
     openDeletePlaylistModal: (...args) => playlistManageModal.openDelete(...args),
@@ -150,6 +153,7 @@ export function createPageRuntime(deps) {
 
   const search = createSearchController({
     escapeHtml,
+    getMusicOnlineModeEnabled: deps.getMusicOnlineModeEnabled,
     invoke,
     loadPlaylistDetail: playlist.loadPlaylistDetail,
     MSG_REQUEST_FAILED: messageRequestFailed,

@@ -27,12 +27,17 @@ let playQueue = [], playIndex = 0, seekDragging = false, playLoadGeneration = 0,
 let playModeIndex = 0, qualityPref = "128", importTracks = [], desktopLyricsOpen = false, desktopLyricsWindow = null, desktopLyricsLocked = true;
 let mainWindowCloseAction = "ask", selectedPlaylistId = null, selectedPlaylistName = "", playlistDetailRows = [], importShareSuggestedName = "";
 let neteaseCookieEnabled = false, neteaseCookieValue = "", importMethod = "", importDraftDirty = false, sessionRecentPlays = [], localLibraryRows = [], lastLibraryFolder = "";
+let musicOnlineModeEnabled = false;
 const downloadTasksBySourceId = new Map(), logPlayEventDesktop = createPlayEventLogger(invoke);
 let likedIds = loadLikedSet();
 let setPage = () => {}, renderHomePage = () => {}, renderDailyTable = () => {}, renderRecentPlaysTable = () => {};
 let renderQueuePanel = () => {}, refreshFavButton = () => {}, randomNextIndex = () => 0, refreshQuickThemeModeUi = () => {}, renderImportTable = () => {}, loadPlaylistDetail = async () => {};
 let openAccountCenter = () => {}, refreshAccountCenter = () => {}, wireAccountCenter = () => {};
 let scheduleSavePlaybackState = () => {}, restorePlaybackState = async () => {};
+
+function setMusicOnlineModeEnabledValue(value) {
+  musicOnlineModeEnabled = !!value;
+}
 
 function audioEl() { return document.getElementById("audio-player"); }
 
@@ -94,7 +99,27 @@ const settings = createSettingsRuntime({
   setDesktopLyricsLocked: (value) => { desktopLyricsLocked = value; }, setImportDraftDirty: (value) => { importDraftDirty = value; }, setImportMethodValue: (value) => { importMethod = value; },
   setImportShareSuggestedName: (value) => { importShareSuggestedName = value || ""; }, setImportTracksValue: (rows) => { importTracks = Array.isArray(rows) ? rows : []; },
   setLastLibraryFolder: (value) => { lastLibraryFolder = value; }, setMainWindowCloseAction: (value) => { mainWindowCloseAction = value; },
+  setMusicOnlineModeEnabledValue,
   setNeteaseCookieState: ({ enabled, value }) => { neteaseCookieEnabled = !!enabled; neteaseCookieValue = String(value || ""); }, setPage: (...args) => setPage(...args),
+  onMusicOnlineModeChanged: async (enabled) => {
+    musicOnlineModeEnabled = !!enabled;
+    await pages.refreshSidebarPlaylists(true);
+    await pages.refreshPlaylistSelect(true);
+    const playlists = await invoke("list_playlists");
+    const first = Array.isArray(playlists) && playlists.length ? playlists[0] : null;
+    if (!first) {
+      selectedPlaylistId = null;
+      selectedPlaylistName = "";
+      playlistDetailRows = [];
+      pages.renderPlaylistDetailTable();
+      return;
+    }
+    selectedPlaylistId = first.id;
+    selectedPlaylistName = first.name || "";
+    if (document.querySelector('.page[data-page="playlist"]')?.classList.contains("page-active")) {
+      await pages.loadPlaylistDetail(first.id, first.name || "", true);
+    }
+  },
   updateDownloadFolderHint: (...args) => player.updateDownloadFolderHint(...args), warnRequestFailed,
 });
 
@@ -136,6 +161,7 @@ const pages = createPageRuntime({
   alertRequestFailed, appLogoMarkSvg, applyQuickThemeMode: (...args) => dockTheme.applyQuickThemeMode(...args), escapeHtml, formatDurationMs, invoke, messageRequestFailed: MSG_REQUEST_FAILED,
   getDownloadTaskCount: () => downloadTasksBySourceId.size, getImportMethod: () => importMethod, getImportShareSuggestedName: () => importShareSuggestedName, getImportTracks: () => importTracks,
   getLastLibraryFolder: () => lastLibraryFolder, getLikedIds: () => likedIds, getNeteaseCookieState: () => ({ enabled: neteaseCookieEnabled, value: neteaseCookieValue }),
+  getMusicOnlineModeEnabled: () => musicOnlineModeEnabled,
   getPlayIndex: () => playIndex, getPlayQueue: () => playQueue, getPlaylistDetailRows: () => playlistDetailRows, getSelectedPlaylistId: () => selectedPlaylistId, getSelectedPlaylistName: () => selectedPlaylistName,
   getSessionRecentPlays: () => sessionRecentPlays, importBackButtonIconSvg, importMethodIconSvg, navIconSvg, navItems: NAV, open,
   openAccountCenter: (...args) => openAccountCenter(...args),

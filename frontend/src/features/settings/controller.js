@@ -4,7 +4,7 @@ import { closeCloseConfirmModalDom, openCloseConfirmModalDom, runCloseChoiceFlow
 import { wireSettingsActionButtons } from "./actions.js";
 import { DEFAULT_LYRICS_IDLE_LINE1, DEFAULT_LYRICS_IDLE_LINE2, normalizeLyricHexInput, normalizeLyricsIdleLine, normalizeNeteaseApiBase, normalizeSearchCacheTTLHours, settingsFormBaselineDefaults } from "./formHelpers.js";
 import { applyLyricsSourceSelectionToDom, readLyricsSourceSettingsFromDom, wireLyricsSourceSelection } from "./lyricSources.js";
-import { createKugouSettingsStatusRefresher, isMusicSourceOnlineModeSelected, setMusicSourceOnlineModeAvailability, setMusicSourceOnlineModeSelection, wireMusicSourceOnlineModeSelection } from "./sourceMode.js";
+import { createKugouSettingsStatusRefresher, isMusicSourceOnlineModeSelected, musicOnlineModeStatusText, setMusicSourceOnlineModeAvailability, setMusicSourceOnlineModeBusy, setMusicSourceOnlineModeSelection, toggleMusicOnlineMode, wireMusicSourceOnlineModeSelection } from "./sourceMode.js";
 import { renderLyricsPreview } from "./lyricsPreview.js";
 import { canSaveCustomProxyUrl } from "../../app/helpers/platformTheme.js";
 
@@ -42,7 +42,9 @@ export function createSettingsController(deps) {
     setImportDraft,
     setImportMethod,
     setImportStep,
+    setMusicOnlineModeEnabledValue,
     openAccountCenter,
+    onMusicOnlineModeChanged,
   } = deps;
   let settingsFormBaseline = settingsFormBaselineDefaults();
   let settingsSaveTimer = null;
@@ -103,6 +105,7 @@ export function createSettingsController(deps) {
     setNetworkProxyModeSelection(proxyMode);
     setMusicSourceProviderSelection(settings?.music_source_provider ?? settings?.musicSourceProvider ?? "pjmp3");
     setMusicSourceOnlineModeSelection(settings?.music_online_mode ?? settings?.musicOnlineMode ?? false);
+    setMusicSourceOnlineModeBusy(false, musicOnlineModeStatusText(settings?.music_online_mode ?? settings?.musicOnlineMode ?? false));
     applyAppTheme(theme, customAccent, mode);
     const closeAction = normalizeCloseAction(settings?.main_window_close_action ?? settings?.mainWindowCloseAction);
     const closeActionEl = document.getElementById("setting-close-action");
@@ -175,6 +178,7 @@ export function createSettingsController(deps) {
       void broadcastDesktopLyricsColors();
     } catch (error) {
       alertRequestFailed(error, "save settings");
+      throw error;
     } finally {
       settingsSaveInFlight = false;
       if (settingsSaveQueued) {
@@ -191,13 +195,8 @@ export function createSettingsController(deps) {
     if (immediate) void persistSettingsFromForm();
   };
 
-  function openCloseConfirmModal() {
-    openCloseConfirmModalDom();
-  }
-
-  function closeCloseConfirmModal() {
-    closeCloseConfirmModalDom();
-  }
+  function openCloseConfirmModal() { openCloseConfirmModalDom(); }
+  function closeCloseConfirmModal() { closeCloseConfirmModalDom(); }
 
   function wirePreferencesModals() {
     globalThis.__cloudplayerOpenCloseConfirmModal = openCloseConfirmModal;
@@ -246,20 +245,24 @@ export function createSettingsController(deps) {
       setMusicSourceProviderSelection(card.getAttribute("data-music-source-provider-card") || "pjmp3");
       queueSettingsAutosave(true);
     }));
-    wireMusicSourceOnlineModeSelection(() => queueSettingsAutosave(true));
+    wireMusicSourceOnlineModeSelection((nextEnabled) => toggleMusicOnlineMode(nextEnabled, {
+      alertRequestFailed,
+      isSelected: isMusicSourceOnlineModeSelected,
+      onMusicOnlineModeChanged,
+      persistSettingsFromForm,
+    }));
     wireLyricsSourceSelection(() => queueSettingsAutosave(true));
     hotkeys.wireHotkeySettingsUi();
     document.getElementById("close-choice-tray")?.addEventListener("click", () => void runCloseChoiceFlow("tray", { alertRequestFailed, invoke, setMainWindowCloseAction }));
     document.getElementById("close-choice-quit")?.addEventListener("click", () => void runCloseChoiceFlow("quit", { alertRequestFailed, invoke, setMainWindowCloseAction }));
     document.getElementById("close-choice-cancel")?.addEventListener("click", () => closeCloseConfirmModal());
-    document.getElementById("close-confirm-modal")?.addEventListener("click", (event) => {
-      if (event.target?.id === "close-confirm-modal") closeCloseConfirmModal();
-    });
+    document.getElementById("close-confirm-modal")?.addEventListener("click", (event) => { if (event.target?.id === "close-confirm-modal") closeCloseConfirmModal(); });
   }
 
   async function loadSettings() {
     try {
       const settings = await invoke("get_settings");
+      setMusicOnlineModeEnabledValue?.(settings?.music_online_mode ?? settings?.musicOnlineMode ?? false);
       applyAppTheme(settings?.app_theme ?? settings?.appTheme ?? "coral", settings?.app_theme_custom_accent ?? settings?.appThemeCustomAccent ?? "#c62f2f", settings?.app_theme_mode ?? settings?.appThemeMode ?? "system");
       setMainWindowCloseAction(normalizeCloseAction(settings?.main_window_close_action ?? settings?.mainWindowCloseAction));
       fillSettingsFormFromSettings(settings);
@@ -285,11 +288,7 @@ export function createSettingsController(deps) {
     } catch (error) {
       console.warn("get_settings", error);
     }
-    try {
-      console.info(await invoke("db_status"));
-    } catch (error) {
-      console.warn("db_status", error);
-    }
+    try { console.info(await invoke("db_status")); } catch (error) { console.warn("db_status", error); }
   }
 
   return { getSettingsFormValues, loadSettings, openCloseConfirmModal, queueSettingsAutosave, refreshKugouSettingsStatus, wirePreferencesModals };

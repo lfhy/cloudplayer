@@ -39,6 +39,7 @@ export function createSettingsRuntime(deps) {
     setImportShareSuggestedName,
     setImportTracksValue,
     setLastLibraryFolder,
+    setMusicOnlineModeEnabledValue,
     setDesktopLyricsIdleText,
     setMainWindowCloseAction,
     setNeteaseCookieState,
@@ -125,11 +126,13 @@ export function createSettingsRuntime(deps) {
     setDesktopLyricsLocked,
     getDesktopLyricsOpen,
     setLastLibraryFolder,
+    setMusicOnlineModeEnabledValue,
     setNeteaseCookieState,
     setImportDraft: flow.setImportDraft,
     setImportConfigHeader: flow.setImportConfigHeader,
     setImportMethod: flow.setImportMethod,
     setImportStep: flow.setImportStep,
+    onMusicOnlineModeChanged: deps.onMusicOnlineModeChanged,
   });
 
   return {

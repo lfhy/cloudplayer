@@ -19,7 +19,7 @@ export function sourcePanelTemplate() {
               <input type="hidden" id="setting-music-online-mode" value="0" />
               <button type="button" id="btn-music-online-mode" class="settings-choice" role="switch" aria-checked="false">在线模式</button>
             </div>
-            <p id="setting-music-online-mode-status" class="settings-field-hint muted">开启后，搜索、播放、补全都会优先使用酷狗云端曲库。</p>
+            <p id="setting-music-online-mode-status" class="settings-field-hint muted">开启后，全部歌单、歌单内歌曲和音乐源都会优先切到酷狗云端，并缓存 12 小时。</p>
           </div>
         </div>
         <div class="settings-field">

@@ -104,8 +104,8 @@ func (s *CloudPlayerService) refreshKugouPlaylistItems(playlistID int64) ([]Play
 	if err != nil {
 		return nil, err
 	}
-	rows := kugouImportRowsFromResponse(response.Tracks)
-	if err := s.saveKugouPlaylistItemsCache(userID, playlistID, response.PlaylistName, response.Tracks); err != nil {
+	rows := kugouImportRowsFromResponse(response.Tracks, response.KugouFileIDs)
+	if err := s.saveKugouPlaylistItemsCache(userID, playlistID, response.PlaylistName, response.Tracks, response.KugouFileIDs); err != nil {
 		return nil, err
 	}
 	return rows, nil
@@ -142,7 +142,7 @@ func (s *CloudPlayerService) readKugouPlaylistCache(userID string) ([]KugouPlayl
 
 func (s *CloudPlayerService) readKugouPlaylistItemsCache(userID string, playlistID int64) ([]PlaylistImportItemRow, int64, error) {
 	rows, err := s.state.DB.Query(`
-		SELECT sort_order, title, artist, album, pjmp3_source_id, cover_url, duration_ms, fetched_at
+		SELECT sort_order, title, artist, album, pjmp3_source_id, fileid, cover_url, duration_ms, fetched_at
 		FROM kugou_playlist_cache_items
 		WHERE user_id = ? AND playlist_id = ?
 		ORDER BY sort_order ASC
@@ -157,10 +157,10 @@ func (s *CloudPlayerService) readKugouPlaylistItemsCache(userID string, playlist
 	for rows.Next() {
 		var row PlaylistImportItemRow
 		var coverURL string
-		if err := rows.Scan(&row.SortOrder, &row.Title, &row.Artist, &row.Album, &row.Pjmp3SourceID, &coverURL, &row.DurationMS, &fetchedAt); err != nil {
+		if err := rows.Scan(&row.SortOrder, &row.Title, &row.Artist, &row.Album, &row.Pjmp3SourceID, &row.KugouFileID, &coverURL, &row.DurationMS, &fetchedAt); err != nil {
 			return nil, 0, err
 		}
-		row.ID = 0
+		row.ID = row.KugouFileID
 		row.CoverURL = coverURL
 		result = append(result, row)
 	}
@@ -193,7 +193,7 @@ func (s *CloudPlayerService) saveKugouPlaylistCache(userID string, rows []KugouP
 	return tx.Commit()
 }
 
-func (s *CloudPlayerService) saveKugouPlaylistItemsCache(userID string, playlistID int64, playlistName string, tracks []importplaylist.ImportedTrackDTO) error {
+func (s *CloudPlayerService) saveKugouPlaylistItemsCache(userID string, playlistID int64, playlistName string, tracks []importplaylist.ImportedTrackDTO, fileIDs []int64) error {
 	tx, err := s.state.DB.Begin()
 	if err != nil {
 		return err
@@ -208,11 +208,15 @@ func (s *CloudPlayerService) saveKugouPlaylistItemsCache(userID string, playlist
 		if durationMS < 0 {
 			durationMS = 0
 		}
+		fileID := int64(0)
+		if index < len(fileIDs) && fileIDs[index] > 0 {
+			fileID = fileIDs[index]
+		}
 		if _, err := tx.Exec(`
 			INSERT INTO kugou_playlist_cache_items (
-				user_id, playlist_id, sort_order, title, artist, album, pjmp3_source_id, cover_url, duration_ms, fetched_at
-			) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-		`, strings.TrimSpace(userID), playlistID, index, strings.TrimSpace(track.Title), strings.TrimSpace(track.Artist), strings.TrimSpace(track.Album), strings.TrimSpace(track.Pjmp3SourceID), strings.TrimSpace(track.CoverURL), durationMS, fetchedAt); err != nil {
+				user_id, playlist_id, sort_order, title, artist, album, pjmp3_source_id, fileid, cover_url, duration_ms, fetched_at
+			) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+		`, strings.TrimSpace(userID), playlistID, index, strings.TrimSpace(track.Title), strings.TrimSpace(track.Artist), strings.TrimSpace(track.Album), strings.TrimSpace(track.Pjmp3SourceID), fileID, strings.TrimSpace(track.CoverURL), durationMS, fetchedAt); err != nil {
 			return err
 		}
 	}
@@ -236,16 +240,21 @@ func cacheExpired(fetchedAt int64, ttl time.Duration) bool {
 	return time.Since(time.Unix(fetchedAt, 0)) > ttl
 }
 
-func kugouImportRowsFromResponse(tracks []importplaylist.ImportedTrackDTO) []PlaylistImportItemRow {
+func kugouImportRowsFromResponse(tracks []importplaylist.ImportedTrackDTO, fileIDs []int64) []PlaylistImportItemRow {
 	rows := make([]PlaylistImportItemRow, 0, len(tracks))
 	for index, track := range tracks {
+		fileID := int64(0)
+		if index < len(fileIDs) && fileIDs[index] > 0 {
+			fileID = fileIDs[index]
+		}
 		rows = append(rows, PlaylistImportItemRow{
-			ID:            0,
+			ID:            fileID,
 			SortOrder:     int64(index),
 			Title:         strings.TrimSpace(track.Title),
 			Artist:        strings.TrimSpace(track.Artist),
 			Album:         strings.TrimSpace(track.Album),
 			Pjmp3SourceID: strings.TrimSpace(track.Pjmp3SourceID),
+			KugouFileID:   fileID,
 			CoverURL:      strings.TrimSpace(track.CoverURL),
 			DurationMS:    track.DurationMS,
 		})
@@ -256,7 +265,7 @@ func kugouImportRowsFromResponse(tracks []importplaylist.ImportedTrackDTO) []Pla
 func toPlaylistRows(rows []KugouPlaylistRow) []PlaylistRow {
 	result := make([]PlaylistRow, 0, len(rows))
 	for _, row := range rows {
-		result = append(result, PlaylistRow{ID: row.ID, Name: row.Name, IsBuiltin: true})
+		result = append(result, PlaylistRow{ID: row.ID, Name: row.Name, IsBuiltin: false, IsCloud: true})
 	}
 	return result
 }

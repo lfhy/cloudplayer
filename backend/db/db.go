@@ -125,6 +125,7 @@ func OpenAndInit() (*sql.DB, error) {
 			artist TEXT NOT NULL DEFAULT '',
 			album TEXT NOT NULL DEFAULT '',
 			pjmp3_source_id TEXT NOT NULL DEFAULT '',
+			fileid INTEGER NOT NULL DEFAULT 0,
 			cover_url TEXT NOT NULL DEFAULT '',
 			duration_ms INTEGER NOT NULL DEFAULT 0,
 			fetched_at INTEGER NOT NULL DEFAULT 0
@@ -143,6 +144,7 @@ func OpenAndInit() (*sql.DB, error) {
 		"ALTER TABLE playlist_import_items ADD COLUMN cover_cache_path TEXT NOT NULL DEFAULT ''",
 		"ALTER TABLE playlist_import_items ADD COLUMN duration_ms INTEGER NOT NULL DEFAULT 0",
 		"ALTER TABLE playlist_import_items ADD COLUMN audio_cache_path TEXT NOT NULL DEFAULT ''",
+		"ALTER TABLE kugou_playlist_cache_items ADD COLUMN fileid INTEGER NOT NULL DEFAULT 0",
 		"ALTER TABLE recent_plays ADD COLUMN album TEXT NOT NULL DEFAULT ''",
 		"ALTER TABLE recent_plays ADD COLUMN duration_ms INTEGER NOT NULL DEFAULT 0",
 	} {

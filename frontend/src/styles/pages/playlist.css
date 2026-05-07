@@ -31,6 +31,7 @@
   margin-top: 8px;
   color: var(--text-secondary);
   font-size: 16px;
+  min-height: 22px;
 }
 
 .playlist-hero__count {
@@ -74,6 +75,12 @@
 
 .playlist-table tbody tr {
   height: 62px;
+}
+
+#btn-playlist-refresh-cloud.is-busy,
+#btn-music-online-mode.is-busy {
+  opacity: 0.72;
+  cursor: progress;
 }
 
 .t-title {

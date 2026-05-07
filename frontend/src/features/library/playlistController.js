@@ -1,18 +1,20 @@
-import { navIconSvg } from "../../app/helpers/icons.js";
 import { setCoverImageSource } from "../../app/helpers/covers.js";
 import { renderTrackTableRows } from "./trackTableRenderer.js";
 import { createPlaylistEnrichHelpers } from "./playlistEnrichHelpers.js";
+import { renderPlaylistTableLoading, renderSidebarPlaylistLoading } from "./playlistLoadingView.js";
+import { buildSidebarPlaylistItem, playlistSidebarEmptyText } from "./playlistSidebarView.js";
 
 // Playlist controller handles sidebar, hero metadata, and playlist search helpers.
 export function createPlaylistController(deps) {
-  const {
-    alertRequestFailed,
-    escapeHtml,
-    formatDurationMs,
-    getImportTracks,
-    getLikedIds,
-    getPlaylistDetailRows,
-    getSelectedPlaylistId,
+    const {
+      alertRequestFailed,
+      escapeHtml,
+      formatDurationMs,
+      getImportTracks,
+      getLikedIds,
+      getMusicOnlineModeEnabled,
+      getPlaylistDetailRows,
+      getSelectedPlaylistId,
     getSelectedPlaylistName,
     invoke,
     MSG_REQUEST_FAILED,
@@ -32,6 +34,7 @@ export function createPlaylistController(deps) {
   const enrich = createPlaylistEnrichHelpers({ invoke, warnRequestFailed });
 
   let cachedSidebarPlaylists = [];
+  let playlistDetailLoading = false;
 
   function currentSelectedPlaylist() {
     return cachedSidebarPlaylists.find((item) => Number(item.id) === Number(getSelectedPlaylistId())) || null;
@@ -42,12 +45,14 @@ export function createPlaylistController(deps) {
     const renameBtn = document.getElementById("btn-playlist-rename");
     const enrichBtn = document.getElementById("btn-playlist-enrich");
     const enrichAllBtn = document.getElementById("btn-playlist-enrich-all");
+    const refreshCloudBtn = document.getElementById("btn-playlist-refresh-cloud");
     if (!renameBtn) return;
     const builtin = playlist?.is_builtin === true;
     renameBtn.disabled = getSelectedPlaylistId() == null || builtin;
     renameBtn.hidden = builtin;
     if (enrichBtn) enrichBtn.hidden = builtin;
     if (enrichAllBtn) enrichAllBtn.hidden = builtin;
+    if (refreshCloudBtn) refreshCloudBtn.hidden = !playlist?.is_cloud;
   }
 
   function syncSidebarPlaylistActiveState(playlistID = getSelectedPlaylistId(), forceActive = false) {
@@ -92,7 +97,7 @@ export function createPlaylistController(deps) {
   async function refreshSidebarPlaylists(force = false) {
     const list = document.getElementById("sidebar-playlist-list");
     if (!list) return;
-    list.innerHTML = "";
+    renderSidebarPlaylistLoading(force ? "正在刷新歌单…" : "正在加载歌单…");
     let playlists = [];
     try {
       playlists = await invoke(force ? "refresh_playlists" : "list_playlists");
@@ -107,20 +112,13 @@ export function createPlaylistController(deps) {
     if (!playlists.length) {
       const li = document.createElement("li");
       li.className = "sidebar-pl-empty muted";
-      li.textContent = "暂无歌单 · 与 Py 版共用 ~/.cloudplayer/library.db · 在此页「保存为新歌单」即可出现";
+      li.textContent = playlistSidebarEmptyText(getMusicOnlineModeEnabled?.());
       list.appendChild(li);
       return;
     }
     cachedSidebarPlaylists = Array.isArray(playlists) ? playlists : [];
     playlists.forEach((playlist) => {
-      const li = document.createElement("li");
-      li.className = "sidebar-pl-item";
-      li.setAttribute("data-playlist-id", String(playlist.id));
-      li.innerHTML = `
-        <span class="sidebar-pl-item__icon" aria-hidden="true">${navIconSvg(playlist.is_builtin ? "favorites" : "playlist")}</span>
-        <span class="sidebar-pl-item__label">${escapeHtml(playlist.name?.trim() || `歌单 ${playlist.id}`)}</span>
-      `;
-      li.title = playlist.is_builtin ? `系统歌单 · id=${playlist.id} · 查看导入曲目` : `id=${playlist.id} · 查看导入曲目`;
+      const li = buildSidebarPlaylistItem(playlist, escapeHtml);
       li.addEventListener("click", () => {
         setSelectedPlaylist(playlist.id, playlist.name || "");
         setPage("playlist");
@@ -165,21 +163,29 @@ export function createPlaylistController(deps) {
   async function loadPlaylistDetail(id, name, force = false) {
     setSelectedPlaylist(id, name || "");
     syncSidebarPlaylistActiveState(id, true);
+    playlistDetailLoading = true;
     const titleEl = document.getElementById("playlist-page-title");
     if (titleEl) titleEl.textContent = name || "歌单";
+    renderPlaylistTableLoading(force ? "正在刷新歌单内容…" : "正在加载歌单内容…");
+    const hintEl = document.getElementById("playlist-page-hint");
+    const playlist = currentSelectedPlaylist();
+    if (hintEl) hintEl.textContent = playlist?.is_cloud ? "云歌单内容来自酷狗账号，本地缓存 12 小时。" : "";
     try {
       const rows = await invoke(force ? "refresh_playlist_import_items" : "list_playlist_import_items", { playlistId: id });
       setPlaylistDetailRows(rows || []);
-      if (!currentSelectedPlaylist()?.is_builtin) void enrich.maybeEnrichPlaylist(id, rows || []);
+      if (!currentSelectedPlaylist()?.is_builtin && !currentSelectedPlaylist()?.is_cloud) void enrich.maybeEnrichPlaylist(id, rows || []);
     } catch (error) {
       setPlaylistDetailRows([]);
       alertRequestFailed(error, "list_playlist_import_items");
+    } finally {
+      playlistDetailLoading = false;
     }
     renderPlaylistDetailTable();
     refreshPlaylistActionState();
   }
 
   function renderPlaylistDetailTable() {
+    if (playlistDetailLoading) return;
     const tbody = document.querySelector("#playlist-detail-table tbody");
     if (!tbody) return;
     const rows = getPlaylistDetailRows();
@@ -189,7 +195,7 @@ export function createPlaylistController(deps) {
     const hintEl = document.getElementById("playlist-page-hint");
     const coverEl = document.getElementById("playlist-hero-cover");
     if (countEl) countEl.textContent = `共 ${rows.length} 首导入曲目`;
-    if (hintEl) hintEl.textContent = "";
+    if (hintEl && !currentSelectedPlaylist()?.is_cloud) hintEl.textContent = "";
     setCoverImageSource(coverEl, rows.find((row) => (row.cover_url || "").trim())?.cover_url || "", { size: 120, radius: 12 });
     renderTrackTableRows(tbody, rows.map((row) => ({
       ...row,
@@ -237,6 +243,11 @@ export function createPlaylistController(deps) {
       const playlistID = getSelectedPlaylistId();
       if (playlistID == null) return;
       await refreshSidebarPlaylists(true);
+      await loadPlaylistDetail(playlistID, getSelectedPlaylistName(), true);
+    });
+    document.getElementById("btn-playlist-refresh-cloud")?.addEventListener("click", async () => {
+      const playlistID = getSelectedPlaylistId();
+      if (playlistID == null) return;
       await loadPlaylistDetail(playlistID, getSelectedPlaylistName(), true);
     });
     document.getElementById("btn-playlist-enrich")?.addEventListener("click", async () => {

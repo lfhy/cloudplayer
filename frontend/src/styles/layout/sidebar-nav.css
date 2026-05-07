@@ -146,6 +146,10 @@
   flex: 0 0 18px;
 }
 
+.sidebar-pl-item[data-playlist-cloud="true"] .sidebar-pl-item__icon {
+  color: var(--accent);
+}
+
 .sidebar-pl-item__label {
   min-width: 0;
   flex: 1;

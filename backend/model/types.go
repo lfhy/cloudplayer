@@ -29,6 +29,7 @@ type PlaylistRow struct {
 	ID        int64  `json:"id"`
 	Name      string `json:"name"`
 	IsBuiltin bool   `json:"is_builtin"`
+	IsCloud   bool   `json:"is_cloud,omitempty"`
 }
 
 // FavoriteTrackIn represents one online track that can be stored in the built-in favorites playlist.
@@ -48,6 +49,7 @@ type PlaylistImportItemRow struct {
 	Artist        string `json:"artist"`
 	Album         string `json:"album"`
 	Pjmp3SourceID string `json:"pjmp3_source_id"`
+	KugouFileID   int64  `json:"kugou_file_id,omitempty"`
 	CoverURL      string `json:"cover_url"`
 	DurationMS    int64  `json:"duration_ms"`
 }
@@ -55,6 +57,7 @@ type PlaylistImportItemRow struct {
 type SharePlaylistResponse struct {
 	PlaylistName string                            `json:"playlist_name"`
 	Tracks       []importplaylist.ImportedTrackDTO `json:"tracks"`
+	KugouFileIDs []int64                           `json:"kugou_file_ids,omitempty"`
 }
 
 type LocalSongRow struct {

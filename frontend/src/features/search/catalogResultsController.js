@@ -8,6 +8,7 @@ export function createCatalogResultsController(deps) {
     alertRequestFailed,
     escapeHtml,
     invoke,
+    getMusicOnlineModeEnabled,
     openSearchRowContextMenu,
     playCatalogAll,
     playFromSearchRow,
@@ -226,6 +227,7 @@ export function createCatalogResultsController(deps) {
   async function appendSelectedToPlaylist() {
     const selectedRows = searchState.results.filter((row) => searchState.selectedIds?.has(row.source_id));
     if (!selectedRows.length) return;
+    if (getMusicOnlineModeEnabled?.() && selectedRows.some((row) => !(row.source_id || "").startsWith("kugou:"))) return void alert("在线模式下只能把酷狗云端歌曲添加到云歌单。");
     let playlists = [];
     try {
       playlists = await invoke("list_playlists");
@@ -234,9 +236,7 @@ export function createCatalogResultsController(deps) {
       return;
     }
     const defaultName = selectedRows[0]?.title ? `${selectedRows[0].title} 等` : "新歌单";
-    const options = Array.isArray(playlists) && playlists.length
-      ? `${playlists.map((playlist) => `${playlist.id}: ${playlist.name}`).join("\n")}\n留空则新建歌单`
-      : "暂无歌单，留空将新建歌单";
+    const options = Array.isArray(playlists) && playlists.length ? `${playlists.map((playlist) => `${playlist.id}: ${playlist.name}`).join("\n")}\n留空则新建歌单` : "暂无歌单，留空将新建歌单";
     const value = window.prompt(`输入歌单 ID，或留空新建歌单：\n${options}`, "");
     let playlistId = Number(String(value || "").trim());
     if (!playlistId) {
@@ -244,10 +244,7 @@ export function createCatalogResultsController(deps) {
       if (!name || !name.trim()) return;
       try {
         playlistId = await invoke("create_playlist", { name: name.trim() });
-      } catch (error) {
-        alertRequestFailed(error, "create_playlist search");
-        return;
-      }
+      } catch (error) { alertRequestFailed(error, "create_playlist search"); return; }
     }
     try {
       await invoke("append_playlist_import_items", {
@@ -260,9 +257,7 @@ export function createCatalogResultsController(deps) {
           cover_url: row.cover_url || "",
         })),
       });
-      clearSelection();
-      updateSearchToolbar();
-      renderSearchTable();
+      clearSelection(); updateSearchToolbar(); renderSearchTable();
     } catch (error) {
       alertRequestFailed(error, "append_playlist_import_items search");
     }
@@ -282,9 +277,7 @@ export function createCatalogResultsController(deps) {
       const selectedCount = searchState.selectedIds?.size || 0;
       setAllResultsSelected(selectedCount !== searchState.results.length);
     });
-    document.getElementById("btn-search-add-selected")?.addEventListener("click", () => {
-      void appendSelectedToPlaylist();
-    });
+    document.getElementById("btn-search-add-selected")?.addEventListener("click", () => { void appendSelectedToPlaylist(); });
     document.getElementById("search-select-all-checkbox")?.addEventListener("change", (event) => {
       const target = event.currentTarget;
       setAllResultsSelected(target instanceof HTMLInputElement && target.checked);

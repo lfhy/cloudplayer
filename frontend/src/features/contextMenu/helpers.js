@@ -2,6 +2,7 @@
 export function createContextMenuHelpers(deps) {
   const {
     alertRequestFailed,
+    getMusicOnlineModeEnabled,
     getPlayQueue,
     invoke,
     refreshPlaylistSelect,
@@ -170,9 +171,12 @@ export function createContextMenuHelpers(deps) {
     panel.appendChild(cmBtn("试听列表", appendQueueItem));
     panel.appendChild(cmSep());
     panel.appendChild(cmBtn("添加到新歌单", async () => {
-      const name = window.prompt("歌单名称（将写入 library.db）", "新歌单");
+      const name = window.prompt("歌单名称", "新歌单");
       if (!name || !name.trim()) return;
       const playlistId = await invoke("create_playlist", { name: name.trim() });
+      if (getMusicOnlineModeEnabled?.() && !(track.sourceId || "").startsWith("kugou:")) {
+        throw new Error("在线模式下只能把酷狗云端歌曲写入云歌单");
+      }
       await invoke("append_playlist_import_items", {
         playlistId,
         items: [{

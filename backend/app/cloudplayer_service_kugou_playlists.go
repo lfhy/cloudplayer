@@ -89,6 +89,7 @@ func (s *CloudPlayerService) SyncKugouPlaylist(listID int64) (SharePlaylistRespo
 		}
 	}
 	tracks := make([]importplaylist.ImportedTrackDTO, 0, len(items))
+	fileIDs := make([]int64, 0, len(items))
 	for _, item := range items {
 		hash := strings.ToLower(strings.TrimSpace(kugouMapString(item, "hash", "audio_hash", "file_hash", "hash_128")))
 		title := kugouTrackTitle(item)
@@ -104,8 +105,9 @@ func (s *CloudPlayerService) SyncKugouPlaylist(listID int64) (SharePlaylistRespo
 			CoverURL:      kugouMapCoverString(item),
 			DurationMS:    kugouTrackDurationMS(item),
 		})
+		fileIDs = append(fileIDs, int64(kugouMapInt(item, "fileid", "file_id")))
 	}
-	return SharePlaylistResponse{PlaylistName: name, Tracks: tracks}, nil
+	return SharePlaylistResponse{PlaylistName: name, Tracks: tracks, KugouFileIDs: fileIDs}, nil
 }
 
 func encodeKugouImportRawID(hash string, albumAudioID int) string {
