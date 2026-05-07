@@ -67,7 +67,7 @@ export function navIconSvg(name) {
     settings: "settings-linear",
     playlist: "playlist-minimalistic-2-linear",
     cloud: "cloud-linear",
-    favorites: "heart-bold",
+    favorites: "heart-linear",
     "chevron-up-down": "alt-arrow-up-line-duotone",
     refresh: "refresh-linear",
     appearance: "moon-fog-linear",
@@ -90,4 +90,19 @@ export function importMethodIconSvg(method) {
 
 export function importBackButtonIconSvg() {
   return iconSvgByName("alt-arrow-left-line-duotone");
+}
+
+export function favoriteIconSvg(active = false) {
+  if (active) {
+    return `
+      <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+        <path fill="currentColor" d="M12 21.35a1.6 1.6 0 0 1-.84-.24C7.1 18.58 4 15.77 4 11.9C4 8.92 6.18 7 8.83 7c1.48 0 2.51.65 3.17 1.5c.66-.85 1.69-1.5 3.17-1.5C17.82 7 20 8.92 20 11.9c0 3.87-3.1 6.68-7.16 9.21a1.6 1.6 0 0 1-.84.24"/>
+      </svg>
+    `;
+  }
+  return `
+    <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+      <path d="M12 21.35a1.6 1.6 0 0 1-.84-.24C7.1 18.58 4 15.77 4 11.9C4 8.92 6.18 7 8.83 7c1.48 0 2.51.65 3.17 1.5c.66-.85 1.69-1.5 3.17-1.5C17.82 7 20 8.92 20 11.9c0 3.87-3.1 6.68-7.16 9.21a1.6 1.6 0 0 1-.84.24"/>
+    </svg>
+  `;
 }

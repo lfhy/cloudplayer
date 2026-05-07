@@ -1,9 +1,10 @@
 import { fallbackCoverDataUri } from "../app/helpers/covers.js";
-import { iconSvgByName } from "../app/helpers/icons.js";
+import { favoriteIconSvg, iconSvgByName } from "../app/helpers/icons.js";
 
 // Player dock is shared application chrome, so it lives under components instead of page templates.
 export function playerDockTemplate() {
   const fallbackCover = fallbackCoverDataUri(52, 10);
+  const favoriteIcon = favoriteIconSvg(false);
   const playIcon = iconSvgByName("play-bold");
   const miniIcon = iconSvgByName("to-pip-linear");
   return `
@@ -14,7 +15,7 @@ export function playerDockTemplate() {
           <div id="dock-title" class="dock-player__title">未播放</div>
           <div id="dock-sub" class="dock-player__sub">选择曲目或搜索后双击列表</div>
           <div class="dock-player__acts">
-            <button type="button" id="btn-dock-fav" class="dock-ic" title="喜欢">♡</button>
+            <button type="button" id="btn-dock-fav" class="dock-ic" title="喜欢" aria-label="喜欢">${favoriteIcon}</button>
             <div class="dock-menu-anchor"><button type="button" id="btn-dock-dl" class="dock-ic" title="下载（选择音质）">↓</button><div id="popover-dl" class="dock-menu dock-menu--up" role="menu" hidden><button type="button" class="dock-menu__item" data-dlq="flac">FLAC 无损</button><button type="button" class="dock-menu__item" data-dlq="320">HQ 高品质</button><button type="button" class="dock-menu__item" data-dlq="128">标准 128K</button></div></div>
             <div class="dock-menu-anchor"><button type="button" id="btn-dock-more" class="dock-ic" title="更多">⋯</button><div id="popover-more" class="dock-menu dock-menu--up" role="menu" hidden><button type="button" class="dock-menu__item" data-more="add-pl">添加到歌单…</button><button type="button" class="dock-menu__item" data-more="rm-queue">从播放列表删除</button></div></div>
             <button type="button" id="btn-dock-settings" class="dock-ic" title="偏好设置" aria-label="偏好设置">⚙</button>

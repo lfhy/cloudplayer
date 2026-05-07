@@ -22,10 +22,12 @@ type KugouCaptchaResult struct {
 }
 
 type KugouPlaylistRow struct {
-	ID         int64   `json:"id"`
-	Name       string  `json:"name"`
-	CoverURL   *string `json:"cover_url,omitempty"`
-	TrackCount int     `json:"track_count"`
+	ID          int64   `json:"id"`
+	Name        string  `json:"name"`
+	CoverURL    *string `json:"cover_url,omitempty"`
+	TrackCount  int     `json:"track_count"`
+	IsFavorites bool    `json:"is_favorites,omitempty"`
+	sortAt      int64
 }
 
 type KugouImportSelection struct {

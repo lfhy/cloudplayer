@@ -1,4 +1,5 @@
 import { coverImgHtml } from "../../app/helpers/covers.js";
+import { favoriteIconSvg } from "../../app/helpers/icons.js";
 import { escapeHtml } from "../../app/helpers/text.js";
 
 // Dock controller owns queue rendering, favorite state, and dock popovers.
@@ -92,7 +93,7 @@ export function createDockController(deps) {
     if (!button) return;
     if (!current) {
       button.classList.remove("is-on");
-      button.textContent = "♡";
+      button.innerHTML = favoriteIconSvg(false);
       button.disabled = false;
       button.title = "喜欢";
       return;
@@ -103,7 +104,7 @@ export function createDockController(deps) {
     button.disabled = !canFav;
     button.title = canFav ? "喜欢" : "本地文件无曲库 id，不支持喜欢";
     button.classList.toggle("is-on", liked);
-    button.textContent = liked ? "♥" : "♡";
+    button.innerHTML = favoriteIconSvg(liked);
   }
 
   function closeAllDockMenus() {

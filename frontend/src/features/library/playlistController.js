@@ -44,15 +44,12 @@ export function createPlaylistController(deps) {
     const playlist = currentSelectedPlaylist();
     const renameBtn = document.getElementById("btn-playlist-rename");
     const enrichBtn = document.getElementById("btn-playlist-enrich");
-    const enrichAllBtn = document.getElementById("btn-playlist-enrich-all");
-    const refreshCloudBtn = document.getElementById("btn-playlist-refresh-cloud");
     if (!renameBtn) return;
     const builtin = playlist?.is_builtin === true;
+    const cloudMode = !!getMusicOnlineModeEnabled?.() || playlist?.is_cloud === true;
     renameBtn.disabled = getSelectedPlaylistId() == null || builtin;
     renameBtn.hidden = builtin;
-    if (enrichBtn) enrichBtn.hidden = builtin;
-    if (enrichAllBtn) enrichAllBtn.hidden = builtin;
-    if (refreshCloudBtn) refreshCloudBtn.hidden = !playlist?.is_cloud;
+    if (enrichBtn) enrichBtn.hidden = builtin || cloudMode;
   }
 
   function syncSidebarPlaylistActiveState(playlistID = getSelectedPlaylistId(), forceActive = false) {
@@ -163,8 +160,7 @@ export function createPlaylistController(deps) {
     if (titleEl) titleEl.textContent = name || "歌单";
     renderPlaylistTableLoading(force ? "正在刷新歌单内容…" : "正在加载歌单内容…");
     const hintEl = document.getElementById("playlist-page-hint");
-    const playlist = currentSelectedPlaylist();
-    if (hintEl) hintEl.textContent = playlist?.is_cloud ? "云歌单内容来自酷狗账号，本地缓存 12 小时。" : "";
+    if (hintEl) hintEl.textContent = "";
     try {
       const rows = await invoke(force ? "refresh_playlist_import_items" : "list_playlist_import_items", { playlistId: id });
       setPlaylistDetailRows(rows || []);
@@ -184,13 +180,14 @@ export function createPlaylistController(deps) {
     const tbody = document.querySelector("#playlist-detail-table tbody");
     if (!tbody) return;
     const rows = getPlaylistDetailRows();
+    const selectedPlaylist = currentSelectedPlaylist();
     const playable = rows.filter((row) => (row.pjmp3_source_id || "").trim());
     document.getElementById("btn-playlist-play-all")?.toggleAttribute("disabled", playable.length === 0);
     const countEl = document.getElementById("playlist-track-count");
     const hintEl = document.getElementById("playlist-page-hint");
     const coverEl = document.getElementById("playlist-hero-cover");
     if (countEl) countEl.textContent = `共 ${rows.length} 首导入曲目`;
-    if (hintEl && !currentSelectedPlaylist()?.is_cloud) hintEl.textContent = "";
+    if (hintEl && !selectedPlaylist?.is_cloud) hintEl.textContent = "";
     setCoverImageSource(coverEl, rows.find((row) => (row.cover_url || "").trim())?.cover_url || "", { size: 120, radius: 12 });
     renderTrackTableRows(tbody, rows.map((row) => ({
       ...row,
@@ -199,6 +196,7 @@ export function createPlaylistController(deps) {
     })), {
       emptyMessage: "暂无导入曲目，或请从左侧选择其它歌单。",
       escapeHtml,
+      forceLiked: selectedPlaylist?.is_builtin === true || selectedPlaylist?.is_favorites === true,
       formatDurationMs,
       getLikedIds,
       onClick: (index) => playFromPlaylistRow(index),
@@ -233,16 +231,10 @@ export function createPlaylistController(deps) {
   }
 
   function wirePlaylistPage() {
-    document.getElementById("btn-playlist-back")?.addEventListener("click", () => setPage("home"));
     document.getElementById("btn-playlist-refresh")?.addEventListener("click", async () => {
       const playlistID = getSelectedPlaylistId();
       if (playlistID == null) return;
       await refreshSidebarPlaylists(true);
-      await loadPlaylistDetail(playlistID, getSelectedPlaylistName(), true);
-    });
-    document.getElementById("btn-playlist-refresh-cloud")?.addEventListener("click", async () => {
-      const playlistID = getSelectedPlaylistId();
-      if (playlistID == null) return;
       await loadPlaylistDetail(playlistID, getSelectedPlaylistName(), true);
     });
     document.getElementById("btn-playlist-enrich")?.addEventListener("click", async () => {
@@ -250,13 +242,6 @@ export function createPlaylistController(deps) {
       if (playlistID == null) return;
       const started = await enrich.maybeEnrichPlaylist(playlistID, getPlaylistDetailRows(), { force: true });
       if (!started) enrich.setStatus("当前歌单没有检测到缺失的播放信息。");
-    });
-    document.getElementById("btn-playlist-enrich-all")?.addEventListener("click", async () => {
-      await enrich.runBatchEnrich(async () => {
-        if (getSelectedPlaylistId() != null) {
-          await loadPlaylistDetail(getSelectedPlaylistId(), getSelectedPlaylistName());
-        }
-      });
     });
     document.getElementById("btn-playlist-rename")?.addEventListener("click", async () => {
       if (getSelectedPlaylistId() == null) return;

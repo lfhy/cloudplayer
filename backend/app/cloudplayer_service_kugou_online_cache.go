@@ -132,6 +132,7 @@ func (s *CloudPlayerService) readKugouPlaylistCache(userID string) ([]KugouPlayl
 		if err := rows.Scan(&row.ID, &sortOrder, &row.Name, &coverURL, &row.TrackCount, &fetchedAt); err != nil {
 			return nil, 0, err
 		}
+		row.IsFavorites = strings.TrimSpace(row.Name) == builtinFavoritesName
 		if strings.TrimSpace(coverURL) != "" {
 			row.CoverURL = &coverURL
 		}
@@ -265,7 +266,7 @@ func kugouImportRowsFromResponse(tracks []importplaylist.ImportedTrackDTO, fileI
 func toPlaylistRows(rows []KugouPlaylistRow) []PlaylistRow {
 	result := make([]PlaylistRow, 0, len(rows))
 	for _, row := range rows {
-		result = append(result, PlaylistRow{ID: row.ID, Name: row.Name, IsBuiltin: false, IsCloud: true})
+		result = append(result, PlaylistRow{ID: row.ID, Name: row.Name, IsBuiltin: false, IsCloud: true, IsFavorites: row.IsFavorites})
 	}
 	return result
 }

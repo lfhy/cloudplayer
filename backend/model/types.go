@@ -26,10 +26,11 @@ type ResolveOnlinePlayOut struct {
 }
 
 type PlaylistRow struct {
-	ID        int64  `json:"id"`
-	Name      string `json:"name"`
-	IsBuiltin bool   `json:"is_builtin"`
-	IsCloud   bool   `json:"is_cloud,omitempty"`
+	ID          int64  `json:"id"`
+	Name        string `json:"name"`
+	IsBuiltin   bool   `json:"is_builtin"`
+	IsCloud     bool   `json:"is_cloud,omitempty"`
+	IsFavorites bool   `json:"is_favorites,omitempty"`
 }
 
 // FavoriteTrackIn represents one online track that can be stored in the built-in favorites playlist.

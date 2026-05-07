@@ -3,6 +3,7 @@ package cloudplayer
 import (
 	"context"
 	"fmt"
+	"sort"
 	"strconv"
 	"strings"
 
@@ -44,12 +45,27 @@ func (s *CloudPlayerService) ListKugouPlaylists() ([]KugouPlaylistRow, error) {
 		}
 		count := kugouMapInt(item, "song_count", "count", "total", "music_count")
 		rows = append(rows, KugouPlaylistRow{
-			ID:         id,
-			Name:       name,
-			CoverURL:   kugouMapCover(item),
-			TrackCount: count,
+			ID:          id,
+			Name:        name,
+			CoverURL:    kugouMapCover(item),
+			TrackCount:  count,
+			IsFavorites: name == builtinFavoritesName,
+			sortAt:      kugouPlaylistSortTimestamp(item),
 		})
 	}
+	sort.SliceStable(rows, func(i, j int) bool {
+		left, right := rows[i], rows[j]
+		if left.IsFavorites != right.IsFavorites {
+			return left.IsFavorites
+		}
+		if left.sortAt != right.sortAt {
+			return left.sortAt > right.sortAt
+		}
+		if left.ID != right.ID {
+			return left.ID > right.ID
+		}
+		return left.Name < right.Name
+	})
 	return rows, nil
 }
 

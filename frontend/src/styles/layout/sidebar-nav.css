@@ -93,6 +93,40 @@
   overflow: auto;
   flex: 1;
   min-height: 0;
+  scrollbar-width: thin;
+  scrollbar-color: transparent transparent;
+}
+
+.sidebar-playlist-list::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.sidebar-playlist-list::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.sidebar-playlist-list::-webkit-scrollbar-thumb {
+  background: transparent;
+  border-radius: 999px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+
+.sidebar-playlist-section:hover .sidebar-playlist-list,
+.sidebar-playlist-section:focus-within .sidebar-playlist-list {
+  scrollbar-color: rgba(100, 100, 110, 0.45) transparent;
+}
+
+.sidebar-playlist-section:hover .sidebar-playlist-list::-webkit-scrollbar-thumb,
+.sidebar-playlist-section:focus-within .sidebar-playlist-list::-webkit-scrollbar-thumb {
+  background: rgba(100, 100, 110, 0.35);
+  background-clip: padding-box;
+}
+
+.sidebar-playlist-list::-webkit-scrollbar-thumb:hover {
+  background: rgba(80, 80, 90, 0.5);
+  background-clip: padding-box;
 }
 
 .sidebar-pl-empty {

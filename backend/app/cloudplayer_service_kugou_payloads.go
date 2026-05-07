@@ -231,6 +231,18 @@ func kugouTrackDurationMS(item map[string]any) int64 {
 	return duration
 }
 
+func kugouPlaylistSortTimestamp(item map[string]any) int64 {
+	for _, key := range []string{"create_time", "createtime", "createTime", "addtime", "add_time", "update_time", "updated_at", "timestamp", "time"} {
+		if value := int64(kugouMapInt(item, key)); value > 0 {
+			if value > 1_000_000_000_000 {
+				return value
+			}
+			return value * 1000
+		}
+	}
+	return 0
+}
+
 func kugouInt(raw string) int {
 	return kugouParseInt(raw)
 }
