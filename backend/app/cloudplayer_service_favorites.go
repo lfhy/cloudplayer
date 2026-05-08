@@ -9,10 +9,16 @@ const builtinFavoritesName = "我喜欢"
 
 // Favorites methods keep the built-in liked playlist logic isolated from generic playlist CRUD.
 func (s *CloudPlayerService) EnsureFavoritesPlaylist() (PlaylistRow, error) {
+	if onlineFavoritesEnabled() {
+		return s.ensureKugouFavoritesPlaylist()
+	}
 	return s.ensureFavoritesPlaylist()
 }
 
 func (s *CloudPlayerService) ListFavoriteSourceIDs() ([]string, error) {
+	if onlineFavoritesEnabled() {
+		return s.listKugouFavoriteSourceIDs()
+	}
 	playlist, err := s.ensureFavoritesPlaylist()
 	if err != nil {
 		return nil, err
@@ -39,6 +45,9 @@ func (s *CloudPlayerService) ListFavoriteSourceIDs() ([]string, error) {
 }
 
 func (s *CloudPlayerService) AddFavoriteTrack(track FavoriteTrackIn) error {
+	if onlineFavoritesEnabled() {
+		return s.addKugouFavoriteTrack(track)
+	}
 	playlist, err := s.ensureFavoritesPlaylist()
 	if err != nil {
 		return err
@@ -76,6 +85,9 @@ func (s *CloudPlayerService) AddFavoriteTrack(track FavoriteTrackIn) error {
 }
 
 func (s *CloudPlayerService) RemoveFavoriteTrack(sourceID string) error {
+	if onlineFavoritesEnabled() {
+		return s.removeKugouFavoriteTrack(sourceID)
+	}
 	playlist, err := s.ensureFavoritesPlaylist()
 	if err != nil {
 		return err
