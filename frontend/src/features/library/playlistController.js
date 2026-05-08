@@ -168,11 +168,12 @@ export function createPlaylistController(deps) {
     if (hintEl) hintEl.textContent = "";
     try {
       const rows = await invoke(force ? "refresh_playlist_import_items" : "list_playlist_import_items", { playlistId: id });
-      setPlaylistDetailRows(rows || []);
+      const orderedRows = Array.isArray(rows) ? rows : [];
+      setPlaylistDetailRows(orderedRows);
       if (currentSelectedPlaylist()?.is_builtin || currentSelectedPlaylist()?.is_favorites) {
-        syncLikedIdsFromRows(rows || [], getLikedIds);
+        syncLikedIdsFromRows(orderedRows, getLikedIds);
       }
-      if (!currentSelectedPlaylist()?.is_builtin && !currentSelectedPlaylist()?.is_cloud) void enrich.maybeEnrichPlaylist(id, rows || []);
+      if (!currentSelectedPlaylist()?.is_builtin && !currentSelectedPlaylist()?.is_cloud) void enrich.maybeEnrichPlaylist(id, orderedRows);
     } catch (error) {
       setPlaylistDetailRows([]);
       alertRequestFailed(error, "list_playlist_import_items");

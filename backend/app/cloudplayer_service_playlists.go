@@ -46,7 +46,7 @@ func (s *CloudPlayerService) ListPlaylistImportItems(playlistID int64) ([]Playli
 		SELECT id, sort_order, title, artist, album, pjmp3_source_id, cover_url, duration_ms
 		FROM playlist_import_items
 		WHERE playlist_id = ?
-		ORDER BY sort_order ASC, id ASC
+		ORDER BY sort_order DESC, id DESC
 	`, playlistID)
 	if err != nil {
 		return nil, err
