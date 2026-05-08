@@ -8,7 +8,6 @@ export function searchPageTemplate() {
             <div>
               <p class="search-eyebrow">Music Search</p>
               <h1 class="page-title">音乐搜索</h1>
-              <p class="page-hint">像 Apple Music 一样，先决定你要搜索在线音乐还是本地歌单，再开始输入关键词。</p>
             </div>
             <div class="search-input-wrap">
               <div class="neon-search-wrap search-page-search">
@@ -31,25 +30,35 @@ export function searchPageTemplate() {
           <section id="search-suggestions" class="search-suggestions">
             <h2 class="search-section-title">快速搜索</h2>
             <div class="search-category-grid">
-              <button type="button" class="search-category-card" data-search-seed="周杰伦">
-                <span class="search-category-card__kicker">华语流行</span>
-                <strong>周杰伦</strong>
-                <span>点击后立即填充并搜索热门歌手</span>
+              <button type="button" class="search-category-card" data-search-seed="国风">
+                <span class="search-category-card__kicker">Chinese Style</span>
+                <strong>国风</strong>
+                <span>适合找古风、戏腔、诗意编曲这类中文风格作品</span>
               </button>
-              <button type="button" class="search-category-card" data-search-seed="Taylor Swift">
-                <span class="search-category-card__kicker">欧美热搜</span>
-                <strong>Taylor Swift</strong>
-                <span>适合测试在线音乐搜索与封面展示</span>
+              <button type="button" class="search-category-card" data-search-seed="日系">
+                <span class="search-category-card__kicker">Japanese</span>
+                <strong>日系</strong>
+                <span>快速拉起日系流行、动画主题曲和轻摇滚相关结果</span>
               </button>
-              <button type="button" class="search-category-card" data-search-seed="纯音乐">
-                <span class="search-category-card__kicker">专注场景</span>
-                <strong>纯音乐</strong>
-                <span>快速拉起一批适合工作或阅读的结果</span>
+              <button type="button" class="search-category-card" data-search-seed="轻音乐">
+                <span class="search-category-card__kicker">Easy Listening</span>
+                <strong>轻音乐</strong>
+                <span>适合工作、阅读和放松时听的人声较少曲目</span>
               </button>
-              <button type="button" class="search-category-card" data-search-seed="夜间循环">
-                <span class="search-category-card__kicker">歌单检索</span>
-                <strong>夜间循环</strong>
-                <span>切到本地歌单搜索时，适合用来搜索你保存过的歌单名</span>
+              <button type="button" class="search-category-card" data-search-seed="二次元">
+                <span class="search-category-card__kicker">ACG</span>
+                <strong>二次元</strong>
+                <span>适合搜动画、游戏、Vocaloid 和 ACG 向热门歌曲</span>
+              </button>
+              <button type="button" class="search-category-card" data-search-seed="民谣">
+                <span class="search-category-card__kicker">Folk</span>
+                <strong>民谣</strong>
+                <span>更适合找木吉他、人声叙事和安静氛围的作品</span>
+              </button>
+              <button type="button" class="search-category-card" data-search-seed="爵士">
+                <span class="search-category-card__kicker">Jazz</span>
+                <strong>爵士</strong>
+                <span>适合找器乐、即兴和夜晚氛围感更强的内容</span>
               </button>
             </div>
           </section>

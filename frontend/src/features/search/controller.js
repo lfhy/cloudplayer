@@ -258,7 +258,7 @@ export function createSearchController(deps) {
     document.querySelectorAll("[data-search-seed]").forEach((button) => {
       button.addEventListener("click", () => {
         const seed = button.getAttribute("data-search-seed") || "";
-        if (seed.includes("循环")) setSearchScope("playlists");
+        setSearchScope("catalog");
         submitPageSearch(seed);
       });
     });
