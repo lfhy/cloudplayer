@@ -52,22 +52,22 @@ func kugouFindTrackItems(root any) []map[string]any {
 }
 
 func kugouLooksLikeSong(item map[string]any) bool {
-	return kugouPickString(item, "hash", "audio_hash", "file_hash", "hash_128") != "" &&
-		kugouPickString(item, "songname", "song_name", "filename", "name", "audio_name") != ""
+	return kugouPickString(item, "hash", "audio_hash", "file_hash", "hash_128", "FileHash") != "" &&
+		kugouPickString(item, "songname", "song_name", "filename", "name", "audio_name", "FileName", "OriSongName") != ""
 }
 
 func kugouLooksLikeTrack(item map[string]any) bool {
-	return kugouPickString(item, "hash", "audio_hash", "file_hash", "hash_128") != "" &&
-		kugouPickString(item, "songname", "song_name", "filename", "name", "audio_name") != ""
+	return kugouPickString(item, "hash", "audio_hash", "file_hash", "hash_128", "FileHash") != "" &&
+		kugouPickString(item, "songname", "song_name", "filename", "name", "audio_name", "FileName", "OriSongName") != ""
 }
 
 func kugouDailyTrackToSearchResult(item map[string]any) (SearchResult, bool) {
-	hash := strings.ToLower(strings.TrimSpace(kugouPickString(item, "hash", "audio_hash", "file_hash", "hash_128", "hash_320", "hash_flac")))
+	hash := strings.ToLower(strings.TrimSpace(kugouPickString(item, "hash", "audio_hash", "file_hash", "hash_128", "hash_320", "hash_flac", "FileHash")))
 	title := kugouTrackTitle(item)
 	if hash == "" || title == "" {
 		return SearchResult{}, false
 	}
-	albumAudioID := kugouPickInt(item, "album_audio_id", "albumaudioid", "mixsongid", "mixsong_id")
+	albumAudioID := kugouPickInt(item, "album_audio_id", "albumaudioid", "mixsongid", "mixsong_id", "MixSongID", "Audioid")
 	return SearchResult{
 		SourceID:   EncodeSourceID(ProviderKugou, encodeKugouRawID(hash, albumAudioID)),
 		Title:      title,
@@ -79,8 +79,24 @@ func kugouDailyTrackToSearchResult(item map[string]any) (SearchResult, bool) {
 }
 
 func kugouTrackArtist(item map[string]any) string {
-	if value := strings.TrimSpace(kugouPickString(item, "singername", "singer_name", "author_name", "artist")); value != "" {
+	if value := strings.TrimSpace(kugouPickString(item, "singername", "singer_name", "author_name", "artist", "SingerName")); value != "" {
 		return value
+	}
+	if raw, ok := item["Singers"].([]any); ok && len(raw) > 0 {
+		names := make([]string, 0, len(raw))
+		for _, entry := range raw {
+			typed, ok := entry.(map[string]any)
+			if !ok {
+				continue
+			}
+			name := strings.TrimSpace(kugouPickString(typed, "name", "singername", "singer_name"))
+			if name != "" {
+				names = append(names, name)
+			}
+		}
+		if len(names) > 0 {
+			return strings.Join(names, " / ")
+		}
 	}
 	if raw, ok := item["singerinfo"].([]any); ok && len(raw) > 0 {
 		names := make([]string, 0, len(raw))
@@ -102,7 +118,7 @@ func kugouTrackArtist(item map[string]any) string {
 }
 
 func kugouTrackAlbum(item map[string]any) string {
-	if value := strings.TrimSpace(kugouPickString(item, "album_name", "albumname", "album")); value != "" {
+	if value := strings.TrimSpace(kugouPickString(item, "album_name", "albumname", "album", "AlbumName")); value != "" {
 		return value
 	}
 	if raw, ok := item["albuminfo"].(map[string]any); ok {
@@ -114,7 +130,7 @@ func kugouTrackAlbum(item map[string]any) string {
 }
 
 func kugouTrackTitle(item map[string]any) string {
-	title := strings.TrimSpace(kugouPickString(item, "songname", "song_name", "filename", "name", "audio_name"))
+	title := strings.TrimSpace(kugouPickString(item, "songname", "song_name", "filename", "name", "audio_name", "OriSongName", "FileName"))
 	if title == "" {
 		return ""
 	}
@@ -139,7 +155,7 @@ func kugouTrackTitle(item map[string]any) string {
 }
 
 func kugouTrackDurationMS(item map[string]any) int64 {
-	duration := int64(kugouPickInt(item, "duration", "timelen", "time_length", "duration_ms"))
+	duration := int64(kugouPickInt(item, "duration", "timelen", "time_length", "duration_ms", "Duration"))
 	if duration > 0 && duration < 1000 {
 		duration *= 1000
 	}
@@ -172,7 +188,7 @@ func kugouPickInt(item map[string]any, keys ...string) int {
 }
 
 func kugouCoverURL(item map[string]any) *string {
-	for _, key := range []string{"img", "image", "cover", "cover_url", "sizable_cover"} {
+	for _, key := range []string{"img", "image", "cover", "cover_url", "sizable_cover", "Image"} {
 		value := strings.TrimSpace(kugouPickString(item, key))
 		if value == "" {
 			continue

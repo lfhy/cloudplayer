@@ -31,24 +31,10 @@ func (kugouProvider) Search(_ *http.Client, keyword string, page uint32) ([]Sear
 	items := kugouFindSongItems(resp.Body)
 	results := make([]SearchResult, 0, len(items))
 	for _, item := range items {
-		hash := strings.ToLower(strings.TrimSpace(kugouPickString(item, "hash", "audio_hash", "file_hash", "hash_128", "hash_320", "hash_flac")))
-		title := strings.TrimSpace(kugouPickString(item, "songname", "song_name", "filename", "name", "audio_name"))
-		if hash == "" || title == "" {
-			continue
+		row, ok := kugouDailyTrackToSearchResult(item)
+		if ok {
+			results = append(results, row)
 		}
-		albumAudioID := kugouPickInt(item, "album_audio_id", "albumaudioid", "mixsongid", "mixsong_id")
-		durationMS := int64(kugouPickInt(item, "duration", "timelen", "time_length", "duration_ms"))
-		if durationMS > 0 && durationMS < 1000 {
-			durationMS *= 1000
-		}
-		results = append(results, SearchResult{
-			SourceID:   EncodeSourceID(ProviderKugou, encodeKugouRawID(hash, albumAudioID)),
-			Title:      title,
-			Artist:     strings.TrimSpace(kugouPickString(item, "singername", "singer_name", "author_name", "artist")),
-			Album:      strings.TrimSpace(kugouPickString(item, "album_name", "albumname", "album")),
-			DurationMS: durationMS,
-			CoverURL:   kugouCoverURL(item),
-		})
 	}
 	hasNext := len(results) >= 30
 	return results, hasNext, nil
