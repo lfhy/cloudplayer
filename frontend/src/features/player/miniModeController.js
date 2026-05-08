@@ -4,6 +4,7 @@ import { currentPlayableKey } from "../lyrics/model.js";
 import { lineProgressRatio } from "./immersiveLyricsView.js";
 import { applyActiveLyricProgress, applyLyricLineStates, captureLyricLineElements, centerActiveLyricLine } from "./lyricsMotionController.js";
 import { createLyricTimingSmoother } from "./lyricTimingSmoother.js";
+import { getPlaybackSeekDisplay } from "./pendingPlaybackUi.js";
 import { createMiniModeWindowController } from "./miniModeWindow.js";
 import { setPlayButtonIcon } from "./playButtonIcon.js";
 
@@ -126,19 +127,15 @@ export function createMiniModeController(deps) {
     const currentEl = document.getElementById("mini-time-current");
     const totalEl = document.getElementById("mini-time-total");
     if (!seek || !currentEl || !totalEl) return;
-    const duration = audio?.duration;
-    currentEl.textContent = formatTime(audio?.currentTime || 0);
-    if (duration && Number.isFinite(duration) && duration > 0) {
-      totalEl.textContent = formatTime(duration);
-      if (!getSeekDragging()) seek.value = String(Math.min(1000, Math.floor(((audio?.currentTime || 0) / duration) * 1000)));
-      seek.disabled = false;
-      seek.style.setProperty("--seek-progress", `${Number(seek.value) / 10}%`);
-      return;
+    const track = getPlayQueue()[getPlayIndex()] || null;
+    const { currentTimeMs, durationMs } = getPlaybackSeekDisplay(audio, track);
+    currentEl.textContent = formatTime(currentTimeMs / 1000);
+    totalEl.textContent = durationMs > 0 ? formatTime(durationMs / 1000) : "0:00";
+    if (!getSeekDragging()) {
+      seek.value = durationMs > 0 ? String(Math.min(1000, Math.floor((currentTimeMs / durationMs) * 1000))) : "0";
     }
-    totalEl.textContent = "0:00";
-    seek.value = "0";
     seek.disabled = !(audio && audio.src);
-    seek.style.setProperty("--seek-progress", "0%");
+    seek.style.setProperty("--seek-progress", `${Number(seek.value) / 10}%`);
   }
 
   function renderLyrics(force = false) {

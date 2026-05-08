@@ -1,4 +1,5 @@
 import { currentPlayableKey } from "../lyrics/model.js";
+import { clearPendingPlaybackSeekState, getPlaybackSeekDisplay, setPendingPlaybackSeekState } from "./pendingPlaybackUi.js";
 
 // Playback state persistence keeps play mode and queue recoverable across app restarts.
 const PROGRESS_SAVE_DELAY_MS = 3000;
@@ -74,11 +75,11 @@ export function createPlaybackStatePersistence(deps) {
       return { playback_track_key: "", playback_position_ms: 0, playback_duration_ms: 0 };
     }
     const audio = getAudioEl?.();
+    const { currentTimeMs, durationMs: visibleDurationMs } = getPlaybackSeekDisplay(audio, track);
     const audioDurationMs = Number.isFinite(audio?.duration) && audio.duration > 0 ? Math.round(audio.duration * 1000) : 0;
     const queueDurationMs = normalizeNonNegativeInt(track?.duration_ms ?? track?.durationMs ?? 0);
-    const durationMs = Math.max(audioDurationMs, queueDurationMs);
-    const rawPositionMs = Number.isFinite(audio?.currentTime) && audio.currentTime > 0 ? Math.round(audio.currentTime * 1000) : 0;
-    const positionMs = durationMs > 0 ? Math.min(rawPositionMs, durationMs) : rawPositionMs;
+    const durationMs = Math.max(audioDurationMs, queueDurationMs, visibleDurationMs);
+    const positionMs = durationMs > 0 ? Math.min(currentTimeMs, durationMs) : currentTimeMs;
     return { playback_track_key: trackKey, playback_position_ms: positionMs, playback_duration_ms: durationMs };
   }
 
@@ -160,6 +161,7 @@ export function createPlaybackStatePersistence(deps) {
     const positionMs = durationMs > 0 ? Math.min(pendingResume.positionMs, durationMs) : pendingResume.positionMs;
     audio.currentTime = Math.max(0, positionMs) / 1000;
     pendingResume = null;
+    clearPendingPlaybackSeekState(audio);
     syncSeekUi?.();
     refreshCurrentLyricsSnapshot?.();
     void syncDesktopLyrics?.();
@@ -193,6 +195,9 @@ export function createPlaybackStatePersistence(deps) {
       setPlayQueue(queue);
       setPlayIndex(nextIndex);
       pendingResume = nextResume && queue.some((item) => currentPlayableKey(item) === nextResume.trackKey) ? nextResume : null;
+      const audio = getAudioEl?.();
+      if (pendingResume) setPendingPlaybackSeekState(audio, pendingResume);
+      else clearPendingPlaybackSeekState(audio);
       lastProgressSignature = progressSignatureOf(currentProgressPatch());
       restorePlaybackUi();
     } catch (error) {

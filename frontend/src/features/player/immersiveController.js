@@ -3,6 +3,7 @@ import { currentPlayableKey } from "../lyrics/model.js";
 import { buildLyricLineHtml, lineProgressRatio } from "./immersiveLyricsView.js";
 import { applyActiveLyricProgress, applyLyricLineStates, captureLyricLineElements, centerActiveLyricLine } from "./lyricsMotionController.js";
 import { createLyricTimingSmoother } from "./lyricTimingSmoother.js";
+import { getPlaybackSeekDisplay } from "./pendingPlaybackUi.js";
 import { setPlayButtonIcon } from "./playButtonIcon.js";
 
 // Immersive mode renders from the shared lyrics snapshot using stable line-level sync.
@@ -121,19 +122,15 @@ export function createImmersiveController(deps) {
     const currentEl = document.getElementById("immersive-time-current");
     const totalEl = document.getElementById("immersive-time-total");
     if (!seek || !currentEl || !totalEl) return;
-    const duration = audio?.duration;
-    currentEl.textContent = formatTime(audio?.currentTime || 0);
-    if (duration && Number.isFinite(duration) && duration > 0) {
-      totalEl.textContent = formatTime(duration);
-      if (!getSeekDragging()) seek.value = String(Math.min(1000, Math.floor(((audio?.currentTime || 0) / duration) * 1000)));
-      seek.disabled = false;
-      seek.style.setProperty("--seek-progress", `${Number(seek.value) / 10}%`);
-      return;
+    const track = getPlayQueue()[getPlayIndex()] || null;
+    const { currentTimeMs, durationMs } = getPlaybackSeekDisplay(audio, track);
+    currentEl.textContent = formatTime(currentTimeMs / 1000);
+    totalEl.textContent = durationMs > 0 ? formatTime(durationMs / 1000) : "0:00";
+    if (!getSeekDragging()) {
+      seek.value = durationMs > 0 ? String(Math.min(1000, Math.floor((currentTimeMs / durationMs) * 1000))) : "0";
     }
-    totalEl.textContent = "0:00";
-    seek.value = "0";
     seek.disabled = !(audio && audio.src);
-    seek.style.setProperty("--seek-progress", "0%");
+    seek.style.setProperty("--seek-progress", `${Number(seek.value) / 10}%`);
   }
 
   function renderLyricsFrame(force = false) {

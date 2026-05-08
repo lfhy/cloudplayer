@@ -47,9 +47,9 @@ export function createAudioEventsController(deps) {
       }
     });
     audio.addEventListener("loadedmetadata", () => {
+      applyPendingPlaybackResume?.();
       syncSeekUi();
       refreshCurrentLyricsSnapshot?.();
-      applyPendingPlaybackResume?.();
       if (getAudioSourceGeneration() === getPlayLoadGeneration()) {
         void logPlayEventDesktop("audio_loadedmetadata", {
           url: audio.src || null,
@@ -62,9 +62,9 @@ export function createAudioEventsController(deps) {
       refreshCurrentLyricsSnapshot?.();
     });
     audio.addEventListener("canplay", () => {
+      applyPendingPlaybackResume?.();
       syncSeekUi();
       refreshCurrentLyricsSnapshot?.();
-      applyPendingPlaybackResume?.();
     });
     audio.addEventListener("seeked", () => {
       syncSeekUi();

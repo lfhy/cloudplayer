@@ -1,4 +1,5 @@
 import { setCoverImageSource } from "../../app/helpers/covers.js";
+import { getPlaybackSeekDisplay } from "./pendingPlaybackUi.js";
 
 // Player chrome helpers keep dock text, seek UI and prev/next enablement consistent.
 export function createPlayerChromeController(deps) {
@@ -6,6 +7,7 @@ export function createPlayerChromeController(deps) {
     broadcastTrayPlayerState,
     formatTime,
     getAudioEl,
+    getPlayIndex,
     getPlayQueue,
     getSeekDragging,
   } = deps;
@@ -37,23 +39,17 @@ export function createPlayerChromeController(deps) {
     const current = document.getElementById("time-current");
     const total = document.getElementById("time-total");
     if (!audio || !seek || !current || !total) return;
-    const duration = audio.duration;
-    current.textContent = formatTime(audio.currentTime || 0);
-    if (duration && Number.isFinite(duration) && duration > 0) {
-      total.textContent = formatTime(duration);
-      if (!getSeekDragging()) {
-        seek.value = String(Math.min(1000, Math.floor((audio.currentTime / duration) * 1000)));
-      }
-      seek.disabled = false;
-      // Reflect played progress via a CSS variable so the filled and unfilled track use different colors.
-      seek.style.setProperty("--seek-progress", `${Number(seek.value) / 10}%`);
-      return;
+    const track = getPlayQueue()[getPlayIndex()] || null;
+    const { currentTimeMs, durationMs } = getPlaybackSeekDisplay(audio, track);
+    current.textContent = formatTime(currentTimeMs / 1000);
+    total.textContent = durationMs > 0 ? formatTime(durationMs / 1000) : "0:00";
+    if (durationMs > 0 && !getSeekDragging()) {
+      seek.value = String(Math.min(1000, Math.floor((currentTimeMs / durationMs) * 1000)));
+    } else if (!getSeekDragging()) {
+      seek.value = "0";
     }
-    current.textContent = "0:00";
-    total.textContent = "0:00";
-    seek.value = "0";
     seek.disabled = !audio.src;
-    seek.style.setProperty("--seek-progress", "0%");
+    seek.style.setProperty("--seek-progress", `${Number(seek.value) / 10}%`);
   }
 
   function setPlayerNavEnabled() {

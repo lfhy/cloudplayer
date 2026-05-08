@@ -29,48 +29,7 @@ export function searchPageTemplate() {
           </div>
           <section id="search-suggestions" class="search-suggestions">
             <h2 class="search-section-title">快速搜索</h2>
-            <div class="search-category-grid">
-              <button type="button" class="search-category-card" data-search-seed="国风">
-                <span class="search-category-card__kicker">Chinese Style</span>
-                <strong>国风</strong>
-                <span>适合找古风、戏腔、诗意编曲这类中文风格作品</span>
-              </button>
-              <button type="button" class="search-category-card" data-search-seed="日系">
-                <span class="search-category-card__kicker">Japanese</span>
-                <strong>日系</strong>
-                <span>快速拉起日系流行、动画主题曲和轻摇滚相关结果</span>
-              </button>
-              <button type="button" class="search-category-card" data-search-seed="轻音乐">
-                <span class="search-category-card__kicker">Easy Listening</span>
-                <strong>轻音乐</strong>
-                <span>适合工作、阅读和放松时听的人声较少曲目</span>
-              </button>
-              <button type="button" class="search-category-card" data-search-seed="二次元">
-                <span class="search-category-card__kicker">ACG</span>
-                <strong>二次元</strong>
-                <span>适合搜动画、游戏、Vocaloid 和 ACG 向热门歌曲</span>
-              </button>
-              <button type="button" class="search-category-card" data-search-seed="民谣">
-                <span class="search-category-card__kicker">Folk</span>
-                <strong>民谣</strong>
-                <span>更适合找木吉他、人声叙事和安静氛围的作品</span>
-              </button>
-              <button type="button" class="search-category-card" data-search-seed="爵士">
-                <span class="search-category-card__kicker">Jazz</span>
-                <strong>爵士</strong>
-                <span>适合找器乐、即兴和夜晚氛围感更强的内容</span>
-              </button>
-              <button type="button" class="search-category-card" data-search-seed="摇滚">
-                <span class="search-category-card__kicker">Rock</span>
-                <strong>摇滚</strong>
-                <span>适合找吉他、现场感和更有冲击力的编曲内容</span>
-              </button>
-              <button type="button" class="search-category-card" data-search-seed="随便听听">
-                <span class="search-category-card__kicker">Shuffle</span>
-                <strong>随便听听</strong>
-                <span>适合直接拉起一批轻松、不设限的随机探索结果</span>
-              </button>
-            </div>
+            <div id="search-quick-grid" class="search-category-grid"></div>
           </section>
         </section>
         <section id="search-results-view" class="search-view search-view--results" hidden>

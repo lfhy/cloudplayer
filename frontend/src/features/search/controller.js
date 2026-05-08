@@ -1,4 +1,5 @@
 import { createCatalogResultsController } from "./catalogResultsController.js";
+import { renderSearchQuickCards } from "./quickSearchCards.js";
 import { coverImgHtml } from "../../app/helpers/covers.js";
 
 // Search controller keeps page-level view switching thin and delegates heavy catalog logic.
@@ -48,6 +49,13 @@ export function createSearchController(deps) {
     });
   }
 
+  function renderSearchSuggestions() {
+    renderSearchQuickCards(document.getElementById("search-quick-grid"), (seed) => {
+      setSearchScope("catalog");
+      submitPageSearch(seed);
+    });
+  }
+
   function setSearchView(view = "home") {
     searchState.view = view === "results" ? "results" : "home";
     const shell = document.querySelector('.page[data-page="search"] .search-shell');
@@ -63,6 +71,7 @@ export function createSearchController(deps) {
       resultsView.classList.toggle("is-active", searchState.view === "results");
     }
     syncSearchInputs(searchState.keyword);
+    if (searchState.view === "home") renderSearchSuggestions();
   }
 
   function setSearchScope(scope) {
@@ -253,13 +262,6 @@ export function createSearchController(deps) {
           renderPlaylistSearchResults();
           updateSearchViewState();
         }
-      });
-    });
-    document.querySelectorAll("[data-search-seed]").forEach((button) => {
-      button.addEventListener("click", () => {
-        const seed = button.getAttribute("data-search-seed") || "";
-        setSearchScope("catalog");
-        submitPageSearch(seed);
       });
     });
     updateSearchViewState();
