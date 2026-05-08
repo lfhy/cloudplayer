@@ -1,7 +1,9 @@
 // Home controller keeps landing-page recommendations and recents outside main.js.
 import { coverImgHtml } from "../../app/helpers/covers.js";
 import { renderFittedHomeRows } from "./homeListFit.js";
+import { triggerTrackSearch } from "./trackSearchShortcut.js";
 import { renderTrackTableRows } from "./trackTableRenderer.js";
+import { toggleFavoriteTrack } from "./favoriteToggle.js";
 
 export function createHomeController(deps) {
   const {
@@ -233,6 +235,9 @@ export function createHomeController(deps) {
       escapeHtml,
       formatDurationMs,
       getLikedIds,
+      onAlbumClick: (album) => triggerTrackSearch(album),
+      onArtistClick: (artist) => triggerTrackSearch(artist),
+      onFavoriteClick: (row) => toggleFavoriteTrack(row, { alertRequestFailed, getLikedIds, invoke }),
       onClick: (index, row) => playSingleItem(row),
     });
   }

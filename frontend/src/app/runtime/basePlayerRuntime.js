@@ -25,6 +25,7 @@ export function createBasePlayerRuntime(deps) {
   });
 
   const recent = createTrayRecentController({
+    alertRequestFailed: deps.alertRequestFailed,
     emitTo: deps.emitTo,
     escapeHtml: deps.escapeHtml,
     formatDurationMs: deps.formatDurationMs,

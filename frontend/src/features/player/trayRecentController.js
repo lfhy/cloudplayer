@@ -1,8 +1,11 @@
 import { renderTrackTableRows } from "../library/trackTableRenderer.js";
+import { triggerTrackSearch } from "../library/trackSearchShortcut.js";
+import { toggleFavoriteTrack } from "../library/favoriteToggle.js";
 
 // Tray state and recent-play persistence share the same playback snapshot model.
 export function createTrayRecentController(deps) {
   const {
+    alertRequestFailed,
     emitTo,
     escapeHtml,
     formatDurationMs,
@@ -142,6 +145,9 @@ export function createTrayRecentController(deps) {
         escapeHtml,
         formatDurationMs,
         getLikedIds,
+        onAlbumClick: (album) => triggerTrackSearch(album),
+        onArtistClick: (artist) => triggerTrackSearch(artist),
+        onFavoriteClick: (row) => toggleFavoriteTrack(row, { alertRequestFailed, getLikedIds, invoke }),
         onClick: (index) => playFromRecentRow(index),
         rowTitle: (row) => (row.local_path ? "单击后追加到播放列表并播放" : "单击后追加到播放列表并播放"),
       }

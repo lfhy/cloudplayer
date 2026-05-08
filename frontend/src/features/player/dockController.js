@@ -1,7 +1,7 @@
 import { coverImgHtml } from "../../app/helpers/covers.js";
 import { favoriteIconSvg } from "../../app/helpers/icons.js";
 import { escapeHtml } from "../../app/helpers/text.js";
-import { emitFavoriteStateChanged } from "../library/favoriteState.js";
+import { toggleFavoriteTrack } from "../library/favoriteToggle.js";
 
 // Dock controller owns queue rendering, favorite state, and dock popovers.
 export function createDockController(deps) {
@@ -26,7 +26,6 @@ export function createDockController(deps) {
     removeCurrentFromQueue,
     renderPlayerNav,
     broadcastDesktopLyricsLock,
-    saveLikedIds,
     scheduleSavePlaybackState,
     setDesktopLyricsLocked,
     setPlayModeIndex,
@@ -178,31 +177,14 @@ export function createDockController(deps) {
       event.stopPropagation();
       const current = getPlayQueue()[getPlayIndex()];
       if (!current) return;
-      const sourceId = (current.source_id || "").trim();
-      if (!sourceId || current.local_path) return void alert("仅在线试听曲目支持「喜欢」（需曲库 id）。");
-      const likedIds = getLikedIds();
-      try {
-        if (likedIds.has(sourceId)) {
-          await invoke("remove_favorite_track", { sourceId });
-          likedIds.delete(sourceId);
-        } else {
-          await invoke("add_favorite_track", {
-            track: {
-              title: current.title || "",
-              artist: current.artist || "",
-              album: current.album || "",
-              pjmp3_source_id: sourceId,
-              cover_url: current.cover_url || "",
-              duration_ms: Number(current.duration_ms) || 0,
-            },
-          });
-          likedIds.add(sourceId);
-        }
-        saveLikedIds(likedIds);
-        emitFavoriteStateChanged();
-        refreshFavButton();
-      } catch (error) {
-        deps.alertRequestFailed(error, "toggle favorite track");
+      const changed = await toggleFavoriteTrack(current, {
+        alertRequestFailed: deps.alertRequestFailed,
+        getLikedIds,
+        invoke,
+        onAfterToggle: () => refreshFavButton(),
+      });
+      if (!changed) {
+        if (!current.source_id || current.local_path) return void alert("仅在线试听曲目支持「喜欢」（需曲库 id）。");
       }
     });
     window.addEventListener("cloudplayer:favorites-changed", () => refreshFavButton());

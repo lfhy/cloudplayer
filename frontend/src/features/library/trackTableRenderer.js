@@ -1,19 +1,19 @@
-import { coverImgHtml } from "../../app/helpers/covers.js";
-import { favoriteIconSvg } from "../../app/helpers/icons.js";
+import {
+  bindTrackTableCellActions,
+  buildTrackAlbumCell,
+  buildTrackCoverCell,
+  buildTrackFavoriteCell,
+  buildTrackTitleCell,
+  refreshTrackFavoriteCell,
+} from "./trackTableCells.js";
 
 // Shared playlist-style track table renderer keeps daily and playlist rows visually consistent.
 let getLikedIdsRef = () => new Set();
 let favoriteRefreshBound = false;
 
 function refreshFavoriteCells(root = document) {
-  const likedIds = typeof getLikedIdsRef === "function" ? getLikedIdsRef() : new Set();
   root.querySelectorAll("[data-like-source-id]").forEach((cell) => {
-    const sourceId = String(cell.getAttribute("data-like-source-id") || "").trim();
-    const forceLiked = cell.getAttribute("data-force-liked") === "true";
-    const liked = forceLiked || (sourceId && likedIds.has(sourceId));
-    cell.classList.toggle("is-liked", liked);
-    cell.classList.toggle("muted", !liked);
-    cell.innerHTML = favoriteIconSvg(liked);
+    refreshTrackFavoriteCell(cell, getLikedIdsRef);
   });
 }
 
@@ -35,6 +35,7 @@ export function renderTrackTableRows(tbody, rows, options) {
     onClick,
     onContextMenu,
     onDoubleClick,
+    onFavoriteClick,
     rowTitle,
   } = options;
   if (!tbody) return;
@@ -47,23 +48,14 @@ export function renderTrackTableRows(tbody, rows, options) {
   const likedIds = typeof getLikedIds === "function" ? getLikedIds() : new Set();
   tbody.innerHTML = "";
   rows.forEach((row, index) => {
-    const likeSourceId = String(row.like_source_id || "").trim();
-    const liked = !!forceLiked || (likeSourceId && likedIds.has(likeSourceId));
-    const cover = coverImgHtml({ src: row.cover_url || "", className: "row-cover", width: 40, height: 40, radius: 4 });
-    const artistText = escapeHtml(row.artist || "—");
-    const albumText = escapeHtml(row.album || "—");
-    const artistHtml = row.artist && typeof onArtistClick === "function"
-      ? `<button type="button" class="table-inline-action table-inline-action--artist" data-table-artist="${artistText}">${artistText}</button>`
-      : artistText;
-    const albumHtml = row.album && typeof onAlbumClick === "function"
-      ? `<button type="button" class="table-inline-action table-inline-action--album" data-table-album="${albumText}">${albumText}</button>`
-      : albumText;
     const tr = document.createElement("tr");
+    tr.dataset.trackRowIndex = String(index);
+    const canFavorite = typeof onFavoriteClick === "function";
     tr.innerHTML = `
-      <td class="col-cover">${cover}</td>
-      <td>${row.artist ? `<span class="t-title">${escapeHtml(row.title || "—")}</span><span class="t-art">${artistHtml}</span>` : `<span class="t-title">${escapeHtml(row.title || "—")}</span>`}</td>
-      <td class="muted">${albumHtml}</td>
-      <td class="col-like${liked ? " is-liked" : " muted"}" data-like-source-id="${escapeHtml(likeSourceId)}" data-force-liked="${forceLiked ? "true" : "false"}">${favoriteIconSvg(liked)}</td>
+      <td class="col-cover">${buildTrackCoverCell(row)}</td>
+      <td>${buildTrackTitleCell(row, escapeHtml, { onArtistClick })}</td>
+      <td class="muted">${buildTrackAlbumCell(row, escapeHtml, { onAlbumClick })}</td>
+      ${buildTrackFavoriteCell(row, escapeHtml, { forceLiked, getLikedIds: () => likedIds, interactive: canFavorite })}
       <td class="muted col-dur">${formatDurationMs(row.duration_ms)}</td>`;
     tr.style.cursor = row.playable ? "pointer" : "default";
     const title = typeof rowTitle === "function" ? rowTitle(row, index) : "";
@@ -88,6 +80,7 @@ export function renderTrackTableRows(tbody, rows, options) {
     if (row.playable && typeof onDoubleClick === "function") {
       tr.addEventListener("dblclick", () => onDoubleClick(index, row));
     }
+    bindTrackTableCellActions(tr, row, index, { onAlbumClick, onArtistClick, onFavoriteClick });
     if (typeof onContextMenu === "function") {
       tr.addEventListener("contextmenu", (event) => {
         event.preventDefault();

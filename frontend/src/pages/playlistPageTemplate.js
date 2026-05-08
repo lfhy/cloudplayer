@@ -1,4 +1,5 @@
 import { fallbackCoverDataUri } from "../app/helpers/covers.js";
+import { trackTableTemplate } from "../components/trackTableTemplate.js";
 
 // Playlist detail page keeps stable ids for rename, play-all and table rendering.
 export function playlistPageTemplate() {
@@ -10,7 +11,7 @@ export function playlistPageTemplate() {
         <div class="playlist-hero__meta">
           <h1 class="playlist-hero__title" id="playlist-page-title">歌单</h1>
           <div class="playlist-hero__sub" id="playlist-page-hint"></div>
-          <div class="playlist-hero__count" id="playlist-track-count">共 0 首导入曲目</div>
+          <div class="playlist-hero__count" id="playlist-track-count">共 0 首曲目</div>
           <div class="playlist-hero__status muted" id="playlist-enrich-status" aria-live="polite"></div>
           <div class="playlist-hero__actions">
             <button type="button" id="btn-playlist-play-all" class="btn-accent" disabled>▶ 播放全部</button>
@@ -20,20 +21,7 @@ export function playlistPageTemplate() {
           </div>
         </div>
       </div>
-      <div class="table-wrap playlist-table-wrap">
-        <table class="search-table playlist-table" id="playlist-detail-table">
-          <thead>
-            <tr>
-              <th class="col-cover"></th>
-              <th>标题</th>
-              <th>专辑</th>
-              <th class="col-like">喜欢</th>
-              <th class="col-dur">时长</th>
-            </tr>
-          </thead>
-          <tbody></tbody>
-        </table>
-      </div>
+      ${trackTableTemplate({ id: "playlist-detail-table", tableClassName: "playlist-table", wrapperClassName: "playlist-table-wrap" })}
     </section>
   `;
 }

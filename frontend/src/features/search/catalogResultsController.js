@@ -1,7 +1,12 @@
-import { coverImgHtml } from "../../app/helpers/covers.js";
 import { formatDurationMs } from "../../app/helpers/time.js";
+import {
+  bindTrackTableCellActions,
+  buildTrackAlbumCell,
+  buildTrackCoverCell,
+  buildTrackTitleCell,
+} from "../library/trackTableCells.js";
+import { triggerTrackSearch } from "../library/trackSearchShortcut.js";
 import { createCatalogMetadataController } from "./catalogMetadataController.js";
-
 // Catalog results controller owns virtual rows, infinite loading, and multi-select actions.
 export function createCatalogResultsController(deps) {
   const {
@@ -23,25 +28,21 @@ export function createCatalogResultsController(deps) {
   const loadMoreThreshold = Math.max(4, Math.floor(rowHeight * 0.1));
   const bottomStatusThreshold = rowHeight * 1.5;
   const metadata = createCatalogMetadataController({ invoke, renderSearchTable, searchState, warnRequestFailed });
-
   function clearSelection() {
     searchState.selectedIds = new Set();
   }
-
   function exitBatchMode() {
     searchState.batchMode = false;
     clearSelection();
     updateSearchToolbar();
     renderSearchTable();
   }
-
   function enterBatchMode() {
     searchState.batchMode = true;
     clearSelection();
     updateSearchToolbar();
     renderSearchTable();
   }
-
   function renderInitialLoadingState(tbody) {
     if (!tbody) return;
     tbody.innerHTML = `
@@ -59,7 +60,6 @@ export function createCatalogResultsController(deps) {
         </td>
       </tr>`;
   }
-
   function syncBottomStatusVisibility() {
     const scrollWrap = document.getElementById("search-results-scroll");
     if (!scrollWrap || searchState.scope !== "catalog" || !searchState.results.length) {
@@ -104,11 +104,9 @@ export function createCatalogResultsController(deps) {
       const index = startIndex + offset;
       const tr = document.createElement("tr");
       const selected = searchState.selectedIds?.has(row.source_id) === true;
-      const cover = coverImgHtml({ src: row.cover_url || "", className: "row-cover", width: 40, height: 40, radius: 4 });
-      const title = row.artist ? `<span class="t-title">${escapeHtml(row.title)}</span><span class="t-art">${escapeHtml(row.artist)}</span>` : `<span class="t-title">${escapeHtml(row.title)}</span>`;
       tr.classList.toggle("is-selected", selected);
       tr.classList.toggle("is-batch-mode", batchMode);
-      tr.innerHTML = `<td class="col-check"><label class="search-row-check"><input type="checkbox" data-search-select-row="${escapeHtml(row.source_id)}" ${selected ? "checked" : ""} aria-label="选择 ${escapeHtml(row.title)}" /></label></td><td class="col-idx">${index + 1}</td><td class="col-cover">${cover}</td><td>${title}</td><td class="muted">${escapeHtml(row.album || "—")}</td><td class="muted col-dur">${escapeHtml(formatDurationMs(row.duration_ms))}</td>`;
+      tr.innerHTML = `<td class="col-check"><label class="search-row-check"><input type="checkbox" data-search-select-row="${escapeHtml(row.source_id)}" ${selected ? "checked" : ""} aria-label="选择 ${escapeHtml(row.title)}" /></label></td><td class="col-idx">${index + 1}</td><td class="col-cover">${buildTrackCoverCell(row)}</td><td>${buildTrackTitleCell(row, escapeHtml, { onArtistClick: triggerTrackSearch })}</td><td class="muted">${buildTrackAlbumCell(row, escapeHtml, { onAlbumClick: triggerTrackSearch })}</td><td class="muted col-dur">${escapeHtml(formatDurationMs(row.duration_ms))}</td>`;
       tr.style.cursor = "pointer";
       tr.addEventListener("click", (event) => {
         if (event.target instanceof HTMLInputElement) return;
@@ -121,6 +119,10 @@ export function createCatalogResultsController(deps) {
       tr.addEventListener("contextmenu", (event) => {
         event.preventDefault();
         void openSearchRowContextMenu(event, index);
+      });
+      bindTrackTableCellActions(tr, row, index, {
+        onAlbumClick: triggerTrackSearch,
+        onArtistClick: triggerTrackSearch,
       });
       tr.querySelector(`[data-search-select-row="${CSS.escape(row.source_id)}"]`)?.addEventListener("change", (event) => {
         const target = event.currentTarget;

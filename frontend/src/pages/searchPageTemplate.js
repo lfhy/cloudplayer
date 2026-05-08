@@ -1,3 +1,5 @@
+import { trackTableTemplate } from "../components/trackTableTemplate.js";
+
 // Search page keeps the existing DOM ids so the current search runtime can bind without changes.
 export function searchPageTemplate() {
   return `
@@ -63,21 +65,7 @@ export function searchPageTemplate() {
           </div>
           <div id="search-results-catalog" class="search-results-panel">
             <div class="discover-scroll" id="search-results-scroll">
-              <div class="table-wrap">
-                <table class="search-table" id="search-table">
-                  <thead>
-                    <tr>
-                      <th class="col-check" hidden><input type="checkbox" id="search-select-all-checkbox" aria-label="全选当前搜索结果" /></th>
-                      <th class="col-idx">#</th>
-                      <th class="col-cover"></th>
-                      <th>标题</th>
-                      <th>专辑</th>
-                      <th class="col-dur">时长</th>
-                    </tr>
-                  </thead>
-                  <tbody></tbody>
-                </table>
-              </div>
+              ${trackTableTemplate({ id: "search-table", includeCheck: true, includeIndex: true, includeLike: false, checkInputId: "search-select-all-checkbox" })}
             </div>
             <div id="search-results-tail" class="search-results-tail" hidden>
               <span id="search-page-info" class="search-page-info muted"></span>
