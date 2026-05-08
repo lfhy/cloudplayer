@@ -7,10 +7,6 @@ export function searchPageTemplate() {
       <div class="search-shell">
         <section id="search-home-view" class="search-view search-view--home is-active">
           <div class="search-hero">
-            <div>
-              <p class="search-eyebrow">Music Search</p>
-              <h1 class="page-title">音乐搜索</h1>
-            </div>
             <div class="search-input-wrap">
               <div class="neon-search-wrap search-page-search">
                 <div class="neon-search-inner">
