@@ -193,7 +193,7 @@ export function createPlaylistController(deps) {
     const countEl = document.getElementById("playlist-track-count");
     const hintEl = document.getElementById("playlist-page-hint");
     const coverEl = document.getElementById("playlist-hero-cover");
-    if (countEl) countEl.textContent = `共 ${rows.length} 首导入曲目`;
+    if (countEl) countEl.textContent = `共 ${rows.length} 首曲目`;
     if (hintEl && !selectedPlaylist?.is_cloud) hintEl.textContent = "";
     setCoverImageSource(coverEl, rows.find((row) => (row.cover_url || "").trim())?.cover_url || "", { size: 120, radius: 12 });
     renderTrackTableRows(tbody, rows.map((row) => ({

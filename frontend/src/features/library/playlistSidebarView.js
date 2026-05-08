@@ -10,13 +10,6 @@ export function buildSidebarPlaylistItem(playlist, escapeHtml) {
     <span class="sidebar-pl-item__icon" aria-hidden="true">${navIconSvg(playlist.is_builtin || playlist.is_favorites ? "favorites" : playlist.is_cloud ? "cloud" : "playlist")}</span>
     <span class="sidebar-pl-item__label">${escapeHtml(playlist.name?.trim() || `歌单 ${playlist.id}`)}</span>
   `;
-  li.title = playlist.is_builtin
-    ? `系统歌单 · id=${playlist.id} · 查看导入曲目`
-    : playlist.is_favorites
-      ? `我喜欢 · id=${playlist.id} · 查看导入曲目`
-    : playlist.is_cloud
-      ? `云歌单 · id=${playlist.id} · 缓存 12 小时`
-      : `id=${playlist.id} · 查看导入曲目`;
   return li;
 }
 
