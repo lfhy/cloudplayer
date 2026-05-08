@@ -60,6 +60,16 @@ export function searchPageTemplate() {
                 <strong>爵士</strong>
                 <span>适合找器乐、即兴和夜晚氛围感更强的内容</span>
               </button>
+              <button type="button" class="search-category-card" data-search-seed="摇滚">
+                <span class="search-category-card__kicker">Rock</span>
+                <strong>摇滚</strong>
+                <span>适合找吉他、现场感和更有冲击力的编曲内容</span>
+              </button>
+              <button type="button" class="search-category-card" data-search-seed="随便听听">
+                <span class="search-category-card__kicker">Shuffle</span>
+                <strong>随便听听</strong>
+                <span>适合直接拉起一批轻松、不设限的随机探索结果</span>
+              </button>
             </div>
           </section>
         </section>
