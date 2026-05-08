@@ -13,7 +13,7 @@ export function searchPageTemplate() {
               <div class="neon-search-wrap search-page-search">
                 <div class="neon-search-inner">
                   <input id="page-search" type="search" class="global-search" placeholder="搜索歌曲、歌手、专辑，或搜索你的本地歌单…" autocomplete="off" />
-                  <button type="button" id="btn-page-search" class="global-search-btn" title="搜索" aria-label="搜索">
+                  <button type="button" id="btn-page-search" class="global-search-btn" aria-label="搜索">
                     <svg class="global-search-btn__icon" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                       <circle cx="11" cy="11" r="8" />
                       <path d="m21 21-4.3-4.3" />
@@ -38,7 +38,7 @@ export function searchPageTemplate() {
               <div class="neon-search-wrap search-page-search search-results-search">
                 <div class="neon-search-inner">
                   <input id="page-search-results" type="search" class="global-search" placeholder="继续搜索歌曲、歌手、专辑，或搜索你的本地歌单…" autocomplete="off" />
-                  <button type="button" id="btn-page-search-results" class="global-search-btn" title="搜索" aria-label="搜索">
+                  <button type="button" id="btn-page-search-results" class="global-search-btn" aria-label="搜索">
                     <svg class="global-search-btn__icon" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                       <circle cx="11" cy="11" r="8" />
                       <path d="m21 21-4.3-4.3" />

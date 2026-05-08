@@ -110,7 +110,6 @@ export function createCatalogResultsController(deps) {
       tr.classList.toggle("is-batch-mode", batchMode);
       tr.innerHTML = `<td class="col-check"><label class="search-row-check"><input type="checkbox" data-search-select-row="${escapeHtml(row.source_id)}" ${selected ? "checked" : ""} aria-label="选择 ${escapeHtml(row.title)}" /></label></td><td class="col-idx">${index + 1}</td><td class="col-cover">${cover}</td><td>${title}</td><td class="muted">${escapeHtml(row.album || "—")}</td><td class="muted col-dur">${escapeHtml(formatDurationMs(row.duration_ms))}</td>`;
       tr.style.cursor = "pointer";
-      tr.title = batchMode ? "选择曲目" : "单击播放";
       tr.addEventListener("click", (event) => {
         if (event.target instanceof HTMLInputElement) return;
         if (batchMode) {
