@@ -9,8 +9,8 @@ import (
 	"sync/atomic"
 
 	"cloudplayer/backend/config"
-	"cloudplayer/backend/desktop"
 	"cloudplayer/backend/db"
+	"cloudplayer/backend/desktop"
 	"cloudplayer/backend/hotkeys"
 	"cloudplayer/backend/state"
 	"github.com/wailsapp/wails/v3/pkg/application"
@@ -65,6 +65,9 @@ func Run(assets fs.FS, trayTemplateIcon []byte) error {
 			ApplicationShouldTerminateAfterLastWindowClosed: false,
 		},
 	})
+	if runtime.GOOS == "darwin" {
+		installApplicationMenu(app)
+	}
 
 	state.Hotkeys = hotkeys.NewHotkeyManager(func(action string) {
 		_ = app.Event.Emit("global-hotkey", action)
