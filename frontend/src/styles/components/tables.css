@@ -238,19 +238,21 @@
   font: inherit;
   cursor: pointer;
   text-align: left;
+  transition: color 120ms ease, transform 120ms ease;
+  transform-origin: left center;
 }
 
 .table-inline-action:hover {
   color: var(--text-main);
   text-decoration: none;
-  font-weight: 600;
+  transform: scale(1.04);
 }
 
 .table-inline-action:focus-visible {
   outline: 1px solid rgba(127, 127, 127, 0.35);
   outline-offset: 2px;
   border-radius: 4px;
-  font-weight: 600;
+  transform: scale(1.04);
 }
 
 .table-favorite-button {
