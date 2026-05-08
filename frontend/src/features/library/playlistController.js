@@ -1,6 +1,7 @@
 import { setCoverImageSource } from "../../app/helpers/covers.js";
 import { renderTrackTableRows } from "./trackTableRenderer.js";
 import { createPlaylistEnrichHelpers } from "./playlistEnrichHelpers.js";
+import { syncLikedIdsFromPlaylist, syncLikedIdsFromRows } from "./favoriteState.js";
 import { renderPlaylistTableLoading, renderSidebarPlaylistLoading } from "./playlistLoadingView.js";
 import { buildSidebarPlaylistItem, playlistSidebarEmptyText } from "./playlistSidebarView.js";
 
@@ -110,6 +111,9 @@ export function createPlaylistController(deps) {
     list.innerHTML = "";
     cachedSidebarPlaylists = Array.isArray(playlists) ? playlists : [];
     playlists.forEach((playlist) => {
+      void syncLikedIdsFromPlaylist(playlist, invoke, getLikedIds).catch((error) => {
+        console.warn("sync favorite ids from sidebar playlist", error);
+      });
       const li = buildSidebarPlaylistItem(playlist, escapeHtml);
       li.addEventListener("click", () => {
         setSelectedPlaylist(playlist.id, playlist.name || "");
@@ -164,6 +168,9 @@ export function createPlaylistController(deps) {
     try {
       const rows = await invoke(force ? "refresh_playlist_import_items" : "list_playlist_import_items", { playlistId: id });
       setPlaylistDetailRows(rows || []);
+      if (currentSelectedPlaylist()?.is_builtin || currentSelectedPlaylist()?.is_favorites) {
+        syncLikedIdsFromRows(rows || [], getLikedIds);
+      }
       if (!currentSelectedPlaylist()?.is_builtin && !currentSelectedPlaylist()?.is_cloud) void enrich.maybeEnrichPlaylist(id, rows || []);
     } catch (error) {
       setPlaylistDetailRows([]);

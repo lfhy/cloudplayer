@@ -2,6 +2,27 @@ import { coverImgHtml } from "../../app/helpers/covers.js";
 import { favoriteIconSvg } from "../../app/helpers/icons.js";
 
 // Shared playlist-style track table renderer keeps daily and playlist rows visually consistent.
+let getLikedIdsRef = () => new Set();
+let favoriteRefreshBound = false;
+
+function refreshFavoriteCells(root = document) {
+  const likedIds = typeof getLikedIdsRef === "function" ? getLikedIdsRef() : new Set();
+  root.querySelectorAll("[data-like-source-id]").forEach((cell) => {
+    const sourceId = String(cell.getAttribute("data-like-source-id") || "").trim();
+    const forceLiked = cell.getAttribute("data-force-liked") === "true";
+    const liked = forceLiked || (sourceId && likedIds.has(sourceId));
+    cell.classList.toggle("is-liked", liked);
+    cell.classList.toggle("muted", !liked);
+    cell.innerHTML = favoriteIconSvg(liked);
+  });
+}
+
+function bindFavoriteRefresh() {
+  if (favoriteRefreshBound || typeof window === "undefined") return;
+  favoriteRefreshBound = true;
+  window.addEventListener("cloudplayer:favorites-changed", () => refreshFavoriteCells());
+}
+
 export function renderTrackTableRows(tbody, rows, options) {
   const {
     emptyMessage,
@@ -15,6 +36,8 @@ export function renderTrackTableRows(tbody, rows, options) {
     rowTitle,
   } = options;
   if (!tbody) return;
+  getLikedIdsRef = typeof getLikedIds === "function" ? getLikedIds : () => new Set();
+  bindFavoriteRefresh();
   if (!rows.length) {
     tbody.innerHTML = `<tr><td colspan="5" class="muted">${escapeHtml(emptyMessage)}</td></tr>`;
     return;
@@ -30,7 +53,7 @@ export function renderTrackTableRows(tbody, rows, options) {
       <td class="col-cover">${cover}</td>
       <td>${row.artist ? `<span class="t-title">${escapeHtml(row.title || "—")}</span><span class="t-art">${escapeHtml(row.artist)}</span>` : `<span class="t-title">${escapeHtml(row.title || "—")}</span>`}</td>
       <td class="muted">${escapeHtml(row.album || "—")}</td>
-      <td class="col-like muted">${favoriteIconSvg(liked)}</td>
+      <td class="col-like${liked ? " is-liked" : " muted"}" data-like-source-id="${escapeHtml(likeSourceId)}" data-force-liked="${forceLiked ? "true" : "false"}">${favoriteIconSvg(liked)}</td>
       <td class="muted col-dur">${formatDurationMs(row.duration_ms)}</td>`;
     tr.style.cursor = row.playable ? "pointer" : "default";
     const title = typeof rowTitle === "function" ? rowTitle(row, index) : "";
@@ -49,4 +72,5 @@ export function renderTrackTableRows(tbody, rows, options) {
     }
     tbody.appendChild(tr);
   });
+  refreshFavoriteCells(tbody);
 }

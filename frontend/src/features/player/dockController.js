@@ -1,6 +1,7 @@
 import { coverImgHtml } from "../../app/helpers/covers.js";
 import { favoriteIconSvg } from "../../app/helpers/icons.js";
 import { escapeHtml } from "../../app/helpers/text.js";
+import { emitFavoriteStateChanged } from "../library/favoriteState.js";
 
 // Dock controller owns queue rendering, favorite state, and dock popovers.
 export function createDockController(deps) {
@@ -198,11 +199,13 @@ export function createDockController(deps) {
           likedIds.add(sourceId);
         }
         saveLikedIds(likedIds);
+        emitFavoriteStateChanged();
         refreshFavButton();
       } catch (error) {
         deps.alertRequestFailed(error, "toggle favorite track");
       }
     });
+    window.addEventListener("cloudplayer:favorites-changed", () => refreshFavButton());
     document.getElementById("btn-dock-dl")?.addEventListener("click", (event) => {
       event.stopPropagation();
       toggleDockMenu(document.getElementById("popover-dl"));

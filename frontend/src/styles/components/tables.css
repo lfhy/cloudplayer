@@ -206,6 +206,10 @@
   text-align: center;
 }
 
+.col-like.is-liked {
+  color: var(--accent);
+}
+
 .col-like svg {
   width: 16px;
   height: 16px;
@@ -216,4 +220,8 @@
   stroke-linecap: round;
   stroke-linejoin: round;
   fill: none;
+}
+
+.col-like.is-liked svg {
+  fill: currentColor;
 }
