@@ -1,6 +1,8 @@
 import { setCoverImageSource } from "../../app/helpers/covers.js";
 import { renderTrackTableRows } from "./trackTableRenderer.js";
+import { createPlaylistBatchController } from "./playlistBatchController.js";
 import { createPlaylistEnrichHelpers } from "./playlistEnrichHelpers.js";
+import { playPlaylistRows, searchLocalPlaylists as searchLocalPlaylistsHelper } from "./playlistRowHelpers.js";
 import { triggerTrackSearch } from "./trackSearchShortcut.js";
 import { syncLikedIdsFromPlaylist, syncLikedIdsFromRows } from "./favoriteState.js";
 import { toggleFavoriteTrack } from "./favoriteToggle.js";
@@ -34,6 +36,21 @@ export function createPlaylistController(deps) {
     warnRequestFailed,
   } = deps;
   const enrich = createPlaylistEnrichHelpers({ invoke, warnRequestFailed });
+  const batch = createPlaylistBatchController({
+    alertRequestFailed,
+    getMusicOnlineModeEnabled,
+    getPlaylistDetailRows,
+    getSelectedPlaylistId,
+    getSelectedPlaylistName,
+    invoke,
+    loadPlaylistDetail,
+    playFromQueueIndex,
+    refreshPlaylistSelect,
+    refreshSidebarPlaylists,
+    renderPlaylistDetailTable,
+    renderQueuePanel,
+    setPlayQueue,
+  });
   let cachedSidebarPlaylists = [];
   let playlistDetailLoading = false;
   function currentSelectedPlaylist() {
@@ -133,34 +150,15 @@ export function createPlaylistController(deps) {
   }
 
   async function searchLocalPlaylists(keyword) {
-    const normalized = String(keyword || "").trim().toLowerCase();
-    if (!normalized) return [];
-    const playlists = await invoke("list_playlists");
-    const results = [];
-    for (const playlist of Array.isArray(playlists) ? playlists : []) {
-      const playlistName = String(playlist.name || "").trim();
-      const rows = await invoke("list_playlist_import_items", { playlistId: playlist.id });
-      const matchedTracks = (Array.isArray(rows) ? rows : []).filter((row) => {
-        const haystack = [playlistName, row.title || "", row.artist || "", row.album || ""].join(" ").toLowerCase();
-        return haystack.includes(normalized);
-      });
-      const playlistMatched = playlistName.toLowerCase().includes(normalized);
-      if (!playlistMatched && matchedTracks.length === 0) continue;
-      results.push({
-        id: playlist.id,
-        name: playlistName || `歌单 ${playlist.id}`,
-        trackCount: Array.isArray(rows) ? rows.length : 0,
-        matchedTracks,
-        coverUrl: matchedTracks.find((row) => (row.cover_url || "").trim())?.cover_url || rows?.find?.((row) => (row.cover_url || "").trim())?.cover_url || null,
-      });
-    }
-    return results;
+    return searchLocalPlaylistsHelper(invoke, keyword);
   }
 
   async function loadPlaylistDetail(id, name, force = false) {
     setSelectedPlaylist(id, name || "");
     syncSidebarPlaylistActiveState(id, true);
     playlistDetailLoading = true;
+    batch.clearSelection();
+    batch.updatePlaylistToolbar({ busy: true });
     const titleEl = document.getElementById("playlist-page-title");
     if (titleEl) titleEl.textContent = name || "歌单";
     renderPlaylistTableLoading(force ? "正在刷新歌单内容…" : "正在加载歌单内容…");
@@ -203,11 +201,15 @@ export function createPlaylistController(deps) {
       like_source_id: row.pjmp3_source_id,
       playable: !!(row.pjmp3_source_id || "").trim(),
     })), {
+      batchMode: batch.isBatchMode(),
       emptyMessage: "暂无导入曲目，或请从左侧选择其它歌单。",
       escapeHtml,
       forceLiked: selectedPlaylist?.is_builtin === true || selectedPlaylist?.is_favorites === true,
       formatDurationMs,
+      getRowSelectionKey: batch.rowSelectionKey,
       getLikedIds,
+      includeCheck: true,
+      isSelected: batch.isSelected,
       onAlbumClick: (album) => triggerTrackSearch(album),
       onArtistClick: (artist) => triggerTrackSearch(artist),
       onFavoriteClick: (row) => toggleFavoriteTrack(row, {
@@ -221,36 +223,18 @@ export function createPlaylistController(deps) {
       }),
       onClick: (index) => playFromPlaylistRow(index),
       onContextMenu: (event, index) => openPlaylistDetailRowContextMenu(event, index),
+      onToggleSelected: (row, index, selected) => batch.setRowSelected(row, index, selected),
       rowTitle: (row) => (row.playable ? "" : "无曲库 id：请到「搜索」搜索后播放"),
     });
+    batch.updatePlaylistToolbar();
   }
 
   function playFromPlaylistRow(rowIdx) {
-    const rows = getPlaylistDetailRows();
-    const row = rows[rowIdx];
-    const sourceId = (row?.pjmp3_source_id || "").trim();
-    if (!sourceId) return void alert("该条没有曲库 id，请使用顶栏搜索歌名后播放。");
-    const queue = rows
-      .filter((item) => (item.pjmp3_source_id || "").trim())
-      .map((item) => ({
-        source_id: (item.pjmp3_source_id || "").trim(),
-        title: item.title,
-        artist: item.artist || "",
-        album: item.album || "",
-        cover_url: (item.cover_url || "").trim() || null,
-        duration_ms: Number(item.duration_ms || 0) || 0,
-      }));
-    if (!queue.length) return void alert("没有可播放条目（导入条目需含 pjmp3 曲库 id）。");
-    let startInQueue = 0;
-    for (let index = 0; index < rowIdx; index += 1) {
-      if ((rows[index].pjmp3_source_id || "").trim()) startInQueue += 1;
-    }
-    setPlayQueue(queue);
-    void playFromQueueIndex(startInQueue);
-    renderQueuePanel();
+    playPlaylistRows(getPlaylistDetailRows(), rowIdx, { alert, playFromQueueIndex, renderQueuePanel, setPlayQueue });
   }
 
   function wirePlaylistPage() {
+    batch.wirePlaylistBatchToolbar();
     document.getElementById("btn-playlist-refresh")?.addEventListener("click", async () => {
       const playlistID = getSelectedPlaylistId();
       if (playlistID == null) return;
@@ -285,6 +269,7 @@ export function createPlaylistController(deps) {
   }
 
   return {
+    batch,
     loadPlaylistDetail,
     playFromPlaylistRow,
     refreshPlaylistSelect,

@@ -4,7 +4,7 @@ export function renderPlaylistTableLoading(message = "正在加载歌单…") {
   if (!tbody) return;
   tbody.innerHTML = `
     <tr class="search-table__loading">
-      <td colspan="5">
+      <td colspan="6">
         <div class="search-table-loading" role="status" aria-live="polite" aria-label="${message}">
           <div class="search-table-loading__bars" aria-hidden="true">
             <span></span><span></span><span></span><span></span>
