@@ -108,7 +108,7 @@ func (s *CloudPlayerService) refreshKugouPlaylistItems(playlistID int64) ([]Play
 	if err := s.saveKugouPlaylistItemsCache(userID, playlistID, response.PlaylistName, response.Tracks, response.KugouFileIDs); err != nil {
 		return nil, err
 	}
-	return rows, nil
+	return reversePlaylistImportItems(rows), nil
 }
 
 func (s *CloudPlayerService) readKugouPlaylistCache(userID string) ([]KugouPlaylistRow, int64, error) {
@@ -146,7 +146,7 @@ func (s *CloudPlayerService) readKugouPlaylistItemsCache(userID string, playlist
 		SELECT sort_order, title, artist, album, pjmp3_source_id, fileid, cover_url, duration_ms, fetched_at
 		FROM kugou_playlist_cache_items
 		WHERE user_id = ? AND playlist_id = ?
-		ORDER BY sort_order ASC
+		ORDER BY sort_order DESC, fileid DESC
 	`, strings.TrimSpace(userID), playlistID)
 	if err != nil {
 		return nil, 0, err
@@ -261,6 +261,14 @@ func kugouImportRowsFromResponse(tracks []importplaylist.ImportedTrackDTO, fileI
 		})
 	}
 	return rows
+}
+
+func reversePlaylistImportItems(rows []PlaylistImportItemRow) []PlaylistImportItemRow {
+	reversed := append([]PlaylistImportItemRow(nil), rows...)
+	for left, right := 0, len(reversed)-1; left < right; left, right = left+1, right-1 {
+		reversed[left], reversed[right] = reversed[right], reversed[left]
+	}
+	return reversed
 }
 
 func toPlaylistRows(rows []KugouPlaylistRow) []PlaylistRow {
