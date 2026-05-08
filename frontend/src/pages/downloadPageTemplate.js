@@ -16,8 +16,9 @@ export function downloadPageTemplate() {
         <table class="search-table" id="download-queue-table">
           <thead>
             <tr>
+              <th class="col-cover"></th>
+              <th>曲目</th>
               <th>状态</th>
-              <th>标题</th>
               <th>音质</th>
               <th class="col-dlprog">进度</th>
             </tr>

@@ -41,6 +41,10 @@ export function sourcePanelTemplate() {
           </div>
         </div>
         <div class="settings-field">
+          <label class="settings-hotkeys-master"><input type="checkbox" id="setting-auto-cache-on-play" /><span>边听边存</span></label>
+          <p class="settings-field-hint muted">开启后，播放在线歌曲时会自动加入下载缓存队列，可在「下载管理」查看进度。</p>
+        </div>
+        <div class="settings-field">
           <label for="setting-search-cache-ttl-hours" class="settings-field-label">搜索缓存时长</label>
           <div class="settings-inline-row">
             <input type="number" id="setting-search-cache-ttl-hours" class="settings-field-control settings-field-control--text settings-field-control--compact" min="1" max="720" step="1" inputmode="numeric" />

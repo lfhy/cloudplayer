@@ -84,7 +84,7 @@ export function createContextMenuController(deps) {
     if (!hasPlaylist) addMenu.sub.appendChild(cmBtn("（暂无歌单，请先新建）", () => {}, true));
     addMenu.addRow.append(addMenu.fly, addMenu.sub);
     root.appendChild(addMenu.addRow);
-    root.appendChild(buildDownloadSubmenu({ sourceId: row.source_id, title: row.title, artist: row.artist }));
+    root.appendChild(buildDownloadSubmenu({ sourceId: row.source_id, title: row.title, artist: row.artist, coverUrl: row.cover_url }));
     root.append(cmBtn("分享", () => {}, true), cmBtn("查看评论", () => {}, true), cmSep());
     root.appendChild(cmBtn("复制歌曲信息", () => copyImportTrackInfoToClipboard({ title: row.title, artist: row.artist, album: row.album, sourceId: row.source_id, coverUrl: row.cover_url })));
     mountContextMenuAt(event.clientX, event.clientY, root);
@@ -172,7 +172,7 @@ export function createContextMenuController(deps) {
     if (!hasPlaylist) addMenu.sub.appendChild(cmBtn("（暂无其它歌单）", () => {}, true));
     addMenu.addRow.append(addMenu.fly, addMenu.sub);
     root.appendChild(addMenu.addRow);
-    root.appendChild(buildDownloadSubmenu({ sourceId: row.pjmp3_source_id, title: row.title, artist: row.artist }));
+    root.appendChild(buildDownloadSubmenu({ sourceId: row.pjmp3_source_id, title: row.title, artist: row.artist, coverUrl: row.cover_url }));
     root.append(cmBtn("分享", () => {}, true), cmBtn("查看评论", () => {}, true), cmSep());
     root.appendChild(cmBtn("复制歌曲信息", () => copyImportTrackInfoToClipboard({ title: row.title, artist: row.artist, album: row.album, sourceId: row.pjmp3_source_id, coverUrl: row.cover_url })));
     if (row.id != null && row.id > 0 && getSelectedPlaylistId() != null) {

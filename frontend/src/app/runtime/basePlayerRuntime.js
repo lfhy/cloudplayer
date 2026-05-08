@@ -73,6 +73,7 @@ export function createBasePlayerRuntime(deps) {
     ensureLrcLoadedForCurrentTrack: lyrics.ensureLrcLoadedForCurrentTrack,
     getAudioEl: deps.getAudioEl,
     getDesktopLyricsOpen: deps.getDesktopLyricsOpen,
+    getDownloadTasks: deps.getDownloadTasks,
     getPlayIndex: deps.getPlayIndex,
     getPlayLoadGeneration: deps.getPlayLoadGeneration,
     getPlayQueue: deps.getPlayQueue,

@@ -125,7 +125,7 @@ export function createContextMenuHelpers(deps) {
     const sourceId = (track.sourceId || "").trim();
     if (!sourceId) return void alert("无曲库 id，无法下载。");
     try {
-      await invoke("enqueue_download", { source_id: sourceId, title: track.title || "", artist: track.artist || "", quality });
+      await invoke("enqueue_download", { source_id: sourceId, title: track.title || "", artist: track.artist || "", cover_url: track.coverUrl || "", quality });
     } catch (error) {
       alertRequestFailed(error, "enqueue_download");
     }

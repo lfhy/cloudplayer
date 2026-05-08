@@ -65,6 +65,7 @@ export function createSettingsController(deps) {
       action: normalizeCloseAction(document.getElementById("setting-close-action")?.value),
       musicSourceProvider: normalizeMusicSourceProvider(document.getElementById("setting-music-source-provider")?.value),
       musicOnlineMode: isMusicSourceOnlineModeSelected(),
+      autoCacheOnPlay: document.getElementById("setting-auto-cache-on-play")?.checked === true,
       searchCacheTTLHours: normalizeSearchCacheTTLHours(document.getElementById("setting-search-cache-ttl-hours")?.value),
       idleLine1: normalizeLyricsIdleLine(document.getElementById("setting-ly-idle-line1")?.value, DEFAULT_LYRICS_IDLE_LINE1),
       idleLine2: normalizeLyricsIdleLine(document.getElementById("setting-ly-idle-line2")?.value, DEFAULT_LYRICS_IDLE_LINE2),
@@ -79,7 +80,7 @@ export function createSettingsController(deps) {
 
   function settingsFormIsDirty() {
     const current = getSettingsFormValues();
-    return ["theme", "mode", "customAccent", "proxyMode", "proxyURL", "action", "musicSourceProvider", "musicOnlineMode", "searchCacheTTLHours", "idleLine1", "idleLine2", "lyricsProviderOrder", "lyricsLRCLibEnabled", "base", "highlight", "neteaseApiBase", "hotkeysSig"].some((key) => current[key] !== settingsFormBaseline[key]);
+    return ["theme", "mode", "customAccent", "proxyMode", "proxyURL", "action", "musicSourceProvider", "musicOnlineMode", "autoCacheOnPlay", "searchCacheTTLHours", "idleLine1", "idleLine2", "lyricsProviderOrder", "lyricsLRCLibEnabled", "base", "highlight", "neteaseApiBase", "hotkeysSig"].some((key) => current[key] !== settingsFormBaseline[key]);
   }
 
   function syncSettingsFormBaselineFromDom() {
@@ -96,10 +97,12 @@ export function createSettingsController(deps) {
     const customAccentCodeEl = document.getElementById("setting-app-theme-custom-accent-code");
     const proxyUrlEl = document.getElementById("setting-network-proxy-url");
     const searchCacheTTLEl = document.getElementById("setting-search-cache-ttl-hours");
+    const autoCacheOnPlayEl = document.getElementById("setting-auto-cache-on-play");
     if (customAccentEl) customAccentEl.value = customAccent;
     if (customAccentCodeEl) customAccentCodeEl.textContent = customAccent;
     if (proxyUrlEl) proxyUrlEl.value = proxyURL;
     if (searchCacheTTLEl) searchCacheTTLEl.value = String(normalizeSearchCacheTTLHours(settings?.search_cache_ttl_hours ?? settings?.searchCacheTTLHours ?? 24));
+    if (autoCacheOnPlayEl) autoCacheOnPlayEl.checked = settings?.auto_cache_on_play === true || settings?.autoCacheOnPlay === true;
     setThemeModeSelection(mode);
     setThemeCardSelection(theme);
     setNetworkProxyModeSelection(proxyMode);
@@ -167,7 +170,7 @@ export function createSettingsController(deps) {
         const report = await invoke("apply_global_hotkeys", { cfg: current.globalHotkeys });
         if (report) hotkeys.renderHotkeyStatusFromReport(report);
       }
-      await invoke("save_settings", { patch: { app_theme: current.theme, app_theme_mode: current.mode, app_theme_custom_accent: current.customAccent, network_proxy_mode: current.proxyMode, network_proxy_url: proxyURLForSave, main_window_close_action: current.action, music_online_mode: current.musicOnlineMode, music_source_provider: current.musicSourceProvider, search_cache_ttl_hours: current.searchCacheTTLHours, desktop_lyrics_idle_line1: current.idleLine1, desktop_lyrics_idle_line2: current.idleLine2, desktop_lyrics_color_base: current.base, desktop_lyrics_color_highlight: current.highlight, lyrics_provider_order: current.lyricsProviderOrder, lyrics_lrclib_enabled: current.lyricsLRCLibEnabled, lyrics_netease_api_base: current.neteaseApiBase } });
+      await invoke("save_settings", { patch: { app_theme: current.theme, app_theme_mode: current.mode, app_theme_custom_accent: current.customAccent, network_proxy_mode: current.proxyMode, network_proxy_url: proxyURLForSave, main_window_close_action: current.action, music_online_mode: current.musicOnlineMode, auto_cache_on_play: current.autoCacheOnPlay, music_source_provider: current.musicSourceProvider, search_cache_ttl_hours: current.searchCacheTTLHours, desktop_lyrics_idle_line1: current.idleLine1, desktop_lyrics_idle_line2: current.idleLine2, desktop_lyrics_color_base: current.base, desktop_lyrics_color_highlight: current.highlight, lyrics_provider_order: current.lyricsProviderOrder, lyrics_lrclib_enabled: current.lyricsLRCLibEnabled, lyrics_netease_api_base: current.neteaseApiBase } });
       applyAppTheme(current.theme, current.customAccent, current.mode);
       setMainWindowCloseAction(current.action);
       syncSettingsFormBaselineFromDom();
@@ -204,7 +207,7 @@ export function createSettingsController(deps) {
     document.getElementById("btn-dock-settings")?.addEventListener("click", () => setPage("settings"));
     document.querySelectorAll("[data-settings-tab]").forEach((button) => button.addEventListener("click", () => setSettingsTab(button.getAttribute("data-settings-tab") || "appearance")));
     setSettingsTab("appearance");
-    [["setting-app-theme-mode", "change", true], ["setting-app-theme", "change", true], ["setting-app-theme-custom-accent", "input", false], ["setting-network-proxy-url", "input", false], ["setting-close-action", "change", true], ["setting-search-cache-ttl-hours", "change", true], ["setting-ly-idle-line1", "input", false], ["setting-ly-idle-line2", "input", false], ["setting-ly-base", "input", false], ["setting-ly-highlight", "input", false], ["setting-netease-api-base", "input", false], ["setting-hotkeys-enabled", "change", true]].forEach(([id, eventName, immediate]) => {
+    [["setting-app-theme-mode", "change", true], ["setting-app-theme", "change", true], ["setting-app-theme-custom-accent", "input", false], ["setting-network-proxy-url", "input", false], ["setting-close-action", "change", true], ["setting-auto-cache-on-play", "change", true], ["setting-search-cache-ttl-hours", "change", true], ["setting-ly-idle-line1", "input", false], ["setting-ly-idle-line2", "input", false], ["setting-ly-base", "input", false], ["setting-ly-highlight", "input", false], ["setting-netease-api-base", "input", false], ["setting-hotkeys-enabled", "change", true]].forEach(([id, eventName, immediate]) => {
       document.getElementById(id)?.addEventListener(eventName, () => {
         renderLyricsPreview(getSettingsFormValues());
         queueSettingsAutosave(immediate);

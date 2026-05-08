@@ -63,6 +63,7 @@ type SettingsPatch struct {
 	ShareNeteaseCookieEnabled   *bool                `json:"share_netease_cookie_enabled,omitempty"`
 	ShareNeteaseCookie          *string              `json:"share_netease_cookie,omitempty"`
 	MusicOnlineMode             *bool                `json:"music_online_mode,omitempty"`
+	AutoCacheOnPlay             *bool                `json:"auto_cache_on_play,omitempty"`
 	MusicSourceProvider         *string              `json:"music_source_provider,omitempty"`
 	SearchCacheTTLHours         *int                 `json:"search_cache_ttl_hours,omitempty"`
 }

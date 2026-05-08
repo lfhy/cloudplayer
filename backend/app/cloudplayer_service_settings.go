@@ -238,6 +238,9 @@ func (s *CloudPlayerService) SaveSettings(patch SettingsPatch) error {
 		}
 		settings.MusicOnlineMode = *patch.MusicOnlineMode
 	}
+	if patch.AutoCacheOnPlay != nil {
+		settings.AutoCacheOnPlay = *patch.AutoCacheOnPlay
+	}
 	if patch.MusicSourceProvider != nil {
 		settings.MusicSourceProvider = config.NormalizeMusicSourceProvider(*patch.MusicSourceProvider)
 	}

@@ -16,6 +16,7 @@ type DownloadJob struct {
 	SourceID string `json:"source_id"`
 	Title    string `json:"title"`
 	Artist   string `json:"artist"`
+	CoverURL string `json:"cover_url"`
 	Quality  string `json:"quality"`
 }
 
@@ -23,6 +24,7 @@ type DownloadTaskEvent struct {
 	SourceID string  `json:"source_id"`
 	Title    string  `json:"title"`
 	Artist   string  `json:"artist"`
+	CoverURL string  `json:"cover_url"`
 	Quality  string  `json:"quality"`
 	Status   string  `json:"status"`
 	Progress float64 `json:"progress"`
@@ -45,6 +47,7 @@ func EmitQueued(job DownloadJob) {
 		SourceID: job.SourceID,
 		Title:    job.Title,
 		Artist:   job.Artist,
+		CoverURL: job.CoverURL,
 		Quality:  job.Quality,
 		Status:   "queued",
 		Progress: 0,
@@ -57,6 +60,7 @@ func RunOneJob(client *http.Client, job DownloadJob) {
 		SourceID: job.SourceID,
 		Title:    job.Title,
 		Artist:   job.Artist,
+		CoverURL: job.CoverURL,
 		Quality:  job.Quality,
 		Status:   "queued",
 		Progress: 0,

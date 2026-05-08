@@ -57,6 +57,7 @@ type Settings struct {
 	ShareNeteaseCookieEnabled   bool                `json:"share_netease_cookie_enabled"`
 	ShareNeteaseCookie          string              `json:"share_netease_cookie"`
 	MusicOnlineMode             bool                `json:"music_online_mode"`
+	AutoCacheOnPlay             bool                `json:"auto_cache_on_play"`
 	MusicSourceProvider         string              `json:"music_source_provider"`
 	SearchCacheTTLHours         int                 `json:"search_cache_ttl_hours"`
 }
@@ -90,6 +91,7 @@ func DefaultSettings() Settings {
 		DesktopLyricsIdleLine1:      "CloudPlayer",
 		DesktopLyricsIdleLine2:      "让音乐陪你此刻",
 		MusicOnlineMode:             false,
+		AutoCacheOnPlay:             false,
 		MusicSourceProvider:         "pjmp3",
 		SearchCacheTTLHours:         24,
 	}

@@ -18,6 +18,7 @@ export function settingsFormBaselineDefaults() {
     lyricsLRCLibEnabled: true,
     neteaseApiBase: "",
     musicOnlineMode: false,
+    autoCacheOnPlay: false,
     musicSourceProvider: "pjmp3",
     searchCacheTTLHours: 24,
     hotkeysSig: "",

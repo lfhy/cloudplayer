@@ -10,6 +10,7 @@ export function createPlaybackController(deps) {
     ensureLrcLoadedForCurrentTrack,
     getAudioEl,
     getDesktopLyricsOpen,
+    getDownloadTasks,
     getPlayIndex,
     getPlayLoadGeneration,
     getPlayQueue,
@@ -31,6 +32,10 @@ export function createPlaybackController(deps) {
     syncSeekUi,
     updatePlayerChrome,
   } = deps;
+
+  function autoCacheOnPlayEnabled() {
+    return document.getElementById("setting-auto-cache-on-play")?.checked === true;
+  }
 
   function removeCurrentFromQueue() {
     const queue = getPlayQueue().slice();
@@ -103,6 +108,7 @@ export function createPlaybackController(deps) {
       syncSeekUi();
       renderQueuePanel();
       refreshFavButton();
+      void maybeQueueAutoCacheDownload(item, playLogExtra);
       clearLyricsCache();
       if (getDesktopLyricsOpen() || hasPendingPlaybackResume?.(item)) {
         void ensureLrcLoadedForCurrentTrack(generation).then(() => {
@@ -239,6 +245,17 @@ export function createPlaybackController(deps) {
       };
     }
     throw new Error("resolve_online_play: 无效结果");
+  }
+
+  async function maybeQueueAutoCacheDownload(item, playLogExtra) {
+    const sourceId = String(item?.source_id || "").trim();
+    if (!autoCacheOnPlayEnabled() || !sourceId || item?.local_path || playLogExtra?.via === "download") return;
+    if (getDownloadTasks().has(sourceId)) return;
+    try {
+      await invoke("enqueue_download", { source_id: sourceId, title: item.title || "", artist: item.artist || "", cover_url: item.cover_url || "", quality: "128" });
+    } catch (error) {
+      console.warn("auto cache enqueue_download", error);
+    }
   }
 
   return { playFromQueueIndex, playFromSearchRow, removeCurrentFromQueue, restorePlaybackSelection };

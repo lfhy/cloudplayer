@@ -216,7 +216,7 @@ export function createDockController(deps) {
         const current = getPlayQueue()[getPlayIndex()];
         closeAllDockMenus();
         if (!current) return void alert("当前没有播放曲目。");
-        void enqueueDownloadForTrack({ sourceId: current.source_id, title: current.title, artist: current.artist }, button.getAttribute("data-dlq") || "128");
+        void enqueueDownloadForTrack({ sourceId: current.source_id, title: current.title, artist: current.artist, coverUrl: current.cover_url || "" }, button.getAttribute("data-dlq") || "128");
       });
     });
     document.getElementById("btn-dock-more")?.addEventListener("click", (event) => {

@@ -1,3 +1,5 @@
+import { coverImgHtml } from "../../app/helpers/covers.js";
+
 // Download page helpers isolate queue rendering and download-folder selection.
 export function createDownloadController(deps) {
   const {
@@ -17,8 +19,7 @@ export function createDownloadController(deps) {
     if (!tbody) return;
     const rows = [...getDownloadTasks().values()];
     if (!rows.length) {
-      tbody.innerHTML =
-        '<tr><td colspan="4" class="muted">队列为空。在「搜索」、歌单或每日推荐里选择「下载」后会出现在这里。</td></tr>';
+      tbody.innerHTML = "";
       return;
     }
     tbody.innerHTML = "";
@@ -79,12 +80,44 @@ export function createDownloadController(deps) {
 
   function buildDownloadRow(task) {
     const tr = document.createElement("tr");
+    const cover = coverImgHtml({ src: task.cover_url || task.coverUrl || "", className: "row-cover", width: 40, height: 40, radius: 4, alt: task.title || "" });
     const progress = Math.round((task.progress ?? 0) * 100);
     const status = task.status || "";
     const rawMessage = (task.message && String(task.message)) || "";
     const message = status === "failed" && rawMessage ? messageRequestFailed : rawMessage;
-    tr.innerHTML = `<td>${escapeHtml(status)}</td><td>${escapeHtml(`${task.title || ""} — ${task.artist || ""}`)}</td><td>${escapeHtml(task.quality || "")}</td><td>${escapeHtml(String(progress))}%${message ? ` · ${escapeHtml(message)}` : ""}</td>`;
+    tr.innerHTML = `
+      <td class="col-cover">${cover}</td>
+      <td>${task.artist ? `<span class="t-title">${escapeHtml(task.title || "—")}</span><span class="t-art">${escapeHtml(task.artist)}</span>` : `<span class="t-title">${escapeHtml(task.title || "—")}</span>`}</td>
+      <td class="muted">${escapeHtml(downloadStatusText(status))}</td>
+      <td class="muted">${escapeHtml(downloadQualityText(task.quality || ""))}</td>
+      <td class="muted col-dlprog">${escapeHtml(String(progress))}%${message ? ` · ${escapeHtml(message)}` : ""}</td>`;
     return tr;
+  }
+
+  function downloadQualityText(value) {
+    switch (String(value || "").trim().toLowerCase()) {
+      case "flac":
+        return "FLAC";
+      case "320":
+        return "320";
+      default:
+        return "128";
+    }
+  }
+
+  function downloadStatusText(value) {
+    switch (String(value || "").trim().toLowerCase()) {
+      case "queued":
+        return "排队中";
+      case "downloading":
+        return "下载中";
+      case "completed":
+        return "已完成";
+      case "failed":
+        return "失败";
+      default:
+        return value || "—";
+    }
   }
 
   return {
