@@ -37,6 +37,16 @@ export function createPlaylistController(deps) {
   let cachedSidebarPlaylists = [];
   let playlistDetailLoading = false;
 
+  function searchFromPlaylistField(keyword) {
+    const value = String(keyword || "").trim();
+    if (!value) return;
+    document.querySelectorAll("#page-search, #page-search-results").forEach((input) => {
+      input.value = value;
+      input.dispatchEvent(new Event("input", { bubbles: true }));
+    });
+    document.getElementById("btn-page-search")?.click();
+  }
+
   function currentSelectedPlaylist() {
     return cachedSidebarPlaylists.find((item) => Number(item.id) === Number(getSelectedPlaylistId())) || null;
   }
@@ -206,6 +216,8 @@ export function createPlaylistController(deps) {
       forceLiked: selectedPlaylist?.is_builtin === true || selectedPlaylist?.is_favorites === true,
       formatDurationMs,
       getLikedIds,
+      onAlbumClick: (album) => searchFromPlaylistField(album),
+      onArtistClick: (artist) => searchFromPlaylistField(artist),
       onClick: (index) => playFromPlaylistRow(index),
       onContextMenu: (event, index) => openPlaylistDetailRowContextMenu(event, index),
       rowTitle: (row) => (row.playable ? "" : "无曲库 id：请到「搜索」搜索后播放"),

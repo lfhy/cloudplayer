@@ -229,3 +229,24 @@
 .col-like.is-liked svg {
   fill: currentColor;
 }
+
+.table-inline-action {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+  text-align: left;
+}
+
+.table-inline-action:hover {
+  color: var(--text-main);
+  text-decoration: underline;
+}
+
+.table-inline-action:focus-visible {
+  outline: 1px solid rgba(127, 127, 127, 0.35);
+  outline-offset: 2px;
+  border-radius: 4px;
+}

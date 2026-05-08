@@ -52,7 +52,6 @@ export function searchPageTemplate() {
               </div>
             </div>
             <div class="search-results-topbar__side">
-              <p id="search-results-summary" class="search-results-summary muted"></p>
               <div class="search-results-actions">
                 <button type="button" id="btn-play-all" class="btn-accent search-action-btn" disabled>▶ 播放全部</button>
                 <button type="button" id="btn-search-batch-mode" class="btn-accent search-action-btn">批量操作</button>
