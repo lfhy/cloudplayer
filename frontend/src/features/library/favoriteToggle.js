@@ -2,6 +2,8 @@ import { saveLikedSet } from "../../app/helpers/likedSet.js";
 import { emitFavoriteStateChanged } from "./favoriteState.js";
 
 // Favorite toggle helpers keep dock and table heart actions on the same backend flow.
+const pendingFavoriteSourceIds = new Set();
+
 function normalizedFavoriteTrack(track) {
   return {
     title: String(track?.title || "").trim(),
@@ -19,11 +21,16 @@ export async function toggleFavoriteTrack(track, deps) {
   const likedIds = typeof getLikedIds === "function" ? getLikedIds() : null;
   const normalized = normalizedFavoriteTrack(track);
   if (!(likedIds instanceof Set) || !normalized.sourceId || normalized.localPath) return false;
+  if (pendingFavoriteSourceIds.has(normalized.sourceId)) return false;
+  const wasLiked = likedIds.has(normalized.sourceId);
+  const nextLiked = !wasLiked;
+  pendingFavoriteSourceIds.add(normalized.sourceId);
   try {
-    if (likedIds.has(normalized.sourceId)) {
-      await invoke("remove_favorite_track", { sourceId: normalized.sourceId });
-      likedIds.delete(normalized.sourceId);
-    } else {
+    if (nextLiked) likedIds.add(normalized.sourceId);
+    else likedIds.delete(normalized.sourceId);
+    saveLikedSet(likedIds);
+    emitFavoriteStateChanged();
+    if (nextLiked) {
       await invoke("add_favorite_track", {
         track: {
           title: normalized.title,
@@ -34,21 +41,28 @@ export async function toggleFavoriteTrack(track, deps) {
           duration_ms: normalized.durationMs,
         },
       });
-      likedIds.add(normalized.sourceId);
+    } else {
+      await invoke("remove_favorite_track", { sourceId: normalized.sourceId });
     }
-    saveLikedSet(likedIds);
-    emitFavoriteStateChanged();
-    await onAfterToggle?.({
-      liked: likedIds.has(normalized.sourceId),
+    Promise.resolve(onAfterToggle?.({
+      liked: nextLiked,
       sourceId: normalized.sourceId,
       track: normalized,
+    })).catch((error) => {
+      console.warn("favorite toggle follow-up", error);
     });
     return true;
   } catch (error) {
+    if (wasLiked) likedIds.add(normalized.sourceId);
+    else likedIds.delete(normalized.sourceId);
+    saveLikedSet(likedIds);
+    emitFavoriteStateChanged();
     if (typeof alertRequestFailed === "function") {
       alertRequestFailed(error, "toggle favorite track");
       return false;
     }
     throw error;
+  } finally {
+    pendingFavoriteSourceIds.delete(normalized.sourceId);
   }
 }
