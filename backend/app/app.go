@@ -95,6 +95,7 @@ func Run(assets fs.FS, trayTemplateIcon []byte) error {
 		mainWindowOptions.BackgroundType = application.BackgroundTypeTranslucent
 		mainWindowOptions.BackgroundColour = application.NewRGBA(0, 0, 0, 0)
 		mainWindowOptions.Windows.BackdropType = application.Mica
+		configureMainWindowTheme(&mainWindowOptions, initialSettings.AppThemeMode)
 	}
 	mainWindow := app.Window.NewWithOptions(mainWindowOptions)
 	mainWindow.RegisterHook(events.Common.WindowClosing, func(event *application.WindowEvent) {
@@ -136,6 +137,7 @@ func Run(assets fs.FS, trayTemplateIcon []byte) error {
 		go func() {
 			time.Sleep(250 * time.Millisecond)
 			showMainWindow()
+			syncNativeWindowTheme(mainWindow, initialSettings.AppThemeMode)
 			if _, err := state.Hotkeys.Apply(cloudPlayer.GetGlobalHotkeys()); err != nil {
 				log.Printf("global hotkeys init failed: %v", err)
 			}
@@ -144,6 +146,11 @@ func Run(assets fs.FS, trayTemplateIcon []byte) error {
 	app.Event.OnApplicationEvent(events.Mac.ApplicationShouldHandleReopen, func(_ *application.ApplicationEvent) {
 		showMainWindow()
 	})
+	if runtime.GOOS == "windows" {
+		app.Event.OnApplicationEvent(events.Windows.SystemThemeChanged, func(_ *application.ApplicationEvent) {
+			syncMainWindowTheme(config.LoadSettings().AppThemeMode)
+		})
+	}
 	app.Event.OnApplicationEvent(events.Mac.ApplicationWillTerminate, func(_ *application.ApplicationEvent) {
 		if err := desktop.PersistDesktopLyricsBoundsNow(); err != nil {
 			log.Printf("persist desktop lyrics bounds on quit failed: %v", err)
@@ -204,7 +211,6 @@ func showMainWindow() {
 	}
 	if mainWindowShownOnce.CompareAndSwap(false, true) {
 		window.Show()
-		window.Focus()
 		return
 	}
 	window.Restore()

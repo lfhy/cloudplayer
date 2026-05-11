@@ -255,6 +255,7 @@ func (s *CloudPlayerService) SaveSettings(patch SettingsPatch) error {
 		return err
 	}
 	applyThemeAssets(s.state, settings.AppTheme, settings.AppThemeCustomAccent)
+	syncMainWindowTheme(settings.AppThemeMode)
 	return nil
 }
 
