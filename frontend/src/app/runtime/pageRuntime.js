@@ -5,6 +5,7 @@ import { createHomeController } from "../../features/library/homeController.js";
 import { createPlaylistManageModal } from "../../features/library/playlistManageModal.js";
 import { createPlaylistController } from "../../features/library/playlistController.js";
 import { createSearchController } from "../../features/search/controller.js";
+import { createWindowChromeController } from "../../features/window/controller.js";
 
 // Page runtime assembles search, library, import and navigation flows around shared state.
 export function createPageRuntime(deps) {
@@ -257,6 +258,7 @@ export function createPageRuntime(deps) {
     renderQueuePanel,
     sidebarMenuItems,
   });
+  const windowChrome = createWindowChromeController();
   setPage = navigation.setPage;
   playlistManageModal.wire();
 
@@ -295,5 +297,6 @@ export function createPageRuntime(deps) {
     wirePlaylistPage: playlist.wirePlaylistPage,
     wireQueueToggle: navigation.wireQueueToggle,
     wireSearchPage: search.wireSearchPage,
+    wireWindowControls: windowChrome.wireWindowControls,
   };
 }

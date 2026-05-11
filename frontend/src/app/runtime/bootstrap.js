@@ -59,6 +59,7 @@ export function bootCloudPlayerApp(deps) {
     wirePreferencesModals,
     wireQueueToggle,
     wireSearchPage,
+    wireWindowControls,
     wireVolume,
   } = deps;
 
@@ -78,6 +79,7 @@ export function bootCloudPlayerApp(deps) {
     wireVolume();
     wirePreferencesModals();
     wireSearchPage();
+    wireWindowControls?.();
     wireGlobalHotkeyListener();
     wireDiscoverToolbar();
     wireAudio();

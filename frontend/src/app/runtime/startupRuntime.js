@@ -63,6 +63,7 @@ export function startDesktopRuntime(deps) {
     wirePreferencesModals: deps.settings.wirePreferencesModals,
     wireQueueToggle: deps.pages.wireQueueToggle,
     wireSearchPage: deps.pages.wireSearchPage,
+    wireWindowControls: deps.pages.wireWindowControls,
     wireVolume: deps.hotkeys.wireVolume,
   });
 }

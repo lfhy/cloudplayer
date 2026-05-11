@@ -1,0 +1,50 @@
+/* Window control chrome stays separate so frameless platforms share the same button layout. */
+.app-window-controls {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  justify-self: end;
+}
+
+.app-window-control {
+  width: 34px;
+  height: 28px;
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  background: var(--bg-card);
+  color: var(--text-secondary);
+  font: inherit;
+  font-size: 16px;
+  line-height: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background 0.16s ease, color 0.16s ease, border-color 0.16s ease;
+}
+
+.app-window-control svg {
+  width: 11px;
+  height: 11px;
+  display: block;
+  stroke: currentColor;
+  stroke-width: 1.6;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  fill: none;
+}
+
+.app-window-control:hover {
+  background: var(--surface-subtle);
+  color: var(--text);
+}
+
+.app-window-control--close:hover {
+  background: #d64545;
+  border-color: #d64545;
+  color: #fff;
+}
+
+:root[data-theme-mode-resolved="dark"] .app-window-control {
+  background: rgba(255, 255, 255, 0.04);
+}

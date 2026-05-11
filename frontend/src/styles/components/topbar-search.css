@@ -1,7 +1,8 @@
-/* Top drag area and shared neon search control. */
+/* App topbar and shared neon search control live together so drag regions stay consistent. */
 .top-search-row {
   background: var(--bg-main);
-  display: flex;
+  display: grid;
+  grid-template-columns: 88px 1fr auto;
   align-items: center;
   min-height: 52px;
   padding: 8px 16px 8px var(--titlebar-left-gap);
@@ -11,12 +12,61 @@
 :root[data-theme-mode-resolved="light"] .platform-macos .top-search-row {
   background:
     linear-gradient(180deg, #eef0f3 0px, var(--bg-main) 52px);
-  --wails-draggable: no-drag;
 }
 
 :root[data-theme-mode-resolved="dark"] .platform-macos .top-search-row {
   background: var(--bg-main);
+}
+
+.app-topbar {
+  min-height: 56px;
+  border-bottom: 1px solid var(--border);
+  gap: 12px;
+}
+
+.app-topbar__native-slot {
+  width: 88px;
+  min-width: 88px;
+  height: 1px;
+}
+
+.app-topbar__brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  justify-self: start;
+}
+
+.app-topbar__mark {
+  width: 28px;
+  height: 28px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--accent);
+}
+
+.app-topbar__mark svg {
+  width: 20px;
+  height: 20px;
+  display: block;
+}
+
+.app-topbar__title {
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  color: var(--text);
+}
+
+.app-window-controls,
+.app-window-control {
   --wails-draggable: no-drag;
+}
+
+.platform-macos .app-window-controls {
+  display: none;
 }
 
 .top-search-row .neon-search-wrap,

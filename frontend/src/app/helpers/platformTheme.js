@@ -20,6 +20,13 @@ export function isMacDesktop() {
   return typeof os === "string" && os.toLowerCase() === "darwin";
 }
 
+export function isWindowsDesktop() {
+  const platform = globalThis.navigator?.userAgentData?.platform || globalThis.navigator?.platform || "";
+  if (typeof platform === "string" && /win/i.test(platform)) return true;
+  const os = globalThis.window?._wails?.environment?.OS;
+  return typeof os === "string" && os.toLowerCase() === "windows";
+}
+
 export function applyPlatformClassNames() {
   document.documentElement.classList.toggle("platform-macos", isMacDesktop());
 }

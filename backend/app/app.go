@@ -6,8 +6,8 @@ import (
 	"io/fs"
 	"log"
 	"runtime"
-	"time"
 	"sync/atomic"
+	"time"
 
 	"cloudplayer/backend/config"
 	"cloudplayer/backend/db"
@@ -75,7 +75,7 @@ func Run(assets fs.FS, trayTemplateIcon []byte) error {
 		_ = app.Event.Emit("global-hotkey", action)
 	})
 	lyricsContextMenu := buildDesktopLyricsContextMenu(app)
-	mainWindow := app.Window.NewWithOptions(application.WebviewWindowOptions{
+	mainWindowOptions := application.WebviewWindowOptions{
 		Name:             "main",
 		Title:            "CloudPlayer",
 		Width:            1100,
@@ -89,7 +89,14 @@ func Run(assets fs.FS, trayTemplateIcon []byte) error {
 			Appearance:              application.NSAppearanceNameDarkAqua,
 			InvisibleTitleBarHeight: 56,
 		},
-	})
+	}
+	// Windows keeps the native frame and lets the system backdrop carry the transparent top bar.
+	if runtime.GOOS == "windows" {
+		mainWindowOptions.BackgroundType = application.BackgroundTypeTranslucent
+		mainWindowOptions.BackgroundColour = application.NewRGBA(0, 0, 0, 0)
+		mainWindowOptions.Windows.BackdropType = application.Mica
+	}
+	mainWindow := app.Window.NewWithOptions(mainWindowOptions)
 	mainWindow.RegisterHook(events.Common.WindowClosing, func(event *application.WindowEvent) {
 		if quitRequested.Load() {
 			return
