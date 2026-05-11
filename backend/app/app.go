@@ -6,6 +6,7 @@ import (
 	"io/fs"
 	"log"
 	"runtime"
+	"time"
 	"sync/atomic"
 
 	"cloudplayer/backend/config"
@@ -18,6 +19,7 @@ import (
 )
 
 var quitRequested atomic.Bool
+var mainWindowShownOnce atomic.Bool
 
 // Run boots the Wails application with the embedded frontend assets from the root package.
 func Run(assets fs.FS, trayTemplateIcon []byte) error {
@@ -124,10 +126,13 @@ func Run(assets fs.FS, trayTemplateIcon []byte) error {
 		lyricsContextMenu.Menu.Update()
 		app.ContextMenu.Add("lyrics", lyricsContextMenu)
 		applyThemeAssets(state, initialSettings.AppTheme, initialSettings.AppThemeCustomAccent)
-		showMainWindow()
-		if _, err := state.Hotkeys.Apply(cloudPlayer.GetGlobalHotkeys()); err != nil {
-			log.Printf("global hotkeys init failed: %v", err)
-		}
+		go func() {
+			time.Sleep(250 * time.Millisecond)
+			showMainWindow()
+			if _, err := state.Hotkeys.Apply(cloudPlayer.GetGlobalHotkeys()); err != nil {
+				log.Printf("global hotkeys init failed: %v", err)
+			}
+		}()
 	})
 	app.Event.OnApplicationEvent(events.Mac.ApplicationShouldHandleReopen, func(_ *application.ApplicationEvent) {
 		showMainWindow()
@@ -188,6 +193,11 @@ func requestAppQuit() {
 func showMainWindow() {
 	window, ok := application.Get().Window.GetByName("main")
 	if !ok {
+		return
+	}
+	if mainWindowShownOnce.CompareAndSwap(false, true) {
+		window.Show()
+		window.Focus()
 		return
 	}
 	window.Restore()
