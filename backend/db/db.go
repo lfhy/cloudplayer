@@ -5,7 +5,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	_ "github.com/mattn/go-sqlite3"
+	_ "modernc.org/sqlite"
 
 	"cloudplayer/backend/config"
 )
@@ -16,7 +16,7 @@ func Path() string {
 }
 
 func OpenAndInit() (*sql.DB, error) {
-	conn, err := sql.Open("sqlite3", Path())
+	conn, err := sql.Open("sqlite", Path())
 	if err != nil {
 		return nil, err
 	}

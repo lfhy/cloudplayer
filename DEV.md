@@ -145,6 +145,11 @@ Windows 打包前需要安装 `makensis`；如果在非 macOS 主机上构建 ma
 wails3 task setup:docker
 ```
 
+补充说明：
+
+- Windows 版本现在使用纯 Go 的 SQLite 驱动，不再依赖 CGO 才能正常启动。
+- Windows 安装器默认目录为 `C:\Program Files\CloudPlayer`。
+
 ## 目录结构
 
 ```text

@@ -10,7 +10,7 @@
     <Installer
         Path="cloudplayer"
         Arguments=""
-        InstallLocation="C:\Program Files\My Company\CloudPlayer">
+        InstallLocation="C:\Program Files\CloudPlayer">
     </Installer>
     <PackageInformation
         PackageName="CloudPlayer"
