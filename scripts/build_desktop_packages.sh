@@ -72,6 +72,27 @@ archive_macos_bundle() {
   (cd "$parent_dir" && zip -qry "$archive_name" "$bundle_name")
 }
 
+archive_windows_exe() {
+  local exe_path="$1"
+  local archive_path="$2"
+  local temp_dir
+  local exe_name
+  temp_dir="$(mktemp -d)"
+  exe_name="$(basename "$exe_path")"
+  cp "$exe_path" "$temp_dir/$exe_name"
+  if command -v cygpath >/dev/null 2>&1 && command -v powershell.exe >/dev/null 2>&1; then
+    local windows_exe_path
+    local windows_archive_path
+    windows_exe_path="$(cygpath -w "$temp_dir/$exe_name")"
+    windows_archive_path="$(cygpath -w "$archive_path")"
+    powershell.exe -NoProfile -Command "Compress-Archive -LiteralPath '$windows_exe_path' -DestinationPath '$windows_archive_path' -Force" >/dev/null
+  else
+    command -v zip >/dev/null 2>&1 || fail "zip is required to archive Windows portable builds"
+    (cd "$temp_dir" && zip -qry "$archive_path" "$exe_name")
+  fi
+  rm -rf "$temp_dir"
+}
+
 ensure_prerequisites() {
   command -v wails3 >/dev/null 2>&1 || fail "wails3 is required"
   [[ "$DRY_RUN" == "true" ]] && return
@@ -151,9 +172,12 @@ stage_windows_package() {
       fail "Unsupported windows format: $WINDOWS_FORMAT"
       ;;
   esac
-  if [[ -f "$ROOT_DIR/bin/$APP_NAME.exe" ]]; then
-    cp "$ROOT_DIR/bin/$APP_NAME.exe" "$target_dir/$artifact_prefix-windows-$arch.exe"
-  fi
+  local portable_path="$ROOT_DIR/bin/$APP_NAME.exe"
+  local portable_archive="$target_dir/$artifact_prefix-windows-$arch.zip"
+  [[ -f "$portable_path" ]] || fail "Windows ${arch} portable build was not created"
+  cp "$portable_path" "$target_dir/$artifact_prefix-windows-$arch.exe"
+  archive_windows_exe "$target_dir/$artifact_prefix-windows-$arch.exe" "$portable_archive"
+  rm -f "$target_dir/$artifact_prefix-windows-$arch.exe"
 }
 
 stage_windows_dual_package() {

@@ -119,8 +119,8 @@ main() {
 EOF
     cat <<'EOF'
 ## 附件说明
-- Windows：`cloudplayer-windows-amd64.exe`
-- Windows：`cloudplayer-windows-arm64.exe`
+- Windows：`cloudplayer-windows-amd64.zip`
+- Windows：`cloudplayer-windows-arm64.zip`
 - Windows：`cloudplayer-windows-amd64-installer.exe`
 - Windows：`cloudplayer-windows-arm64-installer.exe`
 - macOS：`cloudplayer-darwin-amd64.dmg`

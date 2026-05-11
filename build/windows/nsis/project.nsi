@@ -56,15 +56,18 @@ ManifestDPIAware true
 !define MUI_FINISHPAGE_NOAUTOCLOSE # Wait on the INSTFILES page so the user can take a look into the details of the installation steps
 !define MUI_ABORTWARNING # This will warn the user if they exit from the installer.
 
-!insertmacro MUI_PAGE_WELCOME # Welcome to the installer page.
+!insertmacro MUI_PAGE_WELCOME
+!insertmacro MUI_PAGE_COMPONENTS
 # !insertmacro MUI_PAGE_LICENSE "resources\eula.txt" # Adds a EULA page to the installer
-!insertmacro MUI_PAGE_DIRECTORY # In which folder install page.
-!insertmacro MUI_PAGE_INSTFILES # Installing page.
-!insertmacro MUI_PAGE_FINISH # Finished installation page.
+!insertmacro MUI_PAGE_DIRECTORY
+!insertmacro MUI_PAGE_INSTFILES
+!insertmacro MUI_PAGE_FINISH
 
+!insertmacro MUI_UNPAGE_WELCOME
+!insertmacro MUI_UNPAGE_CONFIRM
 !insertmacro MUI_UNPAGE_INSTFILES # Uninstalling page
 
-!insertmacro MUI_LANGUAGE "English" # Set the Language of the installer
+!insertmacro MUI_LANGUAGE "SimpChinese"
 
 ## The following two statements can be used to sign the installer and the uninstaller. The path to the binaries are provided in %1
 #!uninstfinalize 'signtool --file "%1"'
@@ -79,7 +82,7 @@ Function .onInit
    !insertmacro wails.checkArchitecture
 FunctionEnd
 
-Section
+Section "Main Application" SecMain
     !insertmacro wails.setShellContext
 
     !insertmacro wails.webview2runtime
@@ -89,12 +92,15 @@ Section
     !insertmacro wails.files
 
     CreateShortcut "$SMPROGRAMS\${INFO_PRODUCTNAME}.lnk" "$INSTDIR\${PRODUCT_EXECUTABLE}"
-    CreateShortCut "$DESKTOP\${INFO_PRODUCTNAME}.lnk" "$INSTDIR\${PRODUCT_EXECUTABLE}"
 
     !insertmacro wails.associateFiles
     !insertmacro wails.associateCustomProtocols
     
     !insertmacro wails.writeUninstaller
+SectionEnd
+
+Section /o "Create Desktop Shortcut" SecDesktopShortcut
+    CreateShortCut "$DESKTOP\${INFO_PRODUCTNAME}.lnk" "$INSTDIR\${PRODUCT_EXECUTABLE}"
 SectionEnd
 
 Section "uninstall" 
