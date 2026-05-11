@@ -9,13 +9,13 @@
   
   <Identity 
     Name="com.cloudplayer.app"
-    Publisher="CN=My Company"
+    Publisher="CN=CloudPlayer"
     Version="1.0.0.0" 
     ProcessorArchitecture="x64" />
   
   <Properties>
     <DisplayName>CloudPlayer</DisplayName>
-    <PublisherDisplayName>My Company</PublisherDisplayName>
+    <PublisherDisplayName>CloudPlayer</PublisherDisplayName>
     <Description>A CloudPlayer application</Description>
     <Logo>Assets\StoreLogo.png</Logo>
   </Properties>

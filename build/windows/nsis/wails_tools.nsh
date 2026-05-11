@@ -8,7 +8,7 @@
     !define INFO_PROJECTNAME "CloudPlayer"
 !endif
 !ifndef INFO_COMPANYNAME
-    !define INFO_COMPANYNAME "My Company"
+    !define INFO_COMPANYNAME "CloudPlayer"
 !endif
 !ifndef INFO_PRODUCTNAME
     !define INFO_PRODUCTNAME "CloudPlayer"
@@ -17,13 +17,13 @@
     !define INFO_PRODUCTVERSION "1.0.0"
 !endif
 !ifndef INFO_COPYRIGHT
-    !define INFO_COPYRIGHT "© 2026, My Company"
+    !define INFO_COPYRIGHT "© 2026, CloudPlayer"
 !endif
 !ifndef PRODUCT_EXECUTABLE
     !define PRODUCT_EXECUTABLE "${INFO_PROJECTNAME}.exe"
 !endif
 !ifndef UNINST_KEY_NAME
-    !define UNINST_KEY_NAME "${INFO_COMPANYNAME}${INFO_PRODUCTNAME}"
+    !define UNINST_KEY_NAME "${INFO_PRODUCTNAME}"
 !endif
 !define UNINST_KEY "Software\Microsoft\Windows\CurrentVersion\Uninstall\${UNINST_KEY_NAME}"
 

@@ -5,11 +5,11 @@
 	"info": {
 		"0000": {
 			"ProductVersion": "1.0.0",
-			"CompanyName": "My Company",
-			"FileDescription": "A CloudPlayer application",
-			"LegalCopyright": "© 2026, My Company",
+			"CompanyName": "CloudPlayer",
+			"FileDescription": "CloudPlayer desktop application",
+			"LegalCopyright": "© 2026, CloudPlayer",
 			"ProductName": "CloudPlayer",
-			"Comments": "This is a comment"
+			"Comments": "CloudPlayer desktop application"
 		}
 	}
 }
