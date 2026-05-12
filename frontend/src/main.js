@@ -20,6 +20,7 @@ import { renderMainShell } from "./layout/renderMainShell.js";
 import { createPlaybackStatePersistence } from "./features/player/playbackStatePersistence.js";
 import { createImmersiveController } from "./features/player/immersiveController.js";
 import { createMiniModeController } from "./features/player/miniModeController.js";
+import { wireChildWindowMask } from "./features/window/childWindowMask.js";
 
 // Composition root: only shared mutable state and runtime assembly stay here.
 const searchState = { keyword: "", page: 1, hasNext: false, results: [], scope: "catalog", busy: false, playlistResults: [], view: "home" };
@@ -180,6 +181,7 @@ listen("account-center-toggle-online-mode", async (event) => {
     });
   }
 });
+wireChildWindowMask();
 
 const pages = createPageRuntime({
   alertRequestFailed, appLogoMarkSvg, applyQuickThemeMode: (...args) => dockTheme.applyQuickThemeMode(...args), escapeHtml, formatDurationMs, invoke, messageRequestFailed: MSG_REQUEST_FAILED,

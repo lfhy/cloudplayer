@@ -47,6 +47,7 @@ export function renderMainShell(root = document.getElementById("app")) {
         </div>
       </div>
       ${miniPlayerTemplate()}
+      <div id="child-window-mask" class="child-window-mask" hidden aria-hidden="true"></div>
       ${closeConfirmModalTemplate()}
       ${kugouPlaylistPreviewModalTemplate()}
       ${playlistManageModalTemplate()}

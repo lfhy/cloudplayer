@@ -36,6 +36,13 @@ type WindowInfo struct {
 	Visible bool   `json:"visible"`
 }
 
+func emitWindowVisibility(label string, visible bool) {
+	_ = application.Get().Event.Emit("wails:window:visibility", map[string]any{
+		"name":    label,
+		"visible": visible,
+	})
+}
+
 func (s *DesktopService) EnsureWindow(req WindowCreateRequest) error {
 	if req.Label == "" {
 		return fmt.Errorf("window label is required")
@@ -53,6 +60,7 @@ func (s *DesktopService) EnsureWindow(req WindowCreateRequest) error {
 		existing.SetPosition(req.X, req.Y)
 		existing.SetAlwaysOnTop(req.AlwaysOnTop)
 		existing.Show()
+		emitWindowVisibility(req.Label, true)
 		if req.Focus {
 			existing.Focus()
 		}
@@ -86,10 +94,12 @@ func (s *DesktopService) EnsureWindow(req WindowCreateRequest) error {
 	})
 	AttachWindowPersistenceHooks(window, req.Label)
 	window.OnWindowEvent(events.Common.WindowClosing, func(_ *application.WindowEvent) {
+		emitWindowVisibility(req.Label, false)
 		_ = application.Get().Event.Emit("wails:window:closing", map[string]any{
 			"name": req.Label,
 		})
 	})
+	emitWindowVisibility(req.Label, true)
 	if req.Focus {
 		window.Focus()
 	}
@@ -123,6 +133,7 @@ func (s *DesktopService) ShowWindow(label string) error {
 		return fmt.Errorf("window %q not found", label)
 	}
 	window.Show()
+	emitWindowVisibility(label, true)
 	return nil
 }
 
@@ -132,6 +143,7 @@ func (s *DesktopService) HideWindow(label string) error {
 		return fmt.Errorf("window %q not found", label)
 	}
 	window.Hide()
+	emitWindowVisibility(label, false)
 	return nil
 }
 
