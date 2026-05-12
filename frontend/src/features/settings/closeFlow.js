@@ -6,7 +6,6 @@ export function openCloseConfirmModalDom() {
   if (!modalEl) return;
   modalEl.hidden = false;
   modalEl.setAttribute("aria-hidden", "false");
-  queueMicrotask(() => document.getElementById("close-choice-tray")?.focus());
 }
 
 export function closeCloseConfirmModalDom() {
@@ -35,19 +34,4 @@ export async function runCloseChoiceFlow(mode, deps) {
   } catch (error) {
     alertRequestFailed(error, "close flow");
   }
-}
-
-export function wireCloseConfirmModalDom(deps) {
-  const { alertRequestFailed, invoke, setMainWindowCloseAction } = deps;
-  document.getElementById("close-choice-tray")?.addEventListener("click", () => void runCloseChoiceFlow("tray", { alertRequestFailed, invoke, setMainWindowCloseAction }));
-  document.getElementById("close-choice-quit")?.addEventListener("click", () => void runCloseChoiceFlow("quit", { alertRequestFailed, invoke, setMainWindowCloseAction }));
-  document.getElementById("close-choice-cancel")?.addEventListener("click", closeCloseConfirmModalDom);
-  document.getElementById("close-confirm-modal")?.addEventListener("click", (event) => {
-    const target = event.target;
-    if (!(target instanceof HTMLElement)) return;
-    if (target.id === "close-confirm-modal" || target.closest("[data-subwindow-dismiss]")) closeCloseConfirmModalDom();
-  });
-  document.getElementById("close-confirm-modal")?.addEventListener("keydown", (event) => {
-    if (event.key === "Escape") closeCloseConfirmModalDom();
-  });
 }

@@ -1,6 +1,6 @@
 // Settings controller owns form state, autosave, and modal wiring for preferences.
 import { createHotkeyController } from "./hotkeys.js";
-import { closeCloseConfirmModalDom, openCloseConfirmModalDom, wireCloseConfirmModalDom } from "./closeFlow.js";
+import { closeCloseConfirmModalDom, openCloseConfirmModalDom, runCloseChoiceFlow } from "./closeFlow.js";
 import { wireSettingsActionButtons } from "./actions.js";
 import { DEFAULT_LYRICS_IDLE_LINE1, DEFAULT_LYRICS_IDLE_LINE2, normalizeLyricHexInput, normalizeLyricsIdleLine, normalizeNeteaseApiBase, normalizeSearchCacheTTLHours, settingsFormBaselineDefaults } from "./formHelpers.js";
 import { applyLyricsSourceSelectionToDom, readLyricsSourceSettingsFromDom, wireLyricsSourceSelection } from "./lyricSources.js";
@@ -257,7 +257,10 @@ export function createSettingsController(deps) {
     }));
     wireLyricsSourceSelection(() => queueSettingsAutosave(true));
     hotkeys.wireHotkeySettingsUi();
-    wireCloseConfirmModalDom({ alertRequestFailed, invoke, setMainWindowCloseAction });
+    document.getElementById("close-choice-tray")?.addEventListener("click", () => void runCloseChoiceFlow("tray", { alertRequestFailed, invoke, setMainWindowCloseAction }));
+    document.getElementById("close-choice-quit")?.addEventListener("click", () => void runCloseChoiceFlow("quit", { alertRequestFailed, invoke, setMainWindowCloseAction }));
+    document.getElementById("close-choice-cancel")?.addEventListener("click", () => closeCloseConfirmModal());
+    document.getElementById("close-confirm-modal")?.addEventListener("click", (event) => { if (event.target?.id === "close-confirm-modal") closeCloseConfirmModal(); });
   }
 
   async function loadSettings() {
