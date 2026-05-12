@@ -1,7 +1,6 @@
 // Close-confirm controller keeps the independent child-window exit flow minimal and self-contained.
 import { Window as RuntimeWindow } from "@wailsio/runtime";
 import { DesktopService } from "@bindings/cloudplayer/backend/desktop/index.js";
-import { appLogoMarkSvg } from "../../app/helpers/icons.js";
 import { applyAppTheme, applyPlatformClassNames, systemDarkMedia } from "../../app/helpers/platformTheme.js";
 import { invoke } from "../../wails/tauri-core.js";
 
@@ -18,20 +17,14 @@ function renderCloseConfirmWindow(root) {
   root.innerHTML = `
     <main class="close-confirm-card">
       <header class="close-confirm-card__head">
-        <div class="close-confirm-card__mark" aria-hidden="true">${appLogoMarkSvg()}</div>
-        <div class="close-confirm-card__copy">
-          <h1 class="close-confirm-card__title">关闭主窗口？</h1>
-          <p class="close-confirm-card__desc">可最小化到托盘，或直接退出。</p>
-        </div>
+        <h1 class="close-confirm-card__title">关闭主窗口？</h1>
       </header>
       <div class="close-confirm-card__actions">
         <button type="button" id="close-confirm-tray" class="close-confirm-choice">
           <strong>最小化到托盘</strong>
-          <span>继续后台播放</span>
         </button>
         <button type="button" id="close-confirm-quit" class="close-confirm-choice close-confirm-choice--danger">
           <strong>退出应用</strong>
-          <span>完全关闭</span>
         </button>
       </div>
       <footer class="close-confirm-card__footer">

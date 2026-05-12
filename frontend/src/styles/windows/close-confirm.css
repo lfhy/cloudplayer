@@ -16,93 +16,60 @@ body.close-confirm-window {
 .close-confirm-card {
   width: 100%;
   height: 100vh;
-  display: grid;
-  align-content: start;
-  gap: 10px;
-  padding: 18px 16px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 18px 16px 12px;
   background:
     linear-gradient(180deg, color-mix(in srgb, var(--bg-card) 94%, transparent), color-mix(in srgb, var(--bg-main) 96%, transparent));
 }
 
 .platform-macos .close-confirm-card {
-  padding-top: 30px;
+  padding-top: 24px;
 }
 
 .close-confirm-card__head {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
-.close-confirm-card__mark {
-  width: 42px;
-  height: 42px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  padding: 8px;
-  border-radius: 13px;
-  background: rgba(var(--accent-rgb), 0.1);
-  color: var(--accent);
-  box-shadow: var(--shadow-soft);
-  flex-shrink: 0;
-}
-
-.close-confirm-card__mark svg {
-  width: 100%;
-  height: auto;
-}
-
-.close-confirm-card__copy {
-  display: grid;
-  gap: 3px;
+  display: block;
+  padding-inline: 64px;
+  text-align: center;
 }
 
 .close-confirm-card__title {
   margin: 0;
-  font-size: 17px;
-  line-height: 1.15;
+  font-size: 16px;
+  line-height: 1.2;
   letter-spacing: -0.03em;
   color: var(--text);
-}
-
-.close-confirm-card__desc {
-  margin: 0;
-  font-size: 11px;
-  line-height: 1.35;
-  color: var(--text-secondary);
 }
 
 .close-confirm-card__actions {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 8px;
+  align-items: center;
+  margin-top: 4px;
 }
 
 .close-confirm-choice {
   width: 100%;
-  min-height: 62px;
-  padding: 9px 10px;
+  min-height: 34px;
+  padding: 0 12px;
   border: 1px solid rgba(15, 23, 42, 0.08);
-  border-radius: 14px;
-  background: color-mix(in srgb, var(--bg-card) 94%, transparent);
+  border-radius: 10px;
+  background: var(--surface-subtle);
   color: var(--text);
-  text-align: left;
+  text-align: center;
   cursor: pointer;
-  display: grid;
-  gap: 3px;
-  transition: transform 140ms ease, border-color 140ms ease, background-color 140ms ease, box-shadow 140ms ease;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font: inherit;
+  transition: transform 140ms ease, border-color 140ms ease, background-color 140ms ease, box-shadow 140ms ease, color 140ms ease;
 }
 
 .close-confirm-choice strong {
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 700;
-}
-
-.close-confirm-choice span {
-  font-size: 9px;
-  line-height: 1.25;
-  color: var(--text-secondary);
 }
 
 .close-confirm-choice:hover,
@@ -114,19 +81,16 @@ body.close-confirm-window {
 }
 
 .close-confirm-choice--danger {
-  background: linear-gradient(180deg, #e33434, #cf2323);
-  border-color: #bb1d1d;
-  color: #ffffff;
-}
-
-.close-confirm-choice--danger span {
-  color: rgba(255, 255, 255, 0.88);
+  border-color: rgba(207, 35, 35, 0.18);
+  background: rgba(207, 35, 35, 0.08);
+  color: #c62f2f;
 }
 
 .close-confirm-choice--danger:hover,
 .close-confirm-choice--danger:focus-visible {
-  border-color: #a91818;
-  background: linear-gradient(180deg, #df2d2d, #c61f1f);
+  border-color: rgba(198, 47, 47, 0.32);
+  background: rgba(198, 47, 47, 0.12);
+  color: #b72626;
 }
 
 .close-confirm-card__footer {
@@ -148,7 +112,7 @@ body.close-confirm-window {
 
 .close-confirm-card__footer .btn-outline {
   min-width: 58px;
-  padding: 4px 9px;
+  padding: 4px 10px;
   border-radius: 14px;
   font-size: 11px;
   color: var(--text);
@@ -160,9 +124,13 @@ body.close-confirm-window {
   outline-offset: 2px;
 }
 
-@media (max-width: 520px) {
+@media (max-width: 380px) {
   .close-confirm-card {
     padding: 16px 14px 12px;
+  }
+
+  .close-confirm-card__head {
+    padding-inline: 42px;
   }
 
   .close-confirm-card__actions {
