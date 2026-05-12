@@ -15,10 +15,8 @@ export function sourcePanelTemplate() {
         <div id="setting-music-online-mode-wrap" class="settings-field" hidden>
           <span class="settings-field-label">在线模式</span>
           <div class="settings-inline-stack">
-            <div class="settings-choice-group" role="radiogroup" aria-label="在线模式">
-              <input type="hidden" id="setting-music-online-mode" value="0" />
-              <button type="button" id="btn-music-online-mode" class="settings-choice" role="switch" aria-checked="false">在线模式</button>
-            </div>
+            <input type="hidden" id="setting-music-online-mode" value="0" />
+            <label id="setting-music-online-mode-switch" class="settings-hotkeys-master" role="switch" tabindex="0" aria-checked="false"><input type="checkbox" id="setting-music-online-mode-toggle" /><span>在线模式</span></label>
             <p id="setting-music-online-mode-status" class="settings-field-hint muted">开启后，全部歌单、歌单内歌曲和音乐源都会优先切到酷狗云端，并缓存 12 小时。</p>
           </div>
         </div>

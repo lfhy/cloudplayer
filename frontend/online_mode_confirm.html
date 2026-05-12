@@ -1,0 +1,16 @@
+<!doctype html>
+<!-- Online-mode confirm window keeps the settings confirmation in a standalone child window. -->
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>开启在线模式</title>
+    <script>
+      globalThis.__CLOUDPLAYER_WINDOW_NAME__ = "online-mode-confirm";
+    </script>
+    <script type="module" src="/src/online_mode_confirm.js"></script>
+  </head>
+  <body class="close-confirm-window">
+    <div id="app" class="close-confirm-window__root"></div>
+  </body>
+</html>

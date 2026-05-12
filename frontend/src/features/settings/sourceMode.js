@@ -1,25 +1,37 @@
+import { Events, Window as RuntimeWindow } from "@wailsio/runtime";
+import { DesktopService } from "@bindings/cloudplayer/backend/desktop/index.js";
+import { unwrapPayload } from "../../wails/shared.js";
+
+const ONLINE_MODE_CONFIRM_LABEL = "online-mode-confirm";
+const ONLINE_MODE_CONFIRM_URL = "/online_mode_confirm.html";
+
 // Music-source online-mode helpers keep the Kugou-only toggle out of the main settings controller.
 export function isMusicSourceOnlineModeSelected() {
+  const toggle = document.getElementById("setting-music-online-mode-toggle");
+  if (toggle) return toggle.checked === true;
   return document.getElementById("setting-music-online-mode")?.value === "1";
 }
 
 export function setMusicSourceOnlineModeSelection(enabled) {
   const active = !!enabled;
   const hidden = document.getElementById("setting-music-online-mode");
-  const button = document.getElementById("btn-music-online-mode");
+  const toggle = document.getElementById("setting-music-online-mode-toggle");
+  const control = document.getElementById("setting-music-online-mode-switch");
   if (hidden) hidden.value = active ? "1" : "0";
-  if (button) {
-    button.classList.toggle("is-active", active);
-    button.setAttribute("aria-checked", active ? "true" : "false");
-  }
+  if (toggle) toggle.checked = active;
+  if (control) control.setAttribute("aria-checked", active ? "true" : "false");
 }
 
 export function setMusicSourceOnlineModeBusy(busy, message = "") {
-  const button = document.getElementById("btn-music-online-mode");
+  const toggle = document.getElementById("setting-music-online-mode-toggle");
+  const control = document.getElementById("setting-music-online-mode-switch");
   const status = document.getElementById("setting-music-online-mode-status");
-  if (button) {
-    button.disabled = !!busy;
-    button.classList.toggle("is-busy", !!busy);
+  if (toggle) {
+    toggle.disabled = !!busy;
+  }
+  if (control) {
+    control.classList.toggle("is-busy", !!busy);
+    control.setAttribute("aria-disabled", busy ? "true" : "false");
   }
   if (status && message) status.textContent = message;
 }
@@ -36,15 +48,83 @@ export function setMusicSourceOnlineModeAvailability(available) {
 }
 
 export function wireMusicSourceOnlineModeSelection(onChange) {
-  document.getElementById("btn-music-online-mode")?.addEventListener("click", () => {
+  const toggle = document.getElementById("setting-music-online-mode-toggle");
+  const control = document.getElementById("setting-music-online-mode-switch");
+  if (!toggle || !control) return;
+  const trigger = () => {
+    if (toggle.disabled) return;
     onChange?.(!isMusicSourceOnlineModeSelected());
+  };
+  control.addEventListener("click", (event) => {
+    event.preventDefault();
+    trigger();
+  });
+  control.addEventListener("keydown", (event) => {
+    if (event.key !== " " && event.key !== "Enter") return;
+    event.preventDefault();
+    trigger();
+  });
+}
+
+async function onlineModeConfirmBounds() {
+  const width = 432;
+  const height = 188;
+  try {
+    const mainWindow = RuntimeWindow.Get("main");
+    const position = await mainWindow.Position();
+    const size = await mainWindow.Size();
+    return {
+      width,
+      height,
+      x: position.x + Math.round((size.width - width) / 2),
+      y: position.y + Math.max(28, Math.round((size.height - height) / 3)),
+    };
+  } catch (error) {
+    console.warn("online mode confirm bounds", error);
+    return { width, height, x: 140, y: 140 };
+  }
+}
+
+async function confirmEnableMusicOnlineMode() {
+  const bounds = await onlineModeConfirmBounds();
+  return new Promise((resolve) => {
+    Events.Once("settings-online-mode-confirm-result", (event) => {
+      resolve(unwrapPayload(event?.data)?.accepted === true);
+    });
+    void DesktopService.EnsureWindow({
+      label: ONLINE_MODE_CONFIRM_LABEL,
+      url: ONLINE_MODE_CONFIRM_URL,
+      title: "开启在线模式",
+      width: bounds.width,
+      height: bounds.height,
+      x: bounds.x,
+      y: bounds.y,
+      resizable: false,
+      always_on_top: true,
+      decorations: true,
+      transparent: false,
+      shadow: true,
+      skip_taskbar: true,
+      focus: true,
+      mac_title_bar_style: "hiddenInset",
+      invisible_title_bar_height: 44,
+    }).catch((error) => {
+      console.warn("open online mode confirm window", error);
+      resolve(false);
+    });
   });
 }
 
 export async function toggleMusicOnlineMode(nextEnabled, deps) {
-  const { alertRequestFailed, isSelected, onMusicOnlineModeChanged, persistSettingsFromForm } = deps;
-  if (nextEnabled && !window.confirm("开启在线模式后，会切换到酷狗云歌单并立即重新拉取云端歌单。是否继续？")) return;
-  const previous = isSelected();
+  const { alertRequestFailed, onMusicOnlineModeChanged, persistSettingsFromForm } = deps;
+  const previous = !nextEnabled;
+  if (nextEnabled) {
+    const accepted = await confirmEnableMusicOnlineMode();
+    if (!accepted) {
+      setMusicSourceOnlineModeSelection(previous);
+      return;
+    }
+  }
   setMusicSourceOnlineModeSelection(nextEnabled);
   setMusicSourceOnlineModeBusy(true, nextEnabled ? "正在开启在线模式并同步云歌单…" : "正在关闭在线模式…");
   try {

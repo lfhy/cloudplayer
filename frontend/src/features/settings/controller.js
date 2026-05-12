@@ -251,7 +251,6 @@ export function createSettingsController(deps) {
     }));
     wireMusicSourceOnlineModeSelection((nextEnabled) => toggleMusicOnlineMode(nextEnabled, {
       alertRequestFailed,
-      isSelected: isMusicSourceOnlineModeSelected,
       onMusicOnlineModeChanged,
       persistSettingsFromForm,
     }));

@@ -60,6 +60,9 @@ function resolveBootstrapWindowLabel() {
   if (path === "/close_confirm.html") {
     return "close-confirm";
   }
+  if (path === "/online_mode_confirm.html") {
+    return "online-mode-confirm";
+  }
   if (path === "/tray_player.html") {
     return "tray-player";
   }

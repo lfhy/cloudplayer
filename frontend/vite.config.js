@@ -19,6 +19,7 @@ export default defineConfig({
       input: {
         main: resolve(__dirname, "index.html"),
         close_confirm: resolve(__dirname, "close_confirm.html"),
+        online_mode_confirm: resolve(__dirname, "online_mode_confirm.html"),
         desktop_lyrics: resolve(__dirname, "desktop_lyrics.html"),
         lyrics_replace: resolve(__dirname, "lyrics_replace.html"),
         tray_player: resolve(__dirname, "tray_player.html"),

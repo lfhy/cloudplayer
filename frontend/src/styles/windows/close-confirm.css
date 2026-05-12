@@ -42,11 +42,24 @@ body.close-confirm-window {
   color: var(--text);
 }
 
+.close-confirm-card__desc {
+  margin: 0;
+  padding-inline: 8px;
+  font-size: 11px;
+  line-height: 1.45;
+  text-align: center;
+  color: var(--text-secondary);
+}
+
 .close-confirm-card__body {
   flex: 1 1 auto;
   display: flex;
   flex-direction: column;
   justify-content: center;
+}
+
+.online-mode-confirm__body {
+  gap: 12px;
 }
 
 .close-confirm-card__actions {
