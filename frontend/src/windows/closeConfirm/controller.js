@@ -17,20 +17,21 @@ function resetRememberChoice() {
 function renderCloseConfirmWindow(root) {
   root.innerHTML = `
     <main class="close-confirm-card">
-      <div class="close-confirm-card__mark" aria-hidden="true">${appLogoMarkSvg()}</div>
-      <div class="close-confirm-card__copy">
-        <p class="close-confirm-card__eyebrow">CloudPlayer</p>
-        <h1 class="close-confirm-card__title">关闭主窗口后的操作</h1>
-        <p class="close-confirm-card__desc">你可以让播放器继续留在后台，也可以直接退出应用。</p>
-      </div>
+      <header class="close-confirm-card__head">
+        <div class="close-confirm-card__mark" aria-hidden="true">${appLogoMarkSvg()}</div>
+        <div class="close-confirm-card__copy">
+          <h1 class="close-confirm-card__title">关闭主窗口？</h1>
+          <p class="close-confirm-card__desc">可最小化到托盘，或直接退出。</p>
+        </div>
+      </header>
       <div class="close-confirm-card__actions">
         <button type="button" id="close-confirm-tray" class="close-confirm-choice">
-          <strong>最小化到系统托盘</strong>
-          <span>保留后台播放与托盘入口</span>
+          <strong>最小化到托盘</strong>
+          <span>保留后台播放</span>
         </button>
         <button type="button" id="close-confirm-quit" class="close-confirm-choice close-confirm-choice--danger">
-          <strong>退出 CloudPlayer</strong>
-          <span>结束播放并完全关闭应用</span>
+          <strong>退出应用</strong>
+          <span>完全关闭 CloudPlayer</span>
         </button>
       </div>
       <footer class="close-confirm-card__footer">

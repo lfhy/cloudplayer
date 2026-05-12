@@ -1,43 +1,51 @@
 /* Close-confirm child window styles keep the standalone exit flow visually aligned with the main app. */
 body.close-confirm-window {
   min-height: 100%;
+  overflow: hidden;
   background:
     radial-gradient(circle at top, rgba(var(--accent-rgb), 0.12), transparent 52%),
     var(--bg-main);
 }
 
 .close-confirm-window__root {
-  min-height: 100vh;
+  height: 100vh;
   display: flex;
   align-items: stretch;
 }
 
 .close-confirm-card {
   width: 100%;
-  min-height: 100vh;
+  height: 100vh;
   display: grid;
-  align-content: center;
-  gap: 18px;
-  padding: 26px 24px 22px;
+  align-content: start;
+  gap: 12px;
+  padding: 20px 18px 16px;
   background:
     linear-gradient(180deg, color-mix(in srgb, var(--bg-card) 94%, transparent), color-mix(in srgb, var(--bg-main) 96%, transparent));
 }
 
 .platform-macos .close-confirm-card {
-  padding-top: 46px;
+  padding-top: 34px;
+}
+
+.close-confirm-card__head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
 }
 
 .close-confirm-card__mark {
-  width: 54px;
-  height: 54px;
+  width: 42px;
+  height: 42px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  padding: 10px;
-  border-radius: 16px;
+  padding: 8px;
+  border-radius: 13px;
   background: rgba(var(--accent-rgb), 0.1);
   color: var(--accent);
   box-shadow: var(--shadow-soft);
+  flex-shrink: 0;
 }
 
 .close-confirm-card__mark svg {
@@ -47,59 +55,51 @@ body.close-confirm-window {
 
 .close-confirm-card__copy {
   display: grid;
-  gap: 8px;
-}
-
-.close-confirm-card__eyebrow {
-  margin: 0;
-  font-size: 11px;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  color: var(--text-secondary);
+  gap: 4px;
 }
 
 .close-confirm-card__title {
   margin: 0;
-  font-size: 24px;
-  line-height: 1.18;
+  font-size: 18px;
+  line-height: 1.15;
   letter-spacing: -0.03em;
   color: var(--text);
 }
 
 .close-confirm-card__desc {
   margin: 0;
-  font-size: 13px;
-  line-height: 1.6;
+  font-size: 12px;
+  line-height: 1.45;
   color: var(--text-secondary);
 }
 
 .close-confirm-card__actions {
   display: grid;
-  gap: 10px;
+  gap: 8px;
 }
 
 .close-confirm-choice {
   width: 100%;
-  padding: 14px 16px;
+  padding: 10px 12px;
   border: 1px solid rgba(15, 23, 42, 0.08);
-  border-radius: 16px;
+  border-radius: 14px;
   background: color-mix(in srgb, var(--bg-card) 94%, transparent);
   color: var(--text);
   text-align: left;
   cursor: pointer;
   display: grid;
-  gap: 5px;
+  gap: 3px;
   transition: transform 140ms ease, border-color 140ms ease, background-color 140ms ease, box-shadow 140ms ease;
 }
 
 .close-confirm-choice strong {
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 700;
 }
 
 .close-confirm-choice span {
-  font-size: 11px;
-  line-height: 1.5;
+  font-size: 10px;
+  line-height: 1.35;
   color: var(--text-secondary);
 }
 
@@ -128,23 +128,26 @@ body.close-confirm-window {
 }
 
 .close-confirm-card__footer {
+  margin-top: auto;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 12px;
+  gap: 10px;
 }
 
 .close-confirm-card__remember {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
-  font-size: 12px;
+  gap: 7px;
+  font-size: 11px;
   color: var(--text-secondary);
   cursor: pointer;
 }
 
 .close-confirm-card__footer .btn-outline {
-  min-width: 76px;
+  min-width: 64px;
+  padding: 5px 10px;
+  border-radius: 14px;
   color: var(--text);
 }
 
@@ -156,11 +159,7 @@ body.close-confirm-window {
 
 @media (max-width: 520px) {
   .close-confirm-card {
-    padding: 22px 18px 18px;
-  }
-
-  .close-confirm-card__title {
-    font-size: 22px;
+    padding: 18px 16px 14px;
   }
 
   .close-confirm-card__footer {
