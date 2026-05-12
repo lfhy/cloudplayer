@@ -16,6 +16,7 @@
 @import "./styles/components/dock-chrome.css";
 @import "./styles/components/dock-controls.css";
 @import "./styles/components/mini-player.css";
+@import "./styles/components/mini-player-lyrics.css";
 @import "./styles/components/account-center.css";
 @import "./styles/components/kugou-preview-modal.css";
 @import "./styles/components/playlist-manage-modal.css";

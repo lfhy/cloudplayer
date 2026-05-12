@@ -65,6 +65,9 @@ func (s *DesktopService) EnsureWindow(req WindowCreateRequest) error {
 		} else {
 			existing.SetPosition(req.X, req.Y)
 		}
+		if req.Transparent {
+			existing.SetBackgroundColour(application.NewRGBA(0, 0, 0, 0))
+		}
 		existing.SetAlwaysOnTop(req.AlwaysOnTop)
 		existing.Show()
 		emitWindowVisibility(req.Label, true)
@@ -73,7 +76,7 @@ func (s *DesktopService) EnsureWindow(req WindowCreateRequest) error {
 		}
 		return nil
 	}
-	window := application.Get().Window.NewWithOptions(application.WebviewWindowOptions{
+	options := application.WebviewWindowOptions{
 		Name:              req.Label,
 		Title:             req.Title,
 		URL:               req.URL,
@@ -98,7 +101,11 @@ func (s *DesktopService) EnsureWindow(req WindowCreateRequest) error {
 			InvisibleTitleBarHeight: req.InvisibleTitleBarHeight,
 			WindowLevel:             macWindowLevel(req.AlwaysOnTop),
 		},
-	})
+	}
+	if req.Transparent {
+		options.BackgroundColour = application.NewRGBA(0, 0, 0, 0)
+	}
+	window := application.Get().Window.NewWithOptions(options)
 	AttachWindowPersistenceHooks(window, req.Label)
 	if req.CenterOnMain {
 		centerWindowOnMain(window, req.Width, req.Height)

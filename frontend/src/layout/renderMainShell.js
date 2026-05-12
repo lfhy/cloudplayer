@@ -2,7 +2,6 @@
 import { closeConfirmModalTemplate } from "../components/closeConfirmModalTemplate.js";
 import { immersivePlayerTemplate } from "../components/immersivePlayerTemplate.js";
 import { kugouPlaylistPreviewModalTemplate } from "../components/kugouPlaylistPreviewModalTemplate.js";
-import { miniPlayerTemplate } from "../components/miniPlayerTemplate.js";
 import { playerDockTemplate } from "../components/playerDockTemplate.js";
 import { playlistManageModalTemplate } from "../components/playlistManageModalTemplate.js";
 import { queuePanelTemplate } from "../components/queuePanelTemplate.js";
@@ -46,7 +45,6 @@ export function renderMainShell(root = document.getElementById("app")) {
           ${immersivePlayerTemplate()}
         </div>
       </div>
-      ${miniPlayerTemplate()}
       <div id="child-window-mask" class="child-window-mask" hidden aria-hidden="true"></div>
       ${closeConfirmModalTemplate()}
       ${kugouPlaylistPreviewModalTemplate()}

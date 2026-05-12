@@ -16,9 +16,11 @@ export function miniPlayerTemplate() {
             </div>
           </div>
           <div class="mini-player__actions">
-            <button type="button" id="btn-mini-prev" class="mini-player__btn" title="上一首" aria-label="上一首">⏮</button>
-            <button type="button" id="btn-mini-play" class="mini-player__btn mini-player__btn--main" title="播放" aria-label="播放">${iconSvgByName("play-bold")}</button>
-            <button type="button" id="btn-mini-next" class="mini-player__btn" title="下一首" aria-label="下一首">⏭</button>
+            <button type="button" id="btn-mini-prev" class="mini-player__btn" title="上一首" aria-label="上一首">${iconSvgByName("skip-previous-linear")}</button>
+            <button type="button" id="btn-mini-play" class="mini-player__btn mini-player__btn--main" title="播放" aria-label="播放">${iconSvgByName("play-circle-linear")}</button>
+            <button type="button" id="btn-mini-next" class="mini-player__btn" title="下一首" aria-label="下一首">${iconSvgByName("skip-next-linear")}</button>
+            <button type="button" id="btn-mini-pin" class="mini-player__icon" title="开启 Mini 置顶" aria-label="开启 Mini 置顶" aria-pressed="false">${iconSvgByName("pin-linear")}</button>
+            <button type="button" id="btn-mini-translucent" class="mini-player__icon" title="开启 Mini 半透明" aria-label="开启 Mini 半透明" aria-pressed="false">${iconSvgByName("waterdrop-linear")}</button>
             <button type="button" id="btn-mini-exit" class="mini-player__icon" title="退出 Mini 模式" aria-label="退出 Mini 模式">${iconSvgByName("quit-pip-linear")}</button>
           </div>
         </header>
