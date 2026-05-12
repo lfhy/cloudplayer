@@ -1,0 +1,134 @@
+/* Account-center child window reuses the main app surface while staying compact across macOS and Windows. */
+body.account-center-window {
+  min-height: 100%;
+  overflow: hidden;
+  background:
+    radial-gradient(circle at top, rgba(var(--accent-rgb), 0.08), transparent 58%),
+    var(--bg-main);
+}
+
+.account-center-window__root {
+  display: inline-flex;
+  align-items: flex-start;
+  justify-content: center;
+  width: 100%;
+  padding: 14px;
+}
+
+.account-center-window__card {
+  width: max-content;
+  max-width: 100%;
+  box-sizing: border-box;
+  display: grid;
+  align-content: start;
+  justify-items: center;
+  gap: 12px;
+  padding: 28px 0 0;
+  background: transparent;
+}
+
+.platform-macos .account-center-window__card {
+  padding-top: 42px;
+}
+
+.platform-windows .account-center-window__card {
+  padding-top: 30px;
+}
+
+.account-center-window .account-center-panel {
+  width: auto;
+  min-width: 0;
+  justify-self: center;
+  overflow: visible;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.account-center-window .account-center-tabs {
+  gap: 6px;
+  flex-wrap: nowrap;
+}
+
+.account-center-window .account-center-tab {
+  min-height: 32px;
+  padding: 0 11px;
+  border-radius: 12px;
+}
+
+.account-center-window .account-center-tab__text {
+  font-size: 12px;
+}
+
+.account-center-window .account-provider-panel {
+  width: auto;
+  max-width: 100%;
+  gap: 8px;
+}
+
+.account-center-window .account-provider-heading strong {
+  font-size: 15px;
+}
+
+.account-center-window .account-provider-card {
+  gap: 10px;
+}
+
+.account-center-window .account-provider-loading {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 18px;
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+.account-center-window .account-provider-loading[hidden] {
+  display: none !important;
+}
+
+.account-center-window .account-provider-loading__dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 999px;
+  border: 2px solid rgba(var(--accent-rgb), 0.16);
+  border-top-color: var(--accent);
+  animation: account-center-loading-spin 760ms linear infinite;
+}
+
+.account-center-window .account-provider-panel[data-account-state="logged-in"] .account-provider-card,
+.account-center-window .account-provider-panel[data-account-state="expired"] .account-provider-card {
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.account-center-window .account-provider-panel[data-account-state="logged-in"] .account-provider-footer,
+.account-center-window .account-provider-panel[data-account-state="expired"] .account-provider-footer {
+  justify-content: flex-start;
+  padding-top: 2px;
+}
+
+@keyframes account-center-loading-spin {
+  from {
+    transform: rotate(0deg);
+  }
+
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (max-width: 720px) {
+  .account-center-window__root {
+    padding: 10px;
+  }
+
+  .account-center-window__card {
+    max-width: 100%;
+  }
+}

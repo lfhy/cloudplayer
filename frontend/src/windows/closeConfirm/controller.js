@@ -2,6 +2,7 @@
 import { Window as RuntimeWindow } from "@wailsio/runtime";
 import { DesktopService } from "@bindings/cloudplayer/backend/desktop/index.js";
 import { applyAppTheme, applyPlatformClassNames, systemDarkMedia } from "../../app/helpers/platformTheme.js";
+import { wireChildWindowAutoSize } from "../shared/autoSize.js";
 import { invoke } from "../../wails/tauri-core.js";
 
 const WINDOW_LABEL = "close-confirm";
@@ -146,7 +147,9 @@ export function bootstrapCloseConfirmWindow() {
     renderCloseConfirmWindow(document.getElementById("app"));
     resetRememberChoice();
     wireCloseConfirmWindow();
+    const cleanupAutoSize = wireChildWindowAutoSize({ element: document.querySelector(".close-confirm-card"), windowRef: currentWindow, minHeight: 188, minWidth: 432 });
     void applyThemeFromSettings();
+    window.addEventListener("beforeunload", cleanupAutoSize);
     window.setTimeout(() => {
       document.getElementById("close-confirm-tray")?.focus();
     }, 30);

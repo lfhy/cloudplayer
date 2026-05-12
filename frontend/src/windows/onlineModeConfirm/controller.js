@@ -2,6 +2,7 @@
 import { Window as RuntimeWindow } from "@wailsio/runtime";
 import { DesktopService } from "@bindings/cloudplayer/backend/desktop/index.js";
 import { applyAppTheme, applyPlatformClassNames, systemDarkMedia } from "../../app/helpers/platformTheme.js";
+import { wireChildWindowAutoSize } from "../shared/autoSize.js";
 import { emitTo } from "../../wails/tauri-event.js";
 import { invoke } from "../../wails/tauri-core.js";
 
@@ -111,7 +112,9 @@ export function bootstrapOnlineModeConfirmWindow() {
     applyPlatformClassNames();
     renderOnlineModeConfirmWindow(document.getElementById("app"));
     wireOnlineModeConfirmWindow();
+    const cleanupAutoSize = wireChildWindowAutoSize({ element: document.querySelector(".close-confirm-card"), windowRef: currentWindow, minHeight: 188, minWidth: 432 });
     void applyThemeFromSettings();
+    window.addEventListener("beforeunload", cleanupAutoSize);
     window.setTimeout(() => {
       document.getElementById("online-mode-confirm-continue")?.focus();
     }, 30);

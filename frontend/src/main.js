@@ -150,17 +150,36 @@ const player = createBasePlayerRuntime({
 });
 
 const accountCenter = createAccountCenterController({
-  alertRequestFailed,
-  escapeHtml,
   invoke,
-  onKugouStatusChanged: () => refreshAccountCenter(),
-  setImportMethod: (...args) => settings.setImportMethod(...args),
-  setImportStep: (...args) => settings.setImportStep(...args),
-  setPage: (...args) => setPage(...args),
 });
 openAccountCenter = (...args) => accountCenter.openAccountCenter(...args);
 refreshAccountCenter = (...args) => settings.refreshKugouSettingsStatus(...args);
 wireAccountCenter = (...args) => accountCenter.wireAccountCenter(...args);
+listen("account-center-status-changed", () => {
+  void refreshAccountCenter();
+});
+listen("account-center-open-import", (event) => {
+  const provider = String(event?.payload?.provider || "").trim().toLowerCase();
+  settings.setImportMethod(provider === "netease" ? "netease" : "kugou");
+  settings.setImportStep("config");
+  setPage("import");
+});
+listen("account-center-toggle-online-mode", async (event) => {
+  const nextEnabled = event?.payload?.nextEnabled === true;
+  try {
+    const result = await settings.toggleMusicOnlineModeFromAccountCenter?.(nextEnabled);
+    await emitTo({ kind: "WebviewWindow", label: "account-center" }, "account-center-toggle-online-mode-result", {
+      ok: true,
+      enabled: result?.enabled === true,
+    });
+  } catch (error) {
+    await emitTo({ kind: "WebviewWindow", label: "account-center" }, "account-center-toggle-online-mode-result", {
+      ok: false,
+      enabled: musicOnlineModeEnabled,
+      message: error instanceof Error ? error.message : String(error || "toggle online mode failed"),
+    });
+  }
+});
 
 const pages = createPageRuntime({
   alertRequestFailed, appLogoMarkSvg, applyQuickThemeMode: (...args) => dockTheme.applyQuickThemeMode(...args), escapeHtml, formatDurationMs, invoke, messageRequestFailed: MSG_REQUEST_FAILED,

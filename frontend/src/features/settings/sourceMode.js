@@ -116,9 +116,9 @@ async function confirmEnableMusicOnlineMode() {
 }
 
 export async function toggleMusicOnlineMode(nextEnabled, deps) {
-  const { alertRequestFailed, onMusicOnlineModeChanged, persistSettingsFromForm } = deps;
+  const { alertRequestFailed, confirmBeforeEnable = true, onMusicOnlineModeChanged, persistSettingsFromForm } = deps;
   const previous = !nextEnabled;
-  if (nextEnabled) {
+  if (nextEnabled && confirmBeforeEnable) {
     const accepted = await confirmEnableMusicOnlineMode();
     if (!accepted) {
       setMusicSourceOnlineModeSelection(previous);

@@ -143,6 +143,7 @@ export function createSettingsRuntime(deps) {
     openCloseConfirmModal: settings.openCloseConfirmModal,
     queueSettingsAutosave: settings.queueSettingsAutosave,
     refreshKugouSettingsStatus: settings.refreshKugouSettingsStatus,
+    toggleMusicOnlineModeFromAccountCenter: settings.toggleMusicOnlineModeFromAccountCenter,
     setMusicSourceProviderSelection,
     setNetworkProxyModeSelection,
     setSettingsTab,

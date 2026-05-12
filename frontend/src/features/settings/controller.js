@@ -2,6 +2,7 @@
 import { createHotkeyController } from "./hotkeys.js";
 import { closeCloseConfirmModalDom, openCloseConfirmModalDom, runCloseChoiceFlow } from "./closeFlow.js";
 import { wireSettingsActionButtons } from "./actions.js";
+import { createExternalOnlineModeToggle } from "./externalOnlineMode.js";
 import { DEFAULT_LYRICS_IDLE_LINE1, DEFAULT_LYRICS_IDLE_LINE2, normalizeLyricHexInput, normalizeLyricsIdleLine, normalizeNeteaseApiBase, normalizeSearchCacheTTLHours, settingsFormBaselineDefaults } from "./formHelpers.js";
 import { applyLyricsSourceSelectionToDom, readLyricsSourceSettingsFromDom, wireLyricsSourceSelection } from "./lyricSources.js";
 import { createKugouSettingsStatusRefresher, isMusicSourceOnlineModeSelected, musicOnlineModeStatusText, setMusicSourceOnlineModeAvailability, setMusicSourceOnlineModeBusy, setMusicSourceOnlineModeSelection, toggleMusicOnlineMode, wireMusicSourceOnlineModeSelection } from "./sourceMode.js";
@@ -201,6 +202,7 @@ export function createSettingsController(deps) {
 
   function openCloseConfirmModal() { openCloseConfirmModalDom(); }
   function closeCloseConfirmModal() { closeCloseConfirmModalDom(); }
+  const toggleMusicOnlineModeFromAccountCenter = createExternalOnlineModeToggle({ alertRequestFailed, onMusicOnlineModeChanged, persistSettingsFromForm: (...args) => persistSettingsFromForm(...args), setMusicOnlineModeEnabledValue });
 
   function wirePreferencesModals() {
     globalThis.__cloudplayerOpenCloseConfirmModal = openCloseConfirmModal;
@@ -293,5 +295,5 @@ export function createSettingsController(deps) {
     try { console.info(await invoke("db_status")); } catch (error) { console.warn("db_status", error); }
   }
 
-  return { getSettingsFormValues, loadSettings, openCloseConfirmModal, queueSettingsAutosave, refreshKugouSettingsStatus, wirePreferencesModals };
+  return { getSettingsFormValues, loadSettings, openCloseConfirmModal, queueSettingsAutosave, refreshKugouSettingsStatus, toggleMusicOnlineModeFromAccountCenter, wirePreferencesModals };
 }

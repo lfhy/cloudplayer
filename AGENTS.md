@@ -22,6 +22,11 @@
 - Standalone child windows should follow the compact native-dialog style used by the close-confirm window.
 - Keep child windows simple: no decorative app icon, no extra explanatory copy unless the flow truly needs it.
 - Titles should be visually centered, while leaving safe space for macOS traffic lights and Windows title-bar controls.
+- Child window content should be horizontally centered inside the native window, rather than stretched to fill the viewport.
+- Reserve a platform-safe top inset for title-bar controls: macOS needs extra space for traffic lights, Windows needs space for the right-side close controls.
+- Avoid nested white modal shells inside child windows. Prefer one transparent or near-transparent content surface and let the actual content define the visual weight.
+- Child windows should auto-size from rendered content with `ResizeObserver`-style measurement instead of relying only on guessed fixed heights.
+- Child-window root/layout should prefer content-driven sizing such as `max-content` / intrinsic height, not `100vh` filler cards, unless the window truly needs a full-height layout.
 - Layout child windows in three clear zones: title at top, primary actions in the middle area, secondary controls at the bottom.
 - Secondary controls such as `取消` or `记住这次选择` should stay pinned to the bottom edge of the content area.
 - Primary actions should use compact button sizing consistent with the main app, not large card-like blocks.

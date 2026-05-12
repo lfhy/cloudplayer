@@ -92,8 +92,10 @@
 
 .account-provider-panel {
   display: grid;
-  gap: 12px;
+  gap: 10px;
   min-width: 0;
+  width: fit-content;
+  max-width: 100%;
 }
 
 .account-provider-heading {
@@ -114,13 +116,6 @@
   grid-template-columns: 46px minmax(0, 1fr);
   gap: 12px;
   align-items: center;
-}
-
-.account-provider-main {
-  display: grid;
-  gap: 14px;
-  min-width: 0;
-  width: min(520px, 100%);
 }
 
 .account-provider-card__avatar {
@@ -222,8 +217,8 @@
 }
 
 .account-provider-footer {
-  justify-content: space-between;
-  padding-top: 6px;
+  justify-content: flex-start;
+  padding-top: 2px;
 }
 
 .account-provider-empty {
@@ -235,10 +230,6 @@
 @media (max-width: 720px) {
   .modal-dialog--account-center {
     padding: 14px;
-  }
-
-  .account-provider-main {
-    width: 100%;
   }
 
   .account-provider-code-row {

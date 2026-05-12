@@ -29,6 +29,7 @@ export function isWindowsDesktop() {
 
 export function applyPlatformClassNames() {
   document.documentElement.classList.toggle("platform-macos", isMacDesktop());
+  document.documentElement.classList.toggle("platform-windows", isWindowsDesktop());
 }
 
 export function normalizeCloseAction(value) {
