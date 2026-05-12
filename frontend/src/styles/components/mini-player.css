@@ -38,6 +38,7 @@ body.mini-mode .app-shell {
     0 18px 42px rgba(15, 23, 42, 0.18),
     inset 0 1px 0 rgba(255, 255, 255, 0.42);
   backdrop-filter: blur(20px) saturate(125%);
+  --wails-draggable: drag;
 }
 
 :root[data-theme-mode-resolved="dark"] .mini-player__shell {
@@ -54,17 +55,28 @@ body.mini-mode .app-shell {
   padding-top: 38px;
 }
 
+.mini-player__dragbar {
+  width: 52px;
+  height: 5px;
+  align-self: center;
+  border-radius: 999px;
+  background: rgba(100, 116, 139, 0.28);
+}
+
 .mini-player__header {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
   gap: 14px;
   align-items: center;
   min-height: 72px;
-  --wails-draggable: drag;
 }
 
 .mini-player__meta,
 .mini-player__actions,
+.mini-player__cover,
+.mini-player__copy,
+.mini-player__title,
+.mini-player__sub,
 .mini-player__actions button,
 .mini-player__progress,
 .mini-player__progress input,
@@ -175,7 +187,8 @@ body.mini-mode .app-shell {
 .mini-player__icon svg {
   width: 18px;
   height: 18px;
-  fill: currentColor;
+  fill: none;
+  stroke: currentColor;
 }
 
 .mini-player__icon {
@@ -199,36 +212,36 @@ body.mini-mode .app-shell {
 
 body.mini-mode.mini-mode--translucent .mini-player__shell {
   background:
-    radial-gradient(circle at top left, rgba(var(--accent-rgb), 0.14), transparent 42%),
-    linear-gradient(180deg, rgba(255, 255, 255, 0.16), rgba(244, 247, 250, 0.11));
-  border-color: rgba(255, 255, 255, 0.2);
+    radial-gradient(circle at top left, rgba(var(--accent-rgb), 0.1), transparent 42%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.08), rgba(244, 247, 250, 0.04));
+  border-color: rgba(255, 255, 255, 0.12);
   box-shadow:
-    0 16px 40px rgba(15, 23, 42, 0.12),
-    inset 0 1px 0 rgba(255, 255, 255, 0.22);
-  backdrop-filter: blur(28px) saturate(140%);
+    0 14px 32px rgba(15, 23, 42, 0.1),
+    inset 0 1px 0 rgba(255, 255, 255, 0.16);
+  backdrop-filter: blur(26px) saturate(138%);
 }
 
 :root[data-theme-mode-resolved="dark"] body.mini-mode.mini-mode--translucent .mini-player__shell {
   background:
-    radial-gradient(circle at top left, rgba(var(--accent-rgb), 0.16), transparent 42%),
-    linear-gradient(180deg, rgba(17, 24, 39, 0.2), rgba(10, 14, 24, 0.13));
-  border-color: rgba(148, 163, 184, 0.16);
+    radial-gradient(circle at top left, rgba(var(--accent-rgb), 0.12), transparent 42%),
+    linear-gradient(180deg, rgba(17, 24, 39, 0.08), rgba(10, 14, 24, 0.05));
+  border-color: rgba(148, 163, 184, 0.12);
   box-shadow:
-    0 18px 42px rgba(2, 6, 23, 0.16),
+    0 16px 36px rgba(2, 6, 23, 0.14),
     inset 0 1px 0 rgba(255, 255, 255, 0.08);
 }
 
 body.mini-mode.mini-mode--translucent .mini-player__btn,
 body.mini-mode.mini-mode--translucent .mini-player__icon {
-  background: rgba(255, 255, 255, 0.12);
-  border-color: rgba(255, 255, 255, 0.18);
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.12);
   backdrop-filter: blur(18px) saturate(130%);
 }
 
 :root[data-theme-mode-resolved="dark"] body.mini-mode.mini-mode--translucent .mini-player__btn,
 :root[data-theme-mode-resolved="dark"] body.mini-mode.mini-mode--translucent .mini-player__icon {
-  background: rgba(15, 23, 42, 0.14);
-  border-color: rgba(148, 163, 184, 0.14);
+  background: rgba(15, 23, 42, 0.08);
+  border-color: rgba(148, 163, 184, 0.1);
 }
 
 .mini-player__progress {

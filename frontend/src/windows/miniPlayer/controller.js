@@ -1,14 +1,14 @@
 import { setCoverImageSource } from "../../app/helpers/covers.js";
-import { iconSvgByName } from "../../app/helpers/icons.js";
 import { applyAppTheme, applyPlatformClassNames, systemDarkMedia } from "../../app/helpers/platformTheme.js";
 import { escapeHtml } from "../../app/helpers/text.js";
 import { miniPlayerTemplate } from "../../components/miniPlayerTemplate.js";
+import { miniPauseIcon, miniPlayIcon } from "../../components/miniPlayerIcons.js";
 import { lineProgressRatio } from "../../features/player/immersiveLyricsView.js";
 import { emitTo, listen } from "../../wails/tauri-event.js";
 
 const MAIN_WW = { kind: "WebviewWindow", label: "main" };
-const PLAY_ICON = iconSvgByName("play-circle-linear");
-const PAUSE_ICON = iconSvgByName("pause-circle-linear");
+const PLAY_ICON = miniPlayIcon();
+const PAUSE_ICON = miniPauseIcon();
 
 // Mini-player child window renders floating playback state pushed from the hidden main window.
 export function bootstrapMiniPlayerWindow() {

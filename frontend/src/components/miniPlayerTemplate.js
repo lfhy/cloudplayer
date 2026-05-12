@@ -1,5 +1,5 @@
 import { fallbackCoverDataUri } from "../app/helpers/covers.js";
-import { iconSvgByName } from "../app/helpers/icons.js";
+import { miniExitIcon, miniNextIcon, miniPinIcon, miniPlayIcon, miniPrevIcon, miniTranslucentIcon } from "./miniPlayerIcons.js";
 
 // Mini player template keeps the compact shell declarative and separate from runtime wiring.
 export function miniPlayerTemplate() {
@@ -7,6 +7,7 @@ export function miniPlayerTemplate() {
   return `
     <section id="mini-player" class="mini-player" aria-hidden="true" hidden>
       <div class="mini-player__shell">
+        <div class="mini-player__dragbar" aria-hidden="true"></div>
         <header class="mini-player__header">
           <div class="mini-player__meta">
             <img id="mini-cover" class="mini-player__cover" width="64" height="64" alt="" src="${fallbackCover}" />
@@ -16,12 +17,12 @@ export function miniPlayerTemplate() {
             </div>
           </div>
           <div class="mini-player__actions">
-            <button type="button" id="btn-mini-prev" class="mini-player__btn" title="上一首" aria-label="上一首">${iconSvgByName("skip-previous-linear")}</button>
-            <button type="button" id="btn-mini-play" class="mini-player__btn mini-player__btn--main" title="播放" aria-label="播放">${iconSvgByName("play-circle-linear")}</button>
-            <button type="button" id="btn-mini-next" class="mini-player__btn" title="下一首" aria-label="下一首">${iconSvgByName("skip-next-linear")}</button>
-            <button type="button" id="btn-mini-pin" class="mini-player__icon" title="开启 Mini 置顶" aria-label="开启 Mini 置顶" aria-pressed="false">${iconSvgByName("pin-linear")}</button>
-            <button type="button" id="btn-mini-translucent" class="mini-player__icon" title="开启 Mini 半透明" aria-label="开启 Mini 半透明" aria-pressed="false">${iconSvgByName("waterdrop-linear")}</button>
-            <button type="button" id="btn-mini-exit" class="mini-player__icon" title="退出 Mini 模式" aria-label="退出 Mini 模式">${iconSvgByName("quit-pip-linear")}</button>
+            <button type="button" id="btn-mini-prev" class="mini-player__btn" title="上一首" aria-label="上一首">${miniPrevIcon()}</button>
+            <button type="button" id="btn-mini-play" class="mini-player__btn mini-player__btn--main" title="播放" aria-label="播放">${miniPlayIcon()}</button>
+            <button type="button" id="btn-mini-next" class="mini-player__btn" title="下一首" aria-label="下一首">${miniNextIcon()}</button>
+            <button type="button" id="btn-mini-pin" class="mini-player__icon" title="开启 Mini 置顶" aria-label="开启 Mini 置顶" aria-pressed="false">${miniPinIcon()}</button>
+            <button type="button" id="btn-mini-translucent" class="mini-player__icon" title="开启 Mini 半透明" aria-label="开启 Mini 半透明" aria-pressed="false">${miniTranslucentIcon()}</button>
+            <button type="button" id="btn-mini-exit" class="mini-player__icon" title="退出 Mini 模式" aria-label="退出 Mini 模式">${miniExitIcon()}</button>
           </div>
         </header>
         <div class="mini-player__progress">
