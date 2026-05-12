@@ -16,8 +16,8 @@ export function createHomeController(deps) {
     invoke,
     onDailySaved,
     playAllDailyItems,
+    playDailyItem,
     playFromRecentRow,
-    playSingleItem,
   } = deps;
   let dailyRecommendationRows = [];
   let dailyRecommendationDate = "";
@@ -159,7 +159,7 @@ export function createHomeController(deps) {
         <span>${escapeHtml(artist)}</span>
       </span>`;
     button.addEventListener("click", () => {
-      if (mode === "daily") playSingleItem(item);
+      if (mode === "daily") playDailyItem?.(dailyRecommendationRows, index);
       else playFromRecentRow(index);
     });
     return button;
@@ -238,7 +238,7 @@ export function createHomeController(deps) {
       onAlbumClick: (album) => triggerTrackSearch(album),
       onArtistClick: (artist) => triggerTrackSearch(artist),
       onFavoriteClick: (row) => toggleFavoriteTrack(row, { alertRequestFailed, getLikedIds, invoke }),
-      onClick: (index, row) => playSingleItem(row),
+      onClick: (index) => playDailyItem?.(rows, index),
     });
   }
 

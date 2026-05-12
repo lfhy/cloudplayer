@@ -1,7 +1,7 @@
 import { createContextMenuController } from "../../features/contextMenu/controller.js";
 import { createImportPageController } from "../../features/import/controller.js";
 import { createNavigationController } from "../../features/layout/navigationController.js";
-import { createHomeController } from "../../features/library/homeController.js";
+import { createPageRuntimeHome } from "./pageRuntimeHome.js";
 import { createPlaylistManageModal } from "../../features/library/playlistManageModal.js";
 import { createPlaylistController } from "../../features/library/playlistController.js";
 import { createSearchController } from "../../features/search/controller.js";
@@ -56,7 +56,6 @@ export function createPageRuntime(deps) {
     warnRequestFailed,
   } = deps;
   const settingsRefresh = async () => { await deps.refreshKugouSettingsStatus?.(); };
-  const dailyPlaylistName = () => `每日推荐 ${new Date().toISOString().slice(0, 10)}`;
   let setPage = () => {};
   let playlist = null;
   const playlistManageModal = createPlaylistManageModal({
@@ -79,27 +78,6 @@ export function createPageRuntime(deps) {
         await playlist.loadPlaylistDetail(result.playlistId, result.nextName);
       }
     },
-  });
-
-  const home = createHomeController({
-    alertRequestFailed,
-    escapeHtml,
-    formatDurationMs,
-    getDownloadTaskCount,
-    getLikedIds,
-    getSessionRecentPlays,
-    invoke,
-    onDailySaved: async ({ playlistId, playlistName }) => {
-      if (!playlist) return;
-      setSelectedPlaylist(playlistId, playlistName);
-      await playlist.refreshPlaylistSelect();
-      await playlist.refreshSidebarPlaylists();
-      await playlist.loadPlaylistDetail(playlistId, playlistName);
-      setPage("playlist");
-    },
-    playAllDailyItems: (rows) => { setPlayQueue(rows.map((item) => (item.local_path ? { title: item.title, artist: item.artist || "", album: item.album || "", local_path: item.local_path, cover_url: item.cover_url || null, duration_ms: Number(item.duration_ms || 0) || 0 } : { source_id: item.source_id, title: item.title, artist: item.artist || "", album: item.album || "", cover_url: item.cover_url || null, duration_ms: Number(item.duration_ms || 0) || 0 }))); void playFromQueueIndex(0); renderQueuePanel(); },
-    playFromRecentRow,
-    playSingleItem: (item) => { setPlayQueue(item.local_path ? [{ title: item.title, artist: item.artist || "", album: item.album || "", local_path: item.local_path, cover_url: null, duration_ms: Number(item.duration_ms || 0) || 0 }] : [{ source_id: item.source_id, title: item.title, artist: item.artist || "", album: item.album || "", cover_url: item.cover_url || null, duration_ms: Number(item.duration_ms || 0) || 0 }]); void playFromQueueIndex(0); renderQueuePanel(); },
   });
 
   playlist = createPlaylistController({
@@ -126,6 +104,24 @@ export function createPageRuntime(deps) {
     showDeletePlaylistModal: (...args) => playlistManageModal.openDelete(...args),
     showRenamePlaylistModal: (...args) => playlistManageModal.openRename(...args),
     warnRequestFailed,
+  });
+
+  const { dailyPlaylistName, home } = createPageRuntimeHome({
+    alertRequestFailed,
+    escapeHtml,
+    formatDurationMs,
+    getDownloadTaskCount,
+    getLikedIds,
+    getSessionRecentPlays,
+    invoke,
+    playFromQueueIndex,
+    playFromRecentRow,
+    playlist,
+    renderQueuePanel,
+    setPage: (...args) => setPage(...args),
+    setPlayQueue,
+    setPlaylistDetailRows,
+    setSelectedPlaylist,
   });
 
   const context = createContextMenuController({
