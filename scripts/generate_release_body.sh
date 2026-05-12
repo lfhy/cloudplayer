@@ -112,8 +112,9 @@ main() {
     printf '\n## 已知问题\n'
     cat <<'EOF'
 - macOS 版本当前未做 Apple notarization，首次打开如果出现“`CloudPlayer` 已损坏，无法打开。你应该将它移到废纸篓。”，可先执行：
-  - `xattr -dr com.apple.quarantine /Applications/CloudPlayer.app`
-  - 如果你是从 `.dmg` 里直接拖到其他目录，请把路径里的 `/Applications/CloudPlayer.app` 替换成实际 `.app` 路径
+  - 先把 `CloudPlayer.app` 拖到“应用程序”目录
+  - 再双击发布包内附带的 `fix_cloudplayer_quarantine.command`
+  - 如果你没有使用脚本，也可以手动执行：`xattr -dr com.apple.quarantine /Applications/CloudPlayer.app`
 - 如果仍被系统拦截，可在“系统设置 → 隐私与安全性”里允许本次打开
 
 EOF

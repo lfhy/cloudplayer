@@ -172,6 +172,8 @@ tasks:
       - rm -rf "{{.BIN_DIR}}/dmg-root"
       - mkdir -p "{{.BIN_DIR}}/dmg-root"
       - cp -R "{{.BIN_DIR}}/{{.APP_NAME}}.app" "{{.BIN_DIR}}/dmg-root/{{.APP_NAME}}.app"
+      - cp "build/darwin/fix_cloudplayer_quarantine.command" "{{.BIN_DIR}}/dmg-root/fix_cloudplayer_quarantine.command"
+      - chmod +x "{{.BIN_DIR}}/dmg-root/fix_cloudplayer_quarantine.command"
       - ln -sfn /Applications "{{.BIN_DIR}}/dmg-root/Applications"
       - rm -f "{{.BIN_DIR}}/{{.APP_NAME}}.dmg"
       - hdiutil create -volname "{{.APP_NAME}}" -srcfolder "{{.BIN_DIR}}/dmg-root" -ov -format UDZO "{{.BIN_DIR}}/{{.APP_NAME}}.dmg"

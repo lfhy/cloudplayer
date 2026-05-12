@@ -98,7 +98,7 @@ wails3 task release:github
 - `macos/amd64`
 - `macos/arm64`
 
-产物会整理到 `bin/releases/` 下，Windows 默认生成 NSIS 安装包，macOS 会保留 `.app`，并额外输出 `.zip` 与 `.dmg`。
+产物会整理到 `bin/releases/` 下，Windows 默认生成 NSIS 安装包，macOS 会保留 `.app`，并额外输出 `.zip` 与 `.dmg`。macOS 的 `.zip` 和 `.dmg` 内都会附带 `fix_cloudplayer_quarantine.command`，双击后可执行 `xattr -dr com.apple.quarantine /Applications/CloudPlayer.app`。
 
 当目标同时包含 `windows/amd64` 和 `windows/arm64` 时，脚本还会额外生成一个双架构 NSIS 安装包：
 
@@ -137,7 +137,7 @@ GitHub Actions 自动发布：
 - 触发方式：推送 `v*` tag，或手动触发并填写 `tag_name`
 - 发布内容：Windows `amd64` / `arm64` 的 `.zip` 与 `installer.exe`，以及 macOS `amd64` / `arm64` / `universal` 的 `.dmg`
 - 发布正文：自动按 tag 范围里的提交信息生成中文更新日志
-- macOS 首次打开若提示“已损坏”，release 正文会自动附带 `xattr -dr com.apple.quarantine /Applications/CloudPlayer.app` 处理方法
+- macOS 首次打开若提示“已损坏”，release 正文会优先提示用户双击包内的 `fix_cloudplayer_quarantine.command`，并保留手动 `xattr -dr com.apple.quarantine /Applications/CloudPlayer.app` 作为备用方案
 
 Windows 打包前需要安装 `makensis`；如果在非 macOS 主机上构建 macOS 包，则还需要 Docker 和 `wails-cross` 镜像：
 

@@ -6,6 +6,7 @@ ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 APP_NAME="${APP_NAME:-CloudPlayer}"
 ARTIFACT_PREFIX="${ARTIFACT_PREFIX:-cloudplayer}"
 RELEASE_DIR="${RELEASE_DIR:-$ROOT_DIR/bin/releases}"
+MACOS_QUARANTINE_HELPER="$ROOT_DIR/build/darwin/fix_cloudplayer_quarantine.command"
 TARGETS_CSV="${TARGETS:-windows/amd64,windows/arm64,macos/amd64,macos/arm64}"
 WINDOWS_FORMAT="${WINDOWS_FORMAT:-nsis}"
 INCLUDE_MACOS_UNIVERSAL="${INCLUDE_MACOS_UNIVERSAL:-false}"
@@ -55,21 +56,28 @@ run_task() {
 }
 
 archive_macos_bundle() {
-  local bundle_path="$1"
+  local package_root="$1"
   local archive_path="$2"
   local parent_dir
-  local bundle_name
+  local package_name
   local archive_name
-  parent_dir="$(dirname "$bundle_path")"
-  bundle_name="$(basename "$bundle_path")"
+  parent_dir="$(dirname "$package_root")"
+  package_name="$(basename "$package_root")"
   archive_name="$(basename "$archive_path")"
   rm -f "$archive_path"
   if command -v ditto >/dev/null 2>&1; then
-    (cd "$parent_dir" && ditto -c -k --sequesterRsrc --keepParent "$bundle_name" "$archive_name")
+    (cd "$parent_dir" && ditto -c -k --sequesterRsrc --keepParent "$package_name" "$archive_name")
     return
   fi
   command -v zip >/dev/null 2>&1 || fail "zip or ditto is required to archive macOS bundles"
-  (cd "$parent_dir" && zip -qry "$archive_name" "$bundle_name")
+  (cd "$parent_dir" && zip -qry "$archive_name" "$package_name")
+}
+
+copy_macos_quarantine_helper() {
+  local target_dir="$1"
+  [[ -f "$MACOS_QUARANTINE_HELPER" ]] || fail "macOS quarantine helper script is missing"
+  cp "$MACOS_QUARANTINE_HELPER" "$target_dir/fix_cloudplayer_quarantine.command"
+  chmod +x "$target_dir/fix_cloudplayer_quarantine.command"
 }
 
 archive_windows_exe() {
@@ -198,19 +206,22 @@ stage_windows_dual_package() {
 stage_macos_package() {
   local arch="$1"
   local target_dir="$RELEASE_DIR/macos/$arch"
-  local bundle_copy="$target_dir/$APP_NAME.app"
   local dmg_path="$ROOT_DIR/bin/$APP_NAME.dmg"
   local artifact_prefix
   artifact_prefix="$ARTIFACT_PREFIX"
+  local package_root="$target_dir/$artifact_prefix-darwin-$arch"
+  local bundle_copy="$package_root/$APP_NAME.app"
   log "Building macOS ${arch} package"
   run_task darwin:package:dmg "ARCH=$arch"
   [[ "$DRY_RUN" == "true" ]] && return
   [[ -d "$ROOT_DIR/bin/$APP_NAME.app" ]] || fail "macOS ${arch} app bundle was not created"
   [[ -f "$dmg_path" ]] || fail "macOS ${arch} dmg was not created"
-  rm -rf "$bundle_copy"
+  rm -rf "$package_root"
   mkdir -p "$target_dir"
+  mkdir -p "$package_root"
   cp -R "$ROOT_DIR/bin/$APP_NAME.app" "$bundle_copy"
-  archive_macos_bundle "$bundle_copy" "$target_dir/$artifact_prefix-darwin-$arch.zip"
+  copy_macos_quarantine_helper "$package_root"
+  archive_macos_bundle "$package_root" "$target_dir/$artifact_prefix-darwin-$arch.zip"
   [[ -f "$target_dir/$artifact_prefix-darwin-$arch.zip" ]] || fail "macOS ${arch} zip was not created"
   cp "$dmg_path" "$target_dir/$artifact_prefix-darwin-$arch.dmg"
   [[ -f "$target_dir/$artifact_prefix-darwin-$arch.dmg" ]] || fail "macOS ${arch} dmg copy failed"
@@ -221,19 +232,22 @@ stage_macos_package() {
 
 stage_macos_universal_package() {
   local target_dir="$RELEASE_DIR/macos/universal"
-  local bundle_copy="$target_dir/$APP_NAME.app"
   local dmg_path="$ROOT_DIR/bin/$APP_NAME.dmg"
   local artifact_prefix
   artifact_prefix="$ARTIFACT_PREFIX"
+  local package_root="$target_dir/$artifact_prefix-darwin-universal"
+  local bundle_copy="$package_root/$APP_NAME.app"
   log "Building macOS universal package"
   run_task darwin:package:dmg:universal
   [[ "$DRY_RUN" == "true" ]] && return
   [[ -d "$ROOT_DIR/bin/$APP_NAME.app" ]] || fail "macOS universal app bundle was not created"
   [[ -f "$dmg_path" ]] || fail "macOS universal dmg was not created"
-  rm -rf "$bundle_copy"
+  rm -rf "$package_root"
   mkdir -p "$target_dir"
+  mkdir -p "$package_root"
   cp -R "$ROOT_DIR/bin/$APP_NAME.app" "$bundle_copy"
-  archive_macos_bundle "$bundle_copy" "$target_dir/$artifact_prefix-darwin-universal.zip"
+  copy_macos_quarantine_helper "$package_root"
+  archive_macos_bundle "$package_root" "$target_dir/$artifact_prefix-darwin-universal.zip"
   [[ -f "$target_dir/$artifact_prefix-darwin-universal.zip" ]] || fail "macOS universal zip was not created"
   cp "$dmg_path" "$target_dir/$artifact_prefix-darwin-universal.dmg"
   [[ -f "$target_dir/$artifact_prefix-darwin-universal.dmg" ]] || fail "macOS universal dmg copy failed"
