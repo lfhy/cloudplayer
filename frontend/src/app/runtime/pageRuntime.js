@@ -95,7 +95,7 @@ export function createPageRuntime(deps) {
     openPlaylistDetailRowContextMenu: (...args) => context.openPlaylistDetailRowContextMenu(...args),
     openSidebarPlaylistContextMenu: (...args) => context.openSidebarPlaylistContextMenu(...args),
     playFromQueueIndex,
-    renderHomePage: home.renderHomePage,
+    renderHomePage: (...args) => home.renderHomePage(...args),
     renderQueuePanel,
     setPage: (...args) => setPage(...args),
     setPlaylistDetailRows,
