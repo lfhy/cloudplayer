@@ -26,7 +26,7 @@ function renderCloseConfirmWindow(root) {
         </div>
       </div>
       <footer class="close-confirm-card__footer">
-        <label class="close-confirm-card__remember"><input type="checkbox" id="close-confirm-remember" /> 记住这次选择</label>
+        <label class="close-confirm-card__remember"><input type="checkbox" id="close-confirm-remember" /><span>记住这次选择</span></label>
         <button type="button" id="close-confirm-cancel" class="btn-outline">取消</button>
       </footer>
     </main>

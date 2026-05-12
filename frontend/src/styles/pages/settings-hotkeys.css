@@ -4,19 +4,82 @@
 }
 
 .settings-hotkeys-master {
-  display: flex;
-  align-items: flex-start;
-  gap: 8px;
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  width: fit-content;
+  min-height: 38px;
+  padding: 0 14px;
+  gap: 10px;
+  border-radius: 999px;
+  border: 0;
+  background: transparent;
   font-size: 13px;
-  font-weight: 500;
-  color: var(--text);
+  font-weight: 600;
+  color: var(--text-secondary);
   cursor: pointer;
   margin-bottom: 8px;
+  user-select: none;
+  transition:
+    border-color 120ms ease,
+    background-color 120ms ease,
+    color 120ms ease,
+    transform 120ms ease;
+}
+
+.settings-hotkeys-master:hover {
+  background: rgba(var(--accent-rgb), 0.06);
+  color: var(--text);
+  transform: translateY(-1px);
+}
+
+.settings-hotkeys-master.is-busy,
+.settings-hotkeys-master:has(input:disabled) {
+  opacity: 0.62;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.settings-hotkeys-master:has(input:checked) {
+  color: var(--accent);
 }
 
 .settings-hotkeys-master input {
-  margin-top: 2px;
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.settings-hotkeys-master span {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.settings-hotkeys-master span::before {
+  content: "";
+  width: 8px;
+  height: 8px;
   flex-shrink: 0;
+  border-radius: 999px;
+  background: currentColor;
+  opacity: 0.24;
+  transition:
+    opacity 120ms ease,
+    transform 120ms ease,
+    background-color 120ms ease,
+    box-shadow 120ms ease;
+}
+
+.settings-hotkeys-master input:checked + span::before {
+  opacity: 1;
+  transform: scale(1.05);
+  box-shadow: 0 0 0 4px rgba(var(--accent-rgb), 0.18);
+}
+
+.settings-hotkeys-master:has(input:focus-visible) {
+  outline: 2px solid rgba(var(--accent-rgb), 0.28);
+  outline-offset: 2px;
 }
 
 .hotkeys-panel {

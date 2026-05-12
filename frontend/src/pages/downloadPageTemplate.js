@@ -8,7 +8,7 @@ export function downloadPageTemplate() {
           <p class="page-hint">在搜索结果、歌单和推荐页里把歌曲加入下载后，会统一出现在这里。</p>
         </div>
         <div class="download-toolbar">
-          <button type="button" id="btn-pick-download-folder" class="btn-accent">下载保存目录…</button>
+          <button type="button" id="btn-pick-download-folder" class="btn-outline">下载保存目录…</button>
           <span id="download-folder-hint" class="muted"></span>
         </div>
       </div>
