@@ -1,13 +1,12 @@
 // Player hotkey helpers keep keyboard-triggered actions away from the runtime bootstrap.
 export function createPlayerHotkeyController(deps) {
-  const { getAudioEl, invoke, listen, shouldIgnoreGlobalHotkeyAction, warnRequestFailed } = deps;
+  const { getAudioEl, invoke, listen, setPreferredPlaybackVolume, shouldIgnoreGlobalHotkeyAction, togglePlayPauseWithTransition, warnRequestFailed } = deps;
 
   async function togglePlayPauseFromHotkey() {
     const audio = getAudioEl();
     if (!audio || !audio.src) return;
     try {
-      if (audio.paused) await audio.play();
-      else audio.pause();
+      await togglePlayPauseWithTransition?.();
     } catch (error) {
       warnRequestFailed(error, "togglePlayPauseFromHotkey");
     }
@@ -18,8 +17,7 @@ export function createPlayerHotkeyController(deps) {
     if (!volume) return;
     const next = Math.min(1, Math.max(0, Number(volume.value) / 100 + delta));
     volume.value = String(Math.round(next * 100));
-    const audio = getAudioEl();
-    if (audio) audio.volume = next;
+    setPreferredPlaybackVolume?.(next);
     try {
       await invoke("save_settings", { patch: { volume: next } });
     } catch (error) {
@@ -49,8 +47,7 @@ export function createPlayerHotkeyController(deps) {
       }
     };
     volume.addEventListener("input", () => {
-      const audio = getAudioEl();
-      if (audio) audio.volume = Number(volume.value) / 100;
+      setPreferredPlaybackVolume?.(Number(volume.value) / 100);
     });
     volume.addEventListener("change", persist);
   }

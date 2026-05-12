@@ -51,7 +51,9 @@ export function createDockRuntime(deps) {
     getAudioEl: deps.getAudioEl,
     invoke: deps.invoke,
     listen: deps.listen,
+    setPreferredPlaybackVolume: deps.setPreferredPlaybackVolume,
     shouldIgnoreGlobalHotkeyAction: deps.shouldIgnoreGlobalHotkeyAction,
+    togglePlayPauseWithTransition: deps.togglePlayPauseWithTransition,
     warnRequestFailed: deps.warnRequestFailed,
   });
 

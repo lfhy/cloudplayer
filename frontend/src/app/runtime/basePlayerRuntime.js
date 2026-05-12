@@ -3,6 +3,7 @@ import { createLyricsController } from "../../features/lyrics/controller.js";
 import { createAudioEventsController } from "../../features/player/audioEventsController.js";
 import { createPlayerChromeController } from "../../features/player/chromeController.js";
 import { createPlaybackController } from "../../features/player/playbackController.js";
+import { createPlaybackTransitionController } from "../../features/player/playbackTransitionController.js";
 import { createTrayRecentController } from "../../features/player/trayRecentController.js";
 
 // Base player runtime assembles playback, lyrics, recents and download state around shared accessors.
@@ -67,6 +68,10 @@ export function createBasePlayerRuntime(deps) {
     playModeItems: deps.playModeItems,
   });
 
+  const transition = createPlaybackTransitionController({
+    getAudioEl: deps.getAudioEl,
+  });
+
   const playback = createPlaybackController({
     alertRequestFailed: deps.alertRequestFailed,
     clearLyricsCache: lyrics.clearLyricsCache,
@@ -88,6 +93,7 @@ export function createBasePlayerRuntime(deps) {
     refreshFavButton: (...args) => deps.refreshFavButton(...args),
     renderQueuePanel: (...args) => deps.renderQueuePanel(...args),
     scheduleSavePlaybackState: deps.scheduleSavePlaybackState,
+    prepareForDirectPlayback: transition.prepareForDirectPlayback,
     setAudioSourceGeneration: deps.setAudioSourceGeneration,
     setPlayIndex: deps.setPlayIndex,
     setPlayLoadGeneration: deps.setPlayLoadGeneration,
@@ -119,6 +125,9 @@ export function createBasePlayerRuntime(deps) {
     scheduleSavePlaybackProgress: deps.scheduleSavePlaybackProgress,
     setAudioProgressLogLastTs: deps.setAudioProgressLogLastTs,
     setSeekDragging: deps.setSeekDragging,
+    togglePlayPauseWithTransition: transition.togglePlayPause,
+    onPauseTransitionEvent: transition.handlePauseEvent,
+    onPlayTransitionEvent: transition.handlePlayEvent,
     syncDesktopLyrics: () => lyrics.syncDesktopLyrics(),
     syncSeekUi: chrome.syncSeekUi,
   });
@@ -132,6 +141,8 @@ export function createBasePlayerRuntime(deps) {
     playFromSearchRow: playback.playFromSearchRow,
     removeCurrentFromQueue: playback.removeCurrentFromQueue,
     restorePlaybackSelection: playback.restorePlaybackSelection,
+    setPreferredPlaybackVolume: transition.setPreferredVolume,
+    togglePlayPauseWithTransition: transition.togglePlayPause,
     wireAudio: audio.wireAudio,
   };
 }

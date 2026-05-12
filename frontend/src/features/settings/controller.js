@@ -34,6 +34,7 @@ export function createSettingsController(deps) {
     updateDownloadFolderHint,
     warnRequestFailed,
     audioEl,
+    setPreferredPlaybackVolume,
     syncNeteaseCookieUi,
     setDesktopLyricsLocked,
     getDesktopLyricsOpen,
@@ -272,8 +273,7 @@ export function createSettingsController(deps) {
       const volume = typeof settings?.volume === "number" ? settings.volume : null;
       const volEl = document.getElementById("volume");
       if (volEl && volume != null) volEl.value = String(Math.round(volume * 100));
-      const audio = audioEl();
-      if (audio && volume != null) audio.volume = volume;
+      if (volume != null) setPreferredPlaybackVolume?.(volume);
       if (typeof settings?.desktop_lyrics_locked === "boolean") setDesktopLyricsLocked(settings.desktop_lyrics_locked);
       refreshLyricsLockMenuLabel();
       if (typeof settings?.last_library_folder === "string") setLastLibraryFolder(settings.last_library_folder.trim());

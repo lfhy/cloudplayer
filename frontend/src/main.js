@@ -122,6 +122,7 @@ const settings = createSettingsRuntime({
       await pages.loadPlaylistDetail(first.id, first.name || "", true);
     }
   },
+  setPreferredPlaybackVolume: (...args) => player.setPreferredPlaybackVolume(...args),
   updateDownloadFolderHint: (...args) => player.updateDownloadFolderHint(...args), warnRequestFailed,
 });
 
@@ -185,10 +186,12 @@ const { dock, dockTheme, hotkeys } = createDockRuntime({
   alertRequestFailed, applyAppTheme, getAudioEl: audioEl, getDesktopLyricsLocked: () => desktopLyricsLocked, getDesktopLyricsOpen: () => desktopLyricsOpen, getLikedIds: () => likedIds,
   getPlayIndex: () => playIndex, getPlayModeIndex: () => playModeIndex, getPlayQueue: () => playQueue, getQualityPref: () => qualityPref, getSettingsFormValues: () => settings.getSettingsFormValues(),
   invoke, listen, navIconSvg, normalizeAppThemeMode, iconSvgByName, playModeItems: PLAY_MODES, qualityLabels: QUALITY_LABELS, quickThemeModeLabels: QUICK_THEME_MODE_LABELS,
+  setPreferredPlaybackVolume: (...args) => player.setPreferredPlaybackVolume(...args),
   queueSettingsAutosave: (...args) => settings.queueSettingsAutosave(...args), setThemeModeSelection: settings.setThemeModeSelection, saveLikedIds: saveLikedSet, shouldIgnoreGlobalHotkeyAction, warnRequestFailed,
   broadcastDesktopLyricsLock: (...args) => player.broadcastDesktopLyricsLock(...args), closeContextMenu: (...args) => pages.closeContextMenu(...args), enqueueDownloadForTrack: (...args) => pages.enqueueDownloadForTrack(...args),
   openLyricsReplaceWindow: (...args) => player.openLyricsReplaceWindow(...args), playFromQueueIndex: (...args) => player.playFromQueueIndex(...args), refreshLyricsLockMenuLabel: (...args) => player.refreshLyricsLockMenuLabel(...args),
   removeCurrentFromQueue: (...args) => player.removeCurrentFromQueue(...args), renderPlayerNav: (...args) => player.setPlayerNavEnabled(...args), toggleDesktopLyrics: (...args) => player.toggleDesktopLyrics(...args),
+  togglePlayPauseWithTransition: (...args) => player.togglePlayPauseWithTransition(...args),
   toggleQueuePanel: (...args) => pages.toggleQueuePanel(...args), setDesktopLyricsLocked: (value) => { desktopLyricsLocked = value; }, setPlayModeIndex: (value) => { setPlayModeIndexValue(value); }, setQualityPref: (value) => { qualityPref = value; },
   scheduleSavePlaybackState: () => scheduleSavePlaybackState(),
 });

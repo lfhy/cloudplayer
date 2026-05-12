@@ -26,6 +26,9 @@ export function createAudioEventsController(deps) {
     setSeekDragging,
     syncDesktopLyrics,
     syncSeekUi,
+    togglePlayPauseWithTransition,
+    onPauseTransitionEvent,
+    onPlayTransitionEvent,
   } = deps;
 
   function wireAudio() {
@@ -102,6 +105,7 @@ export function createAudioEventsController(deps) {
       void syncDesktopLyrics();
     });
     audio.addEventListener("play", () => {
+      onPlayTransitionEvent?.();
       setPlayButtonIcon(playButton, true);
       refreshCurrentLyricsSnapshot?.();
       void savePlaybackProgressNow?.(true);
@@ -109,6 +113,7 @@ export function createAudioEventsController(deps) {
       void syncDesktopLyrics();
     });
     audio.addEventListener("pause", () => {
+      onPauseTransitionEvent?.();
       setPlayButtonIcon(playButton, false);
       refreshCurrentLyricsSnapshot?.();
       void savePlaybackProgressNow?.(true);
@@ -159,8 +164,7 @@ export function createAudioEventsController(deps) {
         return;
       }
       try {
-        if (audio.paused) await audio.play();
-        else audio.pause();
+        await togglePlayPauseWithTransition?.();
       } catch (error) {
         alertRequestFailed(error, "audio play()");
       }

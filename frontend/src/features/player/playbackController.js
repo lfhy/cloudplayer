@@ -21,6 +21,7 @@ export function createPlaybackController(deps) {
     messageRequestFailed,
     onAfterQueueChanged,
     onLyricsReady,
+    prepareForDirectPlayback,
     refreshFavButton,
     renderQueuePanel,
     scheduleSavePlaybackState,
@@ -86,6 +87,7 @@ export function createPlaybackController(deps) {
       const { assetUrl, playLogExtra } = await resolvePlaybackUrl(item, generation, { quiet });
       if (generation !== getPlayLoadGeneration()) return;
       await logPlayEventDesktop("play_start", { url: assetUrl, extra: playLogExtra });
+      prepareForDirectPlayback?.();
       audio.pause();
       audio.removeAttribute("src");
       audio.load();
@@ -150,6 +152,7 @@ export function createPlaybackController(deps) {
     const audio = getAudioEl();
     const playButton = document.getElementById("btn-player-play");
     if (audio) {
+      prepareForDirectPlayback?.();
       audio.pause();
       audio.removeAttribute("src");
       audio.load();
