@@ -60,8 +60,8 @@ func ShowMainWindowCloseWindow() {
 }
 
 func closeConfirmWindowBounds(mainWindow application.Window) application.Rect {
-	const width = 388
-	const height = 248
+	const width = 432
+	const height = 208
 	x, y := mainWindow.Position()
 	mainWidth, mainHeight := mainWindow.Size()
 	nextX := x + (mainWidth-width)/2

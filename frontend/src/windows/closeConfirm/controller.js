@@ -27,11 +27,11 @@ function renderCloseConfirmWindow(root) {
       <div class="close-confirm-card__actions">
         <button type="button" id="close-confirm-tray" class="close-confirm-choice">
           <strong>最小化到托盘</strong>
-          <span>保留后台播放</span>
+          <span>继续后台播放</span>
         </button>
         <button type="button" id="close-confirm-quit" class="close-confirm-choice close-confirm-choice--danger">
           <strong>退出应用</strong>
-          <span>完全关闭 CloudPlayer</span>
+          <span>完全关闭</span>
         </button>
       </div>
       <footer class="close-confirm-card__footer">

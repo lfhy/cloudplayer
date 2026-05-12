@@ -18,20 +18,20 @@ body.close-confirm-window {
   height: 100vh;
   display: grid;
   align-content: start;
-  gap: 12px;
-  padding: 20px 18px 16px;
+  gap: 10px;
+  padding: 18px 16px 14px;
   background:
     linear-gradient(180deg, color-mix(in srgb, var(--bg-card) 94%, transparent), color-mix(in srgb, var(--bg-main) 96%, transparent));
 }
 
 .platform-macos .close-confirm-card {
-  padding-top: 34px;
+  padding-top: 30px;
 }
 
 .close-confirm-card__head {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 10px;
 }
 
 .close-confirm-card__mark {
@@ -55,12 +55,12 @@ body.close-confirm-window {
 
 .close-confirm-card__copy {
   display: grid;
-  gap: 4px;
+  gap: 3px;
 }
 
 .close-confirm-card__title {
   margin: 0;
-  font-size: 18px;
+  font-size: 17px;
   line-height: 1.15;
   letter-spacing: -0.03em;
   color: var(--text);
@@ -68,19 +68,21 @@ body.close-confirm-window {
 
 .close-confirm-card__desc {
   margin: 0;
-  font-size: 12px;
-  line-height: 1.45;
+  font-size: 11px;
+  line-height: 1.35;
   color: var(--text-secondary);
 }
 
 .close-confirm-card__actions {
   display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 8px;
 }
 
 .close-confirm-choice {
   width: 100%;
-  padding: 10px 12px;
+  min-height: 62px;
+  padding: 9px 10px;
   border: 1px solid rgba(15, 23, 42, 0.08);
   border-radius: 14px;
   background: color-mix(in srgb, var(--bg-card) 94%, transparent);
@@ -93,13 +95,13 @@ body.close-confirm-window {
 }
 
 .close-confirm-choice strong {
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 700;
 }
 
 .close-confirm-choice span {
-  font-size: 10px;
-  line-height: 1.35;
+  font-size: 9px;
+  line-height: 1.25;
   color: var(--text-secondary);
 }
 
@@ -132,22 +134,23 @@ body.close-confirm-window {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 10px;
+  gap: 8px;
 }
 
 .close-confirm-card__remember {
   display: inline-flex;
   align-items: center;
-  gap: 7px;
-  font-size: 11px;
+  gap: 6px;
+  font-size: 10px;
   color: var(--text-secondary);
   cursor: pointer;
 }
 
 .close-confirm-card__footer .btn-outline {
-  min-width: 64px;
-  padding: 5px 10px;
+  min-width: 58px;
+  padding: 4px 9px;
   border-radius: 14px;
+  font-size: 11px;
   color: var(--text);
 }
 
@@ -159,7 +162,11 @@ body.close-confirm-window {
 
 @media (max-width: 520px) {
   .close-confirm-card {
-    padding: 18px 16px 14px;
+    padding: 16px 14px 12px;
+  }
+
+  .close-confirm-card__actions {
+    grid-template-columns: 1fr;
   }
 
   .close-confirm-card__footer {
