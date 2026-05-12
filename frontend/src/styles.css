@@ -25,6 +25,7 @@
 @import "./styles/components/context-menu.css";
 @import "./styles/windows/lyrics-shell.css";
 @import "./styles/windows/lyrics-replace.css";
+@import "./styles/windows/close-confirm.css";
 @import "./styles/components/modal.css";
 @import "./styles/pages/settings-shell.css";
 @import "./styles/pages/settings-preferences.css";

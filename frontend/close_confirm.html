@@ -1,0 +1,16 @@
+<!doctype html>
+<!-- Close confirm window hosts the compact exit flow outside the main webview shell. -->
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>退出 CloudPlayer</title>
+    <script>
+      globalThis.__CLOUDPLAYER_WINDOW_NAME__ = "close-confirm";
+    </script>
+    <script type="module" src="/src/close_confirm.js"></script>
+  </head>
+  <body class="close-confirm-window">
+    <div id="app" class="close-confirm-window__root"></div>
+  </body>
+</html>
