@@ -12,12 +12,29 @@ export function createMiniModeWindowController() {
   const mainWindow = RuntimeWindow.Get("main");
   let savedState = null;
 
+  async function readWindowValue(label, run, fallback) {
+    try {
+      return await run();
+    } catch (error) {
+      console.warn(`mini mode ${label}`, error);
+      return fallback;
+    }
+  }
+
+  async function runWindowStep(label, run) {
+    try {
+      await run();
+    } catch (error) {
+      console.warn(`mini mode ${label}`, error);
+    }
+  }
+
   async function captureWindowState() {
     const [position, size, wasFullscreen, wasMaximised] = await Promise.all([
-      mainWindow.Position(),
-      mainWindow.Size(),
-      mainWindow.IsFullscreen(),
-      mainWindow.IsMaximised(),
+      readWindowValue("Position", () => mainWindow.Position(), { x: 0, y: 0 }),
+      readWindowValue("Size", () => mainWindow.Size(), { width: MINI_WIDTH, height: MINI_HEIGHT }),
+      readWindowValue("IsFullscreen", () => mainWindow.IsFullscreen(), false),
+      readWindowValue("IsMaximised", () => mainWindow.IsMaximised(), false),
     ]);
     return { position, size, wasFullscreen, wasMaximised };
   }
@@ -39,33 +56,33 @@ export function createMiniModeWindowController() {
 
   async function enterMiniWindow() {
     savedState ||= await captureWindowState();
-    if (savedState.wasFullscreen || savedState.wasMaximised) await mainWindow.Restore();
+    if (savedState.wasFullscreen || savedState.wasMaximised) await runWindowStep("Restore", () => mainWindow.Restore());
     const bounds = miniBoundsFrom(savedState);
-    await mainWindow.SetMinSize(MINI_MIN_WIDTH, MINI_MIN_HEIGHT);
-    await mainWindow.SetResizable(true);
-    await mainWindow.SetAlwaysOnTop(true);
-    await mainWindow.SetSize(bounds.width, bounds.height);
-    await mainWindow.SetPosition(bounds.x, bounds.y);
-    await mainWindow.Focus();
+    await runWindowStep("SetResizable", () => mainWindow.SetResizable(true));
+    await runWindowStep("SetSize", () => mainWindow.SetSize(bounds.width, bounds.height));
+    await runWindowStep("SetPosition", () => mainWindow.SetPosition(bounds.x, bounds.y));
+    await runWindowStep("Focus", () => mainWindow.Focus());
   }
 
   async function exitMiniWindow() {
     const state = savedState;
     savedState = null;
-    await mainWindow.SetAlwaysOnTop(false);
-    await mainWindow.SetResizable(true);
-    await mainWindow.SetMinSize(MAIN_MIN_WIDTH, MAIN_MIN_HEIGHT);
+    await runWindowStep("SetResizable", () => mainWindow.SetResizable(true));
     if (!state) return;
     if (state.wasFullscreen) {
-      await mainWindow.Fullscreen();
+      await runWindowStep("Fullscreen", () => mainWindow.Fullscreen());
       return;
     }
     if (state.wasMaximised) {
-      await mainWindow.Maximise();
+      await runWindowStep("Maximise", () => mainWindow.Maximise());
       return;
     }
-    await mainWindow.SetSize(Math.max(MAIN_MIN_WIDTH, state.size.width), Math.max(MAIN_MIN_HEIGHT, state.size.height));
-    await mainWindow.SetPosition(Math.max(0, state.position.x), Math.max(0, state.position.y));
+    await runWindowStep("SetSize", () =>
+      mainWindow.SetSize(Math.max(MAIN_MIN_WIDTH, state.size.width), Math.max(MAIN_MIN_HEIGHT, state.size.height))
+    );
+    await runWindowStep("SetPosition", () =>
+      mainWindow.SetPosition(Math.max(0, state.position.x), Math.max(0, state.position.y))
+    );
   }
 
   return { enterMiniWindow, exitMiniWindow };

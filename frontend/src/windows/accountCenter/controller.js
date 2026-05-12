@@ -125,7 +125,7 @@ export function bootstrapAccountCenterWindow() {
     });
     view.wireAccountCenter();
     view.openAccountCenter(requestedProvider());
-    const cleanupAutoSize = wireChildWindowAutoSize({ element: cardEl(), windowRef: currentWindow });
+    const cleanupAutoSize = wireChildWindowAutoSize({ element: cardEl(), windowLabel: WINDOW_LABEL, windowRef: currentWindow });
     wireThemeRefresh();
     void applyThemeFromSettings();
     window.addEventListener("beforeunload", () => {

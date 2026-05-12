@@ -1,14 +1,17 @@
-// Child-window auto sizing keeps standalone dialogs matched to their rendered content instead of fixed viewport guesses.
+import { DesktopService } from "@bindings/cloudplayer/backend/desktop/index.js";
+
+// Child-window auto sizing uses backend-native centering so modal dialogs stay visually aligned with the main window.
 export function wireChildWindowAutoSize(config) {
   const {
     element,
+    windowLabel = "",
     windowRef,
     minHeight = 160,
     minWidth = 320,
     paddingHeight = 28,
     paddingWidth = 28,
   } = config;
-  if (!element || !windowRef) return () => {};
+  if (!element || (!windowLabel && !windowRef)) return () => {};
   let frame = 0;
   let lastWidth = 0;
   let lastHeight = 0;
@@ -21,11 +24,11 @@ export function wireChildWindowAutoSize(config) {
     lastWidth = targetWidth;
     lastHeight = targetHeight;
     try {
-      const [position, size] = await Promise.all([windowRef.Position(), windowRef.Size()]);
-      const nextX = Math.max(0, Math.round(position.x + (size.width - targetWidth) / 2));
-      const nextY = Math.max(0, Math.round(position.y + (size.height - targetHeight) / 2));
+      if (windowLabel) {
+        await DesktopService.ResizeWindowCenteredOnMain(windowLabel, targetWidth, targetHeight);
+        return;
+      }
       await windowRef.SetSize(targetWidth, targetHeight);
-      await windowRef.SetPosition(nextX, nextY);
     } catch (error) {
       console.warn("auto resize child window", error);
     }

@@ -1,4 +1,4 @@
-import { Events, Window as RuntimeWindow } from "@wailsio/runtime";
+import { Events } from "@wailsio/runtime";
 import { DesktopService } from "@bindings/cloudplayer/backend/desktop/index.js";
 import { unwrapPayload } from "../../wails/shared.js";
 
@@ -66,27 +66,7 @@ export function wireMusicSourceOnlineModeSelection(onChange) {
   });
 }
 
-async function onlineModeConfirmBounds() {
-  const width = 432;
-  const height = 188;
-  try {
-    const mainWindow = RuntimeWindow.Get("main");
-    const position = await mainWindow.Position();
-    const size = await mainWindow.Size();
-    return {
-      width,
-      height,
-      x: position.x + Math.round((size.width - width) / 2),
-      y: position.y + Math.max(28, Math.round((size.height - height) / 3)),
-    };
-  } catch (error) {
-    console.warn("online mode confirm bounds", error);
-    return { width, height, x: 140, y: 140 };
-  }
-}
-
 async function confirmEnableMusicOnlineMode() {
-  const bounds = await onlineModeConfirmBounds();
   return new Promise((resolve) => {
     Events.Once("settings-online-mode-confirm-result", (event) => {
       resolve(unwrapPayload(event?.data)?.accepted === true);
@@ -95,10 +75,9 @@ async function confirmEnableMusicOnlineMode() {
       label: ONLINE_MODE_CONFIRM_LABEL,
       url: ONLINE_MODE_CONFIRM_URL,
       title: "开启在线模式",
-      width: bounds.width,
-      height: bounds.height,
-      x: bounds.x,
-      y: bounds.y,
+      width: 432,
+      height: 188,
+      center_on_main: true,
       resizable: false,
       always_on_top: true,
       decorations: true,

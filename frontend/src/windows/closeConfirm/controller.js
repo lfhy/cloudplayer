@@ -147,7 +147,13 @@ export function bootstrapCloseConfirmWindow() {
     renderCloseConfirmWindow(document.getElementById("app"));
     resetRememberChoice();
     wireCloseConfirmWindow();
-    const cleanupAutoSize = wireChildWindowAutoSize({ element: document.querySelector(".close-confirm-card"), windowRef: currentWindow, minHeight: 188, minWidth: 432 });
+    const cleanupAutoSize = wireChildWindowAutoSize({
+      element: document.querySelector(".close-confirm-card"),
+      windowLabel: WINDOW_LABEL,
+      windowRef: currentWindow,
+      minHeight: 188,
+      minWidth: 432,
+    });
     void applyThemeFromSettings();
     window.addEventListener("beforeunload", cleanupAutoSize);
     window.setTimeout(() => {

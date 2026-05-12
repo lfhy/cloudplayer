@@ -19,6 +19,7 @@ type WindowCreateRequest struct {
 	Height                  int    `json:"height"`
 	X                       int    `json:"x"`
 	Y                       int    `json:"y"`
+	CenterOnMain            bool   `json:"center_on_main"`
 	Resizable               bool   `json:"resizable"`
 	AlwaysOnTop             bool   `json:"always_on_top"`
 	Decorations             bool   `json:"decorations"`
@@ -57,7 +58,13 @@ func (s *DesktopService) EnsureWindow(req WindowCreateRequest) error {
 		if req.Width > 0 && req.Height > 0 {
 			existing.SetSize(req.Width, req.Height)
 		}
-		existing.SetPosition(req.X, req.Y)
+		if req.CenterOnMain {
+			if !centerWindowOnMain(existing, req.Width, req.Height) {
+				existing.SetPosition(req.X, req.Y)
+			}
+		} else {
+			existing.SetPosition(req.X, req.Y)
+		}
 		existing.SetAlwaysOnTop(req.AlwaysOnTop)
 		existing.Show()
 		emitWindowVisibility(req.Label, true)
@@ -93,6 +100,9 @@ func (s *DesktopService) EnsureWindow(req WindowCreateRequest) error {
 		},
 	})
 	AttachWindowPersistenceHooks(window, req.Label)
+	if req.CenterOnMain {
+		centerWindowOnMain(window, req.Width, req.Height)
+	}
 	window.OnWindowEvent(events.Common.WindowClosing, func(_ *application.WindowEvent) {
 		emitWindowVisibility(req.Label, false)
 		_ = application.Get().Event.Emit("wails:window:closing", map[string]any{
@@ -103,6 +113,22 @@ func (s *DesktopService) EnsureWindow(req WindowCreateRequest) error {
 	if req.Focus {
 		window.Focus()
 	}
+	return nil
+}
+
+// ResizeWindowCenteredOnMain keeps content-driven child windows pinned to the visual center of the main window.
+func (s *DesktopService) ResizeWindowCenteredOnMain(label string, width, height int) error {
+	if label == "" {
+		return fmt.Errorf("window label is required")
+	}
+	window, ok := application.Get().Window.GetByName(label)
+	if !ok {
+		return fmt.Errorf("window %q not found", label)
+	}
+	if width > 0 && height > 0 {
+		window.SetSize(width, height)
+	}
+	centerWindowOnMain(window, width, height)
 	return nil
 }
 

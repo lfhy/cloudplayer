@@ -74,10 +74,10 @@ export function createMiniModeController(deps) {
     panel.setAttribute("aria-hidden", open ? "false" : "true");
     if (open) {
       closeImmersive?.();
-      await windowMode.enterMiniWindow();
       document.body.classList.add("mini-mode");
       panel.hidden = false;
       requestAnimationFrame(() => panel.classList.add("is-visible"));
+      await windowMode.enterMiniWindow();
       syncAll(true);
       scheduleLoop();
       return;

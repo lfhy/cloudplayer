@@ -22,7 +22,11 @@ body.mini-mode {
   background: transparent;
 }
 
-body.mini-mode #app > :not(.mini-player) {
+body.mini-mode .app-shell {
+  background: transparent;
+}
+
+body.mini-mode .app-shell > :not(.mini-player) {
   display: none !important;
 }
 
