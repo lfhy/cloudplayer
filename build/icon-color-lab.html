@@ -1,0 +1,246 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>CloudPlayer Icon Color Lab</title>
+    <style>
+      :root {
+        --start: #ef8b5f;
+        --end: #c85a45;
+        --panel: #fff7f4;
+        --edge: rgba(104, 33, 18, 0.12);
+        --text: #32140d;
+      }
+      * { box-sizing: border-box; }
+      body {
+        margin: 0;
+        font: 14px/1.5 "SF Pro Display", "PingFang SC", sans-serif;
+        color: var(--text);
+        background:
+          radial-gradient(circle at top left, #ffe7dd 0, transparent 32%),
+          linear-gradient(180deg, #fffdfb 0, #fff2ec 100%);
+      }
+      .shell {
+        max-width: 1160px;
+        margin: 0 auto;
+        padding: 28px 20px 40px;
+      }
+      .hero { margin-bottom: 20px; }
+      .hero h1 { margin: 0 0 8px; font-size: 28px; }
+      .hero p { margin: 0; max-width: 760px; color: #6b3b2d; }
+      .layout {
+        display: grid;
+        grid-template-columns: 320px minmax(0, 1fr);
+        gap: 20px;
+      }
+      .card {
+        background: rgba(255, 255, 255, 0.84);
+        backdrop-filter: blur(12px);
+        border: 1px solid var(--edge);
+        border-radius: 22px;
+        box-shadow: 0 18px 48px rgba(149, 66, 35, 0.1);
+      }
+      .controls { padding: 18px; position: sticky; top: 18px; }
+      .field { display: grid; gap: 8px; margin-bottom: 16px; }
+      .field label { font-weight: 700; }
+      .field-row { display: grid; grid-template-columns: 56px 1fr; gap: 10px; align-items: center; }
+      input[type="color"] {
+        width: 56px; height: 42px; border: none; background: transparent; padding: 0; cursor: pointer;
+      }
+      input[type="text"] {
+        width: 100%; border: 1px solid rgba(121, 58, 37, 0.18); border-radius: 12px;
+        padding: 10px 12px; font: inherit; color: inherit; background: #fffdfa;
+      }
+      .swatch {
+        height: 76px; border-radius: 18px; border: 1px solid rgba(121, 58, 37, 0.15);
+        background: linear-gradient(135deg, var(--start), var(--end));
+      }
+      .hint {
+        margin: 10px 0 0; padding: 12px 14px; border-radius: 14px;
+        background: rgba(239, 139, 95, 0.1); color: #7b3e2c;
+      }
+      .preview { padding: 18px; display: grid; gap: 18px; }
+      .preview-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+      .stage {
+        border-radius: 18px; padding: 18px; border: 1px solid rgba(121, 58, 37, 0.12);
+        display: grid; gap: 14px;
+      }
+      .stage--light { background: linear-gradient(180deg, #ffffff 0, #f6e8e1 100%); }
+      .stage--dark { background: linear-gradient(180deg, #27130d 0, #442017 100%); color: #fff3ee; }
+      .stage-head { display: flex; justify-content: space-between; gap: 10px; align-items: center; }
+      .stage-head strong { font-size: 16px; }
+      .stage-head span { font-size: 12px; opacity: 0.8; }
+      .icons { display: flex; flex-wrap: wrap; gap: 16px; align-items: end; }
+      .icon-wrap { display: grid; gap: 8px; justify-items: center; }
+      .icon-wrap code { font-size: 12px; }
+      .icon { width: var(--size); height: var(--size); display: block; filter: drop-shadow(0 10px 22px rgba(0, 0, 0, 0.18)); }
+      .output {
+        display: grid; gap: 12px; grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+      .reference {
+        display: flex; gap: 16px; align-items: center; flex-wrap: wrap;
+      }
+      .reference img {
+        width: 128px; height: 128px; border-radius: 22px; display: block;
+        border: 1px solid rgba(121, 58, 37, 0.12); background: #fff;
+      }
+      .output-box {
+        border-radius: 18px; border: 1px solid rgba(121, 58, 37, 0.12);
+        background: #fffdfa; padding: 14px;
+      }
+      .output-box h2 { margin: 0 0 8px; font-size: 14px; }
+      .output-box pre {
+        margin: 0; white-space: pre-wrap; word-break: break-word; font: 12px/1.45 ui-monospace, monospace;
+        color: #7a3220;
+      }
+      @media (max-width: 900px) {
+        .layout, .output, .preview-grid { grid-template-columns: 1fr; }
+        .controls { position: static; }
+      }
+    </style>
+  </head>
+  <body>
+    <main class="shell">
+      <section class="hero">
+        <h1>CloudPlayer Icon Color Lab</h1>
+        <p>这个页面只看静态 app icon 的红色渐变。左侧调色，右侧实时看亮底、暗底和多尺寸图标效果。默认值就是当前仓库正在使用的两段红色。</p>
+      </section>
+      <section class="layout">
+        <aside class="card controls">
+          <div class="field">
+            <label for="start-hex">渐变起始色</label>
+            <div class="field-row">
+              <input id="start-color" type="color" value="#ef8b5f" />
+              <input id="start-hex" type="text" value="#ef8b5f" spellcheck="false" />
+            </div>
+          </div>
+          <div class="field">
+            <label for="end-hex">渐变结束色</label>
+            <div class="field-row">
+              <input id="end-color" type="color" value="#c85a45" />
+              <input id="end-hex" type="text" value="#c85a45" spellcheck="false" />
+            </div>
+          </div>
+          <div class="swatch"></div>
+          <div class="hint">
+            当前值：
+            <strong id="pair-text">#ef8b5f → #c85a45</strong>
+          </div>
+        </aside>
+        <section class="card preview">
+          <div class="preview-grid">
+            <section class="stage stage--light">
+              <div class="stage-head"><strong>亮底预览</strong><span>Finder / 浏览器浅色背景</span></div>
+              <div class="icons" id="light-icons"></div>
+            </section>
+            <section class="stage stage--dark">
+              <div class="stage-head"><strong>暗底预览</strong><span>Dock / 深色壁纸附近</span></div>
+              <div class="icons" id="dark-icons"></div>
+            </section>
+          </div>
+          <div class="output">
+            <section class="output-box">
+              <h2>当前导出 Logo 对照</h2>
+              <div class="reference">
+                <img src="/build/appicon.png" alt="当前仓库里的 appicon.png" />
+                <pre>对照图来源：
+build/appicon.png
+
+右侧可调预览使用的是同一套 logo 形状，
+只是把渐变 stop 色实时换掉。</pre>
+              </div>
+            </section>
+            <section class="output-box">
+              <h2>SVG Stop Colors</h2>
+              <pre id="svg-output"></pre>
+            </section>
+            <section class="output-box">
+              <h2>可直接回复我的值</h2>
+              <pre id="reply-output"></pre>
+            </section>
+          </div>
+        </section>
+      </section>
+    </main>
+    <template id="icon-template">
+      <svg class="icon" viewBox="0 0 120 120" aria-hidden="true">
+        <defs>
+          <linearGradient id="bg-grad" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0%" stop-color="var(--start)"></stop>
+            <stop offset="100%" stop-color="var(--end)"></stop>
+          </linearGradient>
+        </defs>
+        <rect x="8" y="8" width="104" height="104" rx="26" fill="url(#bg-grad)"></rect>
+        <g fill="#fff">
+          <rect x="20" y="58" width="5" height="8" rx="2.5"></rect>
+          <rect x="29" y="52" width="5" height="20" rx="2.5"></rect>
+          <rect x="38" y="45" width="5" height="34" rx="2.5"></rect>
+          <rect x="47" y="38" width="5" height="48" rx="2.5"></rect>
+          <rect x="56" y="31" width="5" height="62" rx="2.5"></rect>
+          <rect x="65" y="38" width="5" height="48" rx="2.5"></rect>
+          <rect x="74" y="45" width="5" height="34" rx="2.5"></rect>
+          <rect x="83" y="52" width="5" height="20" rx="2.5"></rect>
+          <rect x="92" y="58" width="5" height="8" rx="2.5"></rect>
+          <rect x="18" y="57" width="84" height="4" rx="2" opacity="0.95"></rect>
+        </g>
+      </svg>
+    </template>
+    <script>
+      // Local icon lab wiring stays in one file so you can tweak and share colors quickly.
+      const root = document.documentElement;
+      const startColor = document.getElementById("start-color");
+      const endColor = document.getElementById("end-color");
+      const startHex = document.getElementById("start-hex");
+      const endHex = document.getElementById("end-hex");
+      const pairText = document.getElementById("pair-text");
+      const svgOutput = document.getElementById("svg-output");
+      const replyOutput = document.getElementById("reply-output");
+      const sizes = [256, 128, 64, 32];
+      const hexPattern = /^#[0-9a-fA-F]{6}$/;
+
+      function mountIcons(targetId) {
+        const target = document.getElementById(targetId);
+        const template = document.getElementById("icon-template");
+        sizes.forEach((size) => {
+          const wrap = document.createElement("div");
+          wrap.className = "icon-wrap";
+          const icon = template.content.firstElementChild.cloneNode(true);
+          icon.style.setProperty("--size", `${size}px`);
+          const label = document.createElement("code");
+          label.textContent = `${size} px`;
+          wrap.append(icon, label);
+          target.appendChild(wrap);
+        });
+      }
+
+      function normalize(hex, fallback) {
+        return hexPattern.test(hex) ? hex.toLowerCase() : fallback;
+      }
+
+      function render() {
+        const start = normalize(startHex.value.trim(), "#ef8b5f");
+        const end = normalize(endHex.value.trim(), "#c85a45");
+        startColor.value = start;
+        endColor.value = end;
+        startHex.value = start;
+        endHex.value = end;
+        root.style.setProperty("--start", start);
+        root.style.setProperty("--end", end);
+        pairText.textContent = `${start} → ${end}`;
+        svgOutput.textContent = `<stop offset="0%" stop-color="${start}"/>\n<stop offset="100%" stop-color="${end}"/>`;
+        replyOutput.textContent = `起始色：${start}\n结束色：${end}`;
+      }
+
+      [startColor, endColor].forEach((input) => input.addEventListener("input", () => {
+        if (input === startColor) startHex.value = startColor.value;
+        if (input === endColor) endHex.value = endColor.value;
+        render();
+      }));
+      [startHex, endHex].forEach((input) => input.addEventListener("input", render));
+      mountIcons("light-icons");
+      mountIcons("dark-icons");
+      render();
+    </script>
+  </body>
+</html>
