@@ -19,7 +19,7 @@ export function settingsFormBaselineDefaults() {
     neteaseApiBase: "",
     musicOnlineMode: false,
     autoCacheOnPlay: false,
-    musicSourceProvider: "pjmp3",
+    musicSourceProvider: "kugou",
     searchCacheTTLHours: 24,
     hotkeysSig: "",
   };

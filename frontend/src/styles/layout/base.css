@@ -15,6 +15,7 @@ body {
 
 .platform-macos {
   --titlebar-left-gap: 16px;
+  --sidebar-top-gap: 46px;
 }
 
 .app-root {
@@ -37,4 +38,3 @@ body {
   min-height: 0;
   overflow: hidden;
 }
-

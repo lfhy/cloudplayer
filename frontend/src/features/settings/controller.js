@@ -106,7 +106,7 @@ export function createSettingsController(deps) {
     setThemeModeSelection(mode);
     setThemeCardSelection(theme);
     setNetworkProxyModeSelection(proxyMode);
-    setMusicSourceProviderSelection(settings?.music_source_provider ?? settings?.musicSourceProvider ?? "pjmp3");
+    setMusicSourceProviderSelection(settings?.music_source_provider ?? settings?.musicSourceProvider ?? "kugou");
     setMusicSourceOnlineModeSelection(settings?.music_online_mode ?? settings?.musicOnlineMode ?? false);
     setMusicSourceOnlineModeBusy(false, musicOnlineModeStatusText(settings?.music_online_mode ?? settings?.musicOnlineMode ?? false));
     applyAppTheme(theme, customAccent, mode);
@@ -245,7 +245,7 @@ export function createSettingsController(deps) {
       queueSettingsAutosave(true);
     }));
     document.querySelectorAll("[data-music-source-provider-card]").forEach((card) => card.addEventListener("click", () => {
-      setMusicSourceProviderSelection(card.getAttribute("data-music-source-provider-card") || "pjmp3");
+      setMusicSourceProviderSelection(card.getAttribute("data-music-source-provider-card") || "kugou");
       queueSettingsAutosave(true);
     }));
     wireMusicSourceOnlineModeSelection((nextEnabled) => toggleMusicOnlineMode(nextEnabled, {

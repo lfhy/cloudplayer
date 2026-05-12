@@ -92,7 +92,7 @@ func DefaultSettings() Settings {
 		DesktopLyricsIdleLine2:      "让音乐陪你此刻",
 		MusicOnlineMode:             false,
 		AutoCacheOnPlay:             false,
-		MusicSourceProvider:         "pjmp3",
+		MusicSourceProvider:         "kugou",
 		SearchCacheTTLHours:         24,
 	}
 }
@@ -102,7 +102,7 @@ func NormalizeMusicSourceProvider(value string) string {
 	case "pjmp3", "kugou":
 		return strings.ToLower(strings.TrimSpace(value))
 	default:
-		return "pjmp3"
+		return "kugou"
 	}
 }
 

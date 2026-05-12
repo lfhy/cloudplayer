@@ -13,7 +13,7 @@ import (
 const (
 	ProviderPJMP3      = "pjmp3"
 	ProviderKugou      = "kugou"
-	DefaultProviderKey = ProviderPJMP3
+	DefaultProviderKey = ProviderKugou
 )
 
 type SearchResult struct {

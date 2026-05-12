@@ -5,9 +5,9 @@ export function sourcePanelTemplate() {
       <div class="settings-panel__body">
         <div class="settings-field">
           <span class="settings-field-label">在线曲库渠道</span>
-          <input type="hidden" id="setting-music-source-provider" value="pjmp3" />
+          <input type="hidden" id="setting-music-source-provider" value="kugou" />
           <div class="settings-choice-group" role="radiogroup" aria-label="在线曲库渠道">
-            <button type="button" class="settings-choice" data-music-source-provider-card="pjmp3" role="radio" aria-checked="false">PJMP3 公共源</button>
+            <button type="button" class="settings-choice" data-music-source-provider-card="pjmp3" role="radio" aria-checked="false">泡椒音乐源</button>
             <button type="button" class="settings-choice" data-music-source-provider-card="kugou" role="radio" aria-checked="false">酷狗概念版</button>
           </div>
           <p class="settings-field-hint muted">当前默认搜索、试听、播放与下载都会跟随这里选择的曲库渠道；在线模式开启后会临时切到云端。</p>

@@ -65,8 +65,8 @@ export function normalizeSettingsTab(value) {
 }
 
 export function normalizeMusicSourceProvider(value) {
-  const normalized = String(value || "pjmp3").trim().toLowerCase();
-  return MUSIC_SOURCE_PROVIDERS.has(normalized) ? normalized : "pjmp3";
+  const normalized = String(value || "kugou").trim().toLowerCase();
+  return MUSIC_SOURCE_PROVIDERS.has(normalized) ? normalized : "kugou";
 }
 
 export function canSaveCustomProxyUrl(value) {
