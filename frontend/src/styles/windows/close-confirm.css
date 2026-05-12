@@ -127,7 +127,7 @@ body.close-confirm-window {
   padding: 0 10px;
   border-radius: 999px;
   border: 0;
-  background: transparent;
+  background: color-mix(in srgb, var(--bg-card) 96%, var(--surface-subtle));
   font-size: 10px;
   font-weight: 600;
   color: var(--text-secondary);
@@ -141,7 +141,7 @@ body.close-confirm-window {
 }
 
 .close-confirm-card__remember:hover {
-  background: rgba(var(--accent-rgb), 0.06);
+  background: color-mix(in srgb, var(--bg-card) 92%, rgba(var(--accent-rgb), 0.08));
   color: var(--text);
   transform: translateY(-1px);
 }
