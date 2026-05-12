@@ -17,6 +17,15 @@
 - Large HTML structures should be moved into JS template modules or smaller window/page entry files.
 - Large CSS should be split by page or component responsibility.
 
+## Child Window UI
+
+- Standalone child windows should follow the compact native-dialog style used by the close-confirm window.
+- Keep child windows simple: no decorative app icon, no extra explanatory copy unless the flow truly needs it.
+- Titles should be visually centered, while leaving safe space for macOS traffic lights and Windows title-bar controls.
+- Layout child windows in three clear zones: title at top, primary actions in the middle area, secondary controls at the bottom.
+- Secondary controls such as `取消` or `记住这次选择` should stay pinned to the bottom edge of the content area.
+- Primary actions should use compact button sizing consistent with the main app, not large card-like blocks.
+
 ## Backend Organization
 
 - Split Go files by responsibility within a package, for example:

@@ -42,11 +42,18 @@ body.close-confirm-window {
   color: var(--text);
 }
 
+.close-confirm-card__body {
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
 .close-confirm-card__actions {
   display: flex;
+  width: 100%;
   gap: 8px;
   align-items: stretch;
-  margin-top: 8px;
 }
 
 .close-confirm-choice {
@@ -93,7 +100,6 @@ body.close-confirm-window {
 }
 
 .close-confirm-card__footer {
-  margin-top: auto;
   display: flex;
   align-items: center;
   justify-content: space-between;
