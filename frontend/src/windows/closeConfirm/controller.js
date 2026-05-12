@@ -20,12 +20,8 @@ function renderCloseConfirmWindow(root) {
         <h1 class="close-confirm-card__title">关闭主窗口？</h1>
       </header>
       <div class="close-confirm-card__actions">
-        <button type="button" id="close-confirm-tray" class="close-confirm-choice">
-          <strong>最小化到托盘</strong>
-        </button>
-        <button type="button" id="close-confirm-quit" class="close-confirm-choice close-confirm-choice--danger">
-          <strong>退出应用</strong>
-        </button>
+        <button type="button" id="close-confirm-tray" class="close-confirm-choice">最小化到托盘</button>
+        <button type="button" id="close-confirm-quit" class="close-confirm-choice close-confirm-choice--danger">退出应用</button>
       </div>
       <footer class="close-confirm-card__footer">
         <label class="close-confirm-card__remember"><input type="checkbox" id="close-confirm-remember" /> 记住这次选择</label>
