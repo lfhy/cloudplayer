@@ -6,8 +6,8 @@
     <title>CloudPlayer Icon Color Lab</title>
     <style>
       :root {
-        --start: #ef8b5f;
-        --end: #c85a45;
+        --start: #ef6161;
+        --end: #c84646;
         --panel: #fff7f4;
         --edge: rgba(104, 33, 18, 0.12);
         --text: #32140d;
@@ -111,21 +111,21 @@
           <div class="field">
             <label for="start-hex">渐变起始色</label>
             <div class="field-row">
-              <input id="start-color" type="color" value="#ef8b5f" />
-              <input id="start-hex" type="text" value="#ef8b5f" spellcheck="false" />
+              <input id="start-color" type="color" value="#ef6161" />
+              <input id="start-hex" type="text" value="#ef6161" spellcheck="false" />
             </div>
           </div>
           <div class="field">
             <label for="end-hex">渐变结束色</label>
             <div class="field-row">
-              <input id="end-color" type="color" value="#c85a45" />
-              <input id="end-hex" type="text" value="#c85a45" spellcheck="false" />
+              <input id="end-color" type="color" value="#c84646" />
+              <input id="end-hex" type="text" value="#c84646" spellcheck="false" />
             </div>
           </div>
           <div class="swatch"></div>
           <div class="hint">
             当前值：
-            <strong id="pair-text">#ef8b5f → #c85a45</strong>
+            <strong id="pair-text">#ef6161 → #c84646</strong>
           </div>
         </aside>
         <section class="card preview">
@@ -219,8 +219,8 @@ build/appicon.png
       }
 
       function render() {
-        const start = normalize(startHex.value.trim(), "#ef8b5f");
-        const end = normalize(endHex.value.trim(), "#c85a45");
+        const start = normalize(startHex.value.trim(), "#ef6161");
+        const end = normalize(endHex.value.trim(), "#c84646");
         startColor.value = start;
         endColor.value = end;
         startHex.value = start;
