@@ -73,3 +73,9 @@ QQ群：`572532027`
 - Remote media proxy now uses a streaming HTTP client without the shared 45s total timeout, which prevents long audio playback from being cut off mid-stream.
 - App logs now capture remote media fetch start/status/copy failures and richer audio-element diagnostics, making Windows playback failures easier to trace.
 - Each desktop app launch now also writes a separate `session-YYYYMMDD-HHMMSS-pid.log`, so support traces still exist even if the shared `cloudplayer.log` is not updated.
+
+## Kugou playback recovery
+
+- Kugou login status now auto-runs the daily listen-song / VIP refresh path when the saved session is still valid, with a cooldown to avoid hammering the API after a failed attempt.
+- Kugou playback no longer treats one-minute preview URLs as normal full-track playback. When a real full-track URL is unavailable, CloudPlayer falls back to a PJMP3 match instead of staying stuck on the expired Kugou source.
+- Switching the default source, toggling online mode, logging into Kugou, or logging out of Kugou now clears the persisted playback queue and resume snapshot so stale online `source_id` values do not poison later playback attempts.

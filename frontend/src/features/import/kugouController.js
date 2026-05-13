@@ -3,8 +3,8 @@ import { renderKugouPlaylistCards, renderKugouPreviewMarkup } from "./kugouPlayl
 
 // Kugou import controller owns login-mode switching and playlist selection inside the import page.
 export function createImportKugouController(deps) {
-  const { alertRequestFailed, escapeHtml, invoke, setImportConfigHeader, setImportDraft, refreshPlaylistSelect } = deps;
-  const session = createKugouSessionBridge({ alertRequestFailed, invoke });
+  const { alertRequestFailed, escapeHtml, invoke, onKugouAuthChanged, setImportConfigHeader, setImportDraft, refreshPlaylistSelect } = deps;
+  const session = createKugouSessionBridge({ alertRequestFailed, invoke, onAuthChanged: onKugouAuthChanged });
   let lastRows = [];
   let previewListID = 0;
   let previewState = new Map();

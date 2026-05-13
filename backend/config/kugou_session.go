@@ -12,9 +12,14 @@ import (
 
 // Kugou session is persisted separately from settings so auth cookies stay isolated and replaceable.
 type KugouSession struct {
-	Cookie     map[string]string `json:"cookie,omitempty"`
-	LastUserID string            `json:"last_user_id,omitempty"`
-	UpdatedAt  string            `json:"updated_at,omitempty"`
+	Cookie              map[string]string `json:"cookie,omitempty"`
+	LastUserID          string            `json:"last_user_id,omitempty"`
+	LastBenefitSyncDate string            `json:"last_benefit_sync_date,omitempty"`
+	LastBenefitSyncAt   string            `json:"last_benefit_sync_at,omitempty"`
+	LastBenefitStatus   string            `json:"last_benefit_status,omitempty"`
+	LastSignedDate      string            `json:"last_signed_date,omitempty"`
+	LastVIPExpireAt     string            `json:"last_vip_expire_at,omitempty"`
+	UpdatedAt           string            `json:"updated_at,omitempty"`
 }
 
 func kugouSessionPath() string {

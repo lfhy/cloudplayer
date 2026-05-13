@@ -190,6 +190,7 @@ export function createPageRuntime(deps) {
     loadPlaylistDetail: playlist.loadPlaylistDetail,
     MSG_REQUEST_FAILED: messageRequestFailed,
     open,
+    onKugouAuthChanged: deps.onKugouAuthChanged,
     refreshLocalLibraryTable,
     refreshPlaylistSelect: playlist.refreshPlaylistSelect,
     refreshSidebarPlaylists: playlist.refreshSidebarPlaylists,

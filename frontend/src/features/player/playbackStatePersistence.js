@@ -147,6 +147,19 @@ export function createPlaybackStatePersistence(deps) {
     await savePlaybackProgressNow(true);
   }
 
+  async function clearPersistedPlaybackState() {
+    pendingResume = null;
+    lastProgressSignature = "";
+    clearPendingPlaybackSeekState(getAudioEl?.());
+    await persistPatch({
+      play_queue: [],
+      play_queue_index: 0,
+      playback_track_key: "",
+      playback_position_ms: 0,
+      playback_duration_ms: 0,
+    }, "playback_reset");
+  }
+
   function hasPendingPlaybackResume(track = currentTrack()) {
     return !!pendingResume && currentPlayableKey(track) === pendingResume.trackKey;
   }
@@ -209,6 +222,7 @@ export function createPlaybackStatePersistence(deps) {
 
   return {
     applyPendingPlaybackResume,
+    clearPersistedPlaybackState,
     hasPendingPlaybackResume,
     restorePlaybackState,
     savePlaybackProgressNow,

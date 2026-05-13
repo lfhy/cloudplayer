@@ -63,8 +63,14 @@ func (s *CloudPlayerService) LoginKugouByCellphone(mobile, code string) (KugouLo
 		}
 		return KugouLoginStatus{}, fmt.Errorf("%s", message)
 	}
+	previousUserID := kugouSessionUserID(session)
 	if err := saveKugouClientSession(client); err != nil {
 		return KugouLoginStatus{}, err
 	}
+	nextUserID := strings.TrimSpace(client.Cookie()["userid"])
+	if err := s.afterKugouSessionMutation(previousUserID, nextUserID); err != nil {
+		return KugouLoginStatus{}, err
+	}
+	s.maybeSyncKugouBenefits(context.Background())
 	return s.GetKugouLoginStatus()
 }

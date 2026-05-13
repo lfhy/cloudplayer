@@ -32,6 +32,7 @@ export function createImportPageController(deps) {
     alertRequestFailed,
     escapeHtml,
     invoke,
+    onKugouAuthChanged: deps.onKugouAuthChanged,
     refreshPlaylistSelect,
     setImportConfigHeader: deps.setImportConfigHeader,
     setImportDraft,

@@ -6,8 +6,8 @@ import { ACCOUNT_PROVIDERS } from "./providers.js";
 
 // Account-center view owns provider tabs and Kugou login state inside the standalone child window.
 export function createAccountCenterView(deps) {
-  const { alertRequestFailed, closeAccountCenter, escapeHtml, invoke, onImportRequested, onKugouStatusChanged, onOnlineModeToggleRequested } = deps;
-  const kugou = createKugouSessionBridge({ alertRequestFailed, invoke });
+  const { alertRequestFailed, closeAccountCenter, escapeHtml, invoke, onImportRequested, onKugouAuthChanged, onKugouStatusChanged, onOnlineModeToggleRequested } = deps;
+  const kugou = createKugouSessionBridge({ alertRequestFailed, invoke, onAuthChanged: onKugouAuthChanged });
   let activeProvider = "kugou";
   let onlineModeEnabled = false;
 

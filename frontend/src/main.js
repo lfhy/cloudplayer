@@ -35,6 +35,7 @@ let setPage = () => {}, renderHomePage = () => {}, renderDailyTable = () => {}, 
 let renderQueuePanel = () => {}, refreshFavButton = () => {}, randomNextIndex = () => 0, refreshQuickThemeModeUi = () => {}, renderImportTable = () => {}, loadPlaylistDetail = async () => {};
 let openAccountCenter = () => {}, refreshAccountCenter = () => {}, wireAccountCenter = () => {};
 let scheduleSavePlaybackState = () => {}, restorePlaybackState = async () => {};
+let clearPersistedPlaybackState = async () => {};
 let scheduleSavePlaybackProgress = () => {}, savePlaybackProgressNow = async () => {};
 let hasPendingPlaybackResume = () => false, applyPendingPlaybackResume = () => false;
 
@@ -79,6 +80,59 @@ function setPlayIndexValue(value) {
   scheduleSavePlaybackState();
 }
 
+async function invalidatePlaybackContext(reason = "unknown") {
+  const audio = audioEl();
+  playLoadGeneration += 1;
+  audioSourceGeneration += 1;
+  if (audio) {
+    audio.pause();
+    audio.removeAttribute("src");
+    audio.load();
+  }
+  setPlayQueueValue([]);
+  setPlayIndexValue(0);
+  await clearPersistedPlaybackState();
+  player.restorePlaybackSelection?.();
+  player.refreshCurrentLyricsSnapshot?.();
+  void player.syncDesktopLyrics?.();
+  console.info("playback context invalidated", reason);
+}
+
+async function refreshPlaylistContextAfterSourceMutation() {
+  await pages.refreshSidebarPlaylists(true);
+  await pages.refreshPlaylistSelect(true);
+  const playlists = await invoke("list_playlists");
+  const first = Array.isArray(playlists) && playlists.length ? playlists[0] : null;
+  if (!first) {
+    selectedPlaylistId = null;
+    selectedPlaylistName = "";
+    playlistDetailRows = [];
+    pages.renderPlaylistDetailTable();
+    return;
+  }
+  selectedPlaylistId = first.id;
+  selectedPlaylistName = first.name || "";
+  if (document.querySelector('.page[data-page="playlist"]')?.classList.contains("page-active")) {
+    await pages.loadPlaylistDetail(first.id, first.name || "", true);
+  }
+}
+
+async function handleKugouAuthChanged(payload = {}) {
+  await invalidatePlaybackContext(`kugou_${payload?.action || "changed"}`);
+  let nextOnlineMode = false;
+  try {
+    const latestSettings = await invoke("get_settings");
+    nextOnlineMode = latestSettings?.music_online_mode ?? latestSettings?.musicOnlineMode ?? false;
+    setMusicOnlineModeEnabledValue(nextOnlineMode);
+  } catch (error) {
+    console.warn("get_settings after kugou auth change", error);
+  }
+  if (nextOnlineMode || payload?.action === "logout") {
+    await refreshPlaylistContextAfterSourceMutation();
+  }
+  await refreshAccountCenter();
+}
+
 function shouldIgnoreGlobalHotkeyAction() {
   const active = document.activeElement;
   if (!active || !(active instanceof Element)) return false;
@@ -104,24 +158,14 @@ const settings = createSettingsRuntime({
   setLastLibraryFolder: (value) => { lastLibraryFolder = value; }, setMainWindowCloseAction: (value) => { mainWindowCloseAction = value; },
   setMusicOnlineModeEnabledValue,
   setNeteaseCookieState: ({ enabled, value }) => { neteaseCookieEnabled = !!enabled; neteaseCookieValue = String(value || ""); }, setPage: (...args) => setPage(...args),
+  onKugouAuthChanged: (...args) => handleKugouAuthChanged(...args),
   onMusicOnlineModeChanged: async (enabled) => {
     musicOnlineModeEnabled = !!enabled;
-    await pages.refreshSidebarPlaylists(true);
-    await pages.refreshPlaylistSelect(true);
-    const playlists = await invoke("list_playlists");
-    const first = Array.isArray(playlists) && playlists.length ? playlists[0] : null;
-    if (!first) {
-      selectedPlaylistId = null;
-      selectedPlaylistName = "";
-      playlistDetailRows = [];
-      pages.renderPlaylistDetailTable();
-      return;
-    }
-    selectedPlaylistId = first.id;
-    selectedPlaylistName = first.name || "";
-    if (document.querySelector('.page[data-page="playlist"]')?.classList.contains("page-active")) {
-      await pages.loadPlaylistDetail(first.id, first.name || "", true);
-    }
+    await invalidatePlaybackContext(enabled ? "online_mode_enabled" : "online_mode_disabled");
+    await refreshPlaylistContextAfterSourceMutation();
+  },
+  onMusicSourceProviderChanged: async () => {
+    await invalidatePlaybackContext("music_source_provider_changed");
   },
   setPreferredPlaybackVolume: (...args) => player.setPreferredPlaybackVolume(...args),
   updateDownloadFolderHint: (...args) => player.updateDownloadFolderHint(...args), warnRequestFailed,
@@ -158,6 +202,9 @@ refreshAccountCenter = (...args) => settings.refreshKugouSettingsStatus(...args)
 wireAccountCenter = (...args) => accountCenter.wireAccountCenter(...args);
 listen("account-center-status-changed", () => {
   void refreshAccountCenter();
+});
+listen("account-center-kugou-session-mutated", (event) => {
+  void handleKugouAuthChanged(event?.payload || {});
 });
 listen("account-center-open-import", (event) => {
   const provider = String(event?.payload?.provider || "").trim().toLowerCase();
@@ -199,7 +246,7 @@ const pages = createPageRuntime({
   setNeteaseCookieState: ({ enabled, value }) => { neteaseCookieEnabled = !!enabled; neteaseCookieValue = String(value || ""); }, setPlayQueue: (rows) => { setPlayQueueValue(rows); },
   setTableMutedMessage,
   setPlaylistDetailRows: (rows) => { playlistDetailRows = Array.isArray(rows) ? rows : []; }, setSelectedPlaylist: (id, name) => { selectedPlaylistId = id; selectedPlaylistName = name || ""; },
-  sidebarMenuItems: SIDEBAR_MENU_NAV, syncNeteaseCookieUi: settings.syncNeteaseCookieUi, warnRequestFailed,
+  sidebarMenuItems: SIDEBAR_MENU_NAV, syncNeteaseCookieUi: settings.syncNeteaseCookieUi, onKugouAuthChanged: (...args) => handleKugouAuthChanged(...args), warnRequestFailed,
 });
 setPage = pages.setPage; renderHomePage = pages.renderHomePage; renderDailyTable = pages.renderDailyTable; renderRecentPlaysTable = player.renderRecentPlaysTable; renderImportTable = pages.renderImportTable; loadPlaylistDetail = pages.loadPlaylistDetail;
 
@@ -236,6 +283,7 @@ const playbackState = createPlaybackStatePersistence({
   syncSeekUi: () => player.syncSeekUi?.(),
 });
 applyPendingPlaybackResume = playbackState.applyPendingPlaybackResume;
+clearPersistedPlaybackState = playbackState.clearPersistedPlaybackState;
 hasPendingPlaybackResume = playbackState.hasPendingPlaybackResume;
 savePlaybackProgressNow = playbackState.savePlaybackProgressNow;
 scheduleSavePlaybackProgress = playbackState.scheduleSavePlaybackProgress;

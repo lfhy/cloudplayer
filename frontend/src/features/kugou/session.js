@@ -1,6 +1,6 @@
 // Shared Kugou session helpers keep QR polling and login-state copy consistent across import and preferences.
 export function createKugouSessionBridge(deps) {
-  const { alertRequestFailed, invoke } = deps;
+  const { alertRequestFailed, invoke, onAuthChanged } = deps;
   let qrKey = "";
   let qrURL = "";
   let pollTimer = null;
@@ -27,6 +27,7 @@ export function createKugouSessionBridge(deps) {
     if (!qrKey) return null;
     try {
       const status = await invoke("poll_kugou_login_qr_code", { key: qrKey });
+      if (status?.logged_in) onAuthChanged?.({ action: "login", status });
       onStatus?.(status, { qrKey, qrURL });
       if (status?.status === "waiting" || status?.status === "scanned") {
         pollTimer = setTimeout(() => void pollQRCode(onStatus), 1800);
@@ -46,7 +47,9 @@ export function createKugouSessionBridge(deps) {
   }
 
   async function loginByCellphone(mobile, code) {
-    return invoke("login_kugou_by_cellphone", { mobile, code });
+    const status = await invoke("login_kugou_by_cellphone", { mobile, code });
+    if (status?.logged_in) onAuthChanged?.({ action: "login", status });
+    return status;
   }
 
   async function listPlaylists() {
@@ -57,7 +60,9 @@ export function createKugouSessionBridge(deps) {
     clearPollTimer();
     qrKey = "";
     qrURL = "";
-    return invoke("logout_kugou");
+    const result = await invoke("logout_kugou");
+    onAuthChanged?.({ action: "logout", status: null });
+    return result;
   }
 
   return {

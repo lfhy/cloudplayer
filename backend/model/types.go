@@ -19,10 +19,11 @@ type SearchSongMetadataRow struct {
 }
 
 type ResolveOnlinePlayOut struct {
-	Kind string `json:"kind"`
-	Path string `json:"path,omitempty"`
-	URL  string `json:"url,omitempty"`
-	Via  string `json:"via"`
+	Kind             string `json:"kind"`
+	Path             string `json:"path,omitempty"`
+	URL              string `json:"url,omitempty"`
+	Via              string `json:"via"`
+	ResolvedSourceID string `json:"resolved_source_id,omitempty"`
 }
 
 type PlaylistRow struct {

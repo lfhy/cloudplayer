@@ -89,6 +89,11 @@ export function createPlaybackController(deps) {
     try {
       const { assetUrl, playLogExtra } = await resolvePlaybackUrl(item, generation, { quiet });
       if (generation !== getPlayLoadGeneration()) return;
+      if (playLogExtra?.resolvedSourceId && playLogExtra.resolvedSourceId !== item.source_id) {
+        const nextQueue = getPlayQueue().slice();
+        nextQueue[index] = { ...nextQueue[index], source_id: playLogExtra.resolvedSourceId };
+        setPlayQueue(nextQueue);
+      }
       await logPlayEventDesktop("play_start", { url: assetUrl, extra: playLogExtra });
       prepareForDirectPlayback?.();
       audio.pause();
@@ -243,13 +248,13 @@ export function createPlaybackController(deps) {
     if (resolved.kind === "url" && resolved.url) {
       return {
         assetUrl: proxyRemoteAssetSrc(resolved.url),
-        playLogExtra: { sid: item.source_id, kind: resolved.kind, via: resolved.via },
+        playLogExtra: { sid: item.source_id, kind: resolved.kind, via: resolved.via, resolvedSourceId: resolved.resolved_source_id || null },
       };
     }
     if (resolved.kind === "file" && resolved.path) {
       return {
         assetUrl: convertFileSrc(resolved.path),
-        playLogExtra: { sid: item.source_id, kind: resolved.kind, via: resolved.via },
+        playLogExtra: { sid: item.source_id, kind: resolved.kind, via: resolved.via, resolvedSourceId: resolved.resolved_source_id || null },
       };
     }
     throw new Error("resolve_online_play: 无效结果");
@@ -257,7 +262,7 @@ export function createPlaybackController(deps) {
 
   async function maybeQueueAutoCacheDownload(item, playLogExtra) {
     const sourceId = String(item?.source_id || "").trim();
-    if (!autoCacheOnPlayEnabled() || !sourceId || item?.local_path || playLogExtra?.via === "download") return;
+    if (!autoCacheOnPlayEnabled() || !sourceId || item?.local_path || playLogExtra?.via === "download" || String(playLogExtra?.via || "").startsWith("pjmp3_fallback")) return;
     if (getDownloadTasks().has(sourceId)) return;
     try {
       await invoke("enqueue_download", { source_id: sourceId, title: item.title || "", artist: item.artist || "", cover_url: item.cover_url || "", quality: "128" });

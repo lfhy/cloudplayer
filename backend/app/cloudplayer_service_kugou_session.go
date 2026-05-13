@@ -19,14 +19,6 @@ func kugouClientFromSession() (*kg.Client, config.KugouSession, error) {
 	return client, session, nil
 }
 
-func saveKugouClientSession(client *kg.Client) error {
-	cookie := client.Cookie()
-	return config.SaveKugouSession(config.KugouSession{
-		Cookie:     cookie,
-		LastUserID: strings.TrimSpace(cookie["userid"]),
-	})
-}
-
 func (s *CloudPlayerService) GetKugouLoginStatus() (KugouLoginStatus, error) {
 	client, session, err := kugouClientFromSession()
 	if err != nil {
@@ -40,6 +32,7 @@ func (s *CloudPlayerService) GetKugouLoginStatus() (KugouLoginStatus, error) {
 		return KugouLoginStatus{Status: "expired", LoggedIn: false, UserID: strings.TrimSpace(session.Cookie["userid"])}, nil
 	}
 	_ = saveKugouClientSession(client)
+	s.maybeSyncKugouBenefits(context.Background())
 	nickname := strings.TrimSpace(kugouBodyString(resp.Body, "nickname", "k_nickname", "name", "username", "user_name"))
 	avatarURL := kugouNormalizeAssetURL(kugouBodyString(resp.Body, "pic", "k_pic", "fx_pic", "avatar", "headimg", "user_pic", "bg_pic"))
 	status := KugouLoginStatus{
@@ -96,9 +89,15 @@ func (s *CloudPlayerService) PollKugouLoginQRCode(key string) (KugouLoginStatus,
 	case 2:
 		return KugouLoginStatus{Status: "scanned", LoggedIn: false}, nil
 	case 4:
+		previousUserID := kugouSessionUserID(config.LoadKugouSession())
 		if err := saveKugouClientSession(client); err != nil {
 			return KugouLoginStatus{}, err
 		}
+		nextUserID := strings.TrimSpace(client.Cookie()["userid"])
+		if err := s.afterKugouSessionMutation(previousUserID, nextUserID); err != nil {
+			return KugouLoginStatus{}, err
+		}
+		s.maybeSyncKugouBenefits(context.Background())
 		return s.GetKugouLoginStatus()
 	default:
 		return KugouLoginStatus{Status: "expired", LoggedIn: false}, nil
@@ -106,6 +105,7 @@ func (s *CloudPlayerService) PollKugouLoginQRCode(key string) (KugouLoginStatus,
 }
 
 func (s *CloudPlayerService) LogoutKugou() error {
+	previousUserID := kugouSessionUserID(config.LoadKugouSession())
 	if err := config.ClearKugouSession(); err != nil {
 		return err
 	}
@@ -116,5 +116,5 @@ func (s *CloudPlayerService) LogoutKugou() error {
 			return err
 		}
 	}
-	return nil
+	return s.afterKugouSessionMutation(previousUserID, "")
 }

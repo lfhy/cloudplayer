@@ -46,7 +46,9 @@ export function createSettingsController(deps) {
     setImportStep,
     setMusicOnlineModeEnabledValue,
     openAccountCenter,
+    onKugouAuthChanged,
     onMusicOnlineModeChanged,
+    onMusicSourceProviderChanged,
   } = deps;
   let settingsFormBaseline = settingsFormBaselineDefaults();
   let settingsSaveTimer = null;
@@ -172,7 +174,9 @@ export function createSettingsController(deps) {
         const report = await invoke("apply_global_hotkeys", { cfg: current.globalHotkeys });
         if (report) hotkeys.renderHotkeyStatusFromReport(report);
       }
+      const providerChanged = current.musicSourceProvider !== settingsFormBaseline.musicSourceProvider;
       await invoke("save_settings", { patch: { app_theme: current.theme, app_theme_mode: current.mode, app_theme_custom_accent: current.customAccent, network_proxy_mode: current.proxyMode, network_proxy_url: proxyURLForSave, main_window_close_action: current.action, music_online_mode: current.musicOnlineMode, auto_cache_on_play: current.autoCacheOnPlay, music_source_provider: current.musicSourceProvider, search_cache_ttl_hours: current.searchCacheTTLHours, desktop_lyrics_idle_line1: current.idleLine1, desktop_lyrics_idle_line2: current.idleLine2, desktop_lyrics_color_base: current.base, desktop_lyrics_color_highlight: current.highlight, lyrics_provider_order: current.lyricsProviderOrder, lyrics_lrclib_enabled: current.lyricsLRCLibEnabled, lyrics_netease_api_base: current.neteaseApiBase } });
+      if (providerChanged) await onMusicSourceProviderChanged?.(current.musicSourceProvider);
       applyAppTheme(current.theme, current.customAccent, current.mode);
       setMainWindowCloseAction(current.action);
       syncSettingsFormBaselineFromDom();
@@ -216,7 +220,7 @@ export function createSettingsController(deps) {
         queueSettingsAutosave(immediate);
       });
     });
-    const actionButtons = wireSettingsActionButtons({ alertRequestFailed, invoke, openAccountCenter, setImportDraft, setImportMethod, setImportStep, setPage });
+    const actionButtons = wireSettingsActionButtons({ alertRequestFailed, invoke, onKugouAuthChanged, openAccountCenter, setImportDraft, setImportMethod, setImportStep, setPage });
     refreshKugouSettingsStatus = createKugouSettingsStatusRefresher({ actionButtons, isMusicSourceOnlineModeSelected, queueSettingsAutosave, setMusicSourceOnlineModeAvailability, setMusicSourceOnlineModeSelection });
     document.querySelectorAll("[data-theme-mode-card]").forEach((card) => card.addEventListener("click", () => {
       setThemeModeSelection(card.getAttribute("data-theme-mode-card") || "system");

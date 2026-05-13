@@ -80,6 +80,10 @@ func (s *CloudPlayerService) ResolveOnlinePlay(songID, title, artist string) (mo
 		}
 	}
 
+	if ref.ProviderKey == musicsource.ProviderKugou {
+		return s.resolveKugouOnlinePlay(ref, trimmedTitle, trimmedArtist)
+	}
+
 	if path := ref.Provider.PreviewCachePathIfExists(ref.RawID); path != "" {
 		return model.ResolveOnlinePlayOut{
 			Kind: "file",

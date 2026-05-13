@@ -67,6 +67,10 @@ async function notifyAccountStatus(status) {
   await emitTo(MAIN_WW, "account-center-status-changed", { provider: "kugou", status });
 }
 
+async function notifyKugouSessionMutation(payload) {
+  await emitTo(MAIN_WW, "account-center-kugou-session-mutated", payload || { action: "unknown" });
+}
+
 async function openImportFlow(provider) {
   await emitTo(MAIN_WW, "account-center-open-import", { provider });
   await closeAccountCenterWindow();
@@ -118,6 +122,9 @@ export function bootstrapAccountCenterWindow() {
       escapeHtml,
       invoke,
       onImportRequested: openImportFlow,
+      onKugouAuthChanged: (payload) => {
+        void notifyKugouSessionMutation(payload);
+      },
       onOnlineModeToggleRequested: toggleOnlineMode,
       onKugouStatusChanged: (status) => {
         void notifyAccountStatus(status);

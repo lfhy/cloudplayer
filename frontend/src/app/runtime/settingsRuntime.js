@@ -134,7 +134,9 @@ export function createSettingsRuntime(deps) {
     setImportConfigHeader: flow.setImportConfigHeader,
     setImportMethod: flow.setImportMethod,
     setImportStep: flow.setImportStep,
+    onKugouAuthChanged: deps.onKugouAuthChanged,
     onMusicOnlineModeChanged: deps.onMusicOnlineModeChanged,
+    onMusicSourceProviderChanged: deps.onMusicSourceProviderChanged,
   });
 
   return {

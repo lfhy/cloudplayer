@@ -3,8 +3,8 @@ import { proxyRemoteAssetSrc } from "../../wails/tauri-core.js";
 
 // Settings only shows shared Kugou session status while the full import flow lives on the import page.
 export function wireKugouSettingsActions(deps) {
-  const { alertRequestFailed, invoke, openAccountCenter } = deps;
-  const session = createKugouSessionBridge({ alertRequestFailed, invoke });
+  const { alertRequestFailed, invoke, onKugouAuthChanged, openAccountCenter } = deps;
+  const session = createKugouSessionBridge({ alertRequestFailed, invoke, onAuthChanged: onKugouAuthChanged });
   const statusEl = () => document.getElementById("setting-kugou-login-status");
   const profileEl = () => document.getElementById("setting-kugou-profile");
   const avatarEl = () => document.getElementById("setting-kugou-avatar");
