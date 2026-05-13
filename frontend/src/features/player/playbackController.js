@@ -1,5 +1,6 @@
 // Playback loading stays in one controller so queue mutations and async generations share rules.
 import { proxyRemoteAssetSrc } from "../../wails/tauri-core.js";
+import { clearPlaybackIndicator, setPlaybackIndicator } from "../../app/helpers/playbackIndicator.js";
 import { setPlayButtonIcon } from "./playButtonIcon.js";
 
 export function createPlaybackController(deps) {
@@ -47,6 +48,7 @@ export function createPlaybackController(deps) {
     if (!queue.length) {
       setPlayIndex(0);
       setPlayLoadGeneration(getPlayLoadGeneration() + 1);
+      clearPlaybackIndicator();
       if (audio) {
         audio.pause();
         audio.removeAttribute("src");
@@ -76,6 +78,7 @@ export function createPlaybackController(deps) {
     setPlayLoadGeneration(generation);
     setPlayIndex(index);
     const item = queue[index];
+    setPlaybackIndicator(item, false);
     updatePlayerChrome({
       title: item.title,
       sub: item.artist || "",
@@ -158,6 +161,7 @@ export function createPlaybackController(deps) {
       audio.load();
     }
     if (!current) {
+      clearPlaybackIndicator();
       updatePlayerChrome({ title: "未播放", sub: "选择曲目或搜索后双击列表", coverUrl: null });
       setPlayButtonIcon(playButton, false);
       if (playButton) playButton.disabled = true;
@@ -167,6 +171,7 @@ export function createPlaybackController(deps) {
       refreshFavButton();
       return;
     }
+    setPlaybackIndicator(current, false);
     updatePlayerChrome({
       title: current.title || "未命名曲目",
       sub: current.artist || "",

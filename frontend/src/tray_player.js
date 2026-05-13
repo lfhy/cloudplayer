@@ -74,9 +74,19 @@ async function requestTraySync(reason = "init") {
 async function sendTrayCommand(action, extra = {}) {
   try {
     await emitTo(MAIN_WW, "tray-player-command", { action, ...extra });
+    scheduleTraySyncEcho(action);
   } catch (error) {
     console.warn("tray-player-command", error);
   }
+}
+
+// Tray commands update playback asynchronously, so follow-up syncs keep the menu icon honest.
+function scheduleTraySyncEcho(reason) {
+  [120, 360].forEach((delay) => {
+    window.setTimeout(() => {
+      void requestTraySync(`post-${reason}`);
+    }, delay);
+  });
 }
 
 async function openMainWindow() {

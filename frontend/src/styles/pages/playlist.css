@@ -78,6 +78,60 @@
   height: 62px;
 }
 
+.playlist-table tbody tr.is-current-track {
+  background:
+    linear-gradient(90deg, rgba(var(--accent-rgb), 0.12), rgba(var(--accent-rgb), 0.02) 42%, transparent 100%);
+}
+
+.playlist-table tbody tr.is-now-playing .row-cover {
+  box-shadow:
+    0 0 0 1px rgba(var(--accent-rgb), 0.16),
+    0 10px 24px rgba(var(--accent-rgb), 0.28);
+  animation: playlist-row-cover-pulse 1.28s ease-in-out infinite;
+}
+
+.playlist-table tbody tr.is-now-playing .t-title {
+  color: var(--accent);
+}
+
+.playlist-table tbody tr.is-now-playing .t-title::before {
+  content: "";
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  margin-right: 8px;
+  border-radius: 999px;
+  background: currentColor;
+  box-shadow:
+    14px 0 0 rgba(var(--accent-rgb), 0.72),
+    28px 0 0 rgba(var(--accent-rgb), 0.44);
+  transform-origin: center;
+  animation: playlist-row-signal 920ms ease-in-out infinite;
+  vertical-align: -1px;
+}
+
+@keyframes playlist-row-cover-pulse {
+  0%, 100% {
+    transform: scale(1);
+    filter: saturate(1);
+  }
+  50% {
+    transform: scale(1.04);
+    filter: saturate(1.14);
+  }
+}
+
+@keyframes playlist-row-signal {
+  0%, 100% {
+    opacity: 0.58;
+    transform: scaleY(0.82);
+  }
+  50% {
+    opacity: 1;
+    transform: scaleY(1.12);
+  }
+}
+
 #btn-music-online-mode.is-busy {
   opacity: 0.72;
   cursor: progress;

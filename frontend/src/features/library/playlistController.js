@@ -1,4 +1,5 @@
 import { setCoverImageSource } from "../../app/helpers/covers.js";
+import { applyPlaylistPlaybackIndicator, bindPlaylistPlaybackIndicator } from "../../app/helpers/playbackIndicator.js";
 import { renderTrackTableRows } from "./trackTableRenderer.js";
 import { createPlaylistBatchController } from "./playlistBatchController.js";
 import { createPlaylistEnrichHelpers } from "./playlistEnrichHelpers.js";
@@ -226,6 +227,8 @@ export function createPlaylistController(deps) {
       onToggleSelected: (row, index, selected) => batch.setRowSelected(row, index, selected),
       rowTitle: (row) => (row.playable ? "" : "无曲库 id：请到「搜索」搜索后播放"),
     });
+    bindPlaylistPlaybackIndicator(tbody, getPlaylistDetailRows);
+    applyPlaylistPlaybackIndicator(tbody, rows);
     batch.updatePlaylistToolbar();
   }
 

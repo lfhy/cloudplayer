@@ -1,4 +1,5 @@
 // Audio event wiring stays separate from playback loading so media element behavior is easy to test.
+import { setPlaybackIndicator } from "../../app/helpers/playbackIndicator.js";
 import { setPlayButtonIcon } from "./playButtonIcon.js";
 
 export function createAudioEventsController(deps) {
@@ -107,6 +108,7 @@ export function createAudioEventsController(deps) {
     audio.addEventListener("play", () => {
       onPlayTransitionEvent?.();
       setPlayButtonIcon(playButton, true);
+      setPlaybackIndicator(getPlayQueue()[getPlayIndex()] || null, true);
       refreshCurrentLyricsSnapshot?.();
       void savePlaybackProgressNow?.(true);
       void broadcastTrayPlayerState();
@@ -115,6 +117,7 @@ export function createAudioEventsController(deps) {
     audio.addEventListener("pause", () => {
       onPauseTransitionEvent?.();
       setPlayButtonIcon(playButton, false);
+      setPlaybackIndicator(getPlayQueue()[getPlayIndex()] || null, false);
       refreshCurrentLyricsSnapshot?.();
       void savePlaybackProgressNow?.(true);
       void broadcastTrayPlayerState();
