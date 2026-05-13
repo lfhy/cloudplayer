@@ -1,5 +1,29 @@
 /* Theme variables and mode tokens. */
 /* 对齐 PySide6 config/theme.py 主色与背景 */
+@font-face {
+  font-family: "CloudPlayer Sans";
+  src: url("/fonts/SourceHanSansSC-Regular.otf") format("opentype");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "CloudPlayer Sans";
+  src: url("/fonts/SourceHanSansSC-Medium.otf") format("opentype");
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "CloudPlayer Sans";
+  src: url("/fonts/SourceHanSansSC-Bold.otf") format("opentype");
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
 :root {
   --accent: #c62f2f;
   --accent-rgb: 198, 47, 47;
@@ -28,6 +52,7 @@
   --sidebar-width: 200px;
   --titlebar-left-gap: 16px;
   --sidebar-top-gap: 12px;
+  --font-sans: "CloudPlayer Sans", "Noto Sans CJK SC", "Source Han Sans SC", "Microsoft YaHei UI", "PingFang SC", sans-serif;
   color-scheme: light;
 }
 

@@ -12,7 +12,7 @@
   border-top: 1px solid var(--dock-edge);
   background: var(--bg-card);
   box-shadow: 0 -2px 16px rgba(15, 23, 42, 0.06);
-  font-family: "Segoe UI", "Microsoft YaHei UI", system-ui, sans-serif;
+  font-family: var(--font-sans);
 }
 
 .dock-player__left {
