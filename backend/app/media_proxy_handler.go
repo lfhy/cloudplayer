@@ -5,13 +5,15 @@ import (
 	"crypto/sha1"
 	"encoding/hex"
 	"io"
-	"os"
+	"log"
 	"net/http"
+	"os"
 	"path/filepath"
 	"strings"
 	"time"
 
 	"cloudplayer/backend/config"
+	"cloudplayer/backend/httpclient"
 	"cloudplayer/backend/state"
 )
 
@@ -47,12 +49,18 @@ func serveRemoteMedia(state *state.AppState, writer http.ResponseWriter, request
 		return
 	}
 
+	trace := shouldTraceRemoteMediaRequest(request, rawURL)
+	rangeHeader := strings.TrimSpace(request.Header.Get("Range"))
 	if serveRemoteMediaCache(rawURL, writer, request) {
+		if trace {
+			log.Printf("remote media cache hit: method=%s range=%q url=%s", request.Method, rangeHeader, logURL160(rawURL))
+		}
 		return
 	}
 
-	req, err := http.NewRequestWithContext(request.Context(), http.MethodGet, rawURL, nil)
+	req, err := http.NewRequestWithContext(request.Context(), request.Method, rawURL, nil)
 	if err != nil {
+		log.Printf("remote media build request failed: method=%s range=%q url=%s err=%v", request.Method, rangeHeader, logURL160(rawURL), err)
 		http.Error(writer, "bad remote media url", http.StatusBadRequest)
 		return
 	}
@@ -64,8 +72,12 @@ func serveRemoteMedia(state *state.AppState, writer http.ResponseWriter, request
 		req.Header.Set("Range", rng)
 	}
 
-	resp, err := state.HTTP().Do(req)
+	if trace {
+		log.Printf("remote media fetch start: method=%s range=%q url=%s", request.Method, rangeHeader, logURL160(rawURL))
+	}
+	resp, err := httpclient.StreamingClone(state.HTTP()).Do(req)
 	if err != nil {
+		log.Printf("remote media upstream failed: method=%s range=%q url=%s err=%v", request.Method, rangeHeader, logURL160(rawURL), err)
 		http.Error(writer, "remote media fetch failed", http.StatusBadGateway)
 		return
 	}
@@ -79,6 +91,21 @@ func serveRemoteMedia(state *state.AppState, writer http.ResponseWriter, request
 	if writer.Header().Get("Access-Control-Allow-Origin") == "" {
 		writer.Header().Set("Access-Control-Allow-Origin", "*")
 	}
+	if trace || resp.StatusCode >= http.StatusBadRequest {
+		log.Printf(
+			"remote media upstream response: method=%s status=%d range=%q type=%q length=%q url=%s",
+			request.Method,
+			resp.StatusCode,
+			rangeHeader,
+			strings.TrimSpace(resp.Header.Get("Content-Type")),
+			strings.TrimSpace(resp.Header.Get("Content-Length")),
+			logURL160(rawURL),
+		)
+	}
+	if request.Method == http.MethodHead {
+		writer.WriteHeader(resp.StatusCode)
+		return
+	}
 	if cacheable && resp.StatusCode == http.StatusOK {
 		body, err := io.ReadAll(resp.Body)
 		if err == nil && len(body) > 0 {
@@ -89,7 +116,22 @@ func serveRemoteMedia(state *state.AppState, writer http.ResponseWriter, request
 		}
 	}
 	writer.WriteHeader(resp.StatusCode)
-	_, _ = io.Copy(writer, resp.Body)
+	written, err := io.Copy(writer, resp.Body)
+	if err != nil {
+		log.Printf(
+			"remote media stream copy failed: method=%s status=%d range=%q bytes=%d url=%s err=%v",
+			request.Method,
+			resp.StatusCode,
+			rangeHeader,
+			written,
+			logURL160(rawURL),
+			err,
+		)
+		return
+	}
+	if trace {
+		log.Printf("remote media fetch complete: method=%s status=%d range=%q bytes=%d url=%s", request.Method, resp.StatusCode, rangeHeader, written, logURL160(rawURL))
+	}
 }
 
 func copyRemoteMediaHeaders(dst, src http.Header) {
@@ -124,6 +166,26 @@ func remoteMediaCachePath(rawURL string) string {
 
 func remoteImageCacheable(contentType string) bool {
 	return strings.HasPrefix(strings.ToLower(strings.TrimSpace(contentType)), "image/")
+}
+
+func shouldTraceRemoteMediaRequest(request *http.Request, rawURL string) bool {
+	if request == nil {
+		return false
+	}
+	accept := strings.ToLower(strings.TrimSpace(request.Header.Get("Accept")))
+	if strings.Contains(accept, "audio/") || strings.Contains(accept, "video/") {
+		return true
+	}
+	if strings.TrimSpace(request.Header.Get("Range")) != "" {
+		return true
+	}
+	lowerURL := strings.ToLower(strings.TrimSpace(rawURL))
+	for _, ext := range []string{".mp3", ".flac", ".m4a", ".aac", ".ogg", ".wav"} {
+		if strings.Contains(lowerURL, ext) {
+			return true
+		}
+	}
+	return false
 }
 
 func serveRemoteMediaCache(rawURL string, writer http.ResponseWriter, request *http.Request) bool {

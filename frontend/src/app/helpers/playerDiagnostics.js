@@ -1,6 +1,8 @@
 // Player diagnostics helpers are reused by audio load and playback event reporting.
 export function audioDiagPayload(audio) {
   let bufferedEnd = null;
+  let errorCode = null;
+  let errorMessage = null;
   try {
     if (audio.buffered && audio.buffered.length > 0) {
       bufferedEnd = audio.buffered.end(audio.buffered.length - 1);
@@ -8,12 +10,22 @@ export function audioDiagPayload(audio) {
   } catch {
     /* ignore */
   }
+  if (audio?.error) {
+    errorCode = audio.error.code ?? null;
+    errorMessage = audio.error.message || null;
+  }
   return {
     currentTime: audio.currentTime,
+    currentSrc: audio.currentSrc || audio.src || "",
     duration: audio.duration,
-    readyState: audio.readyState,
+    ended: audio.ended,
+    errorCode,
+    errorMessage,
     networkState: audio.networkState,
+    paused: audio.paused,
     bufferedEnd,
+    readyState: audio.readyState,
+    seeking: audio.seeking,
   };
 }
 

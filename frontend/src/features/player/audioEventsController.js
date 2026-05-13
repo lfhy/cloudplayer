@@ -56,7 +56,7 @@ export function createAudioEventsController(deps) {
       refreshCurrentLyricsSnapshot?.();
       if (getAudioSourceGeneration() === getPlayLoadGeneration()) {
         void logPlayEventDesktop("audio_loadedmetadata", {
-          url: audio.src || null,
+          url: currentAudioURL(audio),
           extra: audioDiagPayload(audio),
         });
       }
@@ -82,14 +82,14 @@ export function createAudioEventsController(deps) {
       if (now - getAudioProgressLogLastTs() < 1000) return;
       setAudioProgressLogLastTs(now);
       void logPlayEventDesktop("audio_progress", {
-        url: audio.src || null,
+        url: currentAudioURL(audio),
         extra: audioDiagPayload(audio),
       });
     });
     audio.addEventListener("stalled", () => {
       if (getAudioSourceGeneration() !== getPlayLoadGeneration()) return;
       void logPlayEventDesktop("audio_stalled", {
-        url: audio.src || null,
+        url: currentAudioURL(audio),
         extra: audioDiagPayload(audio),
       });
     });
@@ -98,7 +98,7 @@ export function createAudioEventsController(deps) {
       void savePlaybackProgressNow?.(true);
       if (getAudioSourceGeneration() === getPlayLoadGeneration()) {
         void logPlayEventDesktop("audio_ended", {
-          url: audio.src || null,
+          url: currentAudioURL(audio),
           extra: audioDiagPayload(audio),
         });
       }
@@ -128,7 +128,7 @@ export function createAudioEventsController(deps) {
       if (error && error.code === 1) return;
       if (getAudioSourceGeneration() !== getPlayLoadGeneration()) return;
       void logPlayEventDesktop("audio_error", {
-        url: audio.src || null,
+        url: currentAudioURL(audio),
         error_code: error ? error.code : null,
         message: error && error.message ? error.message : null,
         extra: audioDiagPayload(audio),
@@ -140,6 +140,10 @@ export function createAudioEventsController(deps) {
 
     wireSeek(seek, audio);
     wireTransport(audio, playButton);
+  }
+
+  function currentAudioURL(audio) {
+    return audio?.currentSrc || audio?.src || null;
   }
 
   function wireSeek(seek, audio) {
