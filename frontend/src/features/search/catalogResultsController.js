@@ -1,5 +1,11 @@
 import { formatDurationMs } from "../../app/helpers/time.js";
 import {
+  applyPlaybackIndicator,
+  bindPlaybackIndicator,
+  isCurrentPlaybackRow,
+  playbackIndicatorKeyFromPlaylistRow,
+} from "../../app/helpers/playbackIndicator.js";
+import {
   bindTrackTableCellActions,
   buildTrackAlbumCell,
   buildTrackCoverCell,
@@ -62,14 +68,9 @@ export function createCatalogResultsController(deps) {
   }
   function syncBottomStatusVisibility() {
     const scrollWrap = document.getElementById("search-results-scroll");
-    if (!scrollWrap || searchState.scope !== "catalog" || !searchState.results.length) {
-      searchState.showBottomStatus = false;
-      return;
-    }
-    const remaining = Math.max(0, scrollWrap.scrollHeight - scrollWrap.scrollTop - scrollWrap.clientHeight);
-    searchState.showBottomStatus = remaining <= bottomStatusThreshold;
+    if (!scrollWrap || searchState.scope !== "catalog" || !searchState.results.length) return void (searchState.showBottomStatus = false);
+    searchState.showBottomStatus = Math.max(0, scrollWrap.scrollHeight - scrollWrap.scrollTop - scrollWrap.clientHeight) <= bottomStatusThreshold;
   }
-
   function renderSearchTable() {
     const tbody = document.querySelector("#search-table tbody");
     if (!tbody) return;
@@ -104,6 +105,7 @@ export function createCatalogResultsController(deps) {
       const index = startIndex + offset;
       const tr = document.createElement("tr");
       const selected = searchState.selectedIds?.has(row.source_id) === true;
+      tr.dataset.playbackKey = playbackIndicatorKeyFromPlaylistRow(row);
       tr.classList.toggle("is-selected", selected);
       tr.classList.toggle("is-batch-mode", batchMode);
       tr.innerHTML = `<td class="col-check"><label class="search-row-check"><input type="checkbox" data-search-select-row="${escapeHtml(row.source_id)}" ${selected ? "checked" : ""} aria-label="选择 ${escapeHtml(row.title)}" /></label></td><td class="col-idx">${index + 1}</td><td class="col-cover">${buildTrackCoverCell(row)}</td><td>${buildTrackTitleCell(row, escapeHtml, { onArtistClick: triggerTrackSearch })}</td><td class="muted">${buildTrackAlbumCell(row, escapeHtml, { onAlbumClick: triggerTrackSearch })}</td><td class="muted col-dur">${escapeHtml(formatDurationMs(row.duration_ms))}</td>`;
@@ -114,6 +116,7 @@ export function createCatalogResultsController(deps) {
           toggleResultSelected(row.source_id);
           return;
         }
+        if (isCurrentPlaybackRow(row)) return void document.getElementById("btn-player-play")?.click();
         playFromSearchRow(index);
       });
       tr.addEventListener("contextmenu", (event) => {
@@ -131,19 +134,18 @@ export function createCatalogResultsController(deps) {
       tbody.appendChild(tr);
     });
     if (searchState.virtualBottom > 0) tbody.appendChild(spacerRow(searchState.virtualBottom));
+    bindPlaybackIndicator(tbody); applyPlaybackIndicator(tbody);
     syncBottomStatusVisibility();
     updateSearchToolbar();
     maybeLoadMoreSearchResults();
     void metadata.ensureVisibleMetadata(renderedRows);
   }
-
   function spacerRow(height) {
     const spacer = document.createElement("tr");
     spacer.className = "search-table__spacer";
     spacer.innerHTML = `<td colspan="6" style="height:${height}px;padding:0;border-bottom:none;"></td>`;
     return spacer;
   }
-
   function appendSearchResults(rows, reset = false) {
     const nextRows = Array.isArray(rows) ? rows : [];
     if (reset) {
@@ -157,7 +159,6 @@ export function createCatalogResultsController(deps) {
     });
     searchState.results = Array.from(merged.values());
   }
-
   async function fetchSearchPage({ append = false, pageOverride = null } = {}) {
     const keyword = searchState.keyword.trim();
     if (!keyword) return;
@@ -195,7 +196,6 @@ export function createCatalogResultsController(deps) {
       updateSearchToolbar();
     }
   }
-
   function maybeLoadMoreSearchResults() {
     const scrollWrap = document.getElementById("search-results-scroll");
     if (!scrollWrap || searchState.scope !== "catalog" || !searchState.hasNext || searchState.busy || searchState.loadingMore) return;
@@ -203,7 +203,6 @@ export function createCatalogResultsController(deps) {
     if (remaining > loadMoreThreshold) return;
     void fetchSearchPage({ append: true, pageOverride: searchState.page + 1 });
   }
-
   function setResultSelected(sourceId, selected) {
     if (!sourceId) return;
     if (!(searchState.selectedIds instanceof Set)) searchState.selectedIds = new Set();
@@ -214,17 +213,14 @@ export function createCatalogResultsController(deps) {
     updateSearchToolbar();
     renderSearchTable();
   }
-
   function toggleResultSelected(sourceId) {
     setResultSelected(sourceId, !(searchState.selectedIds instanceof Set && searchState.selectedIds.has(sourceId)));
   }
-
   function setAllResultsSelected(selected) {
     searchState.selectedIds = selected ? new Set(searchState.results.map((row) => row.source_id).filter(Boolean)) : new Set();
     updateSearchToolbar();
     renderSearchTable();
   }
-
   async function appendSelectedToPlaylist() {
     const selectedRows = searchState.results.filter((row) => searchState.selectedIds?.has(row.source_id));
     if (!selectedRows.length) return;
@@ -263,7 +259,6 @@ export function createCatalogResultsController(deps) {
       alertRequestFailed(error, "append_playlist_import_items search");
     }
   }
-
   function wireDiscoverToolbar() {
     document.getElementById("btn-play-all")?.addEventListener("click", () => {
       if (searchState.results.length) playCatalogAll(searchState.results);
@@ -287,7 +282,6 @@ export function createCatalogResultsController(deps) {
       renderSearchTable();
     });
   }
-
   return {
     clearSelection,
     enterBatchMode,

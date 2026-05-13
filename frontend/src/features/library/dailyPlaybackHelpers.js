@@ -1,4 +1,6 @@
 // Daily playback helpers keep recommendation queue building out of the page runtime.
+import { isCurrentPlaybackRow } from "../../app/helpers/playbackIndicator.js";
+
 function normalizeDailyQueueItem(item) {
   if (item?.local_path) {
     return {
@@ -28,6 +30,11 @@ export function buildDailyPlaybackQueue(rows) {
 
 export function playDailyRecommendationRows(rows, rowIdx, deps) {
   const { playFromQueueIndex, renderQueuePanel, setPlayQueue } = deps;
+  const row = Array.isArray(rows) ? rows[rowIdx] : null;
+  if (row && isCurrentPlaybackRow(row)) {
+    document.getElementById("btn-player-play")?.click();
+    return;
+  }
   const queue = buildDailyPlaybackQueue(rows);
   if (!queue.length) return;
   const safeIndex = Math.max(0, Math.min(queue.length - 1, Number(rowIdx) || 0));

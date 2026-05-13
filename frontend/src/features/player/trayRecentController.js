@@ -1,4 +1,5 @@
 import { renderTrackTableRows } from "../library/trackTableRenderer.js";
+import { isCurrentPlaybackRow } from "../../app/helpers/playbackIndicator.js";
 import { triggerTrackSearch } from "../library/trackSearchShortcut.js";
 import { toggleFavoriteTrack } from "../library/favoriteToggle.js";
 
@@ -99,6 +100,10 @@ export function createTrayRecentController(deps) {
   function playFromRecentRow(rowIndex) {
     const item = getSessionRecentPlays()[rowIndex];
     if (!item) return;
+    if (isCurrentPlaybackRow(item)) {
+      document.getElementById("btn-player-play")?.click();
+      return;
+    }
     const queueItem = item.local_path
       ? {
           title: item.title,
@@ -145,6 +150,7 @@ export function createTrayRecentController(deps) {
         escapeHtml,
         formatDurationMs,
         getLikedIds,
+        highlightPlayback: true,
         onAlbumClick: (album) => triggerTrackSearch(album),
         onArtistClick: (artist) => triggerTrackSearch(artist),
         onFavoriteClick: (row) => toggleFavoriteTrack(row, { alertRequestFailed, getLikedIds, invoke }),

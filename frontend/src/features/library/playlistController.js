@@ -1,5 +1,4 @@
 import { setCoverImageSource } from "../../app/helpers/covers.js";
-import { applyPlaylistPlaybackIndicator, bindPlaylistPlaybackIndicator } from "../../app/helpers/playbackIndicator.js";
 import { renderTrackTableRows } from "./trackTableRenderer.js";
 import { createPlaylistBatchController } from "./playlistBatchController.js";
 import { createPlaylistEnrichHelpers } from "./playlistEnrichHelpers.js";
@@ -209,6 +208,7 @@ export function createPlaylistController(deps) {
       formatDurationMs,
       getRowSelectionKey: batch.rowSelectionKey,
       getLikedIds,
+      highlightPlayback: true,
       includeCheck: true,
       isSelected: batch.isSelected,
       onAlbumClick: (album) => triggerTrackSearch(album),
@@ -227,13 +227,16 @@ export function createPlaylistController(deps) {
       onToggleSelected: (row, index, selected) => batch.setRowSelected(row, index, selected),
       rowTitle: (row) => (row.playable ? "" : "无曲库 id：请到「搜索」搜索后播放"),
     });
-    bindPlaylistPlaybackIndicator(tbody, getPlaylistDetailRows);
-    applyPlaylistPlaybackIndicator(tbody, rows);
     batch.updatePlaylistToolbar();
   }
 
   function playFromPlaylistRow(rowIdx) {
-    playPlaylistRows(getPlaylistDetailRows(), rowIdx, { alert, playFromQueueIndex, renderQueuePanel, setPlayQueue });
+    void playPlaylistRows(getPlaylistDetailRows(), rowIdx, {
+      alert,
+      playFromQueueIndex,
+      renderQueuePanel,
+      setPlayQueue,
+    });
   }
 
   function wirePlaylistPage() {

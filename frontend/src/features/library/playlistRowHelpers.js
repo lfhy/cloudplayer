@@ -1,4 +1,6 @@
 // Playlist row helpers keep queue building and local-song lookup out of the page controller.
+import { isCurrentPlaybackRow } from "../../app/helpers/playbackIndicator.js";
+
 function normalizeQueueItem(row) {
   return {
     source_id: (row.pjmp3_source_id || "").trim(),
@@ -16,11 +18,15 @@ export function buildPlayablePlaylistQueue(rows) {
     .map((row) => normalizeQueueItem(row));
 }
 
-export function playPlaylistRows(rows, rowIdx, deps) {
+export async function playPlaylistRows(rows, rowIdx, deps) {
   const { alert, playFromQueueIndex, renderQueuePanel, setPlayQueue } = deps;
   const row = Array.isArray(rows) ? rows[rowIdx] : null;
   const sourceId = (row?.pjmp3_source_id || "").trim();
   if (!sourceId) return void alert("该条没有曲库 id，请使用顶栏搜索歌名后播放。");
+  if (row && isCurrentPlaybackRow(row)) {
+    document.getElementById("btn-player-play")?.click();
+    return;
+  }
   const queue = buildPlayablePlaylistQueue(rows);
   if (!queue.length) return void alert("没有可播放条目（导入条目需含 pjmp3 曲库 id）。");
   let startInQueue = 0;

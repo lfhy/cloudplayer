@@ -1,4 +1,9 @@
 import {
+  applyPlaybackIndicator,
+  bindPlaybackIndicator,
+  playbackIndicatorKeyFromPlaylistRow,
+} from "../../app/helpers/playbackIndicator.js";
+import {
   bindTrackTableCellActions,
   buildTrackAlbumCell,
   buildTrackCoverCell,
@@ -32,6 +37,7 @@ export function renderTrackTableRows(tbody, rows, options) {
     forceLiked,
     getRowSelectionKey,
     getLikedIds,
+    highlightPlayback = false,
     includeCheck = false,
     isSelected,
     onAlbumClick,
@@ -56,6 +62,7 @@ export function renderTrackTableRows(tbody, rows, options) {
   rows.forEach((row, index) => {
     const tr = document.createElement("tr");
     tr.dataset.trackRowIndex = String(index);
+    if (highlightPlayback) tr.dataset.playbackKey = playbackIndicatorKeyFromPlaylistRow(row);
     const canFavorite = typeof onFavoriteClick === "function";
     const selectionKey = typeof getRowSelectionKey === "function" ? getRowSelectionKey(row, index) : String(row?.id ?? index);
     const selected = typeof isSelected === "function" ? isSelected(row, index) : false;
@@ -111,5 +118,9 @@ export function renderTrackTableRows(tbody, rows, options) {
     }
     tbody.appendChild(tr);
   });
+  if (highlightPlayback) {
+    bindPlaybackIndicator(tbody);
+    applyPlaybackIndicator(tbody);
+  }
   refreshFavoriteCells(tbody);
 }

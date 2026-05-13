@@ -1,5 +1,6 @@
-// Playback-indicator state is shared between transport logic and playlist tables via a lightweight DOM event.
+// Playback-indicator state is shared between transport logic and track lists via a lightweight DOM event.
 const PLAYBACK_INDICATOR_EVENT = "cloudplayer:playback-indicator-changed";
+const PLAYBACK_INDICATOR_SELECTOR = "[data-playback-key]";
 
 let currentPlaybackKey = "";
 let currentPlaybackPlaying = false;
@@ -45,25 +46,44 @@ export function clearPlaybackIndicator() {
   dispatchPlaybackIndicatorChange();
 }
 
+export function isCurrentPlaybackRow(row) {
+  const rowKey = playbackIndicatorKeyFromPlaylistRow(row);
+  return !!rowKey && rowKey === currentPlaybackKey;
+}
+
+export function applyPlaybackIndicator(root) {
+  if (!root) return;
+  root.querySelectorAll(PLAYBACK_INDICATOR_SELECTOR).forEach((node) => {
+    const rowKey = String(node.getAttribute("data-playback-key") || "").trim();
+    const isCurrentTrack = !!rowKey && rowKey === currentPlaybackKey;
+    node.classList.toggle("is-current-track", isCurrentTrack);
+    node.classList.toggle("is-now-playing", isCurrentTrack && currentPlaybackPlaying);
+  });
+}
+
+export function bindPlaybackIndicator(root) {
+  if (!root || root.dataset.playbackIndicatorBound === "true" || typeof window === "undefined") return;
+  root.dataset.playbackIndicatorBound = "true";
+  window.addEventListener(PLAYBACK_INDICATOR_EVENT, () => {
+    applyPlaybackIndicator(root);
+  });
+}
+
 export function applyPlaylistPlaybackIndicator(tbody, rows) {
   if (!tbody) return;
   const rowList = Array.isArray(rows) ? rows : [];
   tbody.querySelectorAll("tr[data-track-row-index]").forEach((tr) => {
     const rowIndex = Number(tr.getAttribute("data-track-row-index") || -1);
-    const row = rowIndex >= 0 ? rowList[rowIndex] : null;
-    const rowKey = playbackIndicatorKeyFromPlaylistRow(row);
-    const isCurrentTrack = !!rowKey && rowKey === currentPlaybackKey;
-    tr.dataset.playbackKey = rowKey;
-    tr.classList.toggle("is-current-track", isCurrentTrack);
-    tr.classList.toggle("is-now-playing", isCurrentTrack && currentPlaybackPlaying);
+    tr.dataset.playbackKey = playbackIndicatorKeyFromPlaylistRow(rowIndex >= 0 ? rowList[rowIndex] : null);
   });
+  applyPlaybackIndicator(tbody);
 }
 
 export function bindPlaylistPlaybackIndicator(tbody, getRows) {
-  if (!tbody || tbody.dataset.playbackIndicatorBound === "true" || typeof window === "undefined") return;
-  tbody.dataset.playbackIndicatorBound = "true";
+  bindPlaybackIndicator(tbody);
+  if (!tbody || typeof getRows !== "function" || tbody.dataset.playbackRowsBound === "true" || typeof window === "undefined") return;
+  tbody.dataset.playbackRowsBound = "true";
   window.addEventListener(PLAYBACK_INDICATOR_EVENT, () => {
-    const rows = typeof getRows === "function" ? getRows() : [];
-    applyPlaylistPlaybackIndicator(tbody, rows);
+    applyPlaylistPlaybackIndicator(tbody, getRows());
   });
 }

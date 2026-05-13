@@ -1,5 +1,11 @@
 // Home controller keeps landing-page recommendations and recents outside main.js.
 import { coverImgHtml } from "../../app/helpers/covers.js";
+import {
+  applyPlaybackIndicator,
+  bindPlaybackIndicator,
+  isCurrentPlaybackRow,
+  playbackIndicatorKeyFromPlaylistRow,
+} from "../../app/helpers/playbackIndicator.js";
 import { renderFittedHomeRows } from "./homeListFit.js";
 import { triggerTrackSearch } from "./trackSearchShortcut.js";
 import { renderTrackTableRows } from "./trackTableRenderer.js";
@@ -148,6 +154,7 @@ export function createHomeController(deps) {
     const button = document.createElement("button");
     button.type = "button";
     button.className = "home-row-item";
+    button.dataset.playbackKey = playbackIndicatorKeyFromPlaylistRow(item);
     const cover = coverImgHtml({ src: item.cover_url || "", className: "home-row-item__cover", width: 44, height: 44, radius: 10, alt: item.title || "" });
     const artist = item.artist || (item.local_path ? "本地音乐" : "在线曲目");
     const rank = String(index + 1).padStart(2, "0");
@@ -159,6 +166,10 @@ export function createHomeController(deps) {
         <span>${escapeHtml(artist)}</span>
       </span>`;
     button.addEventListener("click", () => {
+      if (isCurrentPlaybackRow(item)) {
+        document.getElementById("btn-player-play")?.click();
+        return;
+      }
       if (mode === "daily") playDailyItem?.(dailyRecommendationRows, index);
       else playFromRecentRow(index);
     });
@@ -188,6 +199,8 @@ export function createHomeController(deps) {
         dailyList.innerHTML = '<p class="home-empty muted">需要一些播放记录后才会生成每日推荐。</p>';
       } else {
         renderFittedHomeRows(dailyList, recommendations.slice(0, 12), (item, index) => createListRow(item, index, "daily"));
+        bindPlaybackIndicator(dailyList);
+        applyPlaybackIndicator(dailyList);
       }
     }
     if (recentList) {
@@ -196,6 +209,8 @@ export function createHomeController(deps) {
         recentList.innerHTML = '<p class="home-empty muted">还没有最近播放，去搜索或导入歌单开始吧。</p>';
       } else {
         renderFittedHomeRows(recentList, recentRows.slice(0, 12), (item, index) => createListRow(item, index, "recent"));
+        bindPlaybackIndicator(recentList);
+        applyPlaybackIndicator(recentList);
       }
     }
     void invoke("list_playlists")
@@ -235,6 +250,7 @@ export function createHomeController(deps) {
       escapeHtml,
       formatDurationMs,
       getLikedIds,
+      highlightPlayback: true,
       onAlbumClick: (album) => triggerTrackSearch(album),
       onArtistClick: (artist) => triggerTrackSearch(artist),
       onFavoriteClick: (row) => toggleFavoriteTrack(row, { alertRequestFailed, getLikedIds, invoke }),

@@ -39,6 +39,22 @@
   background: rgba(var(--accent-rgb), 0.06);
 }
 
+.search-table tbody tr.is-current-track {
+  background: linear-gradient(90deg, rgba(var(--accent-rgb), 0.12), rgba(var(--accent-rgb), 0.02) 42%, transparent 100%);
+}
+
+.search-table tbody tr.is-now-playing {
+  background: linear-gradient(90deg, rgba(var(--accent-rgb), 0.16), rgba(var(--accent-rgb), 0.04) 42%, transparent 100%);
+}
+
+.search-table tbody tr.is-now-playing .t-title {
+  color: var(--accent);
+}
+
+:root[data-theme-mode-resolved="dark"] .search-table tbody tr.is-now-playing {
+  background: linear-gradient(90deg, rgba(var(--accent-rgb), 0.2), rgba(var(--accent-rgb), 0.05) 42%, transparent 100%);
+}
+
 .search-table tbody tr.search-table__loading:hover {
   background: transparent;
 }
