@@ -3,14 +3,14 @@ import { favoriteIconSvg, iconSvgByName } from "../app/helpers/icons.js";
 
 // Player dock is shared application chrome, so it lives under components instead of page templates.
 export function playerDockTemplate() {
-  const fallbackCover = fallbackCoverDataUri(52, 10);
+  const fallbackCover = fallbackCoverDataUri(60, 12);
   const favoriteIcon = favoriteIconSvg(false);
   const playIcon = iconSvgByName("play-bold");
   const miniIcon = iconSvgByName("to-pip-linear");
   return `
     <footer class="dock-player" aria-label="播放控制">
       <div class="dock-player__left">
-        <button type="button" class="dock-player__art" id="btn-dock-immersive" title="进入沉浸模式" aria-label="进入沉浸模式"><img id="dock-cover" width="52" height="52" alt="" src="${fallbackCover}" /></button>
+        <button type="button" class="dock-player__art" id="btn-dock-immersive" title="进入沉浸模式" aria-label="进入沉浸模式"><img id="dock-cover" width="60" height="60" alt="" src="${fallbackCover}" /></button>
         <div class="dock-player__meta-col">
           <div id="dock-title" class="dock-player__title">未播放</div>
           <div id="dock-sub" class="dock-player__sub">选择曲目或搜索后双击列表</div>
