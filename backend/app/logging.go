@@ -10,39 +10,64 @@ import (
 	"runtime/debug"
 	"strings"
 	"sync"
+	"time"
 
 	"cloudplayer/backend/config"
 )
 
 var (
-	logInitOnce  sync.Once
-	logInitErr   error
-	logFilePath  string
-	lyricTraceOn bool
+	logInitOnce    sync.Once
+	logInitErr     error
+	logFilePath    string
+	logSessionPath string
+	lyricTraceOn   bool
 )
 
 // InitAppLogging installs the shared desktop log sink before the runtime starts serving windows.
 func InitAppLogging() error {
 	logInitOnce.Do(func() {
-		path, err := appLogPath()
-		if err != nil {
-			logInitErr = err
+		sharedPath, sharedErr := appLogPath()
+		sessionPath, sessionErr := appSessionLogPath()
+		writers := []io.Writer{os.Stderr}
+
+		if sharedErr == nil {
+			file, err := openLogFile(sharedPath)
+			if err == nil {
+				writers = append(writers, file)
+				logFilePath = sharedPath
+			} else {
+				sharedErr = err
+			}
+		}
+
+		if sessionErr == nil {
+			file, err := openLogFile(sessionPath)
+			if err == nil {
+				writers = append(writers, file)
+				logSessionPath = sessionPath
+			} else {
+				sessionErr = err
+			}
+		}
+
+		if len(writers) == 1 {
+			logInitErr = firstError(sharedErr, sessionErr)
+			if logInitErr == nil {
+				logInitErr = fmt.Errorf("no log sink available")
+			}
 			return
 		}
-		if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
-			logInitErr = err
-			return
-		}
-		file, err := os.OpenFile(path, os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0o644)
-		if err != nil {
-			logInitErr = err
-			return
-		}
+
 		log.SetFlags(log.LstdFlags | log.Lmicroseconds)
-		log.SetOutput(io.MultiWriter(os.Stderr, file))
-		logFilePath = path
+		log.SetOutput(io.MultiWriter(writers...))
 		lyricTraceOn = strings.TrimSpace(os.Getenv("CLOUDPLAYER_LYRIC_TRACE")) == "1"
-		log.Printf("CloudPlayer logging to %s", path)
+		log.Printf("CloudPlayer logging ready pid=%d shared=%s session=%s", os.Getpid(), stringsTrimOrDash(logFilePath), stringsTrimOrDash(logSessionPath))
+		if sharedErr != nil {
+			log.Printf("CloudPlayer shared log unavailable: %v", sharedErr)
+		}
+		if sessionErr != nil {
+			log.Printf("CloudPlayer session log unavailable: %v", sessionErr)
+		}
 	})
 	return logInitErr
 }
@@ -63,6 +88,9 @@ func HandlePanic() {
 func GetAppLogPath() (string, error) {
 	if logFilePath != "" {
 		return logFilePath, nil
+	}
+	if logSessionPath != "" {
+		return logSessionPath, nil
 	}
 	return appLogPath()
 }
@@ -113,6 +141,15 @@ func appLogPath() (string, error) {
 	return filepath.Join(dir, "cloudplayer.log"), nil
 }
 
+func appSessionLogPath() (string, error) {
+	dir, err := appLogDir()
+	if err != nil {
+		dir = filepath.Join(config.ConfigDir(), "logs")
+	}
+	name := fmt.Sprintf("session-%s-%d.log", time.Now().Format("20060102-150405"), os.Getpid())
+	return filepath.Join(dir, name), nil
+}
+
 func appLogDir() (string, error) {
 	home, err := os.UserHomeDir()
 	if err != nil || home == "" {
@@ -132,6 +169,20 @@ func appLogDir() (string, error) {
 		}
 		return filepath.Join(home, ".local", "state", "CloudPlayer"), nil
 	}
+}
+
+func openLogFile(filePath string) (*os.File, error) {
+	if strings.TrimSpace(filePath) == "" {
+		return nil, fmt.Errorf("log path is empty")
+	}
+	if err := os.MkdirAll(filepath.Dir(filePath), 0o755); err != nil {
+		return nil, err
+	}
+	file, err := os.OpenFile(filePath, os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0o644)
+	if err != nil {
+		return nil, err
+	}
+	return file, nil
 }
 
 func logURL160(value string) string {
@@ -157,4 +208,13 @@ func firstNonEmpty(values ...string) string {
 		}
 	}
 	return ""
+}
+
+func firstError(values ...error) error {
+	for _, value := range values {
+		if value != nil {
+			return value
+		}
+	}
+	return nil
 }

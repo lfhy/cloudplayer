@@ -72,3 +72,4 @@ QQ群：`572532027`
 
 - Remote media proxy now uses a streaming HTTP client without the shared 45s total timeout, which prevents long audio playback from being cut off mid-stream.
 - App logs now capture remote media fetch start/status/copy failures and richer audio-element diagnostics, making Windows playback failures easier to trace.
+- Each desktop app launch now also writes a separate `session-YYYYMMDD-HHMMSS-pid.log`, so support traces still exist even if the shared `cloudplayer.log` is not updated.
