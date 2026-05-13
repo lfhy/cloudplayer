@@ -60,13 +60,7 @@ type Settings struct {
 	AutoCacheOnPlay             bool                `json:"auto_cache_on_play"`
 	MusicSourceProvider         string              `json:"music_source_provider"`
 	SearchCacheTTLHours         int                 `json:"search_cache_ttl_hours"`
-	MiniPlayerVisible           bool                `json:"mini_player_visible"`
 	MiniPlayerAlwaysOnTop       bool                `json:"mini_player_always_on_top"`
-	MiniPlayerLyricsVisible     bool                `json:"mini_player_lyrics_visible"`
-	MiniPlayerX                 *int                `json:"mini_player_x,omitempty"`
-	MiniPlayerY                 *int                `json:"mini_player_y,omitempty"`
-	MiniPlayerWidth             *int                `json:"mini_player_width,omitempty"`
-	MiniPlayerHeight            *int                `json:"mini_player_height,omitempty"`
 }
 
 type GlobalHotkeys struct {
@@ -101,8 +95,6 @@ func DefaultSettings() Settings {
 		AutoCacheOnPlay:             false,
 		MusicSourceProvider:         "kugou",
 		SearchCacheTTLHours:         24,
-		MiniPlayerAlwaysOnTop:       true,
-		MiniPlayerLyricsVisible:     true,
 	}
 }
 

@@ -1,7 +1,6 @@
 import { Events } from "@wailsio/runtime";
 import { DesktopService } from "@bindings/cloudplayer/backend/desktop/index.js";
 
-// Shared window helpers bridge Wails runtime events with the app's Tauri-style compatibility layer.
 const pseudoListeners = new Map();
 const pseudoSubscribedLabels = new Set();
 
@@ -69,9 +68,6 @@ function resolveBootstrapWindowLabel() {
   }
   if (path === "/tray_player.html") {
     return "tray-player";
-  }
-  if (path === "/mini_player.html") {
-    return "mini-player";
   }
   return "main";
 }

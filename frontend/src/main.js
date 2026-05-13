@@ -254,20 +254,16 @@ const immersive = createImmersiveController({
   setSeekDragging: (value) => { seekDragging = value; },
 });
 const miniMode = createMiniModeController({
-  WebviewWindow,
-  emitTo,
+  closeImmersive: () => immersive.close(),
   formatTime,
   getAudioEl: audioEl,
   getCurrentLyricsSnapshot: (...args) => player.getCurrentLyricsSnapshot(...args),
-  getDesktopLyricsOpen: () => desktopLyricsOpen,
   getPlayIndex: () => playIndex,
   getPlayQueue: () => playQueue,
-  invoke,
+  getSeekDragging: () => seekDragging,
   readCurrentLyricsSnapshot: (...args) => player.readCurrentLyricsSnapshot(...args),
-  toggleDesktopLyrics: (...args) => player.toggleDesktopLyrics(...args),
+  setSeekDragging: (value) => { seekDragging = value; },
 });
-listen("mini-player-request-sync", () => { void miniMode.broadcastState(); });
-listen("mini-player-command", (event) => { void miniMode.handleCommand(event?.payload?.action, event?.payload || {}); });
 startDesktopRuntime({
   alertRequestFailed, applyAppTheme, applyPlatformClassNames, dock, emitTo, getMainWindowCloseAction: () => mainWindowCloseAction, getPlayIndex: () => playIndex, getPlayLoadGeneration: () => playLoadGeneration,
   getPlayQueue: () => playQueue, getSelectedPlaylistId: () => selectedPlaylistId, getSelectedPlaylistName: () => selectedPlaylistName, hotkeys, invoke, listen, loadPlaylistDetail,
@@ -287,11 +283,10 @@ startDesktopRuntime({
         if (Number.isFinite(value)) audio.currentTime = (Math.max(0, Math.min(1000, value)) / 1000) * duration;
       }
     }
-    else if (action === "open-main") {
-      if (miniMode.isOpen()) await miniMode.handleCommand("open-main");
-      else await invoke("show_main_window").catch((error) => console.warn("show_main_window from tray-player-command", error));
-    }
+    else if (action === "open-main") await invoke("show_main_window").catch((error) => console.warn("show_main_window from tray-player-command", error));
   },
   wireAccountCenter: (...args) => wireAccountCenter(...args),
 });
-document.addEventListener("DOMContentLoaded", () => { miniMode.wire(); });
+document.addEventListener("DOMContentLoaded", () => {
+  miniMode.wire();
+});

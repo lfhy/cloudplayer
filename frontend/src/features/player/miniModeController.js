@@ -1,251 +1,298 @@
+import { setCoverImageSource } from "../../app/helpers/covers.js";
+import { escapeHtml } from "../../app/helpers/text.js";
 import { currentPlayableKey } from "../lyrics/model.js";
+import { lineProgressRatio } from "./immersiveLyricsView.js";
+import { applyActiveLyricProgress, applyLyricLineStates, captureLyricLineElements, centerActiveLyricLine } from "./lyricsMotionController.js";
+import { createLyricTimingSmoother } from "./lyricTimingSmoother.js";
 import { getPlaybackSeekDisplay } from "./pendingPlaybackUi.js";
-import { createMiniModeWindowController, MINI_PLAYER_TARGET } from "./miniModeWindow.js";
+import { createMiniModeWindowController } from "./miniModeWindow.js";
+import { setPlayButtonIcon } from "./playButtonIcon.js";
 
-const MINI_SYNC_MS = 240;
-
-// Mini-mode controller now owns a dedicated child window instead of shrinking the main shell in place.
+// Mini mode keeps a compact Apple-Music-style shell in sync with the shared playback state.
 export function createMiniModeController(deps) {
-  const { WebviewWindow, emitTo, formatTime, getAudioEl, getCurrentLyricsSnapshot, getDesktopLyricsOpen, getPlayIndex, getPlayQueue, invoke, readCurrentLyricsSnapshot, toggleDesktopLyrics } = deps;
-  const windows = createMiniModeWindowController({ WebviewWindow });
-  let boundsCleanup = null;
-  let boundsPersistTimer = 0;
-  let open = false;
-  let settingsState = { visible: false, alwaysOnTop: true, lyricsVisible: true, x: null, y: null, width: null, height: null };
-  let syncTimer = 0;
+  const { closeImmersive, formatTime, getAudioEl, getCurrentLyricsSnapshot, getPlayIndex, getPlayQueue, getSeekDragging, readCurrentLyricsSnapshot, setSeekDragging } = deps;
+  const windowMode = createMiniModeWindowController();
+  const timing = createLyricTimingSmoother();
+  let activeLineIndex = -1, closeTimer = 0, currentMetaKey = "", manualScrollUntil = 0, open = false, renderedKey = "", syncTimer = 0;
+  let activeLineProgress = -1;
+  let lyricLineElements = [];
+  let lyricsSnapshot = null, snapshotKey = "", snapshotLoadingKey = "", snapshotPromise = null;
 
+  function currentTrack() { return getPlayQueue()[getPlayIndex()] || null; }
+  function panelEl() { return document.getElementById("mini-player"); }
+  function lyricsEl() { return document.getElementById("mini-lyrics"); }
+  function pauseAutoScroll(ms = 2200) { manualScrollUntil = Date.now() + ms; }
   function setMiniToggleUi() { document.getElementById("btn-dock-mini")?.classList.toggle("is-on", open); }
-
-  function applySettingsState(settings = {}) {
-    settingsState = {
-      visible: !!(settings.mini_player_visible ?? settings.miniPlayerVisible),
-      alwaysOnTop: (settings.mini_player_always_on_top ?? settings.miniPlayerAlwaysOnTop) !== false,
-      lyricsVisible: (settings.mini_player_lyrics_visible ?? settings.miniPlayerLyricsVisible) !== false,
-      x: settings.mini_player_x ?? settings.miniPlayerX ?? null,
-      y: settings.mini_player_y ?? settings.miniPlayerY ?? null,
-      width: settings.mini_player_width ?? settings.miniPlayerWidth ?? null,
-      height: settings.mini_player_height ?? settings.miniPlayerHeight ?? null,
-    };
+  function syncPinUi() {
+    const button = document.getElementById("btn-mini-pin");
+    const enabled = windowMode.getAlwaysOnTop();
+    if (!button) return;
+    button.classList.toggle("is-on", enabled);
+    button.setAttribute("aria-pressed", enabled ? "true" : "false");
+    button.title = enabled ? "关闭 Mini 置顶" : "开启 Mini 置顶";
+    button.setAttribute("aria-label", button.title);
   }
 
-  async function persistSettings(patch) {
-    await invoke("save_settings", { patch });
-    settingsState = {
-      ...settingsState,
-      visible: patch.mini_player_visible ?? settingsState.visible,
-      alwaysOnTop: patch.mini_player_always_on_top ?? settingsState.alwaysOnTop,
-      lyricsVisible: patch.mini_player_lyrics_visible ?? settingsState.lyricsVisible,
-      x: patch.mini_player_x ?? settingsState.x,
-      y: patch.mini_player_y ?? settingsState.y,
-      width: patch.mini_player_width ?? settingsState.width,
-      height: patch.mini_player_height ?? settingsState.height,
-    };
+  function buildMiniLyricLineHtml(entry, index) {
+    const text = escapeHtml(entry?.text || "\u00a0");
+    return `<p class="mini-player__lyrics-line" data-lyric-index="${index}"><span class="mini-player__line-base">${text}</span><span class="mini-player__line-fill">${text}</span></p>`;
   }
 
-  async function hydrateFromBackend() {
-    try {
-      applySettingsState(await invoke("get_settings"));
-    } catch (error) {
-      console.warn("mini mode get_settings", error);
-    }
-    open = settingsState.visible;
-    setMiniToggleUi();
-    if (settingsState.visible) await openMiniWindow({ restoreOnly: true });
+  function applySnapshot(snapshot) {
+    lyricsSnapshot = snapshot || null;
+    snapshotKey = currentPlayableKey(snapshot?.currentTrack) || "";
   }
 
-  async function currentSnapshotFor(track) {
-    const trackKey = currentPlayableKey(track);
-    if (!trackKey) return null;
+  function refreshSnapshot() {
     const snapshot = readCurrentLyricsSnapshot?.() || null;
-    if (currentPlayableKey(snapshot?.currentTrack) === trackKey) return snapshot;
-    try {
-      return await getCurrentLyricsSnapshot?.();
-    } catch (error) {
-      console.warn("mini mode getCurrentLyricsSnapshot", error);
-      return snapshot;
+    if (!snapshot) return;
+    applySnapshot(snapshot);
+  }
+
+  function ensureSnapshot(trackKey = currentPlayableKey(currentTrack())) {
+    if (!trackKey) {
+      applySnapshot(null);
+      return Promise.resolve(null);
     }
-  }
-
-  async function buildMiniState() {
-    const track = getPlayQueue()[getPlayIndex()] || null;
-    const snapshot = await currentSnapshotFor(track);
-    const audio = getAudioEl();
-    const { currentTimeMs, durationMs } = getPlaybackSeekDisplay(audio, track);
-    const rootStyle = getComputedStyle(document.documentElement);
-    return {
-      hasTrack: !!track,
-      title: track?.title || "未播放",
-      sub: track?.artist || (track ? "未知艺术家" : "选择曲目后可进入歌词 Mini 模式"),
-      coverUrl: track?.cover_url || "",
-      playing: !!audio && !!audio.src && !audio.paused,
-      hasPrev: getPlayQueue().length > 0,
-      hasNext: getPlayQueue().length > 0,
-      progressValue: durationMs > 0 ? Math.min(1000, Math.floor((currentTimeMs / durationMs) * 1000)) : 0,
-      currentText: formatTime(currentTimeMs / 1000),
-      totalText: durationMs > 0 ? formatTime(durationMs / 1000) : "0:00",
-      entries: Array.isArray(snapshot?.lrcEntries) ? snapshot.lrcEntries : [],
-      wordLines: Array.isArray(snapshot?.wordLines) ? snapshot.wordLines : [],
-      lyricPayload: snapshot?.payload || null,
-      theme: document.documentElement.dataset.appTheme || "coral",
-      themeMode: document.documentElement.dataset.themeMode || "system",
-      customAccent: rootStyle.getPropertyValue("--accent").trim() || "#c62f2f",
-      alwaysOnTop: settingsState.alwaysOnTop,
-      desktopLyricsOpen: !!getDesktopLyricsOpen?.(),
-      lyricsVisible: settingsState.lyricsVisible,
-    };
-  }
-
-  async function broadcastState() {
-    if (!open) return;
-    try {
-      await emitTo(MINI_PLAYER_TARGET, "mini-player-state", await buildMiniState());
-    } catch (error) {
-      console.warn("emit mini-player-state", error);
-    }
-  }
-
-  function stopSyncLoop() {
-    if (!syncTimer) return;
-    window.clearInterval(syncTimer);
-    syncTimer = 0;
-  }
-
-  function startSyncLoop() {
-    stopSyncLoop();
-    if (!open) return;
-    void broadcastState();
-    syncTimer = window.setInterval(() => { void broadcastState(); }, MINI_SYNC_MS);
-  }
-
-  function scheduleStateEcho(delays = [90, 260]) {
-    delays.forEach((delay) => window.setTimeout(() => { if (open) void broadcastState(); }, delay));
-  }
-
-  async function persistBounds() {
-    const win = await windows.currentWindowRef();
-    if (!win) return;
-    try {
-      const factor = await win.scaleFactor();
-      const outerPos = await win.outerPosition();
-      const outerSize = await win.outerSize();
-      const logicalPos = outerPos.toLogical(factor);
-      const logicalSize = outerSize.toLogical(factor);
-      await persistSettings({
-        mini_player_x: Math.round(logicalPos.x),
-        mini_player_y: Math.round(logicalPos.y),
-        mini_player_width: Math.round(logicalSize.width),
-        mini_player_height: Math.round(logicalSize.height),
+    if (snapshotKey === trackKey && lyricsSnapshot) return Promise.resolve(lyricsSnapshot);
+    if (snapshotLoadingKey === trackKey && snapshotPromise) return snapshotPromise;
+    snapshotLoadingKey = trackKey;
+    snapshotPromise = getCurrentLyricsSnapshot()
+      .then((snapshot) => {
+        if ((currentPlayableKey(snapshot?.currentTrack) || "") === trackKey) {
+          applySnapshot(snapshot);
+          renderedKey = "";
+        }
+        return snapshot;
+      })
+      .finally(() => {
+        if (snapshotLoadingKey === trackKey) {
+          snapshotLoadingKey = "";
+          snapshotPromise = null;
+        }
       });
-    } catch (error) {
-      console.warn("mini mode persist bounds", error);
+    return snapshotPromise;
+  }
+
+  async function setOpen(nextOpen) {
+    const panel = panelEl();
+    if (!panel || open === !!nextOpen) return;
+    window.clearTimeout(closeTimer);
+    open = !!nextOpen;
+    setMiniToggleUi();
+    panel.setAttribute("aria-hidden", open ? "false" : "true");
+    if (open) {
+      closeImmersive?.();
+      document.body.classList.add("mini-mode");
+      panel.hidden = false;
+      requestAnimationFrame(() => panel.classList.add("is-visible"));
+      await windowMode.enterMiniWindow();
+      syncPinUi();
+      syncAll(true);
+      scheduleLoop();
+      return;
+    }
+    panel.classList.remove("is-visible");
+    document.body.classList.remove("mini-mode");
+    scheduleLoop();
+    await windowMode.exitMiniWindow();
+    closeTimer = window.setTimeout(() => { if (!open) panel.hidden = true; }, 180);
+  }
+
+  function close() { return setOpen(false); }
+  function toggle() { return setOpen(!open); }
+
+  function syncMeta() {
+    const track = currentTrack();
+    const key = currentPlayableKey(track);
+    const titleEl = document.getElementById("mini-title");
+    const subEl = document.getElementById("mini-sub");
+    const coverEl = document.getElementById("mini-cover");
+    if (titleEl) titleEl.textContent = track?.title || "未播放";
+    if (subEl) subEl.textContent = track?.artist || (track ? "未知艺术家" : "选择曲目后可进入歌词 Mini 模式");
+    if (coverEl) setCoverImageSource(coverEl, track?.cover_url || "", { size: 64, radius: 14 });
+    if (key !== currentMetaKey) {
+      currentMetaKey = key;
+      renderedKey = "";
+      activeLineIndex = -1;
+      void ensureSnapshot(key);
+    } else {
+      refreshSnapshot();
     }
   }
 
-  async function bindWindowHooks(win) {
-    if (boundsCleanup) return;
-    const [offMove, offResize] = await Promise.all([
-      win.onMoved(() => schedulePersistBounds()),
-      win.onResized(() => schedulePersistBounds()),
-    ]);
-    boundsCleanup = () => {
-      try { offMove?.(); } catch {}
-      try { offResize?.(); } catch {}
-      if (boundsPersistTimer) window.clearTimeout(boundsPersistTimer);
-      boundsPersistTimer = 0;
-      boundsCleanup = null;
+  function syncTransport() {
+    const audio = getAudioEl();
+    const hasQueue = getPlayQueue().length > 0;
+    setPlayButtonIcon(document.getElementById("btn-mini-play"), !!audio && !audio.paused);
+    ["btn-mini-play", "btn-mini-prev", "btn-mini-next"].forEach((id) => {
+      const button = document.getElementById(id);
+      if (button) button.disabled = !hasQueue;
+    });
+  }
+
+  function syncSeekUi() {
+    const audio = getAudioEl();
+    const seek = document.getElementById("mini-seek");
+    const currentEl = document.getElementById("mini-time-current");
+    const totalEl = document.getElementById("mini-time-total");
+    if (!seek || !currentEl || !totalEl) return;
+    const track = getPlayQueue()[getPlayIndex()] || null;
+    const { currentTimeMs, durationMs } = getPlaybackSeekDisplay(audio, track);
+    currentEl.textContent = formatTime(currentTimeMs / 1000);
+    totalEl.textContent = durationMs > 0 ? formatTime(durationMs / 1000) : "0:00";
+    if (!getSeekDragging()) {
+      seek.value = durationMs > 0 ? String(Math.min(1000, Math.floor((currentTimeMs / durationMs) * 1000))) : "0";
+    }
+    seek.disabled = !(audio && audio.src);
+    seek.style.setProperty("--seek-progress", `${Number(seek.value) / 10}%`);
+  }
+
+  function renderLyrics(force = false) {
+    const box = lyricsEl();
+    const track = currentTrack();
+    const entries = Array.isArray(lyricsSnapshot?.lrcEntries) ? lyricsSnapshot.lrcEntries : [];
+    const payload = lyricsSnapshot?.payload || null;
+    if (!box) return;
+    if (!track) {
+      if (force || renderedKey !== "idle") {
+        renderedKey = "idle";
+        activeLineIndex = -1;
+        activeLineProgress = -1;
+        lyricLineElements = [];
+        timing.resetProgress();
+        box.innerHTML = '<p class="mini-player__lyrics-empty">播放任意歌曲后，这里会展示同步歌词。</p>';
+      }
+      return;
+    }
+    if (!entries.length || !payload) {
+      const waiting = snapshotLoadingKey === currentMetaKey || snapshotKey !== currentMetaKey;
+      const nextKey = waiting ? "loading" : "fallback";
+      if (force || renderedKey !== nextKey) {
+        renderedKey = nextKey;
+        activeLineIndex = -1;
+        activeLineProgress = -1;
+        timing.resetProgress();
+        box.innerHTML = waiting
+          ? '<p class="mini-player__lyrics-empty">歌词加载中...</p>'
+          : [buildMiniLyricLineHtml({ text: track.title || "当前歌曲" }, 0), buildMiniLyricLineHtml({ text: track.artist || "暂无滚动歌词" }, 1)].join("");
+        lyricLineElements = captureLyricLineElements(box, ".mini-player__lyrics-line");
+        if (!waiting) box.querySelector('.mini-player__lyrics-line[data-lyric-index="0"]')?.classList.add("is-active");
+      }
+      return;
+    }
+    const viewKey = `${currentMetaKey}|${entries.length}`;
+    if (force || renderedKey !== viewKey) {
+      renderedKey = viewKey;
+      box.innerHTML = entries.map((entry, index) => buildMiniLyricLineHtml(entry, index)).join("");
+      lyricLineElements = captureLyricLineElements(box, ".mini-player__lyrics-line");
+      activeLineIndex = -1;
+      activeLineProgress = -1;
+      timing.resetProgress();
+    }
+    updateLyricStates(box, entries, payload);
+  }
+
+  function updateLyricStates(box, entries, payload) {
+    const index = Number.isInteger(payload?.activeIndex) ? payload.activeIndex : -1;
+    const token = [currentMetaKey, index, payload?.line1, payload?.line2, payload?.line1StartT, payload?.line2StartT].join("|");
+    const currentTime = timing.syncedCurrentTime(token, payload);
+    const wordLines = Array.isArray(lyricsSnapshot?.wordLines) ? lyricsSnapshot.wordLines : null;
+    const rawRatio = lineProgressRatio({ index, activeIndex: index, entries, wordLines, currentTime });
+    const activeEntry = entries[index];
+    const nextEntry = entries[index + 1];
+    const lineKey = `${currentMetaKey}|${index}|${activeEntry?.text || ""}|${activeEntry?.t || 0}|${nextEntry?.t || (activeEntry?.t || 0) + 4}`;
+    const ratio = timing.monotonicProgress(lineKey, currentTime, rawRatio);
+    if (index !== activeLineIndex) {
+      applyLyricLineStates(lyricLineElements, index, ratio);
+      activeLineProgress = ratio;
+    } else if (Math.abs(ratio - activeLineProgress) > 0.003) {
+      applyActiveLyricProgress(lyricLineElements, index, ratio);
+      activeLineProgress = ratio;
+    }
+    if (index !== activeLineIndex) {
+      activeLineIndex = index;
+      if (Date.now() >= manualScrollUntil) {
+        centerActiveLyricLine(box, lyricLineElements, index);
+      }
+    }
+  }
+
+  function syncAll(forceLyrics = false) {
+    syncMeta();
+    syncTransport();
+    syncSeekUi();
+    renderLyrics(forceLyrics);
+  }
+
+  function tick() {
+    if (!open) return;
+    if (currentPlayableKey(currentTrack()) !== currentMetaKey) syncMeta();
+    refreshSnapshot();
+    syncSeekUi();
+    renderLyrics();
+    syncTimer = requestAnimationFrame(tick);
+  }
+
+  function scheduleLoop() {
+    if (syncTimer) cancelAnimationFrame(syncTimer);
+    syncTimer = open ? requestAnimationFrame(tick) : 0;
+  }
+
+  function bindAudioEvents() {
+    const observe = () => {
+      const audio = getAudioEl();
+      if (!audio) return void requestAnimationFrame(observe);
+      audio.addEventListener("timeupdate", () => { refreshSnapshot(); if (open) renderLyrics(); });
+      audio.addEventListener("play", () => { refreshSnapshot(); if (open) syncAll(); });
+      audio.addEventListener("pause", () => { refreshSnapshot(); if (open) syncAll(); });
+      audio.addEventListener("loadedmetadata", () => { if (open) syncAll(true); });
+      audio.addEventListener("ended", () => { refreshSnapshot(); if (open) syncAll(); });
     };
+    observe();
   }
 
-  function schedulePersistBounds() {
-    if (boundsPersistTimer) window.clearTimeout(boundsPersistTimer);
-    boundsPersistTimer = window.setTimeout(() => {
-      boundsPersistTimer = 0;
-      void persistBounds();
-    }, 180);
-  }
-
-  async function syncWindowRuntimeState(win) {
-    if (!win) return;
-    try {
-      const runtime = await win.getRuntimeWindow();
-      await runtime.SetAlwaysOnTop(settingsState.alwaysOnTop);
-      await runtime.SetBackgroundColour(0, 0, 0, 0);
-    } catch (error) {
-      console.warn("mini mode sync window runtime", error);
-    }
-  }
-
-  async function openMiniWindow({ restoreOnly = false } = {}) {
-    const win = await windows.ensureWindow(settingsState);
-    await bindWindowHooks(win);
-    await syncWindowRuntimeState(win);
-    open = true;
-    setMiniToggleUi();
-    startSyncLoop();
-    if (!restoreOnly) await persistSettings({ mini_player_visible: true });
-    try {
-      await invoke("hide_main_window");
-    } catch (error) {
-      console.warn("hide_main_window for mini mode", error);
-    }
-  }
-
-  async function closeMiniWindow({ showMain = true } = {}) {
-    stopSyncLoop();
-    const win = await windows.currentWindowRef();
-    if (win) await win.hide().catch((error) => console.warn("mini mode hide", error));
-    open = false;
-    setMiniToggleUi();
-    await persistSettings({ mini_player_visible: false });
-    if (showMain) {
-      await invoke("show_main_window").catch((error) => console.warn("show_main_window from mini mode", error));
-    }
-  }
-
-  async function toggle() {
-    if (open) return closeMiniWindow();
-    return openMiniWindow();
-  }
-
-  async function handleCommand(action, payload = {}) {
-    if (action === "prev") return document.getElementById("btn-player-prev")?.click();
-    if (action === "toggle") return document.getElementById("btn-player-play")?.click();
-    if (action === "next") return document.getElementById("btn-player-next")?.click();
-    if (action === "exit") return closeMiniWindow();
-    if (action === "open-main") return closeMiniWindow({ showMain: true });
-    if (action === "seek") {
+  function wireSeek() {
+    const seek = document.getElementById("mini-seek");
+    seek?.addEventListener("pointerdown", () => setSeekDragging(true));
+    seek?.addEventListener("pointerup", () => { setSeekDragging(false); syncSeekUi(); refreshSnapshot(); renderLyrics(); });
+    seek?.addEventListener("input", () => {
       const audio = getAudioEl();
       const duration = audio?.duration;
-      const value = Number(payload?.value);
-      if (audio && duration && Number.isFinite(duration) && duration > 0 && Number.isFinite(value)) {
-        audio.currentTime = (Math.max(0, Math.min(1000, value)) / 1000) * duration;
+      if (audio && duration && Number.isFinite(duration) && duration > 0) {
+        audio.currentTime = (Number(seek.value) / 1000) * duration;
+        syncSeekUi();
+        refreshSnapshot();
+        renderLyrics();
       }
-      return broadcastState();
-    }
-    if (action === "toggle-pin") {
-      settingsState.alwaysOnTop = !settingsState.alwaysOnTop;
-      await persistSettings({ mini_player_always_on_top: settingsState.alwaysOnTop });
-      const win = await windows.currentWindowRef();
-      await syncWindowRuntimeState(win);
-      return broadcastState();
-    }
-    if (action === "toggle-mini-lyrics") {
-      settingsState.lyricsVisible = !settingsState.lyricsVisible;
-      await persistSettings({ mini_player_lyrics_visible: settingsState.lyricsVisible });
-      return broadcastState();
-    }
-    if (action === "toggle-desktop-lyrics") {
-      await toggleDesktopLyrics?.();
-      scheduleStateEcho();
-      return broadcastState();
-    }
+    });
+  }
+
+  function wireLyricsScroll() {
+    const lyrics = lyricsEl();
+    lyrics?.addEventListener("wheel", (event) => {
+      if (lyrics.scrollHeight <= lyrics.clientHeight) return;
+      pauseAutoScroll();
+      event.preventDefault();
+      lyrics.scrollTop += event.deltaY;
+    }, { passive: false });
+    lyrics?.addEventListener("scroll", () => pauseAutoScroll(1600), { passive: true });
   }
 
   function wire() {
     document.getElementById("btn-dock-mini")?.addEventListener("click", () => { void toggle(); });
-    setMiniToggleUi();
-    void hydrateFromBackend();
+    document.getElementById("btn-mini-exit")?.addEventListener("click", () => { void close(); });
+    document.getElementById("btn-mini-prev")?.addEventListener("click", () => document.getElementById("btn-player-prev")?.click());
+    document.getElementById("btn-mini-play")?.addEventListener("click", () => document.getElementById("btn-player-play")?.click());
+    document.getElementById("btn-mini-next")?.addEventListener("click", () => document.getElementById("btn-player-next")?.click());
+    document.getElementById("btn-mini-pin")?.addEventListener("click", async () => { await windowMode.toggleAlwaysOnTop(); syncPinUi(); });
+    document.addEventListener("keydown", (event) => { if (event.key === "Escape" && open) void close(); });
+    wireSeek();
+    wireLyricsScroll();
+    bindAudioEvents();
+    void windowMode.loadPreferences().then(() => syncPinUi());
+    syncAll(true);
   }
 
-  return { broadcastState, handleCommand, isOpen: () => open, wire };
+  return { close, getOpen: () => open, syncAll, toggle, wire };
 }

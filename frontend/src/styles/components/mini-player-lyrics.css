@@ -1,4 +1,4 @@
-/* Mini player lyric styling stays separate so the compact shell CSS remains under the repo size cap. */
+/* Mini-player lyric styles are split out to keep the compact shell stylesheet within repo limits. */
 .mini-player__lyrics {
   flex: 1;
   min-height: 0;
@@ -6,7 +6,7 @@
   padding: 12px 14px;
   border-radius: 18px;
   border: 1px solid rgba(148, 163, 184, 0.16);
-  background: rgba(255, 255, 255, 0.48);
+  background: rgba(255, 255, 255, 0.42);
   backdrop-filter: blur(18px);
   scrollbar-width: none;
 }
@@ -69,14 +69,4 @@
 .mini-player__lyrics-empty {
   color: var(--text-sub);
   font-size: 14px;
-}
-
-@media (max-width: 420px) {
-  .mini-player__header {
-    grid-template-columns: 1fr;
-  }
-
-  .mini-player__actions {
-    justify-content: flex-start;
-  }
 }

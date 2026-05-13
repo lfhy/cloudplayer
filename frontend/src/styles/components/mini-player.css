@@ -1,25 +1,37 @@
-/* Mini player styles render the child window as a rounded glass shell inside a transparent frame. */
+/* Mini player styles collapse the main window into a lyrics-first compact playback shell. */
 .mini-player {
   display: none;
   height: 100vh;
-  padding: 12px;
-  background: transparent;
+  background:
+    radial-gradient(circle at top left, rgba(var(--accent-rgb), 0.16), transparent 42%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(248, 250, 252, 0.96));
+}
+
+:root[data-theme-mode-resolved="dark"] .mini-player {
+  background:
+    radial-gradient(circle at top left, rgba(var(--accent-rgb), 0.24), transparent 42%),
+    linear-gradient(180deg, rgba(17, 24, 39, 0.98), rgba(10, 14, 24, 0.96));
 }
 
 .mini-player[hidden] { display: none; }
 .mini-player.is-visible { display: block; }
 
-html.mini-mode,
 body.mini-mode {
   margin: 0;
   overflow: hidden;
   background: transparent;
 }
 
-body.mini-mode #app,
-body.mini-mode .app-root,
 body.mini-mode .app-shell {
   background: transparent;
+}
+
+body.mini-mode .app-shell > :not(.mini-player) {
+  display: none !important;
+}
+
+body.mini-mode .mini-player {
+  display: block;
 }
 
 .mini-player__shell {
@@ -29,38 +41,10 @@ body.mini-mode .app-shell {
   gap: 14px;
   padding: 14px 16px 16px;
   box-sizing: border-box;
-  border-radius: 28px;
-  border: 1px solid rgba(148, 163, 184, 0.24);
-  background:
-    radial-gradient(circle at top left, rgba(var(--accent-rgb), 0.15), transparent 42%),
-    linear-gradient(180deg, rgba(255, 255, 255, 0.94), rgba(245, 248, 252, 0.9));
-  box-shadow:
-    0 18px 42px rgba(15, 23, 42, 0.18),
-    inset 0 1px 0 rgba(255, 255, 255, 0.42);
-  backdrop-filter: blur(20px) saturate(125%);
-  --wails-draggable: drag;
-}
-
-:root[data-theme-mode-resolved="dark"] .mini-player__shell {
-  border-color: rgba(148, 163, 184, 0.16);
-  background:
-    radial-gradient(circle at top left, rgba(var(--accent-rgb), 0.22), transparent 42%),
-    linear-gradient(180deg, rgba(17, 24, 39, 0.84), rgba(10, 14, 24, 0.78));
-  box-shadow:
-    0 20px 48px rgba(2, 6, 23, 0.44),
-    inset 0 1px 0 rgba(255, 255, 255, 0.08);
 }
 
 .platform-macos body.mini-mode .mini-player__shell {
   padding-top: 38px;
-}
-
-.mini-player__dragbar {
-  width: 52px;
-  height: 5px;
-  align-self: center;
-  border-radius: 999px;
-  background: rgba(100, 116, 139, 0.28);
 }
 
 .mini-player__header {
@@ -69,14 +53,11 @@ body.mini-mode .app-shell {
   gap: 14px;
   align-items: center;
   min-height: 72px;
+  --wails-draggable: drag;
 }
 
 .mini-player__meta,
 .mini-player__actions,
-.mini-player__cover,
-.mini-player__copy,
-.mini-player__title,
-.mini-player__sub,
 .mini-player__actions button,
 .mini-player__progress,
 .mini-player__progress input,
@@ -125,23 +106,20 @@ body.mini-mode .app-shell {
 .mini-player__actions {
   display: flex;
   align-items: center;
-  flex-wrap: wrap;
-  justify-content: flex-end;
   gap: 8px;
 }
 
 .mini-player__btn,
 .mini-player__icon {
   border: 1px solid var(--dock-edge);
-  background: rgba(255, 255, 255, 0.7);
+  background: rgba(255, 255, 255, 0.62);
   color: var(--text-main);
   box-shadow: 0 8px 20px rgba(15, 23, 42, 0.08);
-  backdrop-filter: blur(12px);
 }
 
 :root[data-theme-mode-resolved="dark"] .mini-player__btn,
 :root[data-theme-mode-resolved="dark"] .mini-player__icon {
-  background: rgba(15, 23, 42, 0.38);
+  background: rgba(255, 255, 255, 0.06);
 }
 
 .mini-player__btn {
@@ -189,8 +167,7 @@ body.mini-mode .app-shell {
 .mini-player__icon svg {
   width: 18px;
   height: 18px;
-  fill: none;
-  stroke: currentColor;
+  fill: currentColor;
 }
 
 .mini-player__icon {
@@ -210,10 +187,6 @@ body.mini-mode .app-shell {
   fill: none;
   stroke: currentColor;
   stroke-width: 1.8;
-}
-
-.mini-player--lyrics-hidden .mini-player__lyrics {
-  display: none;
 }
 
 .mini-player__progress {
@@ -261,4 +234,14 @@ body.mini-mode .app-shell {
   height: 6px;
   border-radius: 999px;
   background: transparent;
+}
+
+@media (max-width: 420px) {
+  .mini-player__header {
+    grid-template-columns: 1fr;
+  }
+
+  .mini-player__actions {
+    justify-content: flex-end;
+  }
 }

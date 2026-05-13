@@ -23,7 +23,6 @@ export default defineConfig({
         account_center: resolve(__dirname, "account_center.html"),
         desktop_lyrics: resolve(__dirname, "desktop_lyrics.html"),
         lyrics_replace: resolve(__dirname, "lyrics_replace.html"),
-        mini_player: resolve(__dirname, "mini_player.html"),
         tray_player: resolve(__dirname, "tray_player.html"),
       },
     },

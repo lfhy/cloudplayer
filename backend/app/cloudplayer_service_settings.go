@@ -247,28 +247,8 @@ func (s *CloudPlayerService) SaveSettings(patch SettingsPatch) error {
 	if patch.SearchCacheTTLHours != nil {
 		settings.SearchCacheTTLHours = config.NormalizeSearchCacheTTLHours(*patch.SearchCacheTTLHours)
 	}
-	if patch.MiniPlayerVisible != nil {
-		settings.MiniPlayerVisible = *patch.MiniPlayerVisible
-	}
 	if patch.MiniPlayerAlwaysOnTop != nil {
 		settings.MiniPlayerAlwaysOnTop = *patch.MiniPlayerAlwaysOnTop
-	}
-	if patch.MiniPlayerLyricsVisible != nil {
-		settings.MiniPlayerLyricsVisible = *patch.MiniPlayerLyricsVisible
-	}
-	if patch.MiniPlayerX != nil {
-		settings.MiniPlayerX = patch.MiniPlayerX
-	}
-	if patch.MiniPlayerY != nil {
-		settings.MiniPlayerY = patch.MiniPlayerY
-	}
-	if patch.MiniPlayerWidth != nil {
-		value := maxInt(*patch.MiniPlayerWidth, 320)
-		settings.MiniPlayerWidth = &value
-	}
-	if patch.MiniPlayerHeight != nil {
-		value := maxInt(*patch.MiniPlayerHeight, 220)
-		settings.MiniPlayerHeight = &value
 	}
 	if err := config.SaveSettings(settings); err != nil {
 		return err
