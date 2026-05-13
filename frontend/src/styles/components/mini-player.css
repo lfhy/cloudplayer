@@ -125,6 +125,8 @@ body.mini-mode .app-shell {
 .mini-player__actions {
   display: flex;
   align-items: center;
+  flex-wrap: wrap;
+  justify-content: flex-end;
   gap: 8px;
 }
 
@@ -210,38 +212,8 @@ body.mini-mode .app-shell {
   stroke-width: 1.8;
 }
 
-body.mini-mode.mini-mode--translucent .mini-player__shell {
-  background:
-    radial-gradient(circle at top left, rgba(var(--accent-rgb), 0.1), transparent 42%),
-    linear-gradient(180deg, rgba(255, 255, 255, 0.08), rgba(244, 247, 250, 0.04));
-  border-color: rgba(255, 255, 255, 0.12);
-  box-shadow:
-    0 14px 32px rgba(15, 23, 42, 0.1),
-    inset 0 1px 0 rgba(255, 255, 255, 0.16);
-  backdrop-filter: blur(26px) saturate(138%);
-}
-
-:root[data-theme-mode-resolved="dark"] body.mini-mode.mini-mode--translucent .mini-player__shell {
-  background:
-    radial-gradient(circle at top left, rgba(var(--accent-rgb), 0.12), transparent 42%),
-    linear-gradient(180deg, rgba(17, 24, 39, 0.08), rgba(10, 14, 24, 0.05));
-  border-color: rgba(148, 163, 184, 0.12);
-  box-shadow:
-    0 16px 36px rgba(2, 6, 23, 0.14),
-    inset 0 1px 0 rgba(255, 255, 255, 0.08);
-}
-
-body.mini-mode.mini-mode--translucent .mini-player__btn,
-body.mini-mode.mini-mode--translucent .mini-player__icon {
-  background: rgba(255, 255, 255, 0.08);
-  border-color: rgba(255, 255, 255, 0.12);
-  backdrop-filter: blur(18px) saturate(130%);
-}
-
-:root[data-theme-mode-resolved="dark"] body.mini-mode.mini-mode--translucent .mini-player__btn,
-:root[data-theme-mode-resolved="dark"] body.mini-mode.mini-mode--translucent .mini-player__icon {
-  background: rgba(15, 23, 42, 0.08);
-  border-color: rgba(148, 163, 184, 0.1);
+.mini-player--lyrics-hidden .mini-player__lyrics {
+  display: none;
 }
 
 .mini-player__progress {

@@ -1,5 +1,5 @@
 import { fallbackCoverDataUri } from "../app/helpers/covers.js";
-import { miniExitIcon, miniNextIcon, miniPinIcon, miniPlayIcon, miniPrevIcon, miniTranslucentIcon } from "./miniPlayerIcons.js";
+import { miniDesktopLyricsIcon, miniExitIcon, miniLyricsIcon, miniNextIcon, miniPinIcon, miniPlayIcon, miniPrevIcon } from "./miniPlayerIcons.js";
 
 // Mini player template keeps the compact shell declarative and separate from runtime wiring.
 export function miniPlayerTemplate() {
@@ -20,8 +20,9 @@ export function miniPlayerTemplate() {
             <button type="button" id="btn-mini-prev" class="mini-player__btn" title="上一首" aria-label="上一首">${miniPrevIcon()}</button>
             <button type="button" id="btn-mini-play" class="mini-player__btn mini-player__btn--main" title="播放" aria-label="播放">${miniPlayIcon()}</button>
             <button type="button" id="btn-mini-next" class="mini-player__btn" title="下一首" aria-label="下一首">${miniNextIcon()}</button>
+            <button type="button" id="btn-mini-desktop-lyrics" class="mini-player__icon" title="打开桌面歌词" aria-label="打开桌面歌词" aria-pressed="false">${miniDesktopLyricsIcon()}</button>
+            <button type="button" id="btn-mini-lyrics-visibility" class="mini-player__icon" title="隐藏 Mini 歌词" aria-label="隐藏 Mini 歌词" aria-pressed="true">${miniLyricsIcon()}</button>
             <button type="button" id="btn-mini-pin" class="mini-player__icon" title="开启 Mini 置顶" aria-label="开启 Mini 置顶" aria-pressed="false">${miniPinIcon()}</button>
-            <button type="button" id="btn-mini-translucent" class="mini-player__icon" title="开启 Mini 半透明" aria-label="开启 Mini 半透明" aria-pressed="false">${miniTranslucentIcon()}</button>
             <button type="button" id="btn-mini-exit" class="mini-player__icon" title="退出 Mini 模式" aria-label="退出 Mini 模式">${miniExitIcon()}</button>
           </div>
         </header>

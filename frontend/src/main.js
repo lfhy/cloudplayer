@@ -259,10 +259,12 @@ const miniMode = createMiniModeController({
   formatTime,
   getAudioEl: audioEl,
   getCurrentLyricsSnapshot: (...args) => player.getCurrentLyricsSnapshot(...args),
+  getDesktopLyricsOpen: () => desktopLyricsOpen,
   getPlayIndex: () => playIndex,
   getPlayQueue: () => playQueue,
   invoke,
   readCurrentLyricsSnapshot: (...args) => player.readCurrentLyricsSnapshot(...args),
+  toggleDesktopLyrics: (...args) => player.toggleDesktopLyrics(...args),
 });
 listen("mini-player-request-sync", () => { void miniMode.broadcastState(); });
 listen("mini-player-command", (event) => { void miniMode.handleCommand(event?.payload?.action, event?.payload || {}); });

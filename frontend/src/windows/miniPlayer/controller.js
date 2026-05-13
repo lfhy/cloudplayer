@@ -45,8 +45,6 @@ export function bootstrapMiniPlayerWindow() {
 
   function applyTheme(payload = {}) {
     applyAppTheme(payload.theme || "coral", payload.customAccent || "#c62f2f", payload.themeMode || "system");
-    document.documentElement.classList.toggle("mini-mode--translucent", !!payload.translucent);
-    document.body.classList.toggle("mini-mode--translucent", !!payload.translucent);
   }
 
   function renderLyrics(payload = {}) {
@@ -93,6 +91,7 @@ export function bootstrapMiniPlayerWindow() {
 
   function applyState(payload = {}) {
     applyTheme(payload);
+    panelEl()?.classList.toggle("mini-player--lyrics-hidden", payload.lyricsVisible === false);
     setCoverImageSource(document.getElementById("mini-cover"), payload.coverUrl || "", { size: 64, radius: 14 });
     const title = document.getElementById("mini-title");
     const sub = document.getElementById("mini-sub");
@@ -103,8 +102,9 @@ export function bootstrapMiniPlayerWindow() {
       const button = document.getElementById(id);
       if (button) button.disabled = !payload.hasTrack;
     });
+    syncToggleButton(document.getElementById("btn-mini-desktop-lyrics"), !!payload.desktopLyricsOpen, "关闭桌面歌词", "打开桌面歌词");
+    syncToggleButton(document.getElementById("btn-mini-lyrics-visibility"), payload.lyricsVisible !== false, "隐藏 Mini 歌词", "显示 Mini 歌词");
     syncToggleButton(document.getElementById("btn-mini-pin"), !!payload.alwaysOnTop, "取消 Mini 置顶", "开启 Mini 置顶");
-    syncToggleButton(document.getElementById("btn-mini-translucent"), !!payload.translucent, "关闭 Mini 半透明", "开启 Mini 半透明");
     const seek = document.getElementById("mini-seek");
     if (seek instanceof HTMLInputElement) {
       seek.disabled = !payload.hasTrack;
@@ -114,7 +114,12 @@ export function bootstrapMiniPlayerWindow() {
     const total = document.getElementById("mini-time-total");
     if (current) current.textContent = payload.currentText || "0:00";
     if (total) total.textContent = payload.totalText || "0:00";
-    renderLyrics(payload);
+    if (payload.lyricsVisible === false) {
+      lyricsEl()?.setAttribute("hidden", "hidden");
+    } else {
+      lyricsEl()?.removeAttribute("hidden");
+      renderLyrics(payload);
+    }
   }
 
   function syncToggleButton(button, active, activeLabel, idleLabel) {
@@ -146,8 +151,9 @@ export function bootstrapMiniPlayerWindow() {
     document.getElementById("btn-mini-prev")?.addEventListener("click", () => { void sendCommand("prev"); });
     document.getElementById("btn-mini-play")?.addEventListener("click", () => { void sendCommand("toggle"); });
     document.getElementById("btn-mini-next")?.addEventListener("click", () => { void sendCommand("next"); });
+    document.getElementById("btn-mini-desktop-lyrics")?.addEventListener("click", () => { void sendCommand("toggle-desktop-lyrics"); });
+    document.getElementById("btn-mini-lyrics-visibility")?.addEventListener("click", () => { void sendCommand("toggle-mini-lyrics"); });
     document.getElementById("btn-mini-pin")?.addEventListener("click", () => { void sendCommand("toggle-pin"); });
-    document.getElementById("btn-mini-translucent")?.addEventListener("click", () => { void sendCommand("toggle-translucent"); });
     document.getElementById("btn-mini-exit")?.addEventListener("click", () => { void sendCommand("exit"); });
     document.getElementById("mini-cover")?.addEventListener("dblclick", () => { void sendCommand("open-main"); });
     document.getElementById("mini-title")?.addEventListener("dblclick", () => { void sendCommand("open-main"); });

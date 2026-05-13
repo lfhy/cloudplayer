@@ -23,8 +23,12 @@ export function miniPinIcon() {
   return wrap('<g fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="m15.7 4.9 3.4 3.4"/><path d="m14.15 6.45 3.4 3.4"/><path d="m9.4 11.2 4.75-4.75 3.4 3.4-4.75 4.75"/><path d="m8.45 12.15 3.4 3.4"/><path d="M11.1 15.55 7.2 19.45"/><path d="m6.7 13.9 3.4 3.4"/></g>');
 }
 
-export function miniTranslucentIcon() {
-  return wrap('<g fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3.8c3.5 0 6.78 1.93 9.1 5.38.32.47.32 1.16 0 1.64C18.78 14.27 15.5 16.2 12 16.2S5.22 14.27 2.9 10.82a1.45 1.45 0 0 1 0-1.64C5.22 5.73 8.5 3.8 12 3.8Z"/><circle cx="12" cy="10" r="2.8"/><path d="M6 19.25h12"/></g>');
+export function miniLyricsIcon() {
+  return wrap('<g fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><path d="M5 7.25h14"/><path d="M5 12h14"/><path d="M5 16.75h8.5"/></g>');
+}
+
+export function miniDesktopLyricsIcon() {
+  return wrap('<g fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="4.5" y="5.25" width="15" height="11.5" rx="2.2"/><path d="M7.5 9h9"/><path d="M7.5 12.5h6"/><path d="m10 19 2-2 2 2"/></g>');
 }
 
 export function miniExitIcon() {

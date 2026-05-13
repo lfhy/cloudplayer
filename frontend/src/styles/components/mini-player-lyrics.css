@@ -15,18 +15,6 @@
   background: rgba(255, 255, 255, 0.05);
 }
 
-body.mini-mode.mini-mode--translucent .mini-player__lyrics {
-  background: rgba(255, 255, 255, 0.03);
-  border-color: rgba(255, 255, 255, 0.08);
-  backdrop-filter: blur(16px);
-}
-
-:root[data-theme-mode-resolved="dark"] body.mini-mode.mini-mode--translucent .mini-player__lyrics {
-  background: rgba(15, 23, 42, 0.025);
-  border-color: rgba(148, 163, 184, 0.08);
-  backdrop-filter: blur(16px);
-}
-
 .mini-player__lyrics::-webkit-scrollbar { display: none; }
 
 .mini-player__lyrics-line,
@@ -89,6 +77,6 @@ body.mini-mode.mini-mode--translucent .mini-player__lyrics {
   }
 
   .mini-player__actions {
-    justify-content: flex-end;
+    justify-content: flex-start;
   }
 }

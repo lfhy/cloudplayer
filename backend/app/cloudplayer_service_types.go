@@ -68,7 +68,7 @@ type SettingsPatch struct {
 	SearchCacheTTLHours         *int                 `json:"search_cache_ttl_hours,omitempty"`
 	MiniPlayerVisible           *bool                `json:"mini_player_visible,omitempty"`
 	MiniPlayerAlwaysOnTop       *bool                `json:"mini_player_always_on_top,omitempty"`
-	MiniPlayerTranslucent       *bool                `json:"mini_player_translucent,omitempty"`
+	MiniPlayerLyricsVisible     *bool                `json:"mini_player_lyrics_visible,omitempty"`
 	MiniPlayerX                 *int                 `json:"mini_player_x,omitempty"`
 	MiniPlayerY                 *int                 `json:"mini_player_y,omitempty"`
 	MiniPlayerWidth             *int                 `json:"mini_player_width,omitempty"`

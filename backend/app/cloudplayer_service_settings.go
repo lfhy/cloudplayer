@@ -253,8 +253,8 @@ func (s *CloudPlayerService) SaveSettings(patch SettingsPatch) error {
 	if patch.MiniPlayerAlwaysOnTop != nil {
 		settings.MiniPlayerAlwaysOnTop = *patch.MiniPlayerAlwaysOnTop
 	}
-	if patch.MiniPlayerTranslucent != nil {
-		settings.MiniPlayerTranslucent = *patch.MiniPlayerTranslucent
+	if patch.MiniPlayerLyricsVisible != nil {
+		settings.MiniPlayerLyricsVisible = *patch.MiniPlayerLyricsVisible
 	}
 	if patch.MiniPlayerX != nil {
 		settings.MiniPlayerX = patch.MiniPlayerX

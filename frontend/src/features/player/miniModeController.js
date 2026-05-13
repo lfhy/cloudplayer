@@ -6,12 +6,12 @@ const MINI_SYNC_MS = 240;
 
 // Mini-mode controller now owns a dedicated child window instead of shrinking the main shell in place.
 export function createMiniModeController(deps) {
-  const { WebviewWindow, emitTo, formatTime, getAudioEl, getCurrentLyricsSnapshot, getPlayIndex, getPlayQueue, invoke, readCurrentLyricsSnapshot } = deps;
+  const { WebviewWindow, emitTo, formatTime, getAudioEl, getCurrentLyricsSnapshot, getDesktopLyricsOpen, getPlayIndex, getPlayQueue, invoke, readCurrentLyricsSnapshot, toggleDesktopLyrics } = deps;
   const windows = createMiniModeWindowController({ WebviewWindow });
   let boundsCleanup = null;
   let boundsPersistTimer = 0;
   let open = false;
-  let settingsState = { visible: false, alwaysOnTop: true, translucent: false, x: null, y: null, width: null, height: null };
+  let settingsState = { visible: false, alwaysOnTop: true, lyricsVisible: true, x: null, y: null, width: null, height: null };
   let syncTimer = 0;
 
   function setMiniToggleUi() { document.getElementById("btn-dock-mini")?.classList.toggle("is-on", open); }
@@ -20,7 +20,7 @@ export function createMiniModeController(deps) {
     settingsState = {
       visible: !!(settings.mini_player_visible ?? settings.miniPlayerVisible),
       alwaysOnTop: (settings.mini_player_always_on_top ?? settings.miniPlayerAlwaysOnTop) !== false,
-      translucent: !!(settings.mini_player_translucent ?? settings.miniPlayerTranslucent),
+      lyricsVisible: (settings.mini_player_lyrics_visible ?? settings.miniPlayerLyricsVisible) !== false,
       x: settings.mini_player_x ?? settings.miniPlayerX ?? null,
       y: settings.mini_player_y ?? settings.miniPlayerY ?? null,
       width: settings.mini_player_width ?? settings.miniPlayerWidth ?? null,
@@ -34,7 +34,7 @@ export function createMiniModeController(deps) {
       ...settingsState,
       visible: patch.mini_player_visible ?? settingsState.visible,
       alwaysOnTop: patch.mini_player_always_on_top ?? settingsState.alwaysOnTop,
-      translucent: patch.mini_player_translucent ?? settingsState.translucent,
+      lyricsVisible: patch.mini_player_lyrics_visible ?? settingsState.lyricsVisible,
       x: patch.mini_player_x ?? settingsState.x,
       y: patch.mini_player_y ?? settingsState.y,
       width: patch.mini_player_width ?? settingsState.width,
@@ -90,7 +90,8 @@ export function createMiniModeController(deps) {
       themeMode: document.documentElement.dataset.themeMode || "system",
       customAccent: rootStyle.getPropertyValue("--accent").trim() || "#c62f2f",
       alwaysOnTop: settingsState.alwaysOnTop,
-      translucent: settingsState.translucent,
+      desktopLyricsOpen: !!getDesktopLyricsOpen?.(),
+      lyricsVisible: settingsState.lyricsVisible,
     };
   }
 
@@ -114,6 +115,10 @@ export function createMiniModeController(deps) {
     if (!open) return;
     void broadcastState();
     syncTimer = window.setInterval(() => { void broadcastState(); }, MINI_SYNC_MS);
+  }
+
+  function scheduleStateEcho(delays = [90, 260]) {
+    delays.forEach((delay) => window.setTimeout(() => { if (open) void broadcastState(); }, delay));
   }
 
   async function persistBounds() {
@@ -224,10 +229,14 @@ export function createMiniModeController(deps) {
       await syncWindowRuntimeState(win);
       return broadcastState();
     }
-    if (action === "toggle-translucent") {
-      settingsState.translucent = !settingsState.translucent;
-      await persistSettings({ mini_player_translucent: settingsState.translucent });
-      await syncWindowRuntimeState(await windows.currentWindowRef());
+    if (action === "toggle-mini-lyrics") {
+      settingsState.lyricsVisible = !settingsState.lyricsVisible;
+      await persistSettings({ mini_player_lyrics_visible: settingsState.lyricsVisible });
+      return broadcastState();
+    }
+    if (action === "toggle-desktop-lyrics") {
+      await toggleDesktopLyrics?.();
+      scheduleStateEcho();
       return broadcastState();
     }
   }

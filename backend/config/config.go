@@ -62,7 +62,7 @@ type Settings struct {
 	SearchCacheTTLHours         int                 `json:"search_cache_ttl_hours"`
 	MiniPlayerVisible           bool                `json:"mini_player_visible"`
 	MiniPlayerAlwaysOnTop       bool                `json:"mini_player_always_on_top"`
-	MiniPlayerTranslucent       bool                `json:"mini_player_translucent"`
+	MiniPlayerLyricsVisible     bool                `json:"mini_player_lyrics_visible"`
 	MiniPlayerX                 *int                `json:"mini_player_x,omitempty"`
 	MiniPlayerY                 *int                `json:"mini_player_y,omitempty"`
 	MiniPlayerWidth             *int                `json:"mini_player_width,omitempty"`
@@ -102,7 +102,7 @@ func DefaultSettings() Settings {
 		MusicSourceProvider:         "kugou",
 		SearchCacheTTLHours:         24,
 		MiniPlayerAlwaysOnTop:       true,
-		MiniPlayerTranslucent:       false,
+		MiniPlayerLyricsVisible:     true,
 	}
 }
 
