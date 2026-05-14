@@ -1,11 +1,11 @@
 // Audio event wiring stays separate from playback loading so media element behavior is easy to test.
 import { setPlaybackIndicator } from "../../app/helpers/playbackIndicator.js";
+import { audioPlaybackFailureReason, playbackFailureReason } from "./playbackFeedback.js";
 import { setPlayButtonIcon } from "./playButtonIcon.js";
 
 export function createAudioEventsController(deps) {
   const {
     applyPendingPlaybackResume,
-    alertRequestFailed,
     audioDiagPayload,
     broadcastTrayPlayerState,
     getAudioEl,
@@ -28,6 +28,7 @@ export function createAudioEventsController(deps) {
     syncDesktopLyrics,
     syncSeekUi,
     togglePlayPauseWithTransition,
+    updatePlayerChrome,
     onPauseTransitionEvent,
     onPlayTransitionEvent,
   } = deps;
@@ -133,8 +134,12 @@ export function createAudioEventsController(deps) {
         message: error && error.message ? error.message : null,
         extra: audioDiagPayload(audio),
       });
-      const sub = document.getElementById("dock-sub");
-      if (sub && error) sub.textContent = messageRequestFailed;
+      const track = getPlayQueue()[getPlayIndex()] || null;
+      updatePlayerChrome({
+        title: track?.title || "未播放",
+        sub: audioPlaybackFailureReason(audio, { fallback: messageRequestFailed }),
+        touchCover: false,
+      });
       void broadcastTrayPlayerState();
     });
 
@@ -173,7 +178,13 @@ export function createAudioEventsController(deps) {
       try {
         await togglePlayPauseWithTransition?.();
       } catch (error) {
-        alertRequestFailed(error, "audio play()");
+        const track = getPlayQueue()[getPlayIndex()] || null;
+        updatePlayerChrome({
+          title: track?.title || "未播放",
+          sub: playbackFailureReason(error, { fallback: messageRequestFailed }),
+          touchCover: false,
+        });
+        console.warn("audio play()", error);
       }
     });
     document.getElementById("btn-player-prev")?.addEventListener("click", () => {

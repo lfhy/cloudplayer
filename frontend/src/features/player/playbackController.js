@@ -1,11 +1,11 @@
 // Playback loading stays in one controller so queue mutations and async generations share rules.
 import { proxyRemoteAssetSrc } from "../../wails/tauri-core.js";
 import { clearPlaybackIndicator, setPlaybackIndicator } from "../../app/helpers/playbackIndicator.js";
+import { playbackFailureReason, playbackLoadingSubtext } from "./playbackFeedback.js";
 import { setPlayButtonIcon } from "./playButtonIcon.js";
 
 export function createPlaybackController(deps) {
   const {
-    alertRequestFailed,
     clearLyricsCache,
     convertFileSrc,
     ensureLrcLoadedForCurrentTrack,
@@ -84,10 +84,24 @@ export function createPlaybackController(deps) {
       sub: item.artist || "",
       touchCover: false,
     });
+    let loadingHintTimer = window.setTimeout(() => {
+      if (generation !== getPlayLoadGeneration()) return;
+      updatePlayerChrome({
+        title: item.title,
+        sub: playbackLoadingSubtext(item.artist || ""),
+        touchCover: false,
+      });
+    }, 180);
+    const clearLoadingHintTimer = () => {
+      if (!loadingHintTimer) return;
+      window.clearTimeout(loadingHintTimer);
+      loadingHintTimer = 0;
+    };
     const playButton = document.getElementById("btn-player-play");
     const audio = getAudioEl();
     try {
-      const { assetUrl, playLogExtra } = await resolvePlaybackUrl(item, generation, { quiet });
+      const { assetUrl, playLogExtra } = await resolvePlaybackUrl(item, generation);
+      clearLoadingHintTimer();
       if (generation !== getPlayLoadGeneration()) return;
       if (playLogExtra?.resolvedSourceId && playLogExtra.resolvedSourceId !== item.source_id) {
         const nextQueue = getPlayQueue().slice();
@@ -127,10 +141,15 @@ export function createPlaybackController(deps) {
         });
       }
     } catch (error) {
+      clearLoadingHintTimer();
       if (generation !== getPlayLoadGeneration()) return;
       if (!quiet) {
-        updatePlayerChrome({ title: item.title, sub: messageRequestFailed, touchCover: false });
-        alertRequestFailed(error, "playFromQueueIndex");
+        updatePlayerChrome({
+          title: item.title,
+          sub: playbackFailureReason(error, { fallback: messageRequestFailed }),
+          touchCover: false,
+        });
+        console.warn("playFromQueueIndex", error);
       } else {
         console.warn("restore playback source", error);
       }
@@ -193,14 +212,14 @@ export function createPlaybackController(deps) {
     }
   }
 
-  async function resolvePlaybackUrl(item, generation, options = {}) {
+  async function resolvePlaybackUrl(item, generation) {
     if (item.local_path) {
-      return resolveLocalPlayback(item, generation, options);
+      return resolveLocalPlayback(item, generation);
     }
-    return resolveOnlinePlayback(item, generation, options);
+    return resolveOnlinePlayback(item, generation);
   }
 
-  async function resolveLocalPlayback(item, generation, options = {}) {
+  async function resolveLocalPlayback(item, generation) {
     let pathOk = false;
     try {
       pathOk = await invoke("local_path_accessible", { path: item.local_path });
@@ -209,15 +228,7 @@ export function createPlaybackController(deps) {
     }
     if (!pathOk) {
       if (generation !== getPlayLoadGeneration()) return { assetUrl: "", playLogExtra: null };
-      if (!options.quiet) {
-        updatePlayerChrome({
-          title: item.title,
-          sub: `${item.artist ? `${item.artist} · ` : ""}本地文件不可用`,
-          touchCover: false,
-        });
-        alert(`本地文件不存在或无法访问：\n${String(item.local_path || "").trim() || "（路径为空）"}`);
-      }
-      throw new Error("local_path_accessible failed");
+      throw new Error("本地文件不存在或无法访问");
     }
     return { assetUrl: convertFileSrc(item.local_path), playLogExtra: { kind: "local" } };
   }
@@ -257,7 +268,7 @@ export function createPlaybackController(deps) {
         playLogExtra: { sid: item.source_id, kind: resolved.kind, via: resolved.via, resolvedSourceId: resolved.resolved_source_id || null },
       };
     }
-    throw new Error("resolve_online_play: 无效结果");
+    throw new Error("当前音源没有返回有效的播放地址");
   }
 
   async function maybeQueueAutoCacheDownload(item, playLogExtra) {

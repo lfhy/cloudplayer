@@ -105,7 +105,6 @@ export function createBasePlayerRuntime(deps) {
 
   const audio = createAudioEventsController({
     applyPendingPlaybackResume: deps.applyPendingPlaybackResume,
-    alertRequestFailed: deps.alertRequestFailed,
     audioDiagPayload: deps.audioDiagPayload,
     broadcastTrayPlayerState: recent.broadcastTrayPlayerState,
     getAudioEl: deps.getAudioEl,
@@ -130,6 +129,7 @@ export function createBasePlayerRuntime(deps) {
     onPlayTransitionEvent: transition.handlePlayEvent,
     syncDesktopLyrics: () => lyrics.syncDesktopLyrics(),
     syncSeekUi: chrome.syncSeekUi,
+    updatePlayerChrome: chrome.updatePlayerChrome,
   });
 
   return {
