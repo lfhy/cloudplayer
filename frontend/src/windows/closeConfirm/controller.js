@@ -2,6 +2,7 @@
 import { Window as RuntimeWindow } from "@wailsio/runtime";
 import { DesktopService } from "@bindings/cloudplayer/backend/desktop/index.js";
 import { applyAppTheme, applyPlatformClassNames, systemDarkMedia } from "../../app/helpers/platformTheme.js";
+import { windowTitlebarTemplate, wireWindowChrome } from "../../features/window/chrome.js";
 import { wireChildWindowAutoSize } from "../shared/autoSize.js";
 import { invoke } from "../../wails/tauri-core.js";
 
@@ -16,21 +17,28 @@ function resetRememberChoice() {
 
 function renderCloseConfirmWindow(root) {
   root.innerHTML = `
-    <main class="close-confirm-card">
-      <header class="close-confirm-card__head">
-        <h1 class="close-confirm-card__title">关闭主窗口？</h1>
-      </header>
-      <div class="close-confirm-card__body">
-        <div class="close-confirm-card__actions">
-          <button type="button" id="close-confirm-tray" class="close-confirm-choice">最小化到托盘</button>
-          <button type="button" id="close-confirm-quit" class="close-confirm-choice close-confirm-choice--danger">退出应用</button>
+    <div class="app-child-window-frame app-child-window-frame--dialog">
+      ${windowTitlebarTemplate({
+        title: "关闭主窗口",
+        allowMaximize: false,
+        className: "app-titlebar--child",
+      })}
+      <main class="close-confirm-card">
+        <header class="close-confirm-card__head">
+          <h1 class="close-confirm-card__title">关闭主窗口？</h1>
+        </header>
+        <div class="close-confirm-card__body">
+          <div class="close-confirm-card__actions">
+            <button type="button" id="close-confirm-tray" class="close-confirm-choice">最小化到托盘</button>
+            <button type="button" id="close-confirm-quit" class="close-confirm-choice close-confirm-choice--danger">退出应用</button>
+          </div>
         </div>
-      </div>
-      <footer class="close-confirm-card__footer">
-        <label class="close-confirm-card__remember"><input type="checkbox" id="close-confirm-remember" /><span>记住这次选择</span></label>
-        <button type="button" id="close-confirm-cancel" class="btn-outline">取消</button>
-      </footer>
-    </main>
+        <footer class="close-confirm-card__footer">
+          <label class="close-confirm-card__remember"><input type="checkbox" id="close-confirm-remember" /><span>记住这次选择</span></label>
+          <button type="button" id="close-confirm-cancel" class="btn-outline">取消</button>
+        </footer>
+      </main>
+    </div>
   `;
 }
 
@@ -145,10 +153,11 @@ export function bootstrapCloseConfirmWindow() {
   document.addEventListener("DOMContentLoaded", () => {
     applyPlatformClassNames();
     renderCloseConfirmWindow(document.getElementById("app"));
+    wireWindowChrome({ windowName: WINDOW_LABEL, allowMaximize: false });
     resetRememberChoice();
     wireCloseConfirmWindow();
     const cleanupAutoSize = wireChildWindowAutoSize({
-      element: document.querySelector(".close-confirm-card"),
+      element: document.querySelector(".app-child-window-frame--dialog"),
       windowLabel: WINDOW_LABEL,
       windowRef: currentWindow,
       minHeight: 188,

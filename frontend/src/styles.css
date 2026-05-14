@@ -4,6 +4,7 @@
 @import "./styles/layout/sidebar-nav.css";
 @import "./styles/layout/sidebar-account.css";
 @import "./styles/components/topbar-search.css";
+@import "./styles/components/window-titlebar.css";
 @import "./styles/components/window-controls.css";
 @import "./styles/pages/search-shell.css";
 @import "./styles/pages/search-cards.css";

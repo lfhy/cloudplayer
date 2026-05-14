@@ -6,6 +6,7 @@ import { applyAppTheme, applyPlatformClassNames, systemDarkMedia } from "../../a
 import { escapeHtml } from "../../app/helpers/text.js";
 import { createAccountCenterView } from "../../features/accounts/windowView.js";
 import { accountCenterWindowTemplate } from "../../features/accounts/windowTemplate.js";
+import { wireWindowChrome } from "../../features/window/chrome.js";
 import { wireChildWindowAutoSize } from "../shared/autoSize.js";
 import { emitTo } from "../../wails/tauri-event.js";
 import { invoke } from "../../wails/tauri-core.js";
@@ -95,7 +96,7 @@ async function toggleOnlineMode(nextEnabled) {
 }
 
 function cardEl() {
-  return document.querySelector(".account-center-window__card");
+  return document.querySelector(".app-child-window-frame--account");
 }
 
 function wireThemeRefresh() {
@@ -116,6 +117,7 @@ export function bootstrapAccountCenterWindow() {
   document.addEventListener("DOMContentLoaded", () => {
     applyPlatformClassNames();
     renderAccountCenterWindow(document.getElementById("app"));
+    wireWindowChrome({ windowName: WINDOW_LABEL, allowMaximize: false });
     const view = createAccountCenterView({
       alertRequestFailed,
       closeAccountCenter: closeAccountCenterWindow,

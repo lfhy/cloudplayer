@@ -4,6 +4,7 @@ package desktop
 
 import (
 	"fmt"
+	"runtime"
 
 	"github.com/wailsapp/wails/v3/pkg/application"
 	"github.com/wailsapp/wails/v3/pkg/events"
@@ -87,12 +88,12 @@ func (s *DesktopService) EnsureWindow(req WindowCreateRequest) error {
 		InitialPosition:   application.WindowXY,
 		DisableResize:     !req.Resizable,
 		AlwaysOnTop:       req.AlwaysOnTop,
-		Frameless:         !req.Decorations,
+		Frameless:         useWindowsCustomChrome(req) || !req.Decorations,
 		BackgroundType:    backgroundType(req.Transparent),
 		IgnoreMouseEvents: false,
 		Windows: application.WindowsWindow{
 			HiddenOnTaskbar:                   req.SkipTaskbar,
-			DisableFramelessWindowDecorations: !req.Shadow,
+			DisableFramelessWindowDecorations: !(req.Shadow || useWindowsCustomChrome(req)),
 		},
 		Mac: application.MacWindow{
 			Backdrop:                macBackdrop(req.Transparent),
@@ -121,6 +122,10 @@ func (s *DesktopService) EnsureWindow(req WindowCreateRequest) error {
 		window.Focus()
 	}
 	return nil
+}
+
+func useWindowsCustomChrome(req WindowCreateRequest) bool {
+	return runtime.GOOS == "windows" && req.Decorations && !req.Transparent
 }
 
 // ResizeWindowCenteredOnMain keeps content-driven child windows pinned to the visual center of the main window.

@@ -8,7 +8,7 @@ body.account-center-window {
 }
 
 .account-center-window__root {
-  display: inline-flex;
+  display: flex;
   align-items: flex-start;
   justify-content: center;
   width: 100%;
@@ -16,23 +16,15 @@ body.account-center-window {
 }
 
 .account-center-window__card {
-  width: max-content;
+  width: 100%;
   max-width: 100%;
   box-sizing: border-box;
   display: grid;
   align-content: start;
   justify-items: center;
   gap: 12px;
-  padding: 28px 0 0;
+  padding: 2px 0 0;
   background: transparent;
-}
-
-.platform-macos .account-center-window__card {
-  padding-top: 42px;
-}
-
-.platform-windows .account-center-window__card {
-  padding-top: 30px;
 }
 
 .account-center-window .account-center-panel {
@@ -128,7 +120,8 @@ body.account-center-window {
     padding: 10px;
   }
 
-  .account-center-window__card {
+  .account-center-window__card,
+  .app-child-window-frame--account {
     max-width: 100%;
   }
 }

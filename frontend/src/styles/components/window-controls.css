@@ -4,6 +4,7 @@
   align-items: center;
   gap: 6px;
   justify-self: end;
+  --wails-draggable: no-drag;
 }
 
 .app-window-control {
@@ -32,6 +33,13 @@
   stroke-linecap: round;
   stroke-linejoin: round;
   fill: none;
+}
+
+.app-window-control:disabled {
+  opacity: 0.42;
+  cursor: default;
+  transform: none;
+  box-shadow: none;
 }
 
 .app-window-control:hover {

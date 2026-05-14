@@ -1,6 +1,7 @@
 // Lyrics replace controller coordinates candidate search, preview fetch and apply flow.
 import { invoke } from "../../wails/tauri-core.js";
 import { emitTo, listen } from "../../wails/tauri-event.js";
+import { windowTitlebarTemplate, wireWindowChrome } from "../../features/window/chrome.js";
 import { CURRENT_WW_LABEL, MAIN_WW, MSG_REQUEST_FAILED, currentWindow } from "./constants.js";
 import { lyricsReplaceState, trackContext } from "./state.js";
 import {
@@ -177,6 +178,14 @@ function wireApplyResult() {
 export function bootstrapLyricsReplaceWindow() {
   document.addEventListener("DOMContentLoaded", () => {
     applyPlatformClassNames();
+    document.querySelector(".lyrics-window__shell")?.insertAdjacentHTML(
+      "afterbegin",
+      windowTitlebarTemplate({
+        title: "替换歌词",
+        className: "app-titlebar--child app-titlebar--lyrics",
+      })
+    );
+    wireWindowChrome({ windowName: CURRENT_WW_LABEL });
     fillInitialContext();
     wireLyricsReplaceWindow();
     wireThemeRefresh();

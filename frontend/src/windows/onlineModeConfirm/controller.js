@@ -2,6 +2,7 @@
 import { Window as RuntimeWindow } from "@wailsio/runtime";
 import { DesktopService } from "@bindings/cloudplayer/backend/desktop/index.js";
 import { applyAppTheme, applyPlatformClassNames, systemDarkMedia } from "../../app/helpers/platformTheme.js";
+import { windowTitlebarTemplate, wireWindowChrome } from "../../features/window/chrome.js";
 import { wireChildWindowAutoSize } from "../shared/autoSize.js";
 import { emitTo } from "../../wails/tauri-event.js";
 import { invoke } from "../../wails/tauri-core.js";
@@ -14,18 +15,25 @@ let replySent = false;
 
 function renderOnlineModeConfirmWindow(root) {
   root.innerHTML = `
-    <main class="close-confirm-card">
-      <header class="close-confirm-card__head">
-        <h1 class="close-confirm-card__title">开启在线模式？</h1>
-      </header>
-      <div class="close-confirm-card__body online-mode-confirm__body">
-        <p class="close-confirm-card__desc">会切换到酷狗云歌单，并立即重新拉取云端歌单。</p>
-        <div class="close-confirm-card__actions">
-          <button type="button" id="online-mode-confirm-cancel" class="close-confirm-choice">暂不切换</button>
-          <button type="button" id="online-mode-confirm-continue" class="close-confirm-choice">继续开启</button>
+    <div class="app-child-window-frame app-child-window-frame--dialog">
+      ${windowTitlebarTemplate({
+        title: "开启在线模式",
+        allowMaximize: false,
+        className: "app-titlebar--child",
+      })}
+      <main class="close-confirm-card">
+        <header class="close-confirm-card__head">
+          <h1 class="close-confirm-card__title">开启在线模式？</h1>
+        </header>
+        <div class="close-confirm-card__body online-mode-confirm__body">
+          <p class="close-confirm-card__desc">会切换到酷狗云歌单，并立即重新拉取云端歌单。</p>
+          <div class="close-confirm-card__actions">
+            <button type="button" id="online-mode-confirm-cancel" class="close-confirm-choice">暂不切换</button>
+            <button type="button" id="online-mode-confirm-continue" class="close-confirm-choice">继续开启</button>
+          </div>
         </div>
-      </div>
-    </main>
+      </main>
+    </div>
   `;
 }
 
@@ -111,9 +119,10 @@ export function bootstrapOnlineModeConfirmWindow() {
   document.addEventListener("DOMContentLoaded", () => {
     applyPlatformClassNames();
     renderOnlineModeConfirmWindow(document.getElementById("app"));
+    wireWindowChrome({ windowName: WINDOW_LABEL, allowMaximize: false });
     wireOnlineModeConfirmWindow();
     const cleanupAutoSize = wireChildWindowAutoSize({
-      element: document.querySelector(".close-confirm-card"),
+      element: document.querySelector(".app-child-window-frame--dialog"),
       windowLabel: WINDOW_LABEL,
       windowRef: currentWindow,
       minHeight: 188,

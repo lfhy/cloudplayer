@@ -15,6 +15,7 @@ import { recentPageTemplate } from "../pages/recentPageTemplate.js";
 import { searchPageTemplate } from "../pages/searchPageTemplate.js";
 import { settingsPageTemplate } from "../pages/settingsPageTemplate.js";
 import { isWindowsDesktop } from "../app/helpers/platformTheme.js";
+import { windowTitlebarTemplate } from "../features/window/chrome.js";
 
 function mainPagesTemplate() {
   return [
@@ -33,9 +34,17 @@ export function renderMainShell(root = document.getElementById("app")) {
   if (!root) {
     throw new Error("CloudPlayer app root not found");
   }
+  const mainTitlebar = isWindowsDesktop()
+    ? windowTitlebarTemplate({
+        title: "CloudPlayer",
+        lead: "Windows",
+        className: "app-titlebar--main",
+      })
+    : "";
   const topbarSpacer = isWindowsDesktop() ? "" : '<header class="top-search-row"></header>';
   root.innerHTML = `
     <div class="app-shell">
+      ${mainTitlebar}
       <div class="body-row">
         <aside id="sidebar" class="sidebar"></aside>
         <div class="main-col">

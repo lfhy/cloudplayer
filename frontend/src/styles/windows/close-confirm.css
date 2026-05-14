@@ -8,7 +8,7 @@ body.close-confirm-window {
 }
 
 .close-confirm-window__root {
-  display: inline-flex;
+  display: flex;
   align-items: flex-start;
   justify-content: center;
   width: 100%;
@@ -16,22 +16,13 @@ body.close-confirm-window {
 }
 
 .close-confirm-card {
-  width: min(404px, 100%);
-  max-width: 100%;
+  width: 100%;
   box-sizing: border-box;
   display: flex;
   flex-direction: column;
   gap: 12px;
-  padding: 28px 0 0;
+  padding: 2px 0 0;
   background: transparent;
-}
-
-.platform-macos .close-confirm-card {
-  padding-top: 42px;
-}
-
-.platform-windows .close-confirm-card {
-  padding-top: 30px;
 }
 
 .close-confirm-card__head {
@@ -204,10 +195,6 @@ body.close-confirm-window {
 }
 
 @media (max-width: 380px) {
-  .close-confirm-card {
-    width: min(100%, 404px);
-  }
-
   .close-confirm-card__head {
     padding-inline: 42px;
   }

@@ -90,11 +90,13 @@ func Run(assets fs.FS, trayTemplateIcon []byte) error {
 			InvisibleTitleBarHeight: 56,
 		},
 	}
-	// Windows keeps the native frame and lets the system backdrop carry the transparent top bar.
+	// Windows uses a frameless window so the frontend can render a custom titlebar without affecting macOS chrome.
 	if runtime.GOOS == "windows" {
+		mainWindowOptions.Frameless = true
 		mainWindowOptions.BackgroundType = application.BackgroundTypeTranslucent
 		mainWindowOptions.BackgroundColour = application.NewRGBA(0, 0, 0, 0)
 		mainWindowOptions.Windows.BackdropType = application.Mica
+		mainWindowOptions.Windows.DisableFramelessWindowDecorations = false
 		configureMainWindowTheme(&mainWindowOptions, initialSettings.AppThemeMode)
 	}
 	mainWindow := app.Window.NewWithOptions(mainWindowOptions)

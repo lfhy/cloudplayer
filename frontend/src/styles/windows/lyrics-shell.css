@@ -39,6 +39,10 @@
   --wails-draggable: drag;
 }
 
+.platform-windows .lyrics-window__header {
+  --wails-draggable: no-drag;
+}
+
 .lyrics-window__header-copy {
   min-width: 0;
   flex: 1;

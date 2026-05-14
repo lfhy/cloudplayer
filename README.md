@@ -74,6 +74,11 @@ QQ群：`572532027`
 - App logs now capture remote media fetch start/status/copy failures and richer audio-element diagnostics, making Windows playback failures easier to trace.
 - Each desktop app launch now also writes a separate `session-YYYYMMDD-HHMMSS-pid.log`, so support traces still exist even if the shared `cloudplayer.log` is not updated.
 
+## Windows window chrome
+
+- Windows now runs the main window and standard child windows with a shared custom titlebar, so the native minimize / maximize / close buttons are hidden and replaced by the in-app controls.
+- macOS keeps the existing native titlebar behavior, while Windows child windows such as account center, close confirm, online-mode confirm, and lyrics replace now use the same frameless top bar.
+
 ## Kugou playback recovery
 
 - Kugou login status now auto-runs the daily listen-song / VIP refresh path when the saved session is still valid, with a cooldown to avoid hammering the API after a failed attempt.
