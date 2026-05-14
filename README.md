@@ -79,6 +79,7 @@ QQ群：`572532027`
 
 - Windows now runs the main window and standard child windows with a shared custom titlebar, so the native minimize / maximize / close buttons are hidden and replaced by the in-app controls.
 - macOS keeps the existing native titlebar behavior, while Windows child windows such as account center, close confirm, online-mode confirm, and lyrics replace now use the same frameless top bar.
+- Windows custom-chrome windows now keep the native Win11 outer frame styling, so the app surface gets a visible rounded-corner silhouette instead of only rounding inner panels.
 
 ## Kugou playback recovery
 

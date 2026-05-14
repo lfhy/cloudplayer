@@ -36,8 +36,6 @@ export function renderMainShell(root = document.getElementById("app")) {
   }
   const mainTitlebar = isWindowsDesktop()
     ? windowTitlebarTemplate({
-        title: "CloudPlayer",
-        lead: "Windows",
         className: "app-titlebar--main",
       })
     : "";

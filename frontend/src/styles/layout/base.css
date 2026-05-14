@@ -15,6 +15,10 @@ body {
   text-rendering: optimizeLegibility;
 }
 
+.platform-windows body {
+  background: transparent;
+}
+
 .platform-macos {
   --titlebar-left-gap: 16px;
   --sidebar-top-gap: 46px;
@@ -30,6 +34,17 @@ body {
   flex-direction: column;
   height: 100%;
   min-height: 0;
+  background: var(--bg-main);
+}
+
+.platform-windows .app-root {
+  overflow: hidden;
+  border-radius: 24px;
+}
+
+.platform-windows .app-shell {
+  overflow: hidden;
+  border-radius: 24px;
 }
 
 .body-row {

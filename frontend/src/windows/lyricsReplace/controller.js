@@ -34,7 +34,7 @@ async function selectLyricsReplaceRow(idx) {
   lyricsReplaceState.pendingRequestId = "";
   refreshApplyButton();
   const previewEl = document.getElementById("lyrics-replace-preview");
-  if (previewEl) previewEl.textContent = "加载中…";
+  if (previewEl) previewEl.textContent = "加载中...";
   setLyricsReplaceError("");
 
   try {
@@ -78,7 +78,7 @@ async function searchLyricsReplaceCandidates() {
       return;
     }
 
-    setTableMutedMessage("搜索中…");
+    setTableMutedMessage("搜索中...");
     try {
       lyricsReplaceState.candidates = await invoke("lyrics_search_candidates", {
         keyword,
@@ -182,15 +182,16 @@ export function bootstrapLyricsReplaceWindow() {
       "afterbegin",
       windowTitlebarTemplate({
         title: "替换歌词",
+        allowMaximize: false,
         className: "app-titlebar--child app-titlebar--lyrics",
       })
     );
-    wireWindowChrome({ windowName: CURRENT_WW_LABEL });
+    wireWindowChrome({ windowName: CURRENT_WW_LABEL, allowMaximize: false });
     fillInitialContext();
     wireLyricsReplaceWindow();
     wireThemeRefresh();
     wireApplyResult();
-    setTableMutedMessage(trackContext.keyword ? "正在准备搜索…" : "输入关键词后点击“搜索”");
+    setTableMutedMessage(trackContext.keyword ? "正在准备搜索..." : "输入关键词后点击“搜索”");
     void applyThemeFromSettings();
     window.setTimeout(() => {
       document.getElementById("lyrics-replace-keyword")?.focus();

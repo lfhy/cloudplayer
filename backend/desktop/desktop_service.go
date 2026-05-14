@@ -89,11 +89,11 @@ func (s *DesktopService) EnsureWindow(req WindowCreateRequest) error {
 		DisableResize:     !req.Resizable,
 		AlwaysOnTop:       req.AlwaysOnTop,
 		Frameless:         useWindowsCustomChrome(req) || !req.Decorations,
-		BackgroundType:    backgroundType(req.Transparent),
+		BackgroundType:    backgroundType(req.Transparent || useWindowsCustomChrome(req)),
 		IgnoreMouseEvents: false,
 		Windows: application.WindowsWindow{
 			HiddenOnTaskbar:                   req.SkipTaskbar,
-			DisableFramelessWindowDecorations: useWindowsCustomChrome(req) || !req.Shadow,
+			DisableFramelessWindowDecorations: !useWindowsCustomChrome(req) && !req.Shadow,
 		},
 		Mac: application.MacWindow{
 			Backdrop:                macBackdrop(req.Transparent),
@@ -103,7 +103,13 @@ func (s *DesktopService) EnsureWindow(req WindowCreateRequest) error {
 			WindowLevel:             macWindowLevel(req.AlwaysOnTop),
 		},
 	}
-	if req.Transparent {
+	if useWindowsCustomChrome(req) {
+		// Keep the Win11 rounded frame, but let the frontend own all caption controls.
+		options.MinimiseButtonState = application.ButtonHidden
+		options.MaximiseButtonState = application.ButtonHidden
+		options.CloseButtonState = application.ButtonHidden
+	}
+	if req.Transparent || useWindowsCustomChrome(req) {
 		options.BackgroundColour = application.NewRGBA(0, 0, 0, 0)
 	}
 	window := application.Get().Window.NewWithOptions(options)

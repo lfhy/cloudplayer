@@ -46,10 +46,11 @@ function renderControl(action, disabled = false) {
 }
 
 export function windowControlsTemplate({ allowMaximize = true } = {}) {
+  const maximizeControl = allowMaximize ? renderControl("maximize") : "";
   return `
     <div class="app-window-controls" aria-label="Window controls">
       ${renderControl("minimize")}
-      ${renderControl("maximize", !allowMaximize)}
+      ${maximizeControl}
       ${renderControl("close")}
     </div>
   `;
@@ -61,14 +62,15 @@ export function windowTitlebarTemplate({
   allowMaximize = true,
   className = "",
 } = {}) {
-  const titleText = String(title || "").trim() || "CloudPlayer";
+  const titleText = String(title || "").trim();
   const leadText = String(lead || "").trim();
   const leadMarkup = leadText ? `<span class="app-titlebar__lead-copy">${leadText}</span>` : "";
+  const titleMarkup = titleText ? `<div class="app-titlebar__title">${titleText}</div>` : '<div class="app-titlebar__title app-titlebar__title--empty" aria-hidden="true"></div>';
   const classes = ["app-titlebar", className].filter(Boolean).join(" ");
   return `
     <header class="${classes}" data-window-drag>
       <div class="app-titlebar__lead">${leadMarkup}</div>
-      <div class="app-titlebar__title">${titleText}</div>
+      ${titleMarkup}
       ${windowControlsTemplate({ allowMaximize })}
     </header>
   `;

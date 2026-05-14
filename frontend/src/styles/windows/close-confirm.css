@@ -7,12 +7,24 @@ body.close-confirm-window {
     var(--bg-main);
 }
 
+.platform-windows body.close-confirm-window {
+  background: transparent;
+}
+
 .close-confirm-window__root {
   display: flex;
   align-items: flex-start;
   justify-content: center;
   width: 100%;
   padding: 14px;
+  background:
+    radial-gradient(circle at top, rgba(var(--accent-rgb), 0.12), transparent 52%),
+    var(--bg-main);
+}
+
+.platform-windows .close-confirm-window__root {
+  overflow: hidden;
+  border-radius: 24px;
 }
 
 .close-confirm-card {

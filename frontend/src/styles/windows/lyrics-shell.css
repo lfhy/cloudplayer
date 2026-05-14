@@ -18,6 +18,17 @@
   min-height: 0;
 }
 
+.platform-windows .lyrics-window {
+  background: transparent;
+  border-radius: 24px;
+}
+
+.platform-windows .lyrics-window__shell {
+  overflow: hidden;
+  border-radius: 24px;
+  background: var(--bg-main);
+}
+
 .platform-macos .lyrics-window {
   background:
     linear-gradient(180deg, var(--topbar-grad-start) 0 56px, var(--bg-main) 56px),
