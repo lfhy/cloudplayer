@@ -26,16 +26,16 @@ defaults:
 jobs:
   windows-amd64:
     name: windows-amd64
-    runs-on: windows-latest
+    runs-on: windows-2025-vs2026
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
-      - uses: actions/setup-go@v5
+      - uses: actions/setup-go@v6
         with:
           go-version-file: go.mod
           cache: true
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v5
         with:
           node-version: "22"
           cache: npm
@@ -60,7 +60,7 @@ jobs:
       - name: Build Windows amd64 assets
         run: ./scripts/build_desktop_packages.sh --targets windows/amd64 --skip-windows-dual --release-dir bin/releases-github
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v6
         with:
           name: cloudplayer-windows-amd64
           path: |
@@ -70,16 +70,16 @@ jobs:
 
   windows-arm64:
     name: windows-arm64
-    runs-on: windows-latest
+    runs-on: windows-2025-vs2026
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
-      - uses: actions/setup-go@v5
+      - uses: actions/setup-go@v6
         with:
           go-version-file: go.mod
           cache: true
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v5
         with:
           node-version: "22"
           cache: npm
@@ -104,7 +104,7 @@ jobs:
       - name: Build Windows arm64 assets
         run: ./scripts/build_desktop_packages.sh --targets windows/arm64 --skip-windows-dual --release-dir bin/releases-github
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v6
         with:
           name: cloudplayer-windows-arm64
           path: |
@@ -116,14 +116,14 @@ jobs:
     name: macos-amd64
     runs-on: macos-14
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
-      - uses: actions/setup-go@v5
+      - uses: actions/setup-go@v6
         with:
           go-version-file: go.mod
           cache: true
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v5
         with:
           node-version: "22"
           cache: npm
@@ -137,7 +137,7 @@ jobs:
       - name: Build macOS amd64 assets
         run: ./scripts/build_desktop_packages.sh --targets macos/amd64 --release-dir bin/releases-github
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v6
         with:
           name: cloudplayer-darwin-amd64
           path: bin/releases-github/macos/amd64/cloudplayer-darwin-amd64.dmg
@@ -147,14 +147,14 @@ jobs:
     name: macos-arm64
     runs-on: macos-14
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
-      - uses: actions/setup-go@v5
+      - uses: actions/setup-go@v6
         with:
           go-version-file: go.mod
           cache: true
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v5
         with:
           node-version: "22"
           cache: npm
@@ -168,7 +168,7 @@ jobs:
       - name: Build macOS arm64 assets
         run: ./scripts/build_desktop_packages.sh --targets macos/arm64 --release-dir bin/releases-github
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v6
         with:
           name: cloudplayer-darwin-arm64
           path: bin/releases-github/macos/arm64/cloudplayer-darwin-arm64.dmg
@@ -178,14 +178,14 @@ jobs:
     name: macos-universal
     runs-on: macos-14
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
-      - uses: actions/setup-go@v5
+      - uses: actions/setup-go@v6
         with:
           go-version-file: go.mod
           cache: true
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v5
         with:
           node-version: "22"
           cache: npm
@@ -199,7 +199,7 @@ jobs:
       - name: Build macOS universal assets
         run: ./scripts/build_desktop_packages.sh --targets macos/amd64,macos/arm64 --include-macos-universal --release-dir bin/releases-github
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v6
         with:
           name: cloudplayer-darwin-universal
           path: bin/releases-github/macos/universal/cloudplayer-darwin-universal.dmg
@@ -216,11 +216,11 @@ jobs:
       - macos-arm64
       - macos-universal
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           fetch-depth: 0
 
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v8
         with:
           path: dist/release
           merge-multiple: true
@@ -245,7 +245,7 @@ jobs:
 
       - name: Publish release
         if: steps.assets.outputs.has_files == 'true'
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v3
         with:
           tag_name: ${{ github.event.inputs.tag_name || github.ref_name }}
           name: CloudPlayer ${{ github.event.inputs.tag_name || github.ref_name }}

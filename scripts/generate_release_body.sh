@@ -15,6 +15,16 @@ require_cmd() {
   command -v "$1" >/dev/null 2>&1 || fail "Missing command: $1"
 }
 
+# Normalize the leading commit token so release notes work with both
+# conventional commits and plain-English subjects like "Add ..." or "Fix ...".
+subject_token() {
+  local subject="$1"
+  subject="${subject%%:*}"
+  subject="${subject%%(*}"
+  subject="${subject%% *}"
+  printf '%s' "$subject" | tr '[:upper:]' '[:lower:]'
+}
+
 previous_tag() {
   local tag="$1"
   local candidate
@@ -24,10 +34,10 @@ previous_tag() {
 
 section_for_subject() {
   local subject="$1"
-  case "$subject" in
-    feat:*) printf '重点变更' ;;
-    fix:*) printf '修复' ;;
-    docs:*|chore:*|build:*|ci:*|test:*|refactor:*|perf:*|style:*)
+  case "$(subject_token "$subject")" in
+    feat|feature|add) printf '重点变更' ;;
+    fix|bugfix|hotfix) printf '修复' ;;
+    docs|chore|build|ci|test|refactor|perf|style)
       printf '本次更新'
       ;;
     *)
@@ -40,15 +50,29 @@ strip_prefix() {
   local subject="$1"
   case "$subject" in
     feat:*) printf '%s' "${subject#feat: }" ;;
+    feat\(*:*) printf '%s' "${subject#*: }" ;;
     fix:*) printf '%s' "${subject#fix: }" ;;
+    fix\(*:*) printf '%s' "${subject#*: }" ;;
     docs:*) printf '%s' "${subject#docs: }" ;;
+    docs\(*:*) printf '%s' "${subject#*: }" ;;
     chore:*) printf '%s' "${subject#chore: }" ;;
+    chore\(*:*) printf '%s' "${subject#*: }" ;;
     build:*) printf '%s' "${subject#build: }" ;;
+    build\(*:*) printf '%s' "${subject#*: }" ;;
     ci:*) printf '%s' "${subject#ci: }" ;;
+    ci\(*:*) printf '%s' "${subject#*: }" ;;
     test:*) printf '%s' "${subject#test: }" ;;
+    test\(*:*) printf '%s' "${subject#*: }" ;;
     refactor:*) printf '%s' "${subject#refactor: }" ;;
+    refactor\(*:*) printf '%s' "${subject#*: }" ;;
     perf:*) printf '%s' "${subject#perf: }" ;;
+    perf\(*:*) printf '%s' "${subject#*: }" ;;
     style:*) printf '%s' "${subject#style: }" ;;
+    style\(*:*) printf '%s' "${subject#*: }" ;;
+    Add\ *) printf '%s' "${subject#Add }" ;;
+    add\ *) printf '%s' "${subject#add }" ;;
+    Fix\ *) printf '%s' "${subject#Fix }" ;;
+    fix\ *) printf '%s' "${subject#fix }" ;;
     *) printf '%s' "$subject" ;;
   esac
 }
