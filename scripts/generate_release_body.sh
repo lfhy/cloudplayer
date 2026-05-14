@@ -48,6 +48,8 @@ section_for_subject() {
 
 strip_prefix() {
   local subject="$1"
+  local token
+  token="$(subject_token "$subject")"
   case "$subject" in
     feat:*) printf '%s' "${subject#feat: }" ;;
     feat\(*:*) printf '%s' "${subject#*: }" ;;
@@ -69,12 +71,22 @@ strip_prefix() {
     perf\(*:*) printf '%s' "${subject#*: }" ;;
     style:*) printf '%s' "${subject#style: }" ;;
     style\(*:*) printf '%s' "${subject#*: }" ;;
-    Add\ *) printf '%s' "${subject#Add }" ;;
-    add\ *) printf '%s' "${subject#add }" ;;
-    Fix\ *) printf '%s' "${subject#Fix }" ;;
-    fix\ *) printf '%s' "${subject#fix }" ;;
     *) printf '%s' "$subject" ;;
-  esac
+  esac | {
+    IFS= read -r stripped || true
+    case "$token" in
+      add|fix|docs|chore|build|ci|test|refactor|perf|style|feat|feature|bugfix|hotfix)
+        if [[ "$stripped" == "$subject" && "$subject" == *" "* ]]; then
+          printf '%s' "${subject#* }"
+        else
+          printf '%s' "$stripped"
+        fi
+        ;;
+      *)
+        printf '%s' "$stripped"
+        ;;
+    esac
+  }
 }
 
 collect_commits() {
@@ -121,11 +133,9 @@ main() {
     else
       printf '%s\n' '- 暂无新增提交。'
     fi
-    printf '\n## 重点变更\n'
     if [[ -n "$highlights" ]]; then
+      printf '\n## 重点变更\n'
       printf '%s' "$highlights"
-    else
-      printf '%s\n' '- 暂无重点变更。'
     fi
     printf '\n## 修复\n'
     if [[ -n "$fixes" ]]; then
