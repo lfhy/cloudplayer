@@ -118,7 +118,16 @@ export function bootstrapAccountCenterWindow() {
     applyPlatformClassNames();
     renderAccountCenterWindow(document.getElementById("app"));
     wireWindowChrome({ windowName: WINDOW_LABEL, allowMinimize: false, allowMaximize: false });
-    const autoSize = wireChildWindowAutoSize({ element: cardEl(), windowLabel: WINDOW_LABEL, windowRef: currentWindow });
+    const autoSize = wireChildWindowAutoSize({
+      element: cardEl(),
+      windowLabel: WINDOW_LABEL,
+      windowRef: currentWindow,
+      minHeight: 392,
+      minWidth: 560,
+      paddingHeight: 24,
+      paddingWidth: 24,
+    });
+    autoSize.scheduleResize();
     const view = createAccountCenterView({
       alertRequestFailed,
       closeAccountCenter: closeAccountCenterWindow,

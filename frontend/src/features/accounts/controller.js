@@ -2,8 +2,8 @@ import { DesktopService } from "@bindings/cloudplayer/backend/desktop/index.js";
 
 const ACCOUNT_CENTER_LABEL = "account-center";
 const ACCOUNT_CENTER_URL = "/account_center.html";
-const ACCOUNT_CENTER_WIDTH = 472;
-const ACCOUNT_CENTER_HEIGHT = 368;
+const ACCOUNT_CENTER_WIDTH = 560;
+const ACCOUNT_CENTER_HEIGHT = 392;
 
 // Account center opener keeps the main window responsible only for spawning and focusing the child window.
 export function createAccountCenterController() {

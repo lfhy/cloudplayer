@@ -153,9 +153,35 @@
 }
 
 .account-provider-actions .btn-accent,
-.account-provider-code-row .settings-action-button {
+.account-provider-code-row .settings-action-button,
+.account-provider-actions .settings-action-button--accent {
   min-height: 36px;
   padding: 0 14px;
+}
+
+.account-provider-code-row .settings-action-button {
+  min-width: 116px;
+}
+
+.account-provider-code-row .settings-action-button--compact {
+  min-width: 104px;
+  padding-inline: 12px;
+}
+
+.account-provider-actions .settings-action-button--accent {
+  min-width: 148px;
+  justify-content: center;
+}
+
+.account-provider-actions .settings-action-button--accent {
+  border-color: rgba(var(--accent-rgb), 0.34);
+  background: var(--accent);
+  color: #fff;
+}
+
+.account-provider-actions .settings-action-button--accent:hover {
+  border-color: rgba(var(--accent-rgb), 0.34);
+  background: color-mix(in srgb, var(--accent) 92%, #000 8%);
 }
 
 .account-provider-qr-box {
@@ -227,13 +253,17 @@
   padding-top: 2px;
 }
 
+.account-provider-actions {
+  justify-content: flex-end;
+}
+
 .account-provider-empty {
   display: grid;
   gap: 8px;
   align-content: start;
 }
 
-@media (max-width: 720px) {
+@media (max-width: 520px) {
   .modal-dialog--account-center {
     padding: 14px;
   }

@@ -22,20 +22,23 @@ export function wireChildWindowAutoSize(config) {
   let lastWidth = 0;
   let lastHeight = 0;
   let debounceTimer = 0;
+  let ready = false;
 
   async function resizeToContent() {
     const rect = element.getBoundingClientRect();
     const targetWidth = Math.max(minWidth, Math.ceil(rect.width + paddingWidth));
     const targetHeight = Math.max(minHeight, Math.ceil(rect.height + paddingHeight));
-    if (Math.abs(targetWidth - lastWidth) < 2 && Math.abs(targetHeight - lastHeight) < 2) return;
+    if (ready && Math.abs(targetWidth - lastWidth) < 2 && Math.abs(targetHeight - lastHeight) < 2) return;
     lastWidth = targetWidth;
     lastHeight = targetHeight;
     try {
       if (windowLabel) {
         await DesktopService.ResizeWindowCenteredOnMain(windowLabel, targetWidth, targetHeight);
+        ready = true;
         return;
       }
       await windowRef.SetSize(targetWidth, targetHeight);
+      ready = true;
     } catch (error) {
       console.warn("auto resize child window", error);
     }

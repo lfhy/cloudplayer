@@ -1,6 +1,7 @@
 import { createDockController } from "../../features/player/dockController.js";
 import { createDockThemeHelpers } from "../../features/player/dockTheme.js";
 import { createPlayerHotkeyController } from "../../features/player/hotkeysController.js";
+import { createVolumeController } from "../../features/player/volumeController.js";
 
 // Dock runtime wires the dock bar theme, menu actions and global hotkeys together.
 export function createDockRuntime(deps) {
@@ -51,11 +52,19 @@ export function createDockRuntime(deps) {
     getAudioEl: deps.getAudioEl,
     invoke: deps.invoke,
     listen: deps.listen,
-    setPreferredPlaybackVolume: deps.setPreferredPlaybackVolume,
+    volume: null,
     shouldIgnoreGlobalHotkeyAction: deps.shouldIgnoreGlobalHotkeyAction,
     togglePlayPauseWithTransition: deps.togglePlayPauseWithTransition,
     warnRequestFailed: deps.warnRequestFailed,
   });
 
-  return { dock, dockTheme, hotkeys };
+  const volume = createVolumeController({
+    getAudioEl: deps.getAudioEl,
+    invoke: deps.invoke,
+    setPreferredPlaybackVolume: deps.setPreferredPlaybackVolume,
+  });
+
+  hotkeys.setVolumeController?.(volume);
+
+  return { dock, dockTheme, hotkeys, volume };
 }

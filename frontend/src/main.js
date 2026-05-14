@@ -250,7 +250,7 @@ const pages = createPageRuntime({
 });
 setPage = pages.setPage; renderHomePage = pages.renderHomePage; renderDailyTable = pages.renderDailyTable; renderRecentPlaysTable = player.renderRecentPlaysTable; renderImportTable = pages.renderImportTable; loadPlaylistDetail = pages.loadPlaylistDetail;
 
-const { dock, dockTheme, hotkeys } = createDockRuntime({
+const { dock, dockTheme, hotkeys, volume } = createDockRuntime({
   alertRequestFailed, applyAppTheme, getAudioEl: audioEl, getDesktopLyricsLocked: () => desktopLyricsLocked, getDesktopLyricsOpen: () => desktopLyricsOpen, getLikedIds: () => likedIds,
   getPlayIndex: () => playIndex, getPlayModeIndex: () => playModeIndex, getPlayQueue: () => playQueue, getQualityPref: () => qualityPref, getSettingsFormValues: () => settings.getSettingsFormValues(),
   invoke, listen, navIconSvg, normalizeAppThemeMode, iconSvgByName, playModeItems: PLAY_MODES, qualityLabels: QUALITY_LABELS, quickThemeModeLabels: QUICK_THEME_MODE_LABELS,
@@ -337,4 +337,6 @@ startDesktopRuntime({
 });
 document.addEventListener("DOMContentLoaded", () => {
   miniMode.wire();
+  hotkeys.wireVolume?.();
+  volume.syncVolumeUi?.();
 });

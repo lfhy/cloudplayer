@@ -20,9 +20,6 @@ body.account-center-window {
   background:
     radial-gradient(circle at top, rgba(var(--accent-rgb), 0.08), transparent 58%),
     var(--bg-main);
-}
-
-.platform-windows .account-center-window__root {
   overflow: hidden;
   border-radius: 24px;
 }
@@ -67,9 +64,13 @@ body.account-center-window {
 }
 
 .account-center-window .account-provider-panel {
-  width: auto;
-  max-width: 100%;
+  width: min(100%, 520px);
+  max-width: 520px;
   gap: 8px;
+}
+
+.account-center-window .account-provider-code-row {
+  grid-template-columns: minmax(248px, 1fr) auto;
 }
 
 .account-center-window .account-provider-heading strong {

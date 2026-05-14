@@ -40,7 +40,6 @@ export function homePageTemplate() {
               <p class="home-section-eyebrow">继续收听</p>
               <h2 class="home-section-title">最近播放</h2>
             </button>
-            <button type="button" id="btn-home-clear-recent" class="home-col-action">清空</button>
           </div>
           <div id="home-recent-row" class="home-col__list"></div>
         </section>

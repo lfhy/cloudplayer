@@ -13,7 +13,7 @@ export function createRecentActionsController(deps) {
   }
 
   function wireRecentActions() {
-    const selectors = ["btn-clear-recent", "btn-home-clear-recent"];
+    const selectors = ["btn-clear-recent"];
     selectors.forEach((id) => {
       document.getElementById(id)?.addEventListener("click", () => {
         void clearRecentPlays().catch((error) => {

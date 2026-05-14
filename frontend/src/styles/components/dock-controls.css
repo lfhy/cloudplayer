@@ -110,6 +110,11 @@
   transform-origin: 50% 50%;
 }
 
+.dock-tbtn--nav svg {
+  width: 19px;
+  height: 19px;
+}
+
 .dock-tbtn--main {
   display: inline-flex;
   align-items: center;
@@ -175,7 +180,7 @@
 }
 
 .dock-seek:disabled {
-  opacity: 0.4;
+  opacity: 0.58;
   cursor: not-allowed;
 }
 
@@ -204,24 +209,50 @@
 }
 
 .dock-vol__icon {
-  font-size: 10px;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: 0;
+  background: transparent;
   color: var(--dock-muted);
-  opacity: 0.85;
+  opacity: 0.92;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.dock-vol__icon svg {
+  width: 16px;
+  height: 16px;
+  display: block;
+  fill: currentColor;
+}
+
+.dock-vol__icon[data-muted="true"] {
+  color: var(--dock-accent);
 }
 
 .dock-vol__range {
+  --volume-progress: 70%;
   width: 112px;
   height: 10px;
-  accent-color: var(--dock-accent);
   cursor: pointer;
   appearance: none;
-  background: transparent;
+  border-radius: 999px;
+  background: linear-gradient(
+    to right,
+    var(--dock-accent) 0%,
+    var(--dock-accent) var(--volume-progress),
+    color-mix(in srgb, var(--dock-edge) 78%, transparent) var(--volume-progress),
+    color-mix(in srgb, var(--dock-edge) 78%, transparent) 100%
+  );
 }
 
 .dock-vol__range::-webkit-slider-runnable-track {
   height: 6px;
   border-radius: 999px;
-  background: color-mix(in srgb, var(--dock-edge) 78%, transparent);
+  background: transparent;
 }
 
 .dock-vol__range::-webkit-slider-thumb {
@@ -237,7 +268,7 @@
 .dock-vol__range::-moz-range-track {
   height: 6px;
   border-radius: 999px;
-  background: color-mix(in srgb, var(--dock-edge) 78%, transparent);
+  background: transparent;
 }
 
 .dock-vol__range::-moz-range-thumb {
