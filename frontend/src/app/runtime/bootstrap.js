@@ -58,6 +58,7 @@ export function bootCloudPlayerApp(deps) {
     wirePlaylistPage,
     wirePreferencesModals,
     wireQueueToggle,
+    wireRecentActions,
     wireSearchPage,
     wireWindowControls,
     wireVolume,
@@ -71,6 +72,7 @@ export function bootCloudPlayerApp(deps) {
     setPage("home");
     wireHomeShortcuts(setPage, renderDailyTable, playAllDailyRecommendations, saveDailyRecommendationsAsPlaylist, invoke);
     wireQueueToggle();
+    wireRecentActions?.();
     wireAccountCenter();
     wireDockBar();
     wireDownloadPage();

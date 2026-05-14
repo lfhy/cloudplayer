@@ -6,6 +6,7 @@ export function accountCenterWindowTemplate() {
     <div class="app-child-window-frame app-child-window-frame--account">
       ${windowTitlebarTemplate({
         title: "登录账号",
+        allowMinimize: false,
         allowMaximize: false,
         className: "app-titlebar--child",
       })}

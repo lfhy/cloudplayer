@@ -182,11 +182,12 @@ export function bootstrapLyricsReplaceWindow() {
       "afterbegin",
       windowTitlebarTemplate({
         title: "替换歌词",
+        allowMinimize: false,
         allowMaximize: false,
         className: "app-titlebar--child app-titlebar--lyrics",
       })
     );
-    wireWindowChrome({ windowName: CURRENT_WW_LABEL, allowMaximize: false });
+    wireWindowChrome({ windowName: CURRENT_WW_LABEL, allowMinimize: false, allowMaximize: false });
     fillInitialContext();
     wireLyricsReplaceWindow();
     wireThemeRefresh();

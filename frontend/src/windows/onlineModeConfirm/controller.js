@@ -18,6 +18,7 @@ function renderOnlineModeConfirmWindow(root) {
     <div class="app-child-window-frame app-child-window-frame--dialog">
       ${windowTitlebarTemplate({
         title: "开启在线模式",
+        allowMinimize: false,
         allowMaximize: false,
         className: "app-titlebar--child",
       })}
@@ -119,9 +120,9 @@ export function bootstrapOnlineModeConfirmWindow() {
   document.addEventListener("DOMContentLoaded", () => {
     applyPlatformClassNames();
     renderOnlineModeConfirmWindow(document.getElementById("app"));
-    wireWindowChrome({ windowName: WINDOW_LABEL, allowMaximize: false });
+    wireWindowChrome({ windowName: WINDOW_LABEL, allowMinimize: false, allowMaximize: false });
     wireOnlineModeConfirmWindow();
-    const cleanupAutoSize = wireChildWindowAutoSize({
+    const autoSize = wireChildWindowAutoSize({
       element: document.querySelector(".app-child-window-frame--dialog"),
       windowLabel: WINDOW_LABEL,
       windowRef: currentWindow,
@@ -129,7 +130,7 @@ export function bootstrapOnlineModeConfirmWindow() {
       minWidth: 432,
     });
     void applyThemeFromSettings();
-    window.addEventListener("beforeunload", cleanupAutoSize);
+    window.addEventListener("beforeunload", () => autoSize.cleanup());
     window.setTimeout(() => {
       document.getElementById("online-mode-confirm-continue")?.focus();
     }, 30);

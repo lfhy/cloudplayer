@@ -37,6 +37,8 @@ export function renderMainShell(root = document.getElementById("app")) {
   const mainTitlebar = isWindowsDesktop()
     ? windowTitlebarTemplate({
         className: "app-titlebar--main",
+        allowMinimize: true,
+        allowMaximize: true,
       })
     : "";
   const topbarSpacer = isWindowsDesktop() ? "" : '<header class="top-search-row"></header>';

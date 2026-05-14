@@ -6,7 +6,17 @@ import { ACCOUNT_PROVIDERS } from "./providers.js";
 
 // Account-center view owns provider tabs and Kugou login state inside the standalone child window.
 export function createAccountCenterView(deps) {
-  const { alertRequestFailed, closeAccountCenter, escapeHtml, invoke, onImportRequested, onKugouAuthChanged, onKugouStatusChanged, onOnlineModeToggleRequested } = deps;
+  const {
+    alertRequestFailed,
+    closeAccountCenter,
+    escapeHtml,
+    invoke,
+    onImportRequested,
+    onKugouAuthChanged,
+    onKugouStatusChanged,
+    onLayoutSettled,
+    onOnlineModeToggleRequested,
+  } = deps;
   const kugou = createKugouSessionBridge({ alertRequestFailed, invoke, onAuthChanged: onKugouAuthChanged });
   let activeProvider = "kugou";
   let onlineModeEnabled = false;
@@ -17,11 +27,14 @@ export function createAccountCenterView(deps) {
   function kugouLoadingEl() { return document.getElementById("account-kugou-loading"); }
   function kugouOnlineModeBtnEl() { return document.getElementById("btn-account-kugou-online-mode"); }
 
+  function notifyLayoutSettled(delay = 90) {
+    window.setTimeout(() => onLayoutSettled?.(), delay);
+  }
+
   function openAccountCenter(provider = "kugou") {
     activeProvider = provider;
     renderProviderTabs();
     renderProviderPanel();
-    if (provider === "kugou") void refreshKugouAccountStatus();
   }
 
   function renderProviderTabs() {
@@ -49,7 +62,6 @@ export function createAccountCenterView(deps) {
         activeProvider = button.getAttribute("data-account-provider") || "kugou";
         renderProviderTabs();
         renderProviderPanel();
-        if (activeProvider === "kugou") void refreshKugouAccountStatus();
       });
     });
   }
@@ -60,7 +72,10 @@ export function createAccountCenterView(deps) {
     host.innerHTML = activeProvider === "kugou"
       ? kugouAccountPanelTemplate()
       : '<div class="account-provider-empty"><strong>网易云音乐</strong><p class="muted">账号接入即将支持。</p></div>';
-    if (activeProvider === "kugou") wireKugouPanel();
+    if (activeProvider === "kugou") {
+      wireKugouPanel();
+    }
+    notifyLayoutSettled(30);
   }
 
   function formatAccountID(value) {
@@ -82,7 +97,7 @@ export function createAccountCenterView(deps) {
     button.hidden = !visible;
     button.disabled = !!busy;
     button.textContent = busy
-      ? (enabled ? "正在关闭在线模式…" : "正在开启在线模式…")
+      ? (enabled ? "正在关闭在线模式..." : "正在开启在线模式...")
       : (enabled ? "关闭在线模式" : "开启在线模式");
   }
 
@@ -98,7 +113,7 @@ export function createAccountCenterView(deps) {
     return onlineModeEnabled;
   }
 
-  function setKugouLoading(loading, message = "正在同步登录状态…") {
+  function setKugouLoading(loading, message = "正在同步登录状态...") {
     const loadingEl = kugouLoadingEl();
     const textEl = document.getElementById("account-kugou-loading-text");
     if (textEl) textEl.textContent = message;
@@ -133,6 +148,7 @@ export function createAccountCenterView(deps) {
     const smsPanel = root?.querySelector("#account-kugou-sms-panel");
     if (qrPanel) qrPanel.hidden = mode !== "qr";
     if (smsPanel) smsPanel.hidden = mode !== "sms";
+    notifyLayoutSettled();
     if (mode === "qr") await ensureKugouQRCode();
   }
 
@@ -160,7 +176,11 @@ export function createAccountCenterView(deps) {
     const importEl = document.getElementById("btn-account-kugou-open-import");
     const loggedIn = !!status?.logged_in;
     const expired = status?.status === "expired";
-    if (!loggedIn && !expired) return renderKugouGuest();
+    if (!loggedIn && !expired) {
+      renderKugouGuest();
+      notifyLayoutSettled();
+      return;
+    }
     setKugouState(loggedIn ? "logged-in" : "expired");
     const nickname = status?.nickname || "酷狗概念版";
     const userID = formatAccountID(status?.user_id || status?.userId || "");
@@ -174,11 +194,13 @@ export function createAccountCenterView(deps) {
     if (statusEl) {
       statusEl.textContent = loggedIn ? "账号已连接，可直接同步歌单。" : "登录已过期，请重新登录。";
     }
-    if (!avatarEl) return;
-    const avatarURL = status?.avatar_url || status?.avatarUrl || "";
-    avatarEl.textContent = avatarURL ? "" : nickname.slice(0, 1).toUpperCase();
-    avatarEl.style.backgroundImage = avatarURL ? `url("${proxyRemoteAssetSrc(avatarURL)}")` : "";
-    avatarEl.classList.toggle("is-image", !!avatarURL);
+    if (avatarEl) {
+      const avatarURL = status?.avatar_url || status?.avatarUrl || "";
+      avatarEl.textContent = avatarURL ? "" : nickname.slice(0, 1).toUpperCase();
+      avatarEl.style.backgroundImage = avatarURL ? `url("${proxyRemoteAssetSrc(avatarURL)}")` : "";
+      avatarEl.classList.toggle("is-image", !!avatarURL);
+    }
+    notifyLayoutSettled();
   }
 
   async function refreshKugouAccountStatus() {
@@ -193,6 +215,7 @@ export function createAccountCenterView(deps) {
     } catch (error) {
       renderKugouGuest();
       alertRequestFailed(error, "get_kugou_login_status");
+      notifyLayoutSettled();
       return null;
     } finally {
       setKugouLoading(false);
@@ -208,7 +231,8 @@ export function createAccountCenterView(deps) {
         image.hidden = !qr?.base64;
       }
       const statusEl = document.getElementById("account-kugou-status");
-      if (statusEl) statusEl.textContent = "等待扫码登录…";
+      if (statusEl) statusEl.textContent = "等待扫码登录...";
+      notifyLayoutSettled();
       void kugou.pollQRCode((status) => {
         renderKugouStatus(status);
         onKugouStatusChanged?.(status);
@@ -232,6 +256,7 @@ export function createAccountCenterView(deps) {
         const result = await kugou.sendCaptcha(mobile);
         const statusEl = document.getElementById("account-kugou-status");
         if (statusEl) statusEl.textContent = result?.message || "验证码已发送。";
+        notifyLayoutSettled();
       } catch (error) {
         alertRequestFailed(error, "send_kugou_login_captcha");
       }
@@ -256,6 +281,7 @@ export function createAccountCenterView(deps) {
         const result = await onOnlineModeToggleRequested?.(!onlineModeEnabled);
         onlineModeEnabled = result?.enabled === true;
         setOnlineModeButtonState({ enabled: onlineModeEnabled, visible: true, busy: false });
+        notifyLayoutSettled();
       } catch (error) {
         setOnlineModeButtonState({ enabled: onlineModeEnabled, visible: true, busy: false });
         alertRequestFailed(error, "toggle music online mode from account center");

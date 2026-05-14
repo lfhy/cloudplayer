@@ -101,6 +101,7 @@ const invokeMap = {
   append_playlist_import_items: (args) =>
     CloudPlayerService.AppendPlaylistImportItems(args.playlistId, args.items),
   clear_search_cache: () => CloudPlayerService.ClearSearchCache(),
+  clear_recent_plays: () => CloudPlayerService.ClearRecentPlays(),
   create_kugou_login_qr_code: () => CloudPlayerService.CreateKugouLoginQRCode(),
   create_playlist: (args) => CloudPlayerService.CreatePlaylist(args.name),
   db_status: () => CloudPlayerService.DBStatus(),

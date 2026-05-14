@@ -62,6 +62,7 @@ export function startDesktopRuntime(deps) {
     wirePlaylistPage: deps.pages.wirePlaylistPage,
     wirePreferencesModals: deps.settings.wirePreferencesModals,
     wireQueueToggle: deps.pages.wireQueueToggle,
+    wireRecentActions: deps.player.wireRecentActions,
     wireSearchPage: deps.pages.wireSearchPage,
     wireWindowControls: deps.pages.wireWindowControls,
     wireVolume: deps.hotkeys.wireVolume,

@@ -152,6 +152,12 @@
   flex-wrap: wrap;
 }
 
+.account-provider-actions .btn-accent,
+.account-provider-code-row .settings-action-button {
+  min-height: 36px;
+  padding: 0 14px;
+}
+
 .account-provider-qr-box {
   display: flex;
   align-items: center;

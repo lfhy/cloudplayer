@@ -82,7 +82,8 @@ export function createPlaybackController(deps) {
     updatePlayerChrome({
       title: item.title,
       sub: item.artist || "",
-      touchCover: false,
+      coverUrl: item.cover_url || null,
+      album: item.album || "",
     });
     let loadingHintTimer = window.setTimeout(() => {
       if (generation !== getPlayLoadGeneration()) return;
@@ -99,6 +100,17 @@ export function createPlaybackController(deps) {
     };
     const playButton = document.getElementById("btn-player-play");
     const audio = getAudioEl();
+    prepareForDirectPlayback?.();
+    clearLyricsCache();
+    audio.pause();
+    audio.removeAttribute("src");
+    audio.load();
+    setAudioSourceGeneration(generation);
+    if (playButton) {
+      setPlayButtonIcon(playButton, false);
+      playButton.disabled = true;
+    }
+    syncSeekUi();
     try {
       const { assetUrl, playLogExtra } = await resolvePlaybackUrl(item, generation);
       clearLoadingHintTimer();
@@ -109,10 +121,6 @@ export function createPlaybackController(deps) {
         setPlayQueue(nextQueue);
       }
       await logPlayEventDesktop("play_start", { url: assetUrl, extra: playLogExtra });
-      prepareForDirectPlayback?.();
-      audio.pause();
-      audio.removeAttribute("src");
-      audio.load();
       audio.src = assetUrl;
       setAudioSourceGeneration(generation);
       if (autoplay) await audio.play();
@@ -123,6 +131,7 @@ export function createPlaybackController(deps) {
         title: item.title,
         sub: item.artist || "",
         coverUrl: item.cover_url || null,
+        album: item.album || "",
       });
       if (playButton) {
         setPlayButtonIcon(playButton, autoplay);
@@ -148,7 +157,10 @@ export function createPlaybackController(deps) {
           title: item.title,
           sub: playbackFailureReason(error, { fallback: messageRequestFailed }),
           touchCover: false,
+          album: item.album || "",
         });
+        if (playButton) playButton.disabled = false;
+        syncSeekUi();
         console.warn("playFromQueueIndex", error);
       } else {
         console.warn("restore playback source", error);

@@ -3,6 +3,7 @@ import { createLyricsController } from "../../features/lyrics/controller.js";
 import { createAudioEventsController } from "../../features/player/audioEventsController.js";
 import { createPlayerChromeController } from "../../features/player/chromeController.js";
 import { createPlaybackController } from "../../features/player/playbackController.js";
+import { createRecentActionsController } from "../../features/player/recentActionsController.js";
 import { createPlaybackTransitionController } from "../../features/player/playbackTransitionController.js";
 import { createTrayRecentController } from "../../features/player/trayRecentController.js";
 
@@ -43,6 +44,12 @@ export function createBasePlayerRuntime(deps) {
     setPlayQueue: deps.setPlayQueue,
     setSessionRecentPlays: deps.setSessionRecentPlays,
     trayPlayerTarget: deps.trayPlayerTarget,
+  });
+
+  const recentActions = createRecentActionsController({
+    invoke: deps.invoke,
+    onRecentChanged: deps.onRecentChanged,
+    setSessionRecentPlays: deps.setSessionRecentPlays,
   });
 
   const download = createDownloadController({
@@ -134,6 +141,7 @@ export function createBasePlayerRuntime(deps) {
 
   return {
     ...lyrics,
+    ...recentActions,
     ...recent,
     ...download,
     ...chrome,

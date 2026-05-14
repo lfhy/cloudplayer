@@ -11,10 +11,17 @@ export function wireChildWindowAutoSize(config) {
     paddingHeight = 28,
     paddingWidth = 28,
   } = config;
-  if (!element || (!windowLabel && !windowRef)) return () => {};
+  if (!element || (!windowLabel && !windowRef)) {
+    return {
+      cleanup() {},
+      scheduleResize() {},
+      scheduleDebouncedResize() {},
+    };
+  }
   let frame = 0;
   let lastWidth = 0;
   let lastHeight = 0;
+  let debounceTimer = 0;
 
   async function resizeToContent() {
     const rect = element.getBoundingClientRect();
@@ -36,10 +43,19 @@ export function wireChildWindowAutoSize(config) {
 
   function scheduleResize() {
     if (frame) cancelAnimationFrame(frame);
+    if (debounceTimer) window.clearTimeout(debounceTimer);
     frame = requestAnimationFrame(() => {
       frame = 0;
       void resizeToContent();
     });
+  }
+
+  function scheduleDebouncedResize(delay = 80) {
+    if (debounceTimer) window.clearTimeout(debounceTimer);
+    debounceTimer = window.setTimeout(() => {
+      debounceTimer = 0;
+      scheduleResize();
+    }, delay);
   }
 
   const observer = new ResizeObserver(() => {
@@ -49,8 +65,13 @@ export function wireChildWindowAutoSize(config) {
   window.addEventListener("load", scheduleResize, { once: true });
   setTimeout(scheduleResize, 30);
 
-  return () => {
-    observer.disconnect();
-    if (frame) cancelAnimationFrame(frame);
+  return {
+    cleanup() {
+      observer.disconnect();
+      if (frame) cancelAnimationFrame(frame);
+      if (debounceTimer) window.clearTimeout(debounceTimer);
+    },
+    scheduleResize,
+    scheduleDebouncedResize,
   };
 }

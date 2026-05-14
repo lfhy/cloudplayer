@@ -20,6 +20,7 @@ function renderCloseConfirmWindow(root) {
     <div class="app-child-window-frame app-child-window-frame--dialog">
       ${windowTitlebarTemplate({
         title: "关闭主窗口",
+        allowMinimize: false,
         allowMaximize: false,
         className: "app-titlebar--child",
       })}
@@ -153,10 +154,10 @@ export function bootstrapCloseConfirmWindow() {
   document.addEventListener("DOMContentLoaded", () => {
     applyPlatformClassNames();
     renderCloseConfirmWindow(document.getElementById("app"));
-    wireWindowChrome({ windowName: WINDOW_LABEL, allowMaximize: false });
+    wireWindowChrome({ windowName: WINDOW_LABEL, allowMinimize: false, allowMaximize: false });
     resetRememberChoice();
     wireCloseConfirmWindow();
-    const cleanupAutoSize = wireChildWindowAutoSize({
+    const autoSize = wireChildWindowAutoSize({
       element: document.querySelector(".app-child-window-frame--dialog"),
       windowLabel: WINDOW_LABEL,
       windowRef: currentWindow,
@@ -164,7 +165,7 @@ export function bootstrapCloseConfirmWindow() {
       minWidth: 432,
     });
     void applyThemeFromSettings();
-    window.addEventListener("beforeunload", cleanupAutoSize);
+    window.addEventListener("beforeunload", () => autoSize.cleanup());
     window.setTimeout(() => {
       document.getElementById("close-confirm-tray")?.focus();
     }, 30);

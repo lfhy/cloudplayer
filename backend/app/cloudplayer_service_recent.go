@@ -75,3 +75,8 @@ func (s *CloudPlayerService) RecordRecentPlay(row RecentPlayIn) error {
 	}
 	return tx.Commit()
 }
+
+func (s *CloudPlayerService) ClearRecentPlays() error {
+	_, err := s.state.DB.Exec(`DELETE FROM recent_plays`)
+	return err
+}

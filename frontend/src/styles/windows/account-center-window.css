@@ -35,7 +35,7 @@ body.account-center-window {
   align-content: start;
   justify-items: center;
   gap: 12px;
-  padding: 2px 0 0;
+  padding: 2px 0 10px;
   background: transparent;
 }
 

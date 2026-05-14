@@ -117,7 +117,8 @@ export function bootstrapAccountCenterWindow() {
   document.addEventListener("DOMContentLoaded", () => {
     applyPlatformClassNames();
     renderAccountCenterWindow(document.getElementById("app"));
-    wireWindowChrome({ windowName: WINDOW_LABEL, allowMaximize: false });
+    wireWindowChrome({ windowName: WINDOW_LABEL, allowMinimize: false, allowMaximize: false });
+    const autoSize = wireChildWindowAutoSize({ element: cardEl(), windowLabel: WINDOW_LABEL, windowRef: currentWindow });
     const view = createAccountCenterView({
       alertRequestFailed,
       closeAccountCenter: closeAccountCenterWindow,
@@ -131,14 +132,16 @@ export function bootstrapAccountCenterWindow() {
       onKugouStatusChanged: (status) => {
         void notifyAccountStatus(status);
       },
+      onLayoutSettled: () => {
+        autoSize.scheduleDebouncedResize(90);
+      },
     });
     view.wireAccountCenter();
     view.openAccountCenter(requestedProvider());
-    const cleanupAutoSize = wireChildWindowAutoSize({ element: cardEl(), windowLabel: WINDOW_LABEL, windowRef: currentWindow });
     wireThemeRefresh();
     void applyThemeFromSettings();
     window.addEventListener("beforeunload", () => {
-      cleanupAutoSize();
+      autoSize.cleanup();
       void focusMainWindow();
     });
   });

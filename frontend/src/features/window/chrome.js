@@ -45,11 +45,12 @@ function renderControl(action, disabled = false) {
   `;
 }
 
-export function windowControlsTemplate({ allowMaximize = true } = {}) {
+export function windowControlsTemplate({ allowMinimize = true, allowMaximize = true } = {}) {
+  const minimizeControl = allowMinimize ? renderControl("minimize") : "";
   const maximizeControl = allowMaximize ? renderControl("maximize") : "";
   return `
     <div class="app-window-controls" aria-label="Window controls">
-      ${renderControl("minimize")}
+      ${minimizeControl}
       ${maximizeControl}
       ${renderControl("close")}
     </div>
@@ -59,6 +60,7 @@ export function windowControlsTemplate({ allowMaximize = true } = {}) {
 export function windowTitlebarTemplate({
   title = "",
   lead = "",
+  allowMinimize = true,
   allowMaximize = true,
   className = "",
 } = {}) {
@@ -71,7 +73,7 @@ export function windowTitlebarTemplate({
     <header class="${classes}" data-window-drag>
       <div class="app-titlebar__lead">${leadMarkup}</div>
       ${titleMarkup}
-      ${windowControlsTemplate({ allowMaximize })}
+      ${windowControlsTemplate({ allowMinimize, allowMaximize })}
     </header>
   `;
 }
@@ -80,7 +82,7 @@ function buttonFor(scope, action) {
   return scope.querySelector(`[data-window-action="${action}"]`);
 }
 
-export function wireWindowChrome({ windowName = "main", allowMaximize = true, scope = document } = {}) {
+export function wireWindowChrome({ windowName = "main", allowMinimize = true, allowMaximize = true, scope = document } = {}) {
   const targetWindow = RuntimeWindow.Get(windowName);
   const minimizeBtn = buttonFor(scope, "minimize");
   const maximizeBtn = buttonFor(scope, "maximize");
@@ -121,9 +123,11 @@ export function wireWindowChrome({ windowName = "main", allowMaximize = true, sc
     }
   }
 
-  minimizeBtn?.addEventListener("click", () => {
-    void targetWindow.Minimise().catch((error) => console.warn(`minimize ${windowName}`, error));
-  });
+  if (allowMinimize) {
+    minimizeBtn?.addEventListener("click", () => {
+      void targetWindow.Minimise().catch((error) => console.warn(`minimize ${windowName}`, error));
+    });
+  }
   maximizeBtn?.addEventListener("click", () => {
     void toggleMaximize();
   });

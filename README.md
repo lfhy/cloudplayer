@@ -78,7 +78,8 @@ QQ群：`572532027`
 
 ## Windows window chrome
 
-- Windows now runs the main window and standard child windows with a shared custom titlebar, so the native minimize / maximize / close buttons are hidden and replaced by the in-app controls.
+- Windows now runs the main window and standard child windows with a shared custom titlebar, so the native caption buttons are hidden and replaced by the in-app controls.
+- The main window keeps minimize / maximize / close, while standard child windows now only keep a close button in the custom titlebar.
 - macOS keeps the existing native titlebar behavior, while Windows child windows such as account center, close confirm, online-mode confirm, and lyrics replace now use the same frameless top bar.
 - Windows custom-chrome windows now keep the native Win11 outer frame styling, so the app surface gets a visible rounded-corner silhouette instead of only rounding inner panels.
 
@@ -87,3 +88,9 @@ QQ群：`572532027`
 - Kugou login status now auto-runs the daily listen-song / VIP refresh path when the saved session is still valid, with a cooldown to avoid hammering the API after a failed attempt.
 - Kugou playback no longer treats one-minute preview URLs as normal full-track playback. When a real full-track URL is unavailable, CloudPlayer falls back to a PJMP3 match instead of staying stuck on the expired Kugou source.
 - Switching the default source, toggling online mode, logging into Kugou, or logging out of Kugou now clears the persisted playback queue and resume snapshot so stale online `source_id` values do not poison later playback attempts.
+
+## Recent plays and dock polish
+
+- Failed track switches now clear the previous seek state before loading the target source, so a broken next track does not keep showing the last song's progress.
+- Recent plays can now be cleared from both the home screen and the recent page, and the action removes the persisted `recent_plays` history instead of only clearing the current session list.
+- The main dock volume slider now uses a thicker track and thumb so it is easier to grab on desktop.
