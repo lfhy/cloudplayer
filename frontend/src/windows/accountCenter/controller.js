@@ -122,7 +122,8 @@ export function bootstrapAccountCenterWindow() {
       element: cardEl(),
       windowLabel: WINDOW_LABEL,
       windowRef: currentWindow,
-      minHeight: 392,
+      // Keep a compact baseline so the window can shrink after login hides the SMS / QR form.
+      minHeight: 280,
       minWidth: 560,
       paddingHeight: 24,
       paddingWidth: 24,

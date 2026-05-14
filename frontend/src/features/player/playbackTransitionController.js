@@ -1,7 +1,5 @@
-// Playback transition control keeps pause/resume fades separate from track loading rules.
+// Playback transition control now keeps play/pause direct so transport actions do not animate volume.
 const DEFAULT_VOLUME = 0.7;
-const FADE_IN_MS = 180;
-const FADE_OUT_MS = 160;
 
 function clampVolume(value) {
   const numeric = Number(value);
@@ -12,152 +10,61 @@ function clampVolume(value) {
 export function createPlaybackTransitionController(deps) {
   const { getAudioEl } = deps;
   let preferredVolume = DEFAULT_VOLUME;
-  let holdPausedSilence = false;
-  let pausingViaFade = false;
-  let fadeMode = "idle";
-  let frameId = 0;
-  let fadeToken = 0;
 
   function audioEl() {
     return getAudioEl?.() || null;
   }
 
-  function cancelAnimation() {
-    fadeToken += 1;
-    if (frameId) {
-      cancelAnimationFrame(frameId);
-      frameId = 0;
-    }
-  }
-
-  function stopAnimation() {
-    cancelAnimation();
-    fadeMode = "idle";
-  }
-
-  function runFade({ audio, from, to, durationMs, onComplete }) {
-    cancelAnimation();
-    const token = fadeToken;
-    const startedAt = performance.now();
-    const safeDuration = Math.max(1, Number(durationMs) || 1);
-    audio.volume = clampVolume(from);
-    return new Promise((resolve) => {
-      const step = (now) => {
-        if (token !== fadeToken) {
-          resolve(false);
-          return;
-        }
-        const progress = Math.min(1, (now - startedAt) / safeDuration);
-        audio.volume = clampVolume(from + (to - from) * progress);
-        if (progress >= 1) {
-          frameId = 0;
-          onComplete?.();
-          resolve(true);
-          return;
-        }
-        frameId = requestAnimationFrame(step);
-      };
-      frameId = requestAnimationFrame(step);
-    });
+  function applyPreferredVolume() {
+    const audio = audioEl();
+    if (!audio || audio.muted) return preferredVolume;
+    audio.volume = preferredVolume;
+    return preferredVolume;
   }
 
   function setPreferredVolume(volume) {
     preferredVolume = clampVolume(volume);
     const audio = audioEl();
-    if (!audio) return preferredVolume;
-    if (!audio.src || (!holdPausedSilence && fadeMode === "idle")) {
-      audio.volume = preferredVolume;
-      return preferredVolume;
+    if (!audio?.src || !audio.paused) {
+      applyPreferredVolume();
     }
-    if (fadeMode === "fading-in") return preferredVolume;
-    if (!audio.paused) audio.volume = preferredVolume;
     return preferredVolume;
   }
 
   function prepareForDirectPlayback() {
-    const audio = audioEl();
-    stopAnimation();
-    holdPausedSilence = false;
-    pausingViaFade = false;
-    if (audio) audio.volume = preferredVolume;
+    applyPreferredVolume();
   }
 
-  async function pauseWithFade() {
+  async function pauseDirectly() {
     const audio = audioEl();
     if (!audio?.src || audio.paused) return;
-    fadeMode = "fading-out";
-    const completed = await runFade({
-      audio,
-      from: clampVolume(audio.volume),
-      to: 0,
-      durationMs: FADE_OUT_MS,
-      onComplete: () => {
-        pausingViaFade = true;
-        holdPausedSilence = true;
-        audio.pause();
-        audio.volume = 0;
-        fadeMode = "idle";
-      },
-    });
-    if (!completed) return;
+    audio.pause();
+    applyPreferredVolume();
   }
 
-  async function resumeWithFade() {
+  async function resumeDirectly() {
     const audio = audioEl();
     if (!audio?.src) return;
-    stopAnimation();
-    holdPausedSilence = false;
-    pausingViaFade = false;
-    fadeMode = "fading-in";
-    audio.volume = 0;
-    try {
-      if (audio.paused) await audio.play();
-    } catch (error) {
-      fadeMode = "idle";
-      audio.volume = preferredVolume;
-      throw error;
-    }
-    await runFade({
-      audio,
-      from: clampVolume(audio.volume),
-      to: preferredVolume,
-      durationMs: FADE_IN_MS,
-      onComplete: () => {
-        audio.volume = preferredVolume;
-        fadeMode = "idle";
-      },
-    });
+    applyPreferredVolume();
+    await audio.play();
   }
 
   async function togglePlayPause() {
     const audio = audioEl();
     if (!audio?.src) return;
-    if (fadeMode === "fading-out" || audio.paused) {
-      await resumeWithFade();
+    if (audio.paused) {
+      await resumeDirectly();
       return;
     }
-    await pauseWithFade();
+    await pauseDirectly();
   }
 
   function handlePlayEvent() {
-    holdPausedSilence = false;
-    pausingViaFade = false;
-    if (fadeMode === "fading-in") return;
-    if (fadeMode === "idle") {
-      const audio = audioEl();
-      if (audio) audio.volume = preferredVolume;
-    }
+    applyPreferredVolume();
   }
 
   function handlePauseEvent() {
-    stopAnimation();
-    if (pausingViaFade) {
-      pausingViaFade = false;
-      return;
-    }
-    holdPausedSilence = false;
-    const audio = audioEl();
-    if (audio && !audio.src) audio.volume = preferredVolume;
+    applyPreferredVolume();
   }
 
   return {

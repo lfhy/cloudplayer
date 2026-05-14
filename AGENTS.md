@@ -57,7 +57,8 @@
 ## Validation
 
 - After each meaningful refactor batch, run the narrowest useful validation first.
-- Before finishing, run the full `src-wails` regression path:
-  bindings generation, frontend build, Go build, and `wails3 dev` smoke validation.
+- Before finishing, run the full `src-wails` regression path through `wails3 dev` smoke validation.
+- Treat `wails3 dev` as the final integrated build-and-run check for `src-wails`.
+  Do not separately repeat bindings generation, frontend build, and Go build beforehand unless the task specifically needs those narrower commands for diagnosis.
 - The final validation MUST use `wails3 dev` to confirm the app launches and renders correctly.
-  `npm run build` alone is not sufficient — always run `wails3 dev` as the last step.
+  `npm run build` alone is not sufficient.
