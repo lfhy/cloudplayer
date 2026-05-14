@@ -36,7 +36,7 @@ cd ..
 3. 启动开发模式：
 
 ```bash
-wails3 dev
+node ./scripts/dev-with-port.mjs
 ```
 
 如果希望使用项目内封装好的任务，也可以直接运行：
@@ -50,8 +50,10 @@ task dev
 开发模式：
 
 ```bash
-wails3 dev
+node ./scripts/dev-with-port.mjs
 ```
+
+这个包装脚本会优先使用 `9245`，如果端口已被占用，就自动顺延到下一个空闲端口，并把同一个端口同时传给 `wails3 dev` 和 Vite，避免 `vite --strictPort` 直接报错退出。
 
 开发构建：
 

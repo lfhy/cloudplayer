@@ -96,7 +96,7 @@ func Run(assets fs.FS, trayTemplateIcon []byte) error {
 		mainWindowOptions.BackgroundType = application.BackgroundTypeTranslucent
 		mainWindowOptions.BackgroundColour = application.NewRGBA(0, 0, 0, 0)
 		mainWindowOptions.Windows.BackdropType = application.Mica
-		mainWindowOptions.Windows.DisableFramelessWindowDecorations = false
+		mainWindowOptions.Windows.DisableFramelessWindowDecorations = true
 		configureMainWindowTheme(&mainWindowOptions, initialSettings.AppThemeMode)
 	}
 	mainWindow := app.Window.NewWithOptions(mainWindowOptions)

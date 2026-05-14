@@ -93,7 +93,7 @@ func (s *DesktopService) EnsureWindow(req WindowCreateRequest) error {
 		IgnoreMouseEvents: false,
 		Windows: application.WindowsWindow{
 			HiddenOnTaskbar:                   req.SkipTaskbar,
-			DisableFramelessWindowDecorations: !(req.Shadow || useWindowsCustomChrome(req)),
+			DisableFramelessWindowDecorations: useWindowsCustomChrome(req) || !req.Shadow,
 		},
 		Mac: application.MacWindow{
 			Backdrop:                macBackdrop(req.Transparent),
