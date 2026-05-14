@@ -13,6 +13,7 @@ import (
 const (
 	ProviderPJMP3      = "pjmp3"
 	ProviderKugou      = "kugou"
+	ProviderNetease    = "netease"
 	DefaultProviderKey = ProviderKugou
 )
 
@@ -46,8 +47,9 @@ type SourceRef struct {
 }
 
 var providers = map[string]Provider{
-	ProviderPJMP3: pjmp3Provider{},
-	ProviderKugou: kugouProvider{},
+	ProviderPJMP3:   pjmp3Provider{},
+	ProviderKugou:   kugouProvider{},
+	ProviderNetease: neteaseProvider{},
 }
 
 func Current() Provider {

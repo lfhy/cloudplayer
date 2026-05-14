@@ -244,6 +244,9 @@ func (s *CloudPlayerService) SaveSettings(patch SettingsPatch) error {
 	if patch.MusicSourceProvider != nil {
 		settings.MusicSourceProvider = config.NormalizeMusicSourceProvider(*patch.MusicSourceProvider)
 	}
+	if patch.PlaybackFallbackChain != nil {
+		settings.PlaybackFallbackChain = config.NormalizePlaybackFallbackChain(*patch.PlaybackFallbackChain)
+	}
 	if patch.SearchCacheTTLHours != nil {
 		settings.SearchCacheTTLHours = config.NormalizeSearchCacheTTLHours(*patch.SearchCacheTTLHours)
 	}

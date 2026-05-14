@@ -17,7 +17,7 @@ import (
 func (s *CloudPlayerService) SearchSongs(keyword string, page uint32) (model.SearchResponse, error) {
 	trimmed := strings.TrimSpace(keyword)
 	if trimmed == "" {
-		return model.SearchResponse{}, fmt.Errorf("请输入搜索关键词")
+		return model.SearchResponse{}, fmt.Errorf("璇疯緭鍏ユ悳绱㈠叧閿瘝")
 	}
 	resolvedPage := maxUint32(page, 1)
 	provider := musicsource.Current()
@@ -47,7 +47,7 @@ func (s *CloudPlayerService) GetPreviewURL(songID string) (string, error) {
 		return "", err
 	}
 	if strings.TrimSpace(previewURL) == "" {
-		return "", fmt.Errorf("未解析到 MP3 试听地址")
+		return "", fmt.Errorf("鏈В鏋愬埌 MP3 璇曞惉鍦板潃")
 	}
 	return previewURL, nil
 }
@@ -70,8 +70,8 @@ func (s *CloudPlayerService) ResolveOnlinePlay(songID, title, artist string) (mo
 	trimmedArtist := strings.TrimSpace(artist)
 
 	for _, path := range download.CandidateDownloadedAudioPaths(trimmedTitle, trimmedArtist) {
-		info, err := os.Stat(path)
-		if err == nil && !info.IsDir() && info.Size() > 0 {
+		info, statErr := os.Stat(path)
+		if statErr == nil && !info.IsDir() && info.Size() > 0 {
 			return model.ResolveOnlinePlayOut{
 				Kind: "file",
 				Path: path,
@@ -80,48 +80,7 @@ func (s *CloudPlayerService) ResolveOnlinePlay(songID, title, artist string) (mo
 		}
 	}
 
-	if ref.ProviderKey == musicsource.ProviderKugou {
-		return s.resolveKugouOnlinePlay(ref, trimmedTitle, trimmedArtist)
-	}
-
-	if path := ref.Provider.PreviewCachePathIfExists(ref.RawID); path != "" {
-		return model.ResolveOnlinePlayOut{
-			Kind: "file",
-			Path: path,
-			Via:  "preview_cache",
-		}, nil
-	}
-
-	s.state.RateLimiter.AcquireSlot()
-	previewPath, previewErr := ref.Provider.CachePreviewAudioFile(s.state.HTTP(), ref.RawID)
-	if previewErr == nil && previewPath != "" {
-		return model.ResolveOnlinePlayOut{
-			Kind: "file",
-			Path: previewPath,
-			Via:  "fetched_preview",
-		}, nil
-	}
-
-	s.state.RateLimiter.AcquireSlot()
-	previewURL, directErr := ref.Provider.FetchPreviewURL(s.state.HTTP(), ref.RawID)
-	if directErr == nil && strings.TrimSpace(previewURL) != "" {
-		return model.ResolveOnlinePlayOut{
-			Kind: "url",
-			URL:  previewURL,
-			Via:  "direct_url",
-		}, nil
-	}
-
-	if previewErr != nil && directErr != nil {
-		return model.ResolveOnlinePlayOut{}, fmt.Errorf("%v；直链降级失败：%v", previewErr, directErr)
-	}
-	if previewErr != nil {
-		return model.ResolveOnlinePlayOut{}, fmt.Errorf("%v；直链降级：未解析到 MP3 地址", previewErr)
-	}
-	if directErr != nil {
-		return model.ResolveOnlinePlayOut{}, directErr
-	}
-	return model.ResolveOnlinePlayOut{}, fmt.Errorf("未解析到可播放地址")
+	return s.resolveOnlinePlayWithFallback(ref, trimmedTitle, trimmedArtist)
 }
 
 func (s *CloudPlayerService) ParseImportText(text, format string) ([]importplaylist.ImportedTrackDTO, error) {

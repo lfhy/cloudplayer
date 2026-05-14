@@ -94,3 +94,11 @@ QQ群：`572532027`
 - Failed track switches now clear the previous seek state before loading the target source, so a broken next track does not keep showing the last song's progress.
 - Recent plays can now be cleared from both the home screen and the recent page, and the action removes the persisted `recent_plays` history instead of only clearing the current session list.
 - The main dock volume slider now uses a thicker track and thumb so it is easier to grab on desktop.
+
+## Netease source and playback fallback
+
+- CloudPlayer now includes a built-in `netease` music source provider implemented locally, based on the request flow of `chaunsin/netease-cloud-music` without importing that library directly.
+- Preferences now let you choose `kugou`, `pjmp3`, or `netease` as the default online source, and also configure the playback fallback chain order visually.
+- When the current source cannot resolve a playable track, CloudPlayer now retries other configured providers in order instead of failing immediately on the first source.
+- Playback failure messages shown in the main player now prefer a short Chinese summary, while detailed provider-level failure reasons are written to the desktop app logs.
+- Preferences now include a `查看详细日志` entry that opens the app log location directly for diagnostics.

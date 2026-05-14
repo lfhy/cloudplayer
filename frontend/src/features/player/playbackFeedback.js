@@ -10,6 +10,22 @@ function cleanReason(value) {
   return String(value || "").replace(/\s+/g, " ").trim();
 }
 
+function shortenTechnicalDetail(value) {
+  const reason = cleanReason(value);
+  if (!reason) return "";
+  if (/^播放失败[:：]/.test(reason)) {
+    const summary = reason.split(/[；;]+/)[0]?.trim();
+    return summary || reason;
+  }
+  if (reason.includes("read tcp") || reason.includes("wsarecv:") || reason.includes("Get \"http")) {
+    return "连接音源服务器失败";
+  }
+  if (reason.includes("no playable url") || reason.includes("preview url is empty")) {
+    return "当前音源返回了不可播放的歌曲";
+  }
+  return reason;
+}
+
 function isGenericFailureText(value) {
   const normalized = cleanReason(value).toLowerCase();
   return GENERIC_FAILURE_TEXT.has(normalized);
@@ -36,7 +52,7 @@ export function playbackFailureReason(error, { fallback = "播放失败" } = {})
     error?.data?.message,
     typeof error === "string" ? error : "",
   ]);
-  return reason || fallback;
+  return shortenTechnicalDetail(reason) || fallback;
 }
 
 export function audioPlaybackFailureReason(audio, { fallback = "播放失败" } = {}) {

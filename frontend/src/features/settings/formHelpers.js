@@ -20,9 +20,26 @@ export function settingsFormBaselineDefaults() {
     musicOnlineMode: false,
     autoCacheOnPlay: false,
     musicSourceProvider: "kugou",
+    playbackFallbackChain: "kugou,pjmp3,netease",
     searchCacheTTLHours: 24,
     hotkeysSig: "",
   };
+}
+
+export function normalizePlaybackFallbackChain(raw) {
+  const parts = String(raw ?? "")
+    .toLowerCase()
+    .split(",")
+    .map((value) => value.trim())
+    .filter((value) => value === "kugou" || value === "pjmp3" || value === "netease");
+  const seen = new Set();
+  const ordered = [];
+  for (const part of parts) {
+    if (seen.has(part)) continue;
+    seen.add(part);
+    ordered.push(part);
+  }
+  return ordered.length ? ordered.join(",") : "kugou,pjmp3,netease";
 }
 
 export function normalizeLyricHexInput(value, fallback) {

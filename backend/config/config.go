@@ -59,6 +59,7 @@ type Settings struct {
 	MusicOnlineMode             bool                `json:"music_online_mode"`
 	AutoCacheOnPlay             bool                `json:"auto_cache_on_play"`
 	MusicSourceProvider         string              `json:"music_source_provider"`
+	PlaybackFallbackChain       string              `json:"playback_fallback_chain"`
 	SearchCacheTTLHours         int                 `json:"search_cache_ttl_hours"`
 	MiniPlayerAlwaysOnTop       bool                `json:"mini_player_always_on_top"`
 }
@@ -94,17 +95,41 @@ func DefaultSettings() Settings {
 		MusicOnlineMode:             false,
 		AutoCacheOnPlay:             false,
 		MusicSourceProvider:         "kugou",
+		PlaybackFallbackChain:       "kugou,pjmp3,netease",
 		SearchCacheTTLHours:         24,
 	}
 }
 
 func NormalizeMusicSourceProvider(value string) string {
 	switch strings.ToLower(strings.TrimSpace(value)) {
-	case "pjmp3", "kugou":
+	case "pjmp3", "kugou", "netease":
 		return strings.ToLower(strings.TrimSpace(value))
 	default:
 		return "kugou"
 	}
+}
+
+func NormalizePlaybackFallbackChain(raw string) string {
+	parts := strings.Split(strings.ToLower(strings.TrimSpace(raw)), ",")
+	seen := map[string]struct{}{}
+	ordered := make([]string, 0, 3)
+	for _, part := range parts {
+		key := strings.TrimSpace(part)
+		switch key {
+		case "kugou", "pjmp3", "netease":
+		default:
+			continue
+		}
+		if _, ok := seen[key]; ok {
+			continue
+		}
+		seen[key] = struct{}{}
+		ordered = append(ordered, key)
+	}
+	if len(ordered) == 0 {
+		return "kugou,pjmp3,netease"
+	}
+	return strings.Join(ordered, ",")
 }
 
 func DefaultGlobalHotkeys() GlobalHotkeys {
@@ -152,6 +177,8 @@ func LoadSettings() Settings {
 	}
 	result.SearchCacheTTLHours = NormalizeSearchCacheTTLHours(result.SearchCacheTTLHours)
 	result.PlayMode = NormalizePlayMode(result.PlayMode)
+	result.MusicSourceProvider = NormalizeMusicSourceProvider(result.MusicSourceProvider)
+	result.PlaybackFallbackChain = NormalizePlaybackFallbackChain(result.PlaybackFallbackChain)
 	result.PlayQueue = NormalizePlaybackQueue(result.PlayQueue)
 	if result.PlayQueueIndex < 0 {
 		result.PlayQueueIndex = 0

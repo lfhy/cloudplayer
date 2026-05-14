@@ -118,6 +118,7 @@ const invokeMap = {
   get_search_song_metadata: async (args) =>
     (await CloudPlayerService.GetSearchSongMetadata(args.songIds ?? [])).map((row) => normalizeSearchMetadataRow(row)),
   get_app_log_path: () => CloudPlayerService.GetAppLogPath(),
+  open_app_log_location: () => CloudPlayerService.OpenAppLogLocation(),
   get_global_hotkeys: () => CloudPlayerService.GetGlobalHotkeys(),
   get_daily_recommendation: (args) => CloudPlayerService.GetDailyRecommendation(!!args.force),
   get_kugou_login_status: () => CloudPlayerService.GetKugouLoginStatus(),

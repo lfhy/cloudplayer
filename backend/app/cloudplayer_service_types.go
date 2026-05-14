@@ -65,6 +65,7 @@ type SettingsPatch struct {
 	MusicOnlineMode             *bool                `json:"music_online_mode,omitempty"`
 	AutoCacheOnPlay             *bool                `json:"auto_cache_on_play,omitempty"`
 	MusicSourceProvider         *string              `json:"music_source_provider,omitempty"`
+	PlaybackFallbackChain       *string              `json:"playback_fallback_chain,omitempty"`
 	SearchCacheTTLHours         *int                 `json:"search_cache_ttl_hours,omitempty"`
 	MiniPlayerAlwaysOnTop       *bool                `json:"mini_player_always_on_top,omitempty"`
 }
