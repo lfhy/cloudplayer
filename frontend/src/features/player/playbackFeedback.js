@@ -1,3 +1,5 @@
+import { cleanErrorText, extractStructuredErrorText } from "../../app/helpers/errorMessage.js";
+
 // Playback feedback helpers centralize the short loading copy and user-facing failure reasons.
 const GENERIC_FAILURE_TEXT = new Set([
   "request failed",
@@ -6,9 +8,7 @@ const GENERIC_FAILURE_TEXT = new Set([
   "audio play failed",
 ]);
 
-function cleanReason(value) {
-  return String(value || "").replace(/\s+/g, " ").trim();
-}
+const cleanReason = cleanErrorText;
 
 function shortenTechnicalDetail(value) {
   const reason = cleanReason(value);
@@ -33,7 +33,7 @@ function isGenericFailureText(value) {
 
 function firstReason(candidates) {
   for (const candidate of candidates) {
-    const reason = cleanReason(candidate);
+    const reason = cleanReason(extractStructuredErrorText(candidate));
     if (!reason || isGenericFailureText(reason)) continue;
     return reason;
   }

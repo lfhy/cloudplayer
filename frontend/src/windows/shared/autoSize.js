@@ -24,10 +24,19 @@ export function wireChildWindowAutoSize(config) {
   let debounceTimer = 0;
   let ready = false;
 
-  async function resizeToContent() {
+  function measuredSize(axis) {
     const rect = element.getBoundingClientRect();
-    const targetWidth = Math.max(minWidth, Math.ceil(rect.width + paddingWidth));
-    const targetHeight = Math.max(minHeight, Math.ceil(rect.height + paddingHeight));
+    if (axis === "width") {
+      return Math.ceil(Math.max(rect.width, element.scrollWidth, element.clientWidth, element.offsetWidth));
+    }
+    return Math.ceil(Math.max(rect.height, element.scrollHeight, element.clientHeight, element.offsetHeight));
+  }
+
+  async function resizeToContent() {
+    const windowsFrameWidth = document.documentElement.classList.contains("platform-windows") ? 10 : 0;
+    const windowsFrameHeight = document.documentElement.classList.contains("platform-windows") ? 18 : 0;
+    const targetWidth = Math.max(minWidth, measuredSize("width") + paddingWidth + windowsFrameWidth);
+    const targetHeight = Math.max(minHeight, measuredSize("height") + paddingHeight + windowsFrameHeight);
     if (ready && Math.abs(targetWidth - lastWidth) < 2 && Math.abs(targetHeight - lastHeight) < 2) return;
     lastWidth = targetWidth;
     lastHeight = targetHeight;

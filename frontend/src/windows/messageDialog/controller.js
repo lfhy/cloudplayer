@@ -139,7 +139,7 @@ export function bootstrapMessageDialogWindow() {
       windowRef: currentWindow,
       minHeight: 156,
       minWidth: 456,
-      paddingHeight: 18,
+      paddingHeight: 28,
     });
     void applyThemeFromSettings();
     window.addEventListener("beforeunload", () => autoSize.cleanup());

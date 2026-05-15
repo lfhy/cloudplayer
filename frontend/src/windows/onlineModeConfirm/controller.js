@@ -128,6 +128,7 @@ export function bootstrapOnlineModeConfirmWindow() {
       windowRef: currentWindow,
       minHeight: 188,
       minWidth: 432,
+      paddingHeight: 28,
     });
     void applyThemeFromSettings();
     window.addEventListener("beforeunload", () => autoSize.cleanup());

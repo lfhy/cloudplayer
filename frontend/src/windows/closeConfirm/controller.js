@@ -164,7 +164,7 @@ export function bootstrapCloseConfirmWindow() {
       // Keep the close-confirm window content-driven so the lower half does not turn into dead space.
       minHeight: 156,
       minWidth: 432,
-      paddingHeight: 18,
+      paddingHeight: 28,
     });
     void applyThemeFromSettings();
     window.addEventListener("beforeunload", () => autoSize.cleanup());
