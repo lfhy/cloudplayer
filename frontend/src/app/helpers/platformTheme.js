@@ -2,6 +2,7 @@
 import {
   APP_THEME_MODES,
   APP_THEMES,
+  MUSIC_COLLECTION_MODES,
   MUSIC_SOURCE_PROVIDERS,
   NETWORK_PROXY_MODES,
   QUICK_THEME_MODE_LABELS,
@@ -68,6 +69,11 @@ export function normalizeSettingsTab(value) {
 export function normalizeMusicSourceProvider(value) {
   const normalized = String(value || "kugou").trim().toLowerCase();
   return MUSIC_SOURCE_PROVIDERS.has(normalized) ? normalized : "kugou";
+}
+
+export function normalizeMusicCollectionMode(value) {
+  const normalized = String(value || "offline").trim().toLowerCase();
+  return MUSIC_COLLECTION_MODES.has(normalized) ? normalized : "offline";
 }
 
 export function canSaveCustomProxyUrl(value) {

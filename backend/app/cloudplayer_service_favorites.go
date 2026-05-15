@@ -1,6 +1,7 @@
 package cloudplayer
 
 import (
+	"database/sql"
 	"fmt"
 	"strings"
 )
@@ -9,14 +10,19 @@ const builtinFavoritesName = "我喜欢"
 
 // Favorites methods keep the built-in liked playlist logic isolated from generic playlist CRUD.
 func (s *CloudPlayerService) EnsureFavoritesPlaylist() (PlaylistRow, error) {
-	if onlineFavoritesEnabled() {
+	if collectionModeIsOnline() {
 		return s.ensureKugouFavoritesPlaylist()
+	}
+	if collectionModeIsHybrid() {
+		if err := s.ensureHybridKugouPlaylistForks(false); err != nil {
+			return PlaylistRow{}, err
+		}
 	}
 	return s.ensureFavoritesPlaylist()
 }
 
 func (s *CloudPlayerService) ListFavoriteSourceIDs() ([]string, error) {
-	if onlineFavoritesEnabled() {
+	if collectionModeIsOnline() {
 		return s.listKugouFavoriteSourceIDs()
 	}
 	playlist, err := s.ensureFavoritesPlaylist()
@@ -45,9 +51,16 @@ func (s *CloudPlayerService) ListFavoriteSourceIDs() ([]string, error) {
 }
 
 func (s *CloudPlayerService) AddFavoriteTrack(track FavoriteTrackIn) error {
-	if onlineFavoritesEnabled() {
+	if collectionModeIsOnline() {
 		return s.addKugouFavoriteTrack(track)
 	}
+	if collectionModeIsHybrid() {
+		return s.addHybridFavoriteTrack(track)
+	}
+	return s.addLocalFavoriteTrack(track)
+}
+
+func (s *CloudPlayerService) addLocalFavoriteTrack(track FavoriteTrackIn) error {
 	playlist, err := s.ensureFavoritesPlaylist()
 	if err != nil {
 		return err
@@ -85,9 +98,16 @@ func (s *CloudPlayerService) AddFavoriteTrack(track FavoriteTrackIn) error {
 }
 
 func (s *CloudPlayerService) RemoveFavoriteTrack(sourceID string) error {
-	if onlineFavoritesEnabled() {
+	if collectionModeIsOnline() {
 		return s.removeKugouFavoriteTrack(sourceID)
 	}
+	if collectionModeIsHybrid() {
+		return s.removeHybridFavoriteTrack(sourceID)
+	}
+	return s.removeLocalFavoriteTrack(sourceID)
+}
+
+func (s *CloudPlayerService) removeLocalFavoriteTrack(sourceID string) error {
 	playlist, err := s.ensureFavoritesPlaylist()
 	if err != nil {
 		return err
@@ -105,13 +125,14 @@ func (s *CloudPlayerService) ensureFavoritesPlaylist() (PlaylistRow, error) {
 		return PlaylistRow{}, err
 	}
 	var row PlaylistRow
+	var cloudListID sql.NullInt64
 	err := s.state.DB.QueryRow(`
-		SELECT id, name, is_builtin
+		SELECT id, name, is_builtin, cloud_source, cloud_list_id, cloud_writable
 		FROM playlists
 		WHERE is_builtin = 1 OR name = ?
 		ORDER BY is_builtin DESC, id ASC
 		LIMIT 1
-	`, builtinFavoritesName).Scan(&row.ID, &row.Name, &row.IsBuiltin)
+	`, builtinFavoritesName).Scan(&row.ID, &row.Name, &row.IsBuiltin, &row.CloudSource, &cloudListID, &row.CloudWritable)
 	if err == nil {
 		if !row.IsBuiltin || strings.TrimSpace(row.Name) != builtinFavoritesName {
 			if _, updateErr := s.state.DB.Exec(`UPDATE playlists SET name = ?, is_builtin = 1 WHERE id = ?`, builtinFavoritesName, row.ID); updateErr != nil {
@@ -120,6 +141,12 @@ func (s *CloudPlayerService) ensureFavoritesPlaylist() (PlaylistRow, error) {
 			row.Name = builtinFavoritesName
 			row.IsBuiltin = true
 		}
+		if cloudListID.Valid && cloudListID.Int64 > 0 {
+			value := cloudListID.Int64
+			row.CloudListID = &value
+			row.IsCloud = true
+		}
+		row.IsFavorites = true
 		return row, nil
 	}
 	result, err := s.state.DB.Exec(`INSERT INTO playlists (name, is_builtin) VALUES (?, 1)`, builtinFavoritesName)
@@ -197,15 +224,22 @@ func (s *CloudPlayerService) migrateLegacyLikedTracks() error {
 
 func (s *CloudPlayerService) lookupFavoritesPlaylist() (PlaylistRow, error) {
 	var row PlaylistRow
+	var cloudListID sql.NullInt64
 	err := s.state.DB.QueryRow(`
-		SELECT id, name, is_builtin
+		SELECT id, name, is_builtin, cloud_source, cloud_list_id, cloud_writable
 		FROM playlists
 		WHERE is_builtin = 1 OR name = ?
 		ORDER BY is_builtin DESC, id ASC
 		LIMIT 1
-	`, builtinFavoritesName).Scan(&row.ID, &row.Name, &row.IsBuiltin)
+	`, builtinFavoritesName).Scan(&row.ID, &row.Name, &row.IsBuiltin, &row.CloudSource, &cloudListID, &row.CloudWritable)
 	if err != nil {
 		return PlaylistRow{}, nil
 	}
+	if cloudListID.Valid && cloudListID.Int64 > 0 {
+		value := cloudListID.Int64
+		row.CloudListID = &value
+		row.IsCloud = true
+	}
+	row.IsFavorites = true
 	return row, nil
 }

@@ -40,7 +40,10 @@ func OpenAndInit() (*sql.DB, error) {
 		CREATE TABLE IF NOT EXISTS playlists (
 			id INTEGER PRIMARY KEY AUTOINCREMENT,
 			name TEXT NOT NULL,
-			is_builtin INTEGER NOT NULL DEFAULT 0
+			is_builtin INTEGER NOT NULL DEFAULT 0,
+			cloud_source TEXT NOT NULL DEFAULT '',
+			cloud_list_id INTEGER NOT NULL DEFAULT 0,
+			cloud_writable INTEGER NOT NULL DEFAULT 0
 		);
 
 		CREATE TABLE IF NOT EXISTS playlist_songs (
@@ -60,6 +63,8 @@ func OpenAndInit() (*sql.DB, error) {
 			album TEXT NOT NULL DEFAULT '',
 			play_url TEXT NOT NULL DEFAULT '',
 			pjmp3_source_id TEXT NOT NULL DEFAULT '',
+			kugou_file_id INTEGER NOT NULL DEFAULT 0,
+			sync_origin TEXT NOT NULL DEFAULT '',
 			cover_url TEXT NOT NULL DEFAULT '',
 			cover_cache_path TEXT NOT NULL DEFAULT '',
 			duration_ms INTEGER NOT NULL DEFAULT 0,
@@ -137,9 +142,14 @@ func OpenAndInit() (*sql.DB, error) {
 
 	for _, statement := range []string{
 		"ALTER TABLE playlists ADD COLUMN is_builtin INTEGER NOT NULL DEFAULT 0",
+		"ALTER TABLE playlists ADD COLUMN cloud_source TEXT NOT NULL DEFAULT ''",
+		"ALTER TABLE playlists ADD COLUMN cloud_list_id INTEGER NOT NULL DEFAULT 0",
+		"ALTER TABLE playlists ADD COLUMN cloud_writable INTEGER NOT NULL DEFAULT 0",
 		"ALTER TABLE playlist_import_items ADD COLUMN album TEXT NOT NULL DEFAULT ''",
 		"ALTER TABLE playlist_import_items ADD COLUMN play_url TEXT NOT NULL DEFAULT ''",
 		"ALTER TABLE playlist_import_items ADD COLUMN pjmp3_source_id TEXT NOT NULL DEFAULT ''",
+		"ALTER TABLE playlist_import_items ADD COLUMN kugou_file_id INTEGER NOT NULL DEFAULT 0",
+		"ALTER TABLE playlist_import_items ADD COLUMN sync_origin TEXT NOT NULL DEFAULT ''",
 		"ALTER TABLE playlist_import_items ADD COLUMN cover_url TEXT NOT NULL DEFAULT ''",
 		"ALTER TABLE playlist_import_items ADD COLUMN cover_cache_path TEXT NOT NULL DEFAULT ''",
 		"ALTER TABLE playlist_import_items ADD COLUMN duration_ms INTEGER NOT NULL DEFAULT 0",

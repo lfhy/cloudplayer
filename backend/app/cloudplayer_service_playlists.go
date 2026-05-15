@@ -4,64 +4,35 @@ import (
 	"fmt"
 	"strings"
 
-	"cloudplayer/backend/config"
 	"cloudplayer/backend/importenrich"
 	"cloudplayer/backend/importplaylist"
 )
 
 // Playlist methods own import rows and background enrichment orchestration.
 func (s *CloudPlayerService) ListPlaylists() ([]PlaylistRow, error) {
-	if config.LoadSettings().MusicOnlineMode {
+	if collectionModeIsOnline() {
 		rows, err := s.loadKugouPlaylistRows(false)
 		if err != nil {
 			return nil, err
 		}
 		return toPlaylistRows(rows), nil
 	}
-	if _, err := s.ensureFavoritesPlaylist(); err != nil {
-		return nil, err
-	}
-	rows, err := s.state.DB.Query(`SELECT id, name, is_builtin FROM playlists ORDER BY is_builtin DESC, id ASC`)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-
-	var result []PlaylistRow
-	for rows.Next() {
-		var row PlaylistRow
-		if err := rows.Scan(&row.ID, &row.Name, &row.IsBuiltin); err != nil {
+	if collectionModeIsHybrid() {
+		if err := s.ensureHybridKugouPlaylistForks(false); err != nil {
 			return nil, err
 		}
-		result = append(result, row)
 	}
-	return result, rows.Err()
+	return s.listLocalPlaylists()
 }
 
 func (s *CloudPlayerService) ListPlaylistImportItems(playlistID int64) ([]PlaylistImportItemRow, error) {
-	if config.LoadSettings().MusicOnlineMode {
+	if collectionModeIsOnline() {
 		return s.loadKugouPlaylistItems(playlistID, false)
 	}
-	rows, err := s.state.DB.Query(`
-		SELECT id, sort_order, title, artist, album, pjmp3_source_id, cover_url, duration_ms
-		FROM playlist_import_items
-		WHERE playlist_id = ?
-		ORDER BY sort_order DESC, id DESC
-	`, playlistID)
-	if err != nil {
-		return nil, err
+	if collectionModeIsHybrid() {
+		return s.ensureHybridPlaylistItems(playlistID, false)
 	}
-	defer rows.Close()
-
-	var result []PlaylistImportItemRow
-	for rows.Next() {
-		var row PlaylistImportItemRow
-		if err := rows.Scan(&row.ID, &row.SortOrder, &row.Title, &row.Artist, &row.Album, &row.Pjmp3SourceID, &row.CoverURL, &row.DurationMS); err != nil {
-			return nil, err
-		}
-		result = append(result, row)
-	}
-	return result, rows.Err()
+	return s.listLocalPlaylistImportItems(playlistID)
 }
 
 func (s *CloudPlayerService) CreatePlaylist(name string) (int64, error) {
@@ -69,14 +40,13 @@ func (s *CloudPlayerService) CreatePlaylist(name string) (int64, error) {
 	if name == "" {
 		return 0, fmt.Errorf("歌单名称不能为空")
 	}
-	if config.LoadSettings().MusicOnlineMode {
+	if collectionModeIsOnline() {
 		return s.createKugouPlaylist(name)
 	}
-	result, err := s.state.DB.Exec(`INSERT INTO playlists (name, is_builtin) VALUES (?, 0)`, name)
-	if err != nil {
-		return 0, err
+	if collectionModeIsHybrid() {
+		return s.createHybridPlaylist(name)
 	}
-	return result.LastInsertId()
+	return s.createLocalPlaylist(name, "", 0, false)
 }
 
 func (s *CloudPlayerService) RenamePlaylist(playlistID int64, name string) error {
@@ -84,13 +54,20 @@ func (s *CloudPlayerService) RenamePlaylist(playlistID int64, name string) error
 	if name == "" {
 		return fmt.Errorf("歌单名称不能为空")
 	}
-	if config.LoadSettings().MusicOnlineMode {
+	if collectionModeIsOnline() {
 		return s.renameKugouPlaylist(playlistID, name)
+	}
+	playlist, lookupErr := s.localPlaylistByID(playlistID)
+	if lookupErr != nil {
+		return lookupErr
 	}
 	if builtin, err := s.isBuiltinPlaylist(playlistID); err != nil {
 		return err
 	} else if builtin {
 		return fmt.Errorf("系统歌单不支持重命名")
+	}
+	if collectionModeIsHybrid() {
+		return s.renameHybridPlaylist(playlist, name)
 	}
 	result, err := s.state.DB.Exec(`UPDATE playlists SET name = ? WHERE id = ?`, name, playlistID)
 	if err != nil {
@@ -107,129 +84,64 @@ func (s *CloudPlayerService) RenamePlaylist(playlistID int64, name string) error
 }
 
 func (s *CloudPlayerService) DeletePlaylist(playlistID int64) error {
-	if config.LoadSettings().MusicOnlineMode {
+	if collectionModeIsOnline() {
 		return s.deleteKugouPlaylist(playlistID)
+	}
+	playlist, lookupErr := s.localPlaylistByID(playlistID)
+	if lookupErr != nil {
+		return lookupErr
 	}
 	if builtin, err := s.isBuiltinPlaylist(playlistID); err != nil {
 		return err
 	} else if builtin {
 		return fmt.Errorf("系统歌单不支持删除")
 	}
-	tx, err := s.state.DB.Begin()
-	if err != nil {
-		return err
+	if collectionModeIsHybrid() {
+		return s.deleteHybridPlaylist(playlist)
 	}
-	defer rollback(tx)
-	if _, err := tx.Exec(`DELETE FROM playlist_import_items WHERE playlist_id = ?`, playlistID); err != nil {
-		return err
-	}
-	if _, err := tx.Exec(`DELETE FROM playlist_songs WHERE playlist_id = ?`, playlistID); err != nil {
-		return err
-	}
-	result, err := tx.Exec(`DELETE FROM playlists WHERE id = ?`, playlistID)
-	if err != nil {
-		return err
-	}
-	changed, err := result.RowsAffected()
-	if err != nil {
-		return err
-	}
-	if changed == 0 {
-		return fmt.Errorf("歌单不存在")
-	}
-	return tx.Commit()
+	return s.deleteLocalPlaylistFully(playlistID)
 }
 
 func (s *CloudPlayerService) DeletePlaylistImportItem(playlistID, itemID int64) error {
-	if config.LoadSettings().MusicOnlineMode {
+	if collectionModeIsOnline() {
 		return s.deleteKugouPlaylistImportItem(playlistID, itemID)
 	}
-	result, err := s.state.DB.Exec(`DELETE FROM playlist_import_items WHERE id = ? AND playlist_id = ?`, itemID, playlistID)
-	if err != nil {
-		return err
+	if collectionModeIsHybrid() {
+		playlist, lookupErr := s.localPlaylistByID(playlistID)
+		if lookupErr != nil {
+			return lookupErr
+		}
+		return s.deleteHybridPlaylistImportItem(playlist, itemID)
 	}
-	changed, err := result.RowsAffected()
-	if err != nil {
-		return err
-	}
-	if changed == 0 {
-		return fmt.Errorf("未找到该导入条目")
-	}
-	return nil
+	return s.deleteLocalPlaylistImportItem(playlistID, itemID)
 }
 
 func (s *CloudPlayerService) ReplacePlaylistImportItems(playlistID int64, items []importplaylist.ImportedTrackDTO) error {
-	if config.LoadSettings().MusicOnlineMode {
+	if collectionModeIsOnline() {
 		return s.replaceKugouPlaylistItems(playlistID, items)
 	}
-	tx, err := s.state.DB.Begin()
-	if err != nil {
-		return err
-	}
-	defer rollback(tx)
-
-	if _, err := tx.Exec(`DELETE FROM playlist_import_items WHERE playlist_id = ?`, playlistID); err != nil {
-		return err
-	}
-	for index, item := range items {
-		durationMS := item.DurationMS
-		if durationMS < 0 {
-			durationMS = 0
+	if collectionModeIsHybrid() {
+		playlist, lookupErr := s.localPlaylistByID(playlistID)
+		if lookupErr != nil {
+			return lookupErr
 		}
-		if _, err := tx.Exec(`
-			INSERT INTO playlist_import_items (
-				playlist_id, sort_order, title, artist, album, play_url, pjmp3_source_id,
-				cover_url, cover_cache_path, duration_ms, audio_cache_path
-			) VALUES (?, ?, ?, ?, ?, '', ?, ?, '', ?, '')
-		`, playlistID, index, strings.TrimSpace(item.Title), strings.TrimSpace(item.Artist), strings.TrimSpace(item.Album), strings.TrimSpace(item.Pjmp3SourceID), strings.TrimSpace(item.CoverURL), durationMS); err != nil {
-			return err
-		}
+		return s.replaceHybridPlaylistItems(playlist, items)
 	}
-	if err := tx.Commit(); err != nil {
-		return err
-	}
-	importenrich.SpawnPlaylistEnrich(s.state.DB, s.state.HTTP(), s.state.RateLimiter, playlistID)
-	return nil
+	return s.replaceLocalPlaylistItems(playlistID, items, "")
 }
 
 func (s *CloudPlayerService) AppendPlaylistImportItems(playlistID int64, items []importplaylist.ImportedTrackDTO) error {
-	if config.LoadSettings().MusicOnlineMode {
+	if collectionModeIsOnline() {
 		return s.appendKugouPlaylistItems(playlistID, items)
 	}
-	tx, err := s.state.DB.Begin()
-	if err != nil {
-		return err
-	}
-	defer rollback(tx)
-
-	var position int64
-	if err := tx.QueryRow(`
-		SELECT COALESCE(MAX(sort_order), -1) + 1
-		FROM playlist_import_items
-		WHERE playlist_id = ?
-	`, playlistID).Scan(&position); err != nil {
-		return err
-	}
-	for _, item := range items {
-		durationMS := item.DurationMS
-		if durationMS < 0 {
-			durationMS = 0
+	if collectionModeIsHybrid() {
+		playlist, lookupErr := s.localPlaylistByID(playlistID)
+		if lookupErr != nil {
+			return lookupErr
 		}
-		if _, err := tx.Exec(`
-			INSERT INTO playlist_import_items (
-				playlist_id, sort_order, title, artist, album, play_url, pjmp3_source_id,
-				cover_url, cover_cache_path, duration_ms, audio_cache_path
-			) VALUES (?, ?, ?, ?, ?, '', ?, ?, '', ?, '')
-		`, playlistID, position, strings.TrimSpace(item.Title), strings.TrimSpace(item.Artist), strings.TrimSpace(item.Album), strings.TrimSpace(item.Pjmp3SourceID), strings.TrimSpace(item.CoverURL), durationMS); err != nil {
-			return err
-		}
-		position++
+		return s.appendHybridPlaylistItems(playlist, items)
 	}
-	if err := tx.Commit(); err != nil {
-		return err
-	}
-	importenrich.SpawnPlaylistEnrich(s.state.DB, s.state.HTTP(), s.state.RateLimiter, playlistID)
-	return nil
+	return s.appendLocalPlaylistItems(playlistID, items, "")
 }
 
 func (s *CloudPlayerService) StartImportEnrich(playlistID int64) error {

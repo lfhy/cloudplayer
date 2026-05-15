@@ -54,7 +54,7 @@ var providers = map[string]Provider{
 
 func Current() Provider {
 	settings := config.LoadSettings()
-	if settings.MusicOnlineMode {
+	if config.NormalizeMusicCollectionMode(settings.MusicCollectionMode) == config.MusicCollectionModeOnline {
 		return providers[ProviderKugou]
 	}
 	provider, ok := ProviderByKey(settings.MusicSourceProvider)

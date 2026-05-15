@@ -17,7 +17,7 @@ export function settingsFormBaselineDefaults() {
     lyricsProviderOrder: "qq,kugou,netease,lrclib",
     lyricsLRCLibEnabled: true,
     neteaseApiBase: "",
-    musicOnlineMode: false,
+    musicCollectionMode: "offline",
     autoCacheOnPlay: false,
     musicSourceProvider: "kugou",
     playbackFallbackChain: "kugou,pjmp3,netease",

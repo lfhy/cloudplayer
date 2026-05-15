@@ -4,13 +4,12 @@ import (
 	"fmt"
 	"strings"
 
-	"cloudplayer/backend/config"
 	"cloudplayer/backend/importplaylist"
 )
 
 // Online favorites route the heart action to Kugou's playlist mutation SDK instead of the local DB.
 func onlineFavoritesEnabled() bool {
-	return config.LoadSettings().MusicOnlineMode
+	return collectionModeUsesOnlineFavorites()
 }
 
 func (s *CloudPlayerService) ensureKugouFavoritesPlaylist() (PlaylistRow, error) {

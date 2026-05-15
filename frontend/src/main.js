@@ -9,7 +9,7 @@ import { loadLikedSet, saveLikedSet } from "./app/helpers/likedSet.js";
 import { audioDiagPayload, createPlayEventLogger } from "./app/helpers/playerDiagnostics.js";
 import { escapeHtml, setTableMutedMessage } from "./app/helpers/text.js";
 import { formatDurationMs, formatTime } from "./app/helpers/time.js";
-import { applyAppTheme, applyPlatformClassNames, normalizeAccentHex, normalizeAppTheme, normalizeAppThemeMode, normalizeCloseAction, normalizeMusicSourceProvider, normalizeNetworkProxyMode, normalizeNetworkProxyUrl, normalizeSettingsTab, setMusicSourceProviderSelection as applyMusicSourceProviderSelectionUi, setNetworkProxyModeSelection as applyNetworkProxyModeSelectionUi, setSettingsTab as applySettingsTabUi, setThemeCardSelection as applyThemeCardSelectionUi, setThemeModeSelection as applyThemeModeSelectionUi, systemDarkMedia } from "./app/helpers/platformTheme.js";
+import { applyAppTheme, applyPlatformClassNames, normalizeAccentHex, normalizeAppTheme, normalizeAppThemeMode, normalizeCloseAction, normalizeMusicCollectionMode, normalizeMusicSourceProvider, normalizeNetworkProxyMode, normalizeNetworkProxyUrl, normalizeSettingsTab, setMusicSourceProviderSelection as applyMusicSourceProviderSelectionUi, setNetworkProxyModeSelection as applyNetworkProxyModeSelectionUi, setSettingsTab as applySettingsTabUi, setThemeCardSelection as applyThemeCardSelectionUi, setThemeModeSelection as applyThemeModeSelectionUi, systemDarkMedia } from "./app/helpers/platformTheme.js";
 import { createAccountCenterController } from "./features/accounts/controller.js";
 import { createBasePlayerRuntime } from "./app/runtime/basePlayerRuntime.js";
 import { createDockRuntime } from "./app/runtime/dockRuntime.js";
@@ -28,7 +28,7 @@ let playQueue = [], playIndex = 0, seekDragging = false, playLoadGeneration = 0,
 let playModeIndex = 0, qualityPref = "128", importTracks = [], desktopLyricsOpen = false, desktopLyricsWindow = null, desktopLyricsLocked = true;
 let mainWindowCloseAction = "ask", selectedPlaylistId = null, selectedPlaylistName = "", playlistDetailRows = [], importShareSuggestedName = "";
 let neteaseCookieEnabled = false, neteaseCookieValue = "", importMethod = "", importDraftDirty = false, sessionRecentPlays = [], localLibraryRows = [], lastLibraryFolder = "";
-let musicOnlineModeEnabled = false;
+let musicCollectionMode = "offline";
 const downloadTasksBySourceId = new Map(), logPlayEventDesktop = createPlayEventLogger(invoke);
 let likedIds = loadLikedSet();
 let setPage = () => {}, renderHomePage = () => {}, renderDailyTable = () => {}, renderRecentPlaysTable = () => {};
@@ -39,8 +39,12 @@ let clearPersistedPlaybackState = async () => {};
 let scheduleSavePlaybackProgress = () => {}, savePlaybackProgressNow = async () => {};
 let hasPendingPlaybackResume = () => false, applyPendingPlaybackResume = () => false;
 
-function setMusicOnlineModeEnabledValue(value) {
-  musicOnlineModeEnabled = !!value;
+function setMusicCollectionModeValue(value) {
+  musicCollectionMode = normalizeMusicCollectionMode(value);
+}
+
+function musicOnlineModeEnabled() {
+  return musicCollectionMode === "online";
 }
 
 function audioEl() { return document.getElementById("audio-player"); }
@@ -119,15 +123,15 @@ async function refreshPlaylistContextAfterSourceMutation() {
 
 async function handleKugouAuthChanged(payload = {}) {
   await invalidatePlaybackContext(`kugou_${payload?.action || "changed"}`);
-  let nextOnlineMode = false;
+  let nextMode = "offline";
   try {
     const latestSettings = await invoke("get_settings");
-    nextOnlineMode = latestSettings?.music_online_mode ?? latestSettings?.musicOnlineMode ?? false;
-    setMusicOnlineModeEnabledValue(nextOnlineMode);
+    nextMode = latestSettings?.music_collection_mode ?? latestSettings?.musicCollectionMode ?? ((latestSettings?.music_online_mode ?? latestSettings?.musicOnlineMode) ? "online" : "offline");
+    setMusicCollectionModeValue(nextMode);
   } catch (error) {
     console.warn("get_settings after kugou auth change", error);
   }
-  if (nextOnlineMode || payload?.action === "logout") {
+  if (nextMode !== "offline" || payload?.action === "logout") {
     await refreshPlaylistContextAfterSourceMutation();
   }
   await refreshAccountCenter();
@@ -156,12 +160,12 @@ const settings = createSettingsRuntime({
   setDesktopLyricsLocked: (value) => { desktopLyricsLocked = value; }, setImportDraftDirty: (value) => { importDraftDirty = value; }, setImportMethodValue: (value) => { importMethod = value; },
   setImportShareSuggestedName: (value) => { importShareSuggestedName = value || ""; }, setImportTracksValue: (rows) => { importTracks = Array.isArray(rows) ? rows : []; },
   setLastLibraryFolder: (value) => { lastLibraryFolder = value; }, setMainWindowCloseAction: (value) => { mainWindowCloseAction = value; },
-  setMusicOnlineModeEnabledValue,
+  setMusicCollectionModeValue,
   setNeteaseCookieState: ({ enabled, value }) => { neteaseCookieEnabled = !!enabled; neteaseCookieValue = String(value || ""); }, setPage: (...args) => setPage(...args),
   onKugouAuthChanged: (...args) => handleKugouAuthChanged(...args),
-  onMusicOnlineModeChanged: async (enabled) => {
-    musicOnlineModeEnabled = !!enabled;
-    await invalidatePlaybackContext(enabled ? "online_mode_enabled" : "online_mode_disabled");
+  onMusicCollectionModeChanged: async (mode) => {
+    setMusicCollectionModeValue(mode);
+    await invalidatePlaybackContext(`music_collection_mode_${musicCollectionMode}`);
     await refreshPlaylistContextAfterSourceMutation();
   },
   onMusicSourceProviderChanged: async () => {
@@ -213,17 +217,17 @@ listen("account-center-open-import", (event) => {
   setPage("import");
 });
 listen("account-center-toggle-online-mode", async (event) => {
-  const nextEnabled = event?.payload?.nextEnabled === true;
+  const nextMode = normalizeMusicCollectionMode(event?.payload?.nextMode);
   try {
-    const result = await settings.toggleMusicOnlineModeFromAccountCenter?.(nextEnabled);
+    const result = await settings.toggleMusicOnlineModeFromAccountCenter?.(nextMode);
     await emitTo({ kind: "WebviewWindow", label: "account-center" }, "account-center-toggle-online-mode-result", {
       ok: true,
-      enabled: result?.enabled === true,
+      mode: result?.mode || musicCollectionMode,
     });
   } catch (error) {
     await emitTo({ kind: "WebviewWindow", label: "account-center" }, "account-center-toggle-online-mode-result", {
       ok: false,
-      enabled: musicOnlineModeEnabled,
+      mode: musicCollectionMode,
       message: error instanceof Error ? error.message : String(error || "toggle online mode failed"),
     });
   }
@@ -234,7 +238,8 @@ const pages = createPageRuntime({
   alertRequestFailed, appLogoMarkSvg, applyQuickThemeMode: (...args) => dockTheme.applyQuickThemeMode(...args), escapeHtml, formatDurationMs, invoke, messageRequestFailed: MSG_REQUEST_FAILED,
   getDownloadTaskCount: () => downloadTasksBySourceId.size, getImportMethod: () => importMethod, getImportShareSuggestedName: () => importShareSuggestedName, getImportTracks: () => importTracks,
   getLastLibraryFolder: () => lastLibraryFolder, getLikedIds: () => likedIds, getNeteaseCookieState: () => ({ enabled: neteaseCookieEnabled, value: neteaseCookieValue }),
-  getMusicOnlineModeEnabled: () => musicOnlineModeEnabled,
+  getMusicOnlineModeEnabled: () => musicOnlineModeEnabled(),
+  getMusicCollectionMode: () => musicCollectionMode,
   getPlayIndex: () => playIndex, getPlayQueue: () => playQueue, getPlaylistDetailRows: () => playlistDetailRows, getSelectedPlaylistId: () => selectedPlaylistId, getSelectedPlaylistName: () => selectedPlaylistName,
   getSessionRecentPlays: () => sessionRecentPlays, importBackButtonIconSvg, importMethodIconSvg, navIconSvg, navItems: NAV, open,
   openAccountCenter: (...args) => openAccountCenter(...args),

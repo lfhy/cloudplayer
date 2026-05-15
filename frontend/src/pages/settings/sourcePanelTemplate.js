@@ -1,4 +1,4 @@
-// Source settings keep the base provider and the Kugou-only online gate in one place.
+// Source settings keep provider choice and collection-mode switching in one place.
 export function sourcePanelTemplate() {
   return `
     <section class="settings-panel" data-settings-panel="source" role="tabpanel" hidden>
@@ -11,15 +11,17 @@ export function sourcePanelTemplate() {
             <button type="button" class="settings-choice" data-music-source-provider-card="kugou" role="radio" aria-checked="false">酷狗概念版</button>
             <button type="button" class="settings-choice" data-music-source-provider-card="netease" role="radio" aria-checked="false">网易云</button>
           </div>
-          <p class="settings-field-hint muted">当前默认搜索、试听、播放与下载都会跟随这里选择的曲库渠道；在线模式开启后会临时切到云端。</p>
+          <p class="settings-field-hint muted">当前默认搜索、试听、播放与下载都会跟随这里选择的曲库渠道；纯在线模式会临时强制切到酷狗云端。</p>
         </div>
-        <div id="setting-music-online-mode-wrap" class="settings-field" hidden>
-          <span class="settings-field-label">在线模式</span>
-          <div class="settings-inline-stack">
-            <input type="hidden" id="setting-music-online-mode" value="0" />
-            <label id="setting-music-online-mode-switch" class="settings-hotkeys-master" role="switch" tabindex="0" aria-checked="false"><input type="checkbox" id="setting-music-online-mode-toggle" /><span>在线模式</span></label>
-            <p id="setting-music-online-mode-status" class="settings-field-hint muted">开启后，全部歌单、歌单内歌曲和音乐源都会优先切到酷狗云端，并缓存 12 小时。</p>
+        <div id="setting-music-collection-mode-wrap" class="settings-field" hidden>
+          <span class="settings-field-label">歌单模式</span>
+          <input type="hidden" id="setting-music-collection-mode" value="offline" />
+          <div class="settings-choice-group" role="radiogroup" aria-label="歌单模式">
+            <button type="button" class="settings-choice" data-music-collection-mode-card="offline" role="radio" aria-checked="false">离线模式</button>
+            <button type="button" class="settings-choice" data-music-collection-mode-card="online" role="radio" aria-checked="false">在线模式</button>
+            <button type="button" class="settings-choice" data-music-collection-mode-card="hybrid" role="radio" aria-checked="false">混合模式</button>
           </div>
+          <p id="setting-music-collection-mode-status" class="settings-field-hint muted">离线模式使用本地歌单；在线模式直接操作酷狗云端；混合模式会把云歌单 fork 到本地并尽量回写云端。</p>
         </div>
         <div class="settings-field">
           <span class="settings-field-label">酷狗账号同步</span>

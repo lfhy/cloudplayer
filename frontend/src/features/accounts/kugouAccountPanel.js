@@ -42,7 +42,14 @@ export function kugouAccountPanelTemplate() {
         </div>
       </section>
       <div class="account-provider-footer">
-        <button type="button" id="btn-account-kugou-online-mode" class="settings-action-button" hidden>开启在线模式</button>
+        <div id="account-kugou-collection-mode-wrap" class="settings-inline-stack" hidden>
+          <input type="hidden" id="account-kugou-collection-mode" value="offline" />
+          <div class="settings-choice-group" role="radiogroup" aria-label="歌单模式">
+            <button type="button" class="settings-choice" data-account-music-collection-mode-card="offline" role="radio" aria-checked="false">离线</button>
+            <button type="button" class="settings-choice" data-account-music-collection-mode-card="online" role="radio" aria-checked="false">在线</button>
+            <button type="button" class="settings-choice" data-account-music-collection-mode-card="hybrid" role="radio" aria-checked="false">混合</button>
+          </div>
+        </div>
         <button type="button" id="btn-account-kugou-open-import" class="settings-action-button" hidden>导入歌单</button>
         <button type="button" id="btn-account-kugou-logout" class="settings-action-button" hidden>退出登录</button>
       </div>

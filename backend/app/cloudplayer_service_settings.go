@@ -237,6 +237,25 @@ func (s *CloudPlayerService) SaveSettings(patch SettingsPatch) error {
 			}
 		}
 		settings.MusicOnlineMode = *patch.MusicOnlineMode
+		if *patch.MusicOnlineMode {
+			settings.MusicCollectionMode = config.MusicCollectionModeOnline
+		} else if config.NormalizeMusicCollectionMode(settings.MusicCollectionMode) == config.MusicCollectionModeOnline {
+			settings.MusicCollectionMode = config.MusicCollectionModeOffline
+		}
+	}
+	if patch.MusicCollectionMode != nil {
+		mode := config.NormalizeMusicCollectionMode(*patch.MusicCollectionMode)
+		if mode != config.MusicCollectionModeOffline {
+			status, err := s.GetKugouLoginStatus()
+			if err != nil {
+				return err
+			}
+			if !status.LoggedIn {
+				return fmt.Errorf("请先登录酷狗概念版后再切换到云端歌单模式")
+			}
+		}
+		settings.MusicCollectionMode = mode
+		settings.MusicOnlineMode = mode == config.MusicCollectionModeOnline
 	}
 	if patch.AutoCacheOnPlay != nil {
 		settings.AutoCacheOnPlay = *patch.AutoCacheOnPlay
@@ -254,6 +273,9 @@ func (s *CloudPlayerService) SaveSettings(patch SettingsPatch) error {
 		settings.MiniPlayerAlwaysOnTop = *patch.MiniPlayerAlwaysOnTop
 	}
 	if err := config.SaveSettings(settings); err != nil {
+		return err
+	}
+	if err := s.syncHybridCollectionsAfterModeChange(settings.MusicCollectionMode); err != nil {
 		return err
 	}
 	s.state.SetSearchCacheTTLHours(settings.SearchCacheTTLHours)

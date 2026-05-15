@@ -13,8 +13,11 @@ import (
 const kugouOnlineCacheTTL = 12 * time.Hour
 
 func (s *CloudPlayerService) RefreshPlaylists() ([]PlaylistRow, error) {
-	if !config.LoadSettings().MusicOnlineMode {
+	if collectionModeIsOffline() {
 		return s.ListPlaylists()
+	}
+	if collectionModeIsHybrid() {
+		return s.refreshHybridPlaylists()
 	}
 	rows, err := s.refreshKugouPlaylistList()
 	if err != nil {
@@ -24,14 +27,27 @@ func (s *CloudPlayerService) RefreshPlaylists() ([]PlaylistRow, error) {
 }
 
 func (s *CloudPlayerService) RefreshPlaylistImportItems(playlistID int64) ([]PlaylistImportItemRow, error) {
-	if !config.LoadSettings().MusicOnlineMode {
+	if collectionModeIsOffline() {
 		return s.ListPlaylistImportItems(playlistID)
+	}
+	if collectionModeIsHybrid() {
+		if err := s.ensureHybridKugouPlaylistForks(false); err != nil {
+			return nil, err
+		}
+		playlist, err := s.localPlaylistByID(playlistID)
+		if err != nil {
+			return nil, err
+		}
+		if err := s.refreshHybridPlaylistItems(playlist); err != nil {
+			return nil, err
+		}
+		return s.listLocalPlaylistImportItems(playlistID)
 	}
 	return s.refreshKugouPlaylistItems(playlistID)
 }
 
 func (s *CloudPlayerService) loadKugouPlaylistRows(force bool) ([]KugouPlaylistRow, error) {
-	if !config.LoadSettings().MusicOnlineMode {
+	if !collectionModeUsesCloudPlaylists() {
 		return nil, fmt.Errorf("当前未启用在线模式")
 	}
 	userID, err := kugouOnlineCacheUserID()
@@ -56,7 +72,7 @@ func (s *CloudPlayerService) loadKugouPlaylistRows(force bool) ([]KugouPlaylistR
 }
 
 func (s *CloudPlayerService) loadKugouPlaylistItems(playlistID int64, force bool) ([]PlaylistImportItemRow, error) {
-	if !config.LoadSettings().MusicOnlineMode {
+	if !collectionModeUsesCloudPlaylists() {
 		return nil, fmt.Errorf("当前未启用在线模式")
 	}
 	userID, err := kugouOnlineCacheUserID()

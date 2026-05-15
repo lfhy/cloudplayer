@@ -110,8 +110,9 @@ func (s *CloudPlayerService) LogoutKugou() error {
 		return err
 	}
 	settings := config.LoadSettings()
-	if settings.MusicOnlineMode {
+	if settings.MusicOnlineMode || config.NormalizeMusicCollectionMode(settings.MusicCollectionMode) != config.MusicCollectionModeOffline {
 		settings.MusicOnlineMode = false
+		settings.MusicCollectionMode = config.MusicCollectionModeOffline
 		if err := config.SaveSettings(settings); err != nil {
 			return err
 		}

@@ -21,6 +21,10 @@
 
 - Standalone child windows should follow the compact native-dialog style used by the close-confirm window.
 - User-facing frontend failure notifications should prefer the shared `message-dialog` child window instead of browser `alert()`; reuse `showMessageDialog(...)` / `alertRequestFailed(...)` so failure reasons stay consistent.
+- Collection-mode terminology should stay consistent across frontend and backend:
+  `offline` = 本地歌单 / 本地我喜欢，
+  `online` = 直接使用酷狗云端歌单 / 云端我喜欢，
+  `hybrid` = 云歌单 fork 到本地并尽量回写云端，失败时保留本地。
 - Keep child windows simple: no decorative app icon, no extra explanatory copy unless the flow truly needs it.
 - Titles should be visually centered, while leaving safe space for macOS traffic lights and Windows title-bar controls.
 - Child window content should be horizontally centered inside the native window, rather than stretched to fill the viewport.

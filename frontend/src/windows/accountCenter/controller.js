@@ -77,8 +77,8 @@ async function openImportFlow(provider) {
   await closeAccountCenterWindow();
 }
 
-async function toggleOnlineMode(nextEnabled) {
-  await emitTo(MAIN_WW, "account-center-toggle-online-mode", { nextEnabled: !!nextEnabled });
+async function toggleOnlineMode(nextMode) {
+  await emitTo(MAIN_WW, "account-center-toggle-online-mode", { nextMode: String(nextMode || "offline") });
   return new Promise((resolve, reject) => {
     const timeout = window.setTimeout(() => {
       reject(new Error("toggle online mode timeout"));
@@ -90,7 +90,7 @@ async function toggleOnlineMode(nextEnabled) {
         reject(new Error(payload?.message || "toggle online mode failed"));
         return;
       }
-      resolve({ enabled: payload?.enabled === true });
+      resolve({ mode: payload?.mode || "offline" });
     });
   });
 }

@@ -7,7 +7,6 @@ import (
 	"strings"
 	"time"
 
-	"cloudplayer/backend/config"
 	"cloudplayer/backend/importplaylist"
 	"cloudplayer/backend/musicsource"
 	kg "github.com/lfhy/kugou-music-api"
@@ -243,7 +242,7 @@ func (s *CloudPlayerService) touchKugouPlaylistCache(userID string, playlistID i
 }
 
 func ensureOnlineModeEnabled() error {
-	if !config.LoadSettings().MusicOnlineMode {
+	if !collectionModeUsesCloudPlaylists() {
 		return fmt.Errorf("当前未启用在线模式")
 	}
 	return nil

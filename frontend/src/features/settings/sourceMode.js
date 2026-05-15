@@ -1,68 +1,60 @@
 import { Events } from "@wailsio/runtime";
 import { DesktopService } from "@bindings/cloudplayer/backend/desktop/index.js";
+import { normalizeMusicCollectionMode } from "../../app/helpers/platformTheme.js";
 import { unwrapPayload } from "../../wails/shared.js";
 
 const ONLINE_MODE_CONFIRM_LABEL = "online-mode-confirm";
 const ONLINE_MODE_CONFIRM_URL = "/online_mode_confirm.html";
 
-// Music-source online-mode helpers keep the Kugou-only toggle out of the main settings controller.
-export function isMusicSourceOnlineModeSelected() {
-  const toggle = document.getElementById("setting-music-online-mode-toggle");
-  if (toggle) return toggle.checked === true;
-  return document.getElementById("setting-music-online-mode")?.value === "1";
+// Collection-mode helpers keep mode selection and the online confirmation flow out of the main settings controller.
+export function getMusicCollectionModeSelection() {
+  return normalizeMusicCollectionMode(document.getElementById("setting-music-collection-mode")?.value);
 }
 
-export function setMusicSourceOnlineModeSelection(enabled) {
-  const active = !!enabled;
-  const hidden = document.getElementById("setting-music-online-mode");
-  const toggle = document.getElementById("setting-music-online-mode-toggle");
-  const control = document.getElementById("setting-music-online-mode-switch");
-  if (hidden) hidden.value = active ? "1" : "0";
-  if (toggle) toggle.checked = active;
-  if (control) control.setAttribute("aria-checked", active ? "true" : "false");
+export function setMusicCollectionModeSelection(mode) {
+  const normalized = normalizeMusicCollectionMode(mode);
+  const hidden = document.getElementById("setting-music-collection-mode");
+  if (hidden) hidden.value = normalized;
+  document.querySelectorAll("[data-music-collection-mode-card]").forEach((card) => {
+    const active = card.getAttribute("data-music-collection-mode-card") === normalized;
+    card.classList.toggle("is-active", active);
+    card.setAttribute("aria-checked", active ? "true" : "false");
+  });
 }
 
-export function setMusicSourceOnlineModeBusy(busy, message = "") {
-  const toggle = document.getElementById("setting-music-online-mode-toggle");
-  const control = document.getElementById("setting-music-online-mode-switch");
-  const status = document.getElementById("setting-music-online-mode-status");
-  if (toggle) {
-    toggle.disabled = !!busy;
-  }
-  if (control) {
-    control.classList.toggle("is-busy", !!busy);
-    control.setAttribute("aria-disabled", busy ? "true" : "false");
-  }
+export function setMusicCollectionModeBusy(busy, message = "") {
+  const status = document.getElementById("setting-music-collection-mode-status");
+  document.querySelectorAll("[data-music-collection-mode-card]").forEach((card) => {
+    card.toggleAttribute("disabled", !!busy);
+    card.classList.toggle("is-busy", !!busy);
+  });
   if (status && message) status.textContent = message;
 }
 
-export function musicOnlineModeStatusText(enabled) {
-  return enabled
-    ? "在线模式已开启：歌单、歌曲与音乐源均来自酷狗云端缓存。"
-    : "开启后，全部歌单、歌单内歌曲和音乐源都会优先切到酷狗云端，并缓存 12 小时。";
+export function musicCollectionModeStatusText(mode) {
+  switch (normalizeMusicCollectionMode(mode)) {
+    case "online":
+      return "在线模式已开启：歌单、歌单内容和收藏直接来自酷狗云端缓存。";
+    case "hybrid":
+      return "混合模式已开启：云歌单会 fork 到本地，能回写的操作优先回写云端，失败时保留本地。";
+    default:
+      return "离线模式使用本地歌单与我喜欢；刷新不会拉取云端歌单。";
+  }
 }
 
-export function setMusicSourceOnlineModeAvailability(available) {
-  const wrap = document.getElementById("setting-music-online-mode-wrap");
+export function setMusicCollectionModeAvailability(available) {
+  const wrap = document.getElementById("setting-music-collection-mode-wrap");
   if (wrap) wrap.hidden = !available;
 }
 
-export function wireMusicSourceOnlineModeSelection(onChange) {
-  const toggle = document.getElementById("setting-music-online-mode-toggle");
-  const control = document.getElementById("setting-music-online-mode-switch");
-  if (!toggle || !control) return;
-  const trigger = () => {
-    if (toggle.disabled) return;
-    onChange?.(!isMusicSourceOnlineModeSelected());
-  };
-  control.addEventListener("click", (event) => {
-    event.preventDefault();
-    trigger();
-  });
-  control.addEventListener("keydown", (event) => {
-    if (event.key !== " " && event.key !== "Enter") return;
-    event.preventDefault();
-    trigger();
+export function wireMusicCollectionModeSelection(onChange) {
+  document.querySelectorAll("[data-music-collection-mode-card]").forEach((card) => {
+    card.addEventListener("click", () => {
+      if (card.hasAttribute("disabled")) return;
+      const nextMode = normalizeMusicCollectionMode(card.getAttribute("data-music-collection-mode-card"));
+      if (nextMode === getMusicCollectionModeSelection()) return;
+      onChange?.(nextMode);
+    });
   });
 }
 
@@ -94,37 +86,43 @@ async function confirmEnableMusicOnlineMode() {
   });
 }
 
-export async function toggleMusicOnlineMode(nextEnabled, deps) {
-  const { alertRequestFailed, confirmBeforeEnable = true, onMusicOnlineModeChanged, persistSettingsFromForm } = deps;
-  const previous = !nextEnabled;
-  if (nextEnabled && confirmBeforeEnable) {
+export async function toggleMusicCollectionMode(nextMode, deps) {
+  const { alertRequestFailed, confirmBeforeEnable = true, onMusicCollectionModeChanged, persistSettingsFromForm } = deps;
+  const normalized = normalizeMusicCollectionMode(nextMode);
+  const previous = getMusicCollectionModeSelection();
+  if (normalized === "online" && previous !== "online" && confirmBeforeEnable) {
     const accepted = await confirmEnableMusicOnlineMode();
     if (!accepted) {
-      setMusicSourceOnlineModeSelection(previous);
+      setMusicCollectionModeSelection(previous);
       return;
     }
   }
-  setMusicSourceOnlineModeSelection(nextEnabled);
-  setMusicSourceOnlineModeBusy(true, nextEnabled ? "正在开启在线模式并同步云歌单…" : "正在关闭在线模式…");
+  setMusicCollectionModeSelection(normalized);
+  const busyText = normalized === "offline"
+    ? "正在切回离线歌单…"
+    : normalized === "hybrid"
+      ? "正在切换到混合模式并同步云歌单…"
+      : "正在开启在线模式并同步云歌单…";
+  setMusicCollectionModeBusy(true, busyText);
   try {
     await persistSettingsFromForm();
-    await onMusicOnlineModeChanged?.(nextEnabled);
-    setMusicSourceOnlineModeBusy(false, nextEnabled ? musicOnlineModeStatusText(true) : "在线模式已关闭：已恢复本地歌单与当前默认音乐源。");
+    await onMusicCollectionModeChanged?.(normalized);
+    setMusicCollectionModeBusy(false, musicCollectionModeStatusText(normalized));
   } catch (error) {
-    setMusicSourceOnlineModeSelection(previous);
-    setMusicSourceOnlineModeBusy(false, "在线模式切换失败，请稍后重试。");
-    alertRequestFailed(error, "toggle music online mode");
+    setMusicCollectionModeSelection(previous);
+    setMusicCollectionModeBusy(false, "歌单模式切换失败，请稍后重试。");
+    alertRequestFailed(error, "toggle music collection mode");
   }
 }
 
 export function createKugouSettingsStatusRefresher(deps) {
-  const { actionButtons, isMusicSourceOnlineModeSelected, queueSettingsAutosave, setMusicSourceOnlineModeAvailability, setMusicSourceOnlineModeSelection } = deps;
+  const { actionButtons, getMusicCollectionModeSelection, queueSettingsAutosave, setMusicCollectionModeAvailability, setMusicCollectionModeSelection } = deps;
   return async () => {
     const status = await actionButtons?.refreshKugouSettingsStatus?.();
     const available = !!status?.logged_in;
-    setMusicSourceOnlineModeAvailability(available);
-    if (!available && isMusicSourceOnlineModeSelected()) {
-      setMusicSourceOnlineModeSelection(false);
+    setMusicCollectionModeAvailability(available);
+    if (!available && getMusicCollectionModeSelection() !== "offline") {
+      setMusicCollectionModeSelection("offline");
       queueSettingsAutosave(true);
     }
     return status;

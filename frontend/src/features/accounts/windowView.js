@@ -1,3 +1,4 @@
+import { normalizeMusicCollectionMode } from "../../app/helpers/platformTheme.js";
 import { iconSvgByName } from "../../app/helpers/icons.js";
 import { proxyRemoteAssetSrc } from "../../wails/tauri-core.js";
 import { createKugouSessionBridge } from "../kugou/session.js";
@@ -19,13 +20,13 @@ export function createAccountCenterView(deps) {
   } = deps;
   const kugou = createKugouSessionBridge({ alertRequestFailed, invoke, onAuthChanged: onKugouAuthChanged });
   let activeProvider = "kugou";
-  let onlineModeEnabled = false;
+  let collectionMode = "offline";
 
   function providerListEl() { return document.getElementById("account-center-provider-list"); }
   function panelEl() { return document.getElementById("account-center-panel"); }
   function kugouPanelEl() { return panelEl()?.querySelector('[data-account-provider-panel="kugou"]'); }
   function kugouLoadingEl() { return document.getElementById("account-kugou-loading"); }
-  function kugouOnlineModeBtnEl() { return document.getElementById("btn-account-kugou-online-mode"); }
+  function kugouCollectionModeWrapEl() { return document.getElementById("account-kugou-collection-mode-wrap"); }
 
   function notifyLayoutSettled(delay = 90) {
     window.setTimeout(() => onLayoutSettled?.(), delay);
@@ -90,27 +91,31 @@ export function createAccountCenterView(deps) {
     kugouPanelEl()?.setAttribute("data-account-state", state);
   }
 
-  function setOnlineModeButtonState({ enabled = false, visible = false, busy = false } = {}) {
-    onlineModeEnabled = !!enabled;
-    const button = kugouOnlineModeBtnEl();
-    if (!button) return;
-    button.hidden = !visible;
-    button.disabled = !!busy;
-    button.textContent = busy
-      ? (enabled ? "正在关闭在线模式..." : "正在开启在线模式...")
-      : (enabled ? "关闭在线模式" : "开启在线模式");
+  function setCollectionModeState({ mode = "offline", visible = false, busy = false } = {}) {
+    collectionMode = normalizeMusicCollectionMode(mode);
+    const wrap = kugouCollectionModeWrapEl();
+    if (!wrap) return;
+    wrap.hidden = !visible;
+    const hidden = document.getElementById("account-kugou-collection-mode");
+    if (hidden) hidden.value = collectionMode;
+    wrap.querySelectorAll("[data-account-music-collection-mode-card]").forEach((button) => {
+      const active = button.getAttribute("data-account-music-collection-mode-card") === collectionMode;
+      button.classList.toggle("is-active", active);
+      button.setAttribute("aria-checked", active ? "true" : "false");
+      button.toggleAttribute("disabled", !!busy);
+    });
   }
 
-  async function refreshOnlineModeState() {
+  async function refreshCollectionModeState() {
     try {
       const settings = await invoke("get_settings");
-      onlineModeEnabled = settings?.music_online_mode === true || settings?.musicOnlineMode === true;
+      collectionMode = normalizeMusicCollectionMode(settings?.music_collection_mode ?? settings?.musicCollectionMode ?? ((settings?.music_online_mode ?? settings?.musicOnlineMode) ? "online" : "offline"));
     } catch (error) {
-      console.warn("get_settings for account online mode", error);
-      onlineModeEnabled = false;
+      console.warn("get_settings for account collection mode", error);
+      collectionMode = "offline";
     }
-    setOnlineModeButtonState({ enabled: onlineModeEnabled, visible: false, busy: false });
-    return onlineModeEnabled;
+    setCollectionModeState({ mode: collectionMode, visible: false, busy: false });
+    return collectionMode;
   }
 
   function setKugouLoading(loading, message = "正在同步登录状态...") {
@@ -157,7 +162,7 @@ export function createAccountCenterView(deps) {
     const profile = document.getElementById("account-kugou-profile");
     const logout = document.getElementById("btn-account-kugou-logout");
     const importBtn = document.getElementById("btn-account-kugou-open-import");
-    setOnlineModeButtonState({ enabled: onlineModeEnabled, visible: false, busy: false });
+    setCollectionModeState({ mode: collectionMode, visible: false, busy: false });
     setKugouState("guest");
     if (status) status.textContent = "登录后可同步账号状态与云歌单。";
     if (profile) profile.hidden = true;
@@ -187,7 +192,7 @@ export function createAccountCenterView(deps) {
     if (profileEl) profileEl.hidden = false;
     if (logoutEl) logoutEl.hidden = false;
     if (importEl) importEl.hidden = !loggedIn;
-    setOnlineModeButtonState({ enabled: onlineModeEnabled, visible: loggedIn, busy: false });
+    setCollectionModeState({ mode: collectionMode, visible: loggedIn, busy: false });
     setKugouLoginControlsVisible(!loggedIn);
     if (nameEl) nameEl.textContent = nickname;
     if (detailEl) detailEl.textContent = loggedIn ? `已登录 · ${userID || "当前账号"}` : `登录已过期 · ${userID || "请重新登录"}`;
@@ -207,7 +212,7 @@ export function createAccountCenterView(deps) {
     setKugouState("loading");
     setKugouLoading(true);
     try {
-      await refreshOnlineModeState();
+      await refreshCollectionModeState();
       const status = await kugou.getLoginStatus();
       renderKugouStatus(status);
       onKugouStatusChanged?.(status);
@@ -275,20 +280,25 @@ export function createAccountCenterView(deps) {
     document.getElementById("btn-account-kugou-open-import")?.addEventListener("click", async () => {
       await onImportRequested?.("kugou");
     });
-    const toggleOnlineMode = async () => {
-      setOnlineModeButtonState({ enabled: onlineModeEnabled, visible: true, busy: true });
+    const switchCollectionMode = async (nextMode) => {
+      setCollectionModeState({ mode: collectionMode, visible: true, busy: true });
       try {
-        const result = await onOnlineModeToggleRequested?.(!onlineModeEnabled);
-        onlineModeEnabled = result?.enabled === true;
-        setOnlineModeButtonState({ enabled: onlineModeEnabled, visible: true, busy: false });
+        const result = await onOnlineModeToggleRequested?.(normalizeMusicCollectionMode(nextMode));
+        collectionMode = normalizeMusicCollectionMode(result?.mode || nextMode);
+        setCollectionModeState({ mode: collectionMode, visible: true, busy: false });
         notifyLayoutSettled();
       } catch (error) {
-        setOnlineModeButtonState({ enabled: onlineModeEnabled, visible: true, busy: false });
-        alertRequestFailed(error, "toggle music online mode from account center");
+        setCollectionModeState({ mode: collectionMode, visible: true, busy: false });
+        alertRequestFailed(error, "toggle music collection mode from account center");
       }
     };
-    kugouOnlineModeBtnEl()?.addEventListener("click", () => {
-      void toggleOnlineMode();
+    kugouCollectionModeWrapEl()?.querySelectorAll("[data-account-music-collection-mode-card]").forEach((button) => {
+      button.addEventListener("click", () => {
+        if (button.hasAttribute("disabled")) return;
+        const nextMode = normalizeMusicCollectionMode(button.getAttribute("data-account-music-collection-mode-card"));
+        if (nextMode === collectionMode) return;
+        void switchCollectionMode(nextMode);
+      });
     });
     document.getElementById("btn-account-kugou-logout")?.addEventListener("click", async () => {
       try {
@@ -310,5 +320,5 @@ export function createAccountCenterView(deps) {
     });
   }
 
-  return { openAccountCenter, refreshKugouAccountStatus, refreshOnlineModeState, wireAccountCenter };
+  return { openAccountCenter, refreshKugouAccountStatus, refreshCollectionModeState, wireAccountCenter };
 }

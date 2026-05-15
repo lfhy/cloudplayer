@@ -6,7 +6,7 @@ import { createExternalOnlineModeToggle } from "./externalOnlineMode.js";
 import { DEFAULT_LYRICS_IDLE_LINE1, DEFAULT_LYRICS_IDLE_LINE2, normalizeLyricHexInput, normalizeLyricsIdleLine, normalizeNeteaseApiBase, normalizePlaybackFallbackChain, normalizeSearchCacheTTLHours, settingsFormBaselineDefaults } from "./formHelpers.js";
 import { createFallbackChainEditor } from "./fallbackChainEditor.js";
 import { applyLyricsSourceSelectionToDom, readLyricsSourceSettingsFromDom, wireLyricsSourceSelection } from "./lyricSources.js";
-import { createKugouSettingsStatusRefresher, isMusicSourceOnlineModeSelected, musicOnlineModeStatusText, setMusicSourceOnlineModeAvailability, setMusicSourceOnlineModeBusy, setMusicSourceOnlineModeSelection, toggleMusicOnlineMode, wireMusicSourceOnlineModeSelection } from "./sourceMode.js";
+import { createKugouSettingsStatusRefresher, getMusicCollectionModeSelection, musicCollectionModeStatusText, setMusicCollectionModeAvailability, setMusicCollectionModeBusy, setMusicCollectionModeSelection, toggleMusicCollectionMode, wireMusicCollectionModeSelection } from "./sourceMode.js";
 import { renderLyricsPreview } from "./lyricsPreview.js";
 import { canSaveCustomProxyUrl } from "../../app/helpers/platformTheme.js";
 
@@ -45,10 +45,10 @@ export function createSettingsController(deps) {
     setImportDraft,
     setImportMethod,
     setImportStep,
-    setMusicOnlineModeEnabledValue,
+    setMusicCollectionModeValue,
     openAccountCenter,
     onKugouAuthChanged,
-    onMusicOnlineModeChanged,
+    onMusicCollectionModeChanged,
     onMusicSourceProviderChanged,
   } = deps;
   let settingsFormBaseline = settingsFormBaselineDefaults();
@@ -70,7 +70,7 @@ export function createSettingsController(deps) {
       proxyURL: normalizeNetworkProxyUrl(document.getElementById("setting-network-proxy-url")?.value),
       action: normalizeCloseAction(document.getElementById("setting-close-action")?.value),
       musicSourceProvider: normalizeMusicSourceProvider(document.getElementById("setting-music-source-provider")?.value),
-      musicOnlineMode: isMusicSourceOnlineModeSelected(),
+      musicCollectionMode: getMusicCollectionModeSelection(),
       autoCacheOnPlay: document.getElementById("setting-auto-cache-on-play")?.checked === true,
       playbackFallbackChain: normalizePlaybackFallbackChain(document.getElementById("setting-playback-fallback-chain")?.value),
       searchCacheTTLHours: normalizeSearchCacheTTLHours(document.getElementById("setting-search-cache-ttl-hours")?.value),
@@ -87,7 +87,7 @@ export function createSettingsController(deps) {
 
   function settingsFormIsDirty() {
     const current = getSettingsFormValues();
-    return ["theme", "mode", "customAccent", "proxyMode", "proxyURL", "action", "musicSourceProvider", "musicOnlineMode", "autoCacheOnPlay", "playbackFallbackChain", "searchCacheTTLHours", "idleLine1", "idleLine2", "lyricsProviderOrder", "lyricsLRCLibEnabled", "base", "highlight", "neteaseApiBase", "hotkeysSig"].some((key) => current[key] !== settingsFormBaseline[key]);
+    return ["theme", "mode", "customAccent", "proxyMode", "proxyURL", "action", "musicSourceProvider", "musicCollectionMode", "autoCacheOnPlay", "playbackFallbackChain", "searchCacheTTLHours", "idleLine1", "idleLine2", "lyricsProviderOrder", "lyricsLRCLibEnabled", "base", "highlight", "neteaseApiBase", "hotkeysSig"].some((key) => current[key] !== settingsFormBaseline[key]);
   }
 
   function syncSettingsFormBaselineFromDom() {
@@ -117,8 +117,9 @@ export function createSettingsController(deps) {
     setThemeCardSelection(theme);
     setNetworkProxyModeSelection(proxyMode);
     setMusicSourceProviderSelection(settings?.music_source_provider ?? settings?.musicSourceProvider ?? "kugou");
-    setMusicSourceOnlineModeSelection(settings?.music_online_mode ?? settings?.musicOnlineMode ?? false);
-    setMusicSourceOnlineModeBusy(false, musicOnlineModeStatusText(settings?.music_online_mode ?? settings?.musicOnlineMode ?? false));
+    const collectionMode = settings?.music_collection_mode ?? settings?.musicCollectionMode ?? ((settings?.music_online_mode ?? settings?.musicOnlineMode) ? "online" : "offline");
+    setMusicCollectionModeSelection(collectionMode);
+    setMusicCollectionModeBusy(false, musicCollectionModeStatusText(collectionMode));
     applyAppTheme(theme, customAccent, mode);
     const closeAction = normalizeCloseAction(settings?.main_window_close_action ?? settings?.mainWindowCloseAction);
     const closeActionEl = document.getElementById("setting-close-action");
@@ -181,7 +182,7 @@ export function createSettingsController(deps) {
         if (report) hotkeys.renderHotkeyStatusFromReport(report);
       }
       const providerChanged = current.musicSourceProvider !== settingsFormBaseline.musicSourceProvider;
-      await invoke("save_settings", { patch: { app_theme: current.theme, app_theme_mode: current.mode, app_theme_custom_accent: current.customAccent, network_proxy_mode: current.proxyMode, network_proxy_url: proxyURLForSave, main_window_close_action: current.action, music_online_mode: current.musicOnlineMode, auto_cache_on_play: current.autoCacheOnPlay, music_source_provider: current.musicSourceProvider, playback_fallback_chain: current.playbackFallbackChain, search_cache_ttl_hours: current.searchCacheTTLHours, desktop_lyrics_idle_line1: current.idleLine1, desktop_lyrics_idle_line2: current.idleLine2, desktop_lyrics_color_base: current.base, desktop_lyrics_color_highlight: current.highlight, lyrics_provider_order: current.lyricsProviderOrder, lyrics_lrclib_enabled: current.lyricsLRCLibEnabled, lyrics_netease_api_base: current.neteaseApiBase } });
+      await invoke("save_settings", { patch: { app_theme: current.theme, app_theme_mode: current.mode, app_theme_custom_accent: current.customAccent, network_proxy_mode: current.proxyMode, network_proxy_url: proxyURLForSave, main_window_close_action: current.action, music_collection_mode: current.musicCollectionMode, music_online_mode: current.musicCollectionMode === "online", auto_cache_on_play: current.autoCacheOnPlay, music_source_provider: current.musicSourceProvider, playback_fallback_chain: current.playbackFallbackChain, search_cache_ttl_hours: current.searchCacheTTLHours, desktop_lyrics_idle_line1: current.idleLine1, desktop_lyrics_idle_line2: current.idleLine2, desktop_lyrics_color_base: current.base, desktop_lyrics_color_highlight: current.highlight, lyrics_provider_order: current.lyricsProviderOrder, lyrics_lrclib_enabled: current.lyricsLRCLibEnabled, lyrics_netease_api_base: current.neteaseApiBase } });
       if (providerChanged) await onMusicSourceProviderChanged?.(current.musicSourceProvider);
       applyAppTheme(current.theme, current.customAccent, current.mode);
       setMainWindowCloseAction(current.action);
@@ -212,7 +213,7 @@ export function createSettingsController(deps) {
 
   function openCloseConfirmModal() { openCloseConfirmModalDom(); }
   function closeCloseConfirmModal() { closeCloseConfirmModalDom(); }
-  const toggleMusicOnlineModeFromAccountCenter = createExternalOnlineModeToggle({ alertRequestFailed, onMusicOnlineModeChanged, persistSettingsFromForm: (...args) => persistSettingsFromForm(...args), setMusicOnlineModeEnabledValue });
+  const toggleMusicOnlineModeFromAccountCenter = createExternalOnlineModeToggle({ alertRequestFailed, onMusicCollectionModeChanged, persistSettingsFromForm: (...args) => persistSettingsFromForm(...args), setMusicCollectionModeValue });
 
   function wirePreferencesModals() {
     globalThis.__cloudplayerOpenCloseConfirmModal = openCloseConfirmModal;
@@ -226,7 +227,7 @@ export function createSettingsController(deps) {
       });
     });
     const actionButtons = wireSettingsActionButtons({ alertRequestFailed, invoke, onKugouAuthChanged, openAccountCenter, setImportDraft, setImportMethod, setImportStep, setPage });
-    refreshKugouSettingsStatus = createKugouSettingsStatusRefresher({ actionButtons, isMusicSourceOnlineModeSelected, queueSettingsAutosave, setMusicSourceOnlineModeAvailability, setMusicSourceOnlineModeSelection });
+    refreshKugouSettingsStatus = createKugouSettingsStatusRefresher({ actionButtons, getMusicCollectionModeSelection, queueSettingsAutosave, setMusicCollectionModeAvailability, setMusicCollectionModeSelection });
     document.querySelectorAll("[data-theme-mode-card]").forEach((card) => card.addEventListener("click", () => {
       setThemeModeSelection(card.getAttribute("data-theme-mode-card") || "system");
       const current = getSettingsFormValues();
@@ -260,9 +261,9 @@ export function createSettingsController(deps) {
       setMusicSourceProviderSelection(card.getAttribute("data-music-source-provider-card") || "kugou");
       queueSettingsAutosave(true);
     }));
-    wireMusicSourceOnlineModeSelection((nextEnabled) => toggleMusicOnlineMode(nextEnabled, {
+    wireMusicCollectionModeSelection((nextMode) => toggleMusicCollectionMode(nextMode, {
       alertRequestFailed,
-      onMusicOnlineModeChanged,
+      onMusicCollectionModeChanged,
       persistSettingsFromForm,
     }));
     fallbackChainEditor.render();
@@ -289,7 +290,7 @@ export function createSettingsController(deps) {
   async function loadSettings() {
     try {
       const settings = await invoke("get_settings");
-      setMusicOnlineModeEnabledValue?.(settings?.music_online_mode ?? settings?.musicOnlineMode ?? false);
+      setMusicCollectionModeValue?.(settings?.music_collection_mode ?? settings?.musicCollectionMode ?? ((settings?.music_online_mode ?? settings?.musicOnlineMode) ? "online" : "offline"));
       applyAppTheme(settings?.app_theme ?? settings?.appTheme ?? "coral", settings?.app_theme_custom_accent ?? settings?.appThemeCustomAccent ?? "#c62f2f", settings?.app_theme_mode ?? settings?.appThemeMode ?? "system");
       setMainWindowCloseAction(normalizeCloseAction(settings?.main_window_close_action ?? settings?.mainWindowCloseAction));
       fillSettingsFormFromSettings(settings);

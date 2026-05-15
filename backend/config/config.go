@@ -16,6 +16,9 @@ const (
 	NetworkProxyModeDirect = "direct"
 	NetworkProxyModeSystem = "system"
 	NetworkProxyModeCustom = "custom"
+	MusicCollectionModeOffline = "offline"
+	MusicCollectionModeOnline  = "online"
+	MusicCollectionModeHybrid  = "hybrid"
 )
 
 type Settings struct {
@@ -57,6 +60,7 @@ type Settings struct {
 	ShareNeteaseCookieEnabled   bool                `json:"share_netease_cookie_enabled"`
 	ShareNeteaseCookie          string              `json:"share_netease_cookie"`
 	MusicOnlineMode             bool                `json:"music_online_mode"`
+	MusicCollectionMode         string              `json:"music_collection_mode"`
 	AutoCacheOnPlay             bool                `json:"auto_cache_on_play"`
 	MusicSourceProvider         string              `json:"music_source_provider"`
 	PlaybackFallbackChain       string              `json:"playback_fallback_chain"`
@@ -93,6 +97,7 @@ func DefaultSettings() Settings {
 		DesktopLyricsIdleLine1:      "CloudPlayer",
 		DesktopLyricsIdleLine2:      "让音乐陪你此刻",
 		MusicOnlineMode:             false,
+		MusicCollectionMode:         MusicCollectionModeOffline,
 		AutoCacheOnPlay:             false,
 		MusicSourceProvider:         "kugou",
 		PlaybackFallbackChain:       "kugou,pjmp3,netease",
@@ -106,6 +111,15 @@ func NormalizeMusicSourceProvider(value string) string {
 		return strings.ToLower(strings.TrimSpace(value))
 	default:
 		return "kugou"
+	}
+}
+
+func NormalizeMusicCollectionMode(value string) string {
+	switch strings.ToLower(strings.TrimSpace(value)) {
+	case MusicCollectionModeOnline, MusicCollectionModeHybrid:
+		return strings.ToLower(strings.TrimSpace(value))
+	default:
+		return MusicCollectionModeOffline
 	}
 }
 
@@ -178,6 +192,10 @@ func LoadSettings() Settings {
 	result.SearchCacheTTLHours = NormalizeSearchCacheTTLHours(result.SearchCacheTTLHours)
 	result.PlayMode = NormalizePlayMode(result.PlayMode)
 	result.MusicSourceProvider = NormalizeMusicSourceProvider(result.MusicSourceProvider)
+	result.MusicCollectionMode = NormalizeMusicCollectionMode(result.MusicCollectionMode)
+	if result.MusicCollectionMode == MusicCollectionModeOffline && result.MusicOnlineMode {
+		result.MusicCollectionMode = MusicCollectionModeOnline
+	}
 	result.PlaybackFallbackChain = NormalizePlaybackFallbackChain(result.PlaybackFallbackChain)
 	result.PlayQueue = NormalizePlaybackQueue(result.PlayQueue)
 	if result.PlayQueueIndex < 0 {

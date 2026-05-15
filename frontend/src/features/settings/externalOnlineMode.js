@@ -1,22 +1,22 @@
-import { isMusicSourceOnlineModeSelected, toggleMusicOnlineMode } from "./sourceMode.js";
+import { getMusicCollectionModeSelection, toggleMusicCollectionMode } from "./sourceMode.js";
 
-// External online-mode bridge lets child windows reuse the settings toggle flow without duplicating persistence rules.
+// External collection-mode bridge lets child windows reuse the settings toggle flow without duplicating persistence rules.
 export function createExternalOnlineModeToggle(deps) {
-  const { alertRequestFailed, onMusicOnlineModeChanged, persistSettingsFromForm, setMusicOnlineModeEnabledValue } = deps;
-  return async (nextEnabled) => {
-    const target = !!nextEnabled;
-    if (isMusicSourceOnlineModeSelected() === target) {
-      setMusicOnlineModeEnabledValue?.(target);
-      return { enabled: target };
+  const { alertRequestFailed, onMusicCollectionModeChanged, persistSettingsFromForm, setMusicCollectionModeValue } = deps;
+  return async (nextMode) => {
+    const target = String(nextMode || "").trim().toLowerCase() || "offline";
+    if (getMusicCollectionModeSelection() === target) {
+      setMusicCollectionModeValue?.(target);
+      return { mode: target };
     }
-    await toggleMusicOnlineMode(target, {
+    await toggleMusicCollectionMode(target, {
       alertRequestFailed,
       confirmBeforeEnable: false,
-      onMusicOnlineModeChanged,
+      onMusicCollectionModeChanged,
       persistSettingsFromForm,
     });
-    const enabled = isMusicSourceOnlineModeSelected();
-    setMusicOnlineModeEnabledValue?.(enabled);
-    return { enabled };
+    const mode = getMusicCollectionModeSelection();
+    setMusicCollectionModeValue?.(mode);
+    return { mode };
   };
 }
