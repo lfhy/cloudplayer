@@ -161,8 +161,10 @@ export function bootstrapCloseConfirmWindow() {
       element: document.querySelector(".app-child-window-frame--dialog"),
       windowLabel: WINDOW_LABEL,
       windowRef: currentWindow,
-      minHeight: 188,
+      // Keep the close-confirm window content-driven so the lower half does not turn into dead space.
+      minHeight: 156,
       minWidth: 432,
+      paddingHeight: 18,
     });
     void applyThemeFromSettings();
     window.addEventListener("beforeunload", () => autoSize.cleanup());
