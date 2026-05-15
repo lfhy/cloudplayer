@@ -53,6 +53,9 @@
 - When the user explicitly asks for a commit, stage the relevant changes and create a normal non-amended commit.
 - Do not include root-level compiled binaries or other transient build artifacts in commits.
 - Every time a new feature is added, update `README.md` in the same change set before committing.
+- Maintain release note drafts in `CHANGELOG.md` under `## Unreleased` as work lands when the change is relevant to an upcoming release.
+- When preparing or updating a release workflow, prefer `CHANGELOG.md` as the source of truth for release notes instead of reconstructing everything from commit history.
+- After a tagged release is prepared, archive `CHANGELOG.md` `## Unreleased` into a versioned section with `scripts/archive_unreleased_changelog.sh`.
 
 ## Validation
 

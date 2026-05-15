@@ -145,7 +145,7 @@ GitHub Actions 自动发布：
 
 1. 日常开发时，把准备发版的内容持续补到 `CHANGELOG.md` 的 `## Unreleased` 下。
 2. 准备推 tag 前，检查 `本次更新 / 重点变更 / 修复 / 已知问题` 四段内容是否齐全。
-3. tag 发布完成后，把这段内容归档到对应版本小节，再把 `## Unreleased` 重置回模板。
+3. tag 发布完成后，运行 `./scripts/archive_unreleased_changelog.sh vX.Y.Z` 把这段内容归档到对应版本小节，并重置 `## Unreleased` 模板。
 
 Windows 打包前需要安装 `makensis`；如果在非 macOS 主机上构建 macOS 包，则还需要 Docker 和 `wails-cross` 镜像：
 
