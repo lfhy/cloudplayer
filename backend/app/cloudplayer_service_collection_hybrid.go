@@ -28,6 +28,9 @@ func (s *CloudPlayerService) ensureHybridKugouPlaylistForks(force bool) error {
 		if cloud.ID <= 0 {
 			continue
 		}
+		if err := s.normalizeHybridPlaylistForksTx(tx, cloud); err != nil {
+			return err
+		}
 		if err := s.upsertHybridPlaylistForkTx(tx, cloud); err != nil {
 			return err
 		}
@@ -51,20 +54,84 @@ func (s *CloudPlayerService) ensureHybridKugouPlaylistForks(force bool) error {
 	return tx.Commit()
 }
 
+func (s *CloudPlayerService) normalizeHybridPlaylistForksTx(tx *sql.Tx, cloud KugouPlaylistRow) error {
+	rows, err := tx.Query(`
+		SELECT id, is_builtin
+		FROM playlists
+		WHERE cloud_source = ? AND cloud_list_id = ?
+		ORDER BY is_builtin DESC, id ASC
+	`, kugouSyncOrigin, cloud.ID)
+	if err != nil {
+		return err
+	}
+	defer rows.Close()
+
+	var keeperID int64
+	var duplicateIDs []int64
+	for rows.Next() {
+		var playlistID int64
+		var isBuiltin bool
+		if err := rows.Scan(&playlistID, &isBuiltin); err != nil {
+			return err
+		}
+		if keeperID == 0 {
+			keeperID = playlistID
+			continue
+		}
+		duplicateIDs = append(duplicateIDs, playlistID)
+	}
+	if err := rows.Err(); err != nil {
+		return err
+	}
+	if keeperID == 0 || len(duplicateIDs) == 0 {
+		return nil
+	}
+	for _, duplicateID := range duplicateIDs {
+		if err := s.movePlaylistRowsTx(tx, duplicateID, keeperID); err != nil {
+			return err
+		}
+		if _, err := tx.Exec(`DELETE FROM playlists WHERE id = ?`, duplicateID); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (s *CloudPlayerService) movePlaylistRowsTx(tx *sql.Tx, fromPlaylistID, toPlaylistID int64) error {
+	if fromPlaylistID <= 0 || toPlaylistID <= 0 || fromPlaylistID == toPlaylistID {
+		return nil
+	}
+	if _, err := tx.Exec(`
+		UPDATE playlist_import_items
+		SET playlist_id = ?
+		WHERE playlist_id = ?
+	`, toPlaylistID, fromPlaylistID); err != nil {
+		return err
+	}
+	if _, err := tx.Exec(`
+		UPDATE playlist_songs
+		SET playlist_id = ?
+		WHERE playlist_id = ?
+		  AND NOT EXISTS (
+			SELECT 1 FROM playlist_songs existing
+			WHERE existing.playlist_id = ? AND existing.song_id = playlist_songs.song_id
+		  )
+	`, toPlaylistID, fromPlaylistID, toPlaylistID); err != nil {
+		return err
+	}
+	if _, err := tx.Exec(`
+		DELETE FROM playlist_songs
+		WHERE playlist_id = ?
+	`, fromPlaylistID); err != nil {
+		return err
+	}
+	return nil
+}
+
 func (s *CloudPlayerService) upsertHybridPlaylistForkTx(tx *sql.Tx, cloud KugouPlaylistRow) error {
 	name := strings.TrimSpace(cloud.Name)
 	if name == "" || cloud.ID <= 0 {
 		return nil
-	}
-	if cloud.IsFavorites || name == builtinFavoritesName {
-		_, err := tx.Exec(`
-			INSERT INTO playlists (name, is_builtin, cloud_source, cloud_list_id, cloud_writable)
-			VALUES (?, 1, ?, ?, 1)
-			ON CONFLICT(id) DO NOTHING
-		`, builtinFavoritesName, kugouSyncOrigin, cloud.ID)
-		if err != nil {
-			// Ignore and continue to generic upsert path below, because playlists.id has no usable conflict target here.
-		}
 	}
 	var playlistID int64
 	var isBuiltin bool
@@ -109,6 +176,58 @@ func boolToInt(value bool) int {
 		return 1
 	}
 	return 0
+}
+
+func (s *CloudPlayerService) CleanupDuplicateFavoritesPlaylists() error {
+	tx, err := s.state.DB.Begin()
+	if err != nil {
+		return err
+	}
+	defer rollback(tx)
+
+	rows, err := tx.Query(`
+		SELECT id, cloud_source, cloud_list_id
+		FROM playlists
+		WHERE is_builtin = 1 OR name = ?
+		ORDER BY is_builtin DESC, id ASC
+	`, builtinFavoritesName)
+	if err != nil {
+		return err
+	}
+	defer rows.Close()
+
+	type favoriteKey struct {
+		source string
+		listID int64
+	}
+	seen := map[favoriteKey]int64{}
+	var deleteIDs []int64
+	for rows.Next() {
+		var playlistID int64
+		var cloudSource string
+		var cloudListID int64
+		if err := rows.Scan(&playlistID, &cloudSource, &cloudListID); err != nil {
+			return err
+		}
+		key := favoriteKey{source: strings.TrimSpace(cloudSource), listID: cloudListID}
+		if keeperID, ok := seen[key]; ok {
+			if err := s.movePlaylistRowsTx(tx, playlistID, keeperID); err != nil {
+				return err
+			}
+			deleteIDs = append(deleteIDs, playlistID)
+			continue
+		}
+		seen[key] = playlistID
+	}
+	if err := rows.Err(); err != nil {
+		return err
+	}
+	for _, playlistID := range deleteIDs {
+		if _, err := tx.Exec(`DELETE FROM playlists WHERE id = ?`, playlistID); err != nil {
+			return err
+		}
+	}
+	return tx.Commit()
 }
 
 func (s *CloudPlayerService) ensureHybridPlaylistItems(playlistID int64, force bool) ([]PlaylistImportItemRow, error) {

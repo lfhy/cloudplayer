@@ -18,6 +18,9 @@ func (s *CloudPlayerService) EnsureFavoritesPlaylist() (PlaylistRow, error) {
 			return PlaylistRow{}, err
 		}
 	}
+	if err := s.CleanupDuplicateFavoritesPlaylists(); err != nil {
+		return PlaylistRow{}, err
+	}
 	return s.ensureFavoritesPlaylist()
 }
 
