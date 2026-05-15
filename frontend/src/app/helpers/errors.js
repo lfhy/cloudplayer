@@ -8,15 +8,52 @@ function cleanErrorText(value) {
   return String(value || "").replace(/\s+/g, " ").trim();
 }
 
+function looksLikeJSON(text) {
+  return text.startsWith("{") || text.startsWith("[");
+}
+
+function extractStructuredMessage(value, depth = 0) {
+  if (depth > 4 || value == null) return "";
+  if (typeof value === "string") {
+    const text = cleanErrorText(value);
+    if (!text) return "";
+    if (looksLikeJSON(text)) {
+      try {
+        return extractStructuredMessage(JSON.parse(text), depth + 1);
+      } catch {
+        return text;
+      }
+    }
+    return text;
+  }
+  if (value instanceof Error) {
+    return extractStructuredMessage(value.message, depth + 1);
+  }
+  if (Array.isArray(value)) {
+    for (const item of value) {
+      const message = extractStructuredMessage(item, depth + 1);
+      if (message) return message;
+    }
+    return "";
+  }
+  if (typeof value === "object") {
+    for (const key of ["message", "error", "reason", "detail", "details", "msg", "body", "data"]) {
+      const message = extractStructuredMessage(value[key], depth + 1);
+      if (message) return message;
+    }
+  }
+  return "";
+}
+
 function extractErrorMessage(error) {
   const candidates = [
     error?.message,
-    error?.cause?.message,
-    error?.data?.message,
-    typeof error === "string" ? error : "",
+    error?.cause,
+    error?.data,
+    error,
   ];
   for (const candidate of candidates) {
-    const text = cleanErrorText(candidate);
+    const text = cleanErrorText(extractStructuredMessage(candidate));
     if (!text) continue;
     if (GENERIC_ERROR_MESSAGES.has(text.toLowerCase())) continue;
     return text;
@@ -33,7 +70,7 @@ export async function alertRequestFailed(error, label, options = {}) {
   warnRequestFailed(error, label);
   const message = extractErrorMessage(error) || String(options.message || "请稍后重试。");
   return showMessageDialog({
-    title: options.title || "请求失败",
+    title: options.title || "提示",
     heading: options.heading || MSG_REQUEST_FAILED,
     message,
     buttonText: options.buttonText || "知道了",
