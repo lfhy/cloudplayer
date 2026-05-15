@@ -1,0 +1,28 @@
+.message-dialog-card {
+  max-width: 420px;
+  min-height: 118px;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.message-dialog-card__body {
+  flex: 1 1 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding-top: 0;
+}
+
+.message-dialog-card__desc {
+  white-space: pre-wrap;
+  text-align: center;
+}
+
+.message-dialog-card__footer {
+  margin-top: auto;
+  justify-content: center;
+}
+
+.message-dialog-card__footer .btn-accent {
+  min-width: 124px;
+}

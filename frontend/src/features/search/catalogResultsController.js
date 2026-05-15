@@ -13,6 +13,7 @@ import {
 } from "../library/trackTableCells.js";
 import { triggerTrackSearch } from "../library/trackSearchShortcut.js";
 import { createCatalogMetadataController } from "./catalogMetadataController.js";
+import { showOnlineModePlaylistRestriction } from "../library/onlineModePlaylistDialog.js";
 // Catalog results controller owns virtual rows, infinite loading, and multi-select actions.
 export function createCatalogResultsController(deps) {
   const {
@@ -224,7 +225,9 @@ export function createCatalogResultsController(deps) {
   async function appendSelectedToPlaylist() {
     const selectedRows = searchState.results.filter((row) => searchState.selectedIds?.has(row.source_id));
     if (!selectedRows.length) return;
-    if (getMusicOnlineModeEnabled?.() && selectedRows.some((row) => !(row.source_id || "").startsWith("kugou:"))) return void alert("在线模式下只能把酷狗云端歌曲添加到云歌单。");
+    if (getMusicOnlineModeEnabled?.() && selectedRows.some((row) => !(row.source_id || "").startsWith("kugou:"))) {
+      return void showOnlineModePlaylistRestriction();
+    }
     let playlists = [];
     try {
       playlists = await invoke("list_playlists");

@@ -20,6 +20,7 @@ export default defineConfig({
         main: resolve(__dirname, "index.html"),
         close_confirm: resolve(__dirname, "close_confirm.html"),
         online_mode_confirm: resolve(__dirname, "online_mode_confirm.html"),
+        message_dialog: resolve(__dirname, "message_dialog.html"),
         account_center: resolve(__dirname, "account_center.html"),
         desktop_lyrics: resolve(__dirname, "desktop_lyrics.html"),
         lyrics_replace: resolve(__dirname, "lyrics_replace.html"),

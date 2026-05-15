@@ -1,6 +1,7 @@
 // Audio event wiring stays separate from playback loading so media element behavior is easy to test.
 import { setPlaybackIndicator } from "../../app/helpers/playbackIndicator.js";
 import { audioPlaybackFailureReason, playbackFailureReason } from "./playbackFeedback.js";
+import { showPlaybackFailureDialog } from "./playbackFailureDialog.js";
 import { setPlayButtonIcon } from "./playButtonIcon.js";
 
 export function createAudioEventsController(deps) {
@@ -135,11 +136,13 @@ export function createAudioEventsController(deps) {
         extra: audioDiagPayload(audio),
       });
       const track = getPlayQueue()[getPlayIndex()] || null;
+      const failureReason = audioPlaybackFailureReason(audio, { fallback: messageRequestFailed });
       updatePlayerChrome({
         title: track?.title || "未播放",
-        sub: audioPlaybackFailureReason(audio, { fallback: messageRequestFailed }),
+        sub: failureReason,
         touchCover: false,
       });
+      void showPlaybackFailureDialog(track?.title, failureReason);
       void broadcastTrayPlayerState();
     });
 
@@ -179,12 +182,14 @@ export function createAudioEventsController(deps) {
         await togglePlayPauseWithTransition?.();
       } catch (error) {
         const track = getPlayQueue()[getPlayIndex()] || null;
+        const failureReason = playbackFailureReason(error, { fallback: messageRequestFailed });
         updatePlayerChrome({
           title: track?.title || "未播放",
-          sub: playbackFailureReason(error, { fallback: messageRequestFailed }),
+          sub: failureReason,
           touchCover: false,
         });
         console.warn("audio play()", error);
+        void showPlaybackFailureDialog(track?.title, failureReason);
       }
     });
     document.getElementById("btn-player-prev")?.addEventListener("click", () => {

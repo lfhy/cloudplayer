@@ -1,4 +1,5 @@
 // Playlist batch controller owns selection state and bulk actions for rows.
+import { showOnlineModePlaylistRestriction } from "./onlineModePlaylistDialog.js";
 import { buildPlayablePlaylistQueue } from "./playlistRowHelpers.js";
 
 export function createPlaylistBatchController(deps) {
@@ -112,7 +113,7 @@ export function createPlaylistBatchController(deps) {
     const rows = selectedRows();
     if (!rows.length) return;
     if (getMusicOnlineModeEnabled?.() && rows.some((row) => !(row.pjmp3_source_id || "").startsWith("kugou:"))) {
-      return void alert("在线模式下只能把酷狗云端歌曲添加到云歌单。");
+      return void showOnlineModePlaylistRestriction();
     }
     const currentPlaylistId = getSelectedPlaylistId();
     let playlists = [];

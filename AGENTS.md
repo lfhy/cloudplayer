@@ -2,7 +2,7 @@
 
 ## `src-wails` Structure Rules
 
-- All hand-written code files under `src-wails` must stay under 300 lines.
+- All hand-written code files under `src-wails` must stay under 500 lines.
 - If a file approaches the limit, split it by feature or responsibility before adding more logic.
 - Generated files are excluded from this rule:
   `frontend/bindings`, `frontend/dist`, `frontend/node_modules`.
@@ -20,6 +20,7 @@
 ## Child Window UI
 
 - Standalone child windows should follow the compact native-dialog style used by the close-confirm window.
+- User-facing frontend failure notifications should prefer the shared `message-dialog` child window instead of browser `alert()`; reuse `showMessageDialog(...)` / `alertRequestFailed(...)` so failure reasons stay consistent.
 - Keep child windows simple: no decorative app icon, no extra explanatory copy unless the flow truly needs it.
 - Titles should be visually centered, while leaving safe space for macOS traffic lights and Windows title-bar controls.
 - Child window content should be horizontally centered inside the native window, rather than stretched to fill the viewport.

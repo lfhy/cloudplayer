@@ -2,6 +2,7 @@
 import { proxyRemoteAssetSrc } from "../../wails/tauri-core.js";
 import { clearPlaybackIndicator, setPlaybackIndicator } from "../../app/helpers/playbackIndicator.js";
 import { playbackFailureReason, playbackLoadingSubtext } from "./playbackFeedback.js";
+import { showPlaybackFailureDialog } from "./playbackFailureDialog.js";
 import { setPlayButtonIcon } from "./playButtonIcon.js";
 
 export function createPlaybackController(deps) {
@@ -153,15 +154,17 @@ export function createPlaybackController(deps) {
       clearLoadingHintTimer();
       if (generation !== getPlayLoadGeneration()) return;
       if (!quiet) {
+        const failureReason = playbackFailureReason(error, { fallback: messageRequestFailed });
         updatePlayerChrome({
           title: item.title,
-          sub: playbackFailureReason(error, { fallback: messageRequestFailed }),
+          sub: failureReason,
           touchCover: false,
           album: item.album || "",
         });
         if (playButton) playButton.disabled = false;
         syncSeekUi();
         console.warn("playFromQueueIndex", error);
+        void showPlaybackFailureDialog(item.title, failureReason);
       } else {
         console.warn("restore playback source", error);
       }

@@ -1,6 +1,6 @@
 import { listen } from "../../wails/tauri-event.js";
 
-const MASKED_CHILD_WINDOWS = new Set(["account-center", "close-confirm", "online-mode-confirm"]);
+const MASKED_CHILD_WINDOWS = new Set(["account-center", "close-confirm", "online-mode-confirm", "message-dialog"]);
 
 function maskEl() {
   return document.getElementById("child-window-mask");
