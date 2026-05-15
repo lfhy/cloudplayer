@@ -5,6 +5,7 @@ set -euo pipefail
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 TARGET_TAG="${1:-${TARGET_TAG:-}}"
 OUTPUT_FILE="${2:-${OUTPUT_FILE:-}}"
+CHANGELOG_FILE="${CHANGELOG_FILE:-$ROOT_DIR/CHANGELOG.md}"
 
 fail() {
   printf 'Error: %s\n' "$*" >&2
@@ -13,6 +14,58 @@ fail() {
 
 require_cmd() {
   command -v "$1" >/dev/null 2>&1 || fail "Missing command: $1"
+}
+
+has_unreleased_changelog() {
+  [[ -f "$CHANGELOG_FILE" ]] || return 1
+  awk '
+    BEGIN {
+      in_unreleased = 0
+      has_content = 0
+    }
+    /^## Unreleased[[:space:]]*$/ {
+      in_unreleased = 1
+      next
+    }
+    /^## / && in_unreleased {
+      exit
+    }
+    in_unreleased {
+      if ($0 ~ /^[[:space:]]*$/) {
+        next
+      }
+      if ($0 ~ /^### /) {
+        next
+      }
+      if ($0 == "- 暂无。") {
+        next
+      }
+      if ($0 ~ /^- /) {
+        has_content = 1
+      }
+    }
+    END {
+      exit(has_content ? 0 : 1)
+    }
+  ' "$CHANGELOG_FILE"
+}
+
+extract_unreleased_changelog() {
+  awk '
+    BEGIN {
+      in_unreleased = 0
+    }
+    /^## Unreleased[[:space:]]*$/ {
+      in_unreleased = 1
+      next
+    }
+    /^## / && in_unreleased {
+      exit
+    }
+    in_unreleased {
+      print
+    }
+  ' "$CHANGELOG_FILE"
 }
 
 # Normalize the leading commit token so release notes work with both
@@ -98,6 +151,24 @@ main() {
   [[ -n "$TARGET_TAG" ]] || fail "TARGET_TAG is required"
   [[ -n "$OUTPUT_FILE" ]] || fail "OUTPUT_FILE is required"
   require_cmd git
+
+  if has_unreleased_changelog; then
+    {
+      printf '# CloudPlayer 发布说明\n\n'
+      extract_unreleased_changelog
+      printf '\n## 附件说明\n'
+      cat <<'EOF'
+- Windows：`cloudplayer-windows-amd64.zip`
+- Windows：`cloudplayer-windows-arm64.zip`
+- Windows：`cloudplayer-windows-amd64-installer.exe`
+- Windows：`cloudplayer-windows-arm64-installer.exe`
+- macOS：`cloudplayer-darwin-amd64.dmg`
+- macOS：`cloudplayer-darwin-arm64.dmg`
+- macOS：`cloudplayer-darwin-universal.dmg`
+EOF
+    } > "$OUTPUT_FILE"
+    return
+  fi
 
   local prev_tag=""
   prev_tag="$(previous_tag "$TARGET_TAG")"

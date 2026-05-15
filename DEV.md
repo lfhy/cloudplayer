@@ -138,8 +138,14 @@ GitHub Actions 自动发布：
 - Workflow 文件：`.github/workflows/release-desktop.yml`
 - 触发方式：推送 `v*` tag，或手动触发并填写 `tag_name`
 - 发布内容：Windows `amd64` / `arm64` 的 `.zip` 与 `installer.exe`，以及 macOS `amd64` / `arm64` / `universal` 的 `.dmg`
-- 发布正文：自动按 tag 范围里的提交信息生成中文更新日志
+- 发布正文：优先读取 `CHANGELOG.md` 里的 `## Unreleased` 区块；如果该区块还是模板占位，再回退为按 tag 范围里的提交信息自动生成中文更新日志
 - macOS 首次打开若提示“已损坏”，release 正文会优先提示用户双击包内的 `fix_cloudplayer_quarantine.command`，并保留手动 `xattr -dr com.apple.quarantine /Applications/CloudPlayer.app` 作为备用方案
+
+建议流程：
+
+1. 日常开发时，把准备发版的内容持续补到 `CHANGELOG.md` 的 `## Unreleased` 下。
+2. 准备推 tag 前，检查 `本次更新 / 重点变更 / 修复 / 已知问题` 四段内容是否齐全。
+3. tag 发布完成后，把这段内容归档到对应版本小节，再把 `## Unreleased` 重置回模板。
 
 Windows 打包前需要安装 `makensis`；如果在非 macOS 主机上构建 macOS 包，则还需要 Docker 和 `wails-cross` 镜像：
 
