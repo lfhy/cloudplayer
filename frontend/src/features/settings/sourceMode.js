@@ -1,6 +1,7 @@
 import { Events } from "@wailsio/runtime";
 import { DesktopService } from "@bindings/cloudplayer/backend/desktop/index.js";
-import { normalizeMusicCollectionMode } from "../../app/helpers/platformTheme.js";
+import { isWindowsDesktop, normalizeMusicCollectionMode } from "../../app/helpers/platformTheme.js";
+import { showNativeQuestionDialog } from "../window/platformDialogs.js";
 import { unwrapPayload } from "../../wails/shared.js";
 
 const ONLINE_MODE_CONFIRM_LABEL = "online-mode-confirm";
@@ -59,6 +60,19 @@ export function wireMusicCollectionModeSelection(onChange) {
 }
 
 async function confirmEnableMusicOnlineMode() {
+  if (isWindowsDesktop()) {
+    try {
+      const result = await showNativeQuestionDialog({
+        title: "开启在线模式？",
+        heading: "开启在线模式？",
+        message: "会切换到酷狗云歌单，并立即重新拉取云端歌单。",
+      });
+      return result.accepted === true;
+    } catch (error) {
+      console.warn("open native online mode confirm dialog", error);
+      return false;
+    }
+  }
   return new Promise((resolve) => {
     Events.Once("settings-online-mode-confirm-result", (event) => {
       resolve(unwrapPayload(event?.data)?.accepted === true);

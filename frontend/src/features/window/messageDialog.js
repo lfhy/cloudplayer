@@ -1,5 +1,6 @@
 import { Events } from "@wailsio/runtime";
 import { DesktopService } from "@bindings/cloudplayer/backend/desktop/index.js";
+import { canUseNativeDialogs, showNativeMessageDialog } from "./platformDialogs.js";
 import { unwrapPayload } from "../../wails/shared.js";
 
 const WINDOW_LABEL = "message-dialog";
@@ -17,6 +18,15 @@ export async function showMessageDialog(options = {}) {
     ...DEFAULT_OPTIONS,
     ...options,
   };
+  if (canUseNativeDialogs()) {
+    try {
+      return await showNativeMessageDialog(merged);
+    } catch (error) {
+      console.warn("open native message dialog", error);
+      alert(String(merged.message || DEFAULT_OPTIONS.message));
+      return { accepted: true };
+    }
+  }
   const params = new URLSearchParams();
   params.set("title", String(merged.title || DEFAULT_OPTIONS.title));
   params.set("heading", String(merged.heading || DEFAULT_OPTIONS.heading));
