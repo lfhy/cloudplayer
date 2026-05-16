@@ -34,3 +34,25 @@ export async function showNativeQuestionDialog(options = {}) {
   const accepted = await DesktopService.ShowNativeQuestionDialog(await dialogRequest(options));
   return { accepted: accepted === true };
 }
+
+export async function showNativeChoiceDialog(options = {}) {
+  const copy = normalizedDialogCopy(options);
+  const buttons = Array.isArray(options.buttons)
+    ? options.buttons
+        .map((button) => ({
+          label: String(button?.label || "").trim(),
+          action: String(button?.action || "").trim(),
+          default: button?.default === true,
+          cancel: button?.cancel === true,
+        }))
+        .filter((button) => button.label && button.action)
+    : [];
+  const action = await DesktopService.ShowNativeChoiceDialog({
+    title: copy.title,
+    heading: copy.heading,
+    message: copy.message,
+    parent_label: await currentWindowLabel(),
+    buttons,
+  });
+  return { action: String(action || "").trim() };
+}

@@ -124,72 +124,8 @@ body.close-confirm-window {
 .close-confirm-card__footer {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: flex-end;
   gap: 8px;
-}
-
-.close-confirm-card__remember {
-  position: relative;
-  display: inline-flex;
-  align-items: center;
-  min-height: 30px;
-  padding: 0 10px;
-  border-radius: 999px;
-  border: 0;
-  background: color-mix(in srgb, var(--bg-card) 96%, var(--surface-subtle));
-  font-size: 10px;
-  font-weight: 600;
-  color: var(--text-secondary);
-  cursor: pointer;
-  user-select: none;
-  transition:
-    border-color 120ms ease,
-    background-color 120ms ease,
-    color 120ms ease,
-    transform 120ms ease;
-}
-
-.close-confirm-card__remember:hover {
-  background: color-mix(in srgb, var(--bg-card) 92%, rgba(var(--accent-rgb), 0.08));
-  color: var(--text);
-  transform: translateY(-1px);
-}
-
-.close-confirm-card__remember:has(input:checked) {
-  color: var(--accent);
-}
-
-.close-confirm-card__remember input {
-  position: absolute;
-  opacity: 0;
-  pointer-events: none;
-}
-
-.close-confirm-card__remember span {
-  display: inline-flex;
-  align-items: center;
-  gap: 7px;
-}
-
-.close-confirm-card__remember span::before {
-  content: "";
-  width: 7px;
-  height: 7px;
-  flex-shrink: 0;
-  border-radius: 999px;
-  background: currentColor;
-  opacity: 0.24;
-  transition:
-    opacity 120ms ease,
-    transform 120ms ease,
-    background-color 120ms ease,
-    box-shadow 120ms ease;
-}
-
-.close-confirm-card__remember input:checked + span::before {
-  opacity: 1;
-  transform: scale(1.08);
-  box-shadow: 0 0 0 4px rgba(var(--accent-rgb), 0.18);
 }
 
 .close-confirm-card__footer .btn-outline {

@@ -2,6 +2,7 @@ package desktop
 
 import (
 	"cloudplayer/backend/config"
+	"runtime"
 
 	"github.com/wailsapp/wails/v3/pkg/application"
 )
@@ -19,6 +20,11 @@ func HandleMainWindowCloseRequest(onQuit func()) {
 	case "tray":
 		HideMainWindow()
 	default:
+		if runtime.GOOS == "windows" {
+			if showWindowsMainWindowCloseDialog(onQuit) {
+				return
+			}
+		}
 		ShowMainWindowCloseWindow()
 	}
 }
@@ -55,4 +61,34 @@ func ShowMainWindowCloseWindow() {
 		MacTitleBarStyle:        "hiddenInset",
 		InvisibleTitleBarHeight: 44,
 	})
+}
+
+// Windows uses a native multi-button confirmation here so close/titlebar flows match system dialog behavior.
+func showWindowsMainWindowCloseDialog(onQuit func()) bool {
+	result, err := (&DesktopService{}).ShowNativeChoiceDialog(NativeDialogChoiceRequest{
+		Title:       "退出 CloudPlayer",
+		Heading:     "关闭主窗口？",
+		Message:     "你可以最小化到系统托盘，或直接退出 CloudPlayer。",
+		ParentLabel: "main",
+		Buttons: []NativeDialogButton{
+			{Label: "最小化到托盘", Action: "tray", Default: true},
+			{Label: "退出应用", Action: "quit"},
+			{Label: "取消", Action: "cancel", Cancel: true},
+		},
+	})
+	if err != nil {
+		return false
+	}
+	switch result {
+	case "tray":
+		HideMainWindow()
+		return true
+	case "quit":
+		if onQuit != nil {
+			onQuit()
+		}
+		return true
+	default:
+		return true
+	}
 }

@@ -10,11 +10,6 @@ const WINDOW_LABEL = "close-confirm";
 const currentWindow = RuntimeWindow.Get(WINDOW_LABEL);
 let suppressFocusRestore = false;
 
-function resetRememberChoice() {
-  const remember = document.getElementById("close-confirm-remember");
-  if (remember) remember.checked = false;
-}
-
 function renderCloseConfirmWindow(root) {
   root.innerHTML = `
     <div class="app-child-window-frame app-child-window-frame--dialog">
@@ -35,7 +30,6 @@ function renderCloseConfirmWindow(root) {
           </div>
         </div>
         <footer class="close-confirm-card__footer">
-          <label class="close-confirm-card__remember"><input type="checkbox" id="close-confirm-remember" /><span>记住这次选择</span></label>
           <button type="button" id="close-confirm-cancel" class="btn-outline">取消</button>
         </footer>
       </main>
@@ -78,19 +72,8 @@ async function focusMainWindow() {
   }
 }
 
-async function persistRememberedAction(mode) {
-  if (!document.getElementById("close-confirm-remember")?.checked) return;
-  const patch = { main_window_close_action: mode === "tray" ? "tray" : "quit" };
-  try {
-    await invoke("save_settings", { patch });
-  } catch (error) {
-    console.warn("save_settings main_window_close_action", error);
-  }
-}
-
 async function runCloseAction(mode) {
   suppressFocusRestore = true;
-  await persistRememberedAction(mode);
   if (mode === "tray") {
     await hideCloseConfirmWindow();
     try {
@@ -137,7 +120,6 @@ function wireCloseConfirmWindow() {
     void focusMainWindow();
   });
   window.addEventListener("focus", () => {
-    resetRememberChoice();
     void applyThemeFromSettings();
   });
   document.addEventListener("visibilitychange", () => {
@@ -155,7 +137,6 @@ export function bootstrapCloseConfirmWindow() {
     applyPlatformClassNames();
     renderCloseConfirmWindow(document.getElementById("app"));
     wireWindowChrome({ windowName: WINDOW_LABEL, allowMinimize: false, allowMaximize: false });
-    resetRememberChoice();
     wireCloseConfirmWindow();
     const autoSize = wireChildWindowAutoSize({
       element: document.querySelector(".app-child-window-frame--dialog"),

@@ -4,6 +4,7 @@ package desktop
 
 import (
 	"fmt"
+	"runtime"
 	"strings"
 
 	"github.com/wailsapp/wails/v3/pkg/application"
@@ -14,6 +15,21 @@ type NativeDialogRequest struct {
 	Heading     string `json:"heading"`
 	Message     string `json:"message"`
 	ParentLabel string `json:"parent_label"`
+}
+
+type NativeDialogButton struct {
+	Label   string `json:"label"`
+	Action  string `json:"action"`
+	Default bool   `json:"default"`
+	Cancel  bool   `json:"cancel"`
+}
+
+type NativeDialogChoiceRequest struct {
+	Title       string               `json:"title"`
+	Heading     string               `json:"heading"`
+	Message     string               `json:"message"`
+	ParentLabel string               `json:"parent_label"`
+	Buttons     []NativeDialogButton `json:"buttons"`
 }
 
 func nativeDialogParentWindow(label string) application.Window {
@@ -48,12 +64,27 @@ func nativeDialogMessage(heading, message string) string {
 	}
 }
 
+func applyDialogIcon(dialog *application.MessageDialog) *application.MessageDialog {
+	if dialog == nil {
+		return nil
+	}
+	if runtime.GOOS == "windows" {
+		if app := application.Get(); app != nil {
+			icon := app.Config().Icon
+			if len(icon) > 0 {
+				return dialog.SetIcon(icon)
+			}
+		}
+	}
+	return dialog
+}
+
 func (s *DesktopService) ShowNativeMessageDialog(req NativeDialogRequest) error {
 	app := application.Get()
 	if app == nil || app.Dialog == nil {
 		return fmt.Errorf("application dialog manager unavailable")
 	}
-	dialog := app.Dialog.Info().
+	dialog := applyDialogIcon(app.Dialog.Info()).
 		SetTitle(strings.TrimSpace(req.Title)).
 		SetMessage(nativeDialogMessage(req.Heading, req.Message))
 	if window := nativeDialogParentWindow(req.ParentLabel); window != nil {
@@ -69,7 +100,7 @@ func (s *DesktopService) ShowNativeQuestionDialog(req NativeDialogRequest) (bool
 		return false, fmt.Errorf("application dialog manager unavailable")
 	}
 	accepted := false
-	dialog := app.Dialog.Question().
+	dialog := applyDialogIcon(app.Dialog.Question()).
 		SetTitle(strings.TrimSpace(req.Title)).
 		SetMessage(nativeDialogMessage(req.Heading, req.Message))
 	yesButton := dialog.AddButton("Yes").OnClick(func() {
@@ -85,4 +116,39 @@ func (s *DesktopService) ShowNativeQuestionDialog(req NativeDialogRequest) (bool
 	}
 	dialog.Show()
 	return accepted, nil
+}
+
+func (s *DesktopService) ShowNativeChoiceDialog(req NativeDialogChoiceRequest) (string, error) {
+	app := application.Get()
+	if app == nil || app.Dialog == nil {
+		return "", fmt.Errorf("application dialog manager unavailable")
+	}
+	if len(req.Buttons) == 0 {
+		return "", fmt.Errorf("native choice dialog requires at least one button")
+	}
+	selected := ""
+	dialog := applyDialogIcon(app.Dialog.Question()).
+		SetTitle(strings.TrimSpace(req.Title)).
+		SetMessage(nativeDialogMessage(req.Heading, req.Message))
+	for index, item := range req.Buttons {
+		label := strings.TrimSpace(item.Label)
+		action := strings.TrimSpace(item.Action)
+		if label == "" || action == "" {
+			continue
+		}
+		button := dialog.AddButton(label).OnClick(func() {
+			selected = action
+		})
+		if item.Default || index == 0 {
+			dialog.SetDefaultButton(button)
+		}
+		if item.Cancel {
+			dialog.SetCancelButton(button)
+		}
+	}
+	if window := nativeDialogParentWindow(req.ParentLabel); window != nil {
+		dialog.AttachToWindow(window)
+	}
+	dialog.Show()
+	return selected, nil
 }
