@@ -87,6 +87,7 @@ QQ群：`572532027`
 - The main window keeps minimize / maximize / close, while standard child windows now only keep a close button in the custom titlebar.
 - macOS keeps the existing native titlebar behavior, while Windows child windows such as account center, close confirm, online-mode confirm, and lyrics replace now use the same frameless top bar.
 - Windows custom-chrome windows now keep the native Win11 outer frame styling, so the app surface gets a visible rounded-corner silhouette instead of only rounding inner panels.
+- Windows main and child windows now also use a Fluent-style Mica/Acrylic surface treatment, so the shell, account-login window, and compact dialogs share the same glassier Win11 look.
 
 ## Kugou playback recovery
 

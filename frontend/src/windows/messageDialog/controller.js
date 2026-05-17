@@ -1,7 +1,7 @@
 // Message-dialog controller renders one-button notifications in the shared child-window shell.
 import { Window as RuntimeWindow } from "@wailsio/runtime";
 import { DesktopService } from "@bindings/cloudplayer/backend/desktop/index.js";
-import { applyAppTheme, applyPlatformClassNames, systemDarkMedia } from "../../app/helpers/platformTheme.js";
+import { applyAppTheme, applyPlatformClassNames, isWindowsDesktop, systemDarkMedia } from "../../app/helpers/platformTheme.js";
 import { escapeHtml } from "../../app/helpers/text.js";
 import { windowTitlebarTemplate, wireWindowChrome } from "../../features/window/chrome.js";
 import { wireChildWindowAutoSize } from "../shared/autoSize.js";
@@ -26,15 +26,18 @@ function dialogCopy() {
 
 function renderMessageDialogWindow(root) {
   const copy = dialogCopy();
-  document.title = copy.title;
-  root.innerHTML = `
-    <div class="app-child-window-frame app-child-window-frame--dialog">
-      ${windowTitlebarTemplate({
+  const titlebar = isWindowsDesktop()
+    ? ""
+    : windowTitlebarTemplate({
         title: copy.title,
         allowMinimize: false,
         allowMaximize: false,
         className: "app-titlebar--child",
-      })}
+      });
+  document.title = copy.title;
+  root.innerHTML = `
+    <div class="app-child-window-frame app-child-window-frame--dialog">
+      ${titlebar}
       <main class="close-confirm-card message-dialog-card">
         <header class="close-confirm-card__head">
           <h1 class="close-confirm-card__title">${escapeHtml(copy.heading)}</h1>
@@ -131,7 +134,9 @@ export function bootstrapMessageDialogWindow() {
     suppressCloseReply = false;
     applyPlatformClassNames();
     renderMessageDialogWindow(document.getElementById("app"));
-    wireWindowChrome({ windowName: WINDOW_LABEL, allowMinimize: false, allowMaximize: false });
+    if (!isWindowsDesktop()) {
+      wireWindowChrome({ windowName: WINDOW_LABEL, allowMinimize: false, allowMaximize: false });
+    }
     wireMessageDialogWindow();
     const autoSize = wireChildWindowAutoSize({
       element: document.querySelector(".app-child-window-frame--dialog"),

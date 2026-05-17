@@ -2,7 +2,7 @@
 import { Events, Window as RuntimeWindow } from "@wailsio/runtime";
 import { DesktopService } from "@bindings/cloudplayer/backend/desktop/index.js";
 import { alertRequestFailed } from "../../app/helpers/errors.js";
-import { applyAppTheme, applyPlatformClassNames, systemDarkMedia } from "../../app/helpers/platformTheme.js";
+import { applyAppTheme, applyPlatformClassNames, isWindowsDesktop, systemDarkMedia } from "../../app/helpers/platformTheme.js";
 import { escapeHtml } from "../../app/helpers/text.js";
 import { createAccountCenterView } from "../../features/accounts/windowView.js";
 import { accountCenterWindowTemplate } from "../../features/accounts/windowTemplate.js";
@@ -117,7 +117,9 @@ export function bootstrapAccountCenterWindow() {
   document.addEventListener("DOMContentLoaded", () => {
     applyPlatformClassNames();
     renderAccountCenterWindow(document.getElementById("app"));
-    wireWindowChrome({ windowName: WINDOW_LABEL, allowMinimize: false, allowMaximize: false });
+    if (!isWindowsDesktop()) {
+      wireWindowChrome({ windowName: WINDOW_LABEL, allowMinimize: false, allowMaximize: false });
+    }
     const autoSize = wireChildWindowAutoSize({
       element: cardEl(),
       windowLabel: WINDOW_LABEL,

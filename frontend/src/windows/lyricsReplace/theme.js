@@ -1,5 +1,6 @@
 // Lyrics replace theme helpers keep the popup visually aligned with the main window.
 import { invoke } from "../../wails/tauri-core.js";
+import { isWindowsDesktop } from "../../app/helpers/platformTheme.js";
 
 const APP_THEMES = {
   coral: { accent: "#c62f2f", accentRgb: "198, 47, 47" },
@@ -68,6 +69,7 @@ function applyAppTheme(theme, customAccent = "#c62f2f", mode = "system") {
 
 export function applyPlatformClassNames() {
   document.documentElement.classList.toggle("platform-macos", isMacDesktop());
+  document.documentElement.classList.toggle("platform-windows", isWindowsDesktop());
 }
 
 export async function applyThemeFromSettings() {

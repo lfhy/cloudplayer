@@ -1,7 +1,7 @@
 // Online-mode confirm controller mirrors the close-confirm child window for settings-side confirmation.
 import { Window as RuntimeWindow } from "@wailsio/runtime";
 import { DesktopService } from "@bindings/cloudplayer/backend/desktop/index.js";
-import { applyAppTheme, applyPlatformClassNames, systemDarkMedia } from "../../app/helpers/platformTheme.js";
+import { applyAppTheme, applyPlatformClassNames, isWindowsDesktop, systemDarkMedia } from "../../app/helpers/platformTheme.js";
 import { windowTitlebarTemplate, wireWindowChrome } from "../../features/window/chrome.js";
 import { wireChildWindowAutoSize } from "../shared/autoSize.js";
 import { emitTo } from "../../wails/tauri-event.js";
@@ -14,14 +14,17 @@ let suppressCancelReply = false;
 let replySent = false;
 
 function renderOnlineModeConfirmWindow(root) {
-  root.innerHTML = `
-    <div class="app-child-window-frame app-child-window-frame--dialog">
-      ${windowTitlebarTemplate({
-        title: "开启在线模式",
+  const titlebar = isWindowsDesktop()
+    ? ""
+    : windowTitlebarTemplate({
+        title: "开启在线模式？",
         allowMinimize: false,
         allowMaximize: false,
         className: "app-titlebar--child",
-      })}
+      });
+  root.innerHTML = `
+    <div class="app-child-window-frame app-child-window-frame--dialog">
+      ${titlebar}
       <main class="close-confirm-card">
         <header class="close-confirm-card__head">
           <h1 class="close-confirm-card__title">开启在线模式？</h1>
@@ -120,7 +123,9 @@ export function bootstrapOnlineModeConfirmWindow() {
   document.addEventListener("DOMContentLoaded", () => {
     applyPlatformClassNames();
     renderOnlineModeConfirmWindow(document.getElementById("app"));
-    wireWindowChrome({ windowName: WINDOW_LABEL, allowMinimize: false, allowMaximize: false });
+    if (!isWindowsDesktop()) {
+      wireWindowChrome({ windowName: WINDOW_LABEL, allowMinimize: false, allowMaximize: false });
+    }
     wireOnlineModeConfirmWindow();
     const autoSize = wireChildWindowAutoSize({
       element: document.querySelector(".app-child-window-frame--dialog"),

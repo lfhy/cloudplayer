@@ -88,12 +88,12 @@ func (s *DesktopService) EnsureWindow(req WindowCreateRequest) error {
 		InitialPosition:   application.WindowXY,
 		DisableResize:     !req.Resizable,
 		AlwaysOnTop:       req.AlwaysOnTop,
-		Frameless:         useWindowsCustomChrome(req) || !req.Decorations,
-		BackgroundType:    backgroundType(req.Transparent || useWindowsCustomChrome(req)),
+		Frameless:         !req.Decorations,
+		BackgroundType:    windowBackgroundType(req),
 		IgnoreMouseEvents: false,
 		Windows: application.WindowsWindow{
 			HiddenOnTaskbar:                   req.SkipTaskbar,
-			DisableFramelessWindowDecorations: !useWindowsCustomChrome(req) && !req.Shadow,
+			DisableFramelessWindowDecorations: !req.Shadow,
 		},
 		Mac: application.MacWindow{
 			Backdrop:                macBackdrop(req.Transparent),
@@ -103,13 +103,10 @@ func (s *DesktopService) EnsureWindow(req WindowCreateRequest) error {
 			WindowLevel:             macWindowLevel(req.AlwaysOnTop),
 		},
 	}
-	if useWindowsCustomChrome(req) {
-		// Keep the Win11 rounded frame, but let the frontend own all caption controls.
-		options.MinimiseButtonState = application.ButtonHidden
-		options.MaximiseButtonState = application.ButtonHidden
-		options.CloseButtonState = application.ButtonHidden
+	if windowsNativeFluentWindow(req) {
+		options.Windows.BackdropType = application.Acrylic
 	}
-	if req.Transparent || useWindowsCustomChrome(req) {
+	if req.Transparent || windowsNativeFluentWindow(req) {
 		options.BackgroundColour = application.NewRGBA(0, 0, 0, 0)
 	}
 	window := application.Get().Window.NewWithOptions(options)
@@ -130,8 +127,15 @@ func (s *DesktopService) EnsureWindow(req WindowCreateRequest) error {
 	return nil
 }
 
-func useWindowsCustomChrome(req WindowCreateRequest) bool {
+func windowsNativeFluentWindow(req WindowCreateRequest) bool {
 	return runtime.GOOS == "windows" && req.Decorations && !req.Transparent
+}
+
+func windowBackgroundType(req WindowCreateRequest) application.BackgroundType {
+	if windowsNativeFluentWindow(req) {
+		return application.BackgroundTypeTranslucent
+	}
+	return backgroundType(req.Transparent)
 }
 
 // ResizeWindowCenteredOnMain keeps content-driven child windows pinned to the visual center of the main window.

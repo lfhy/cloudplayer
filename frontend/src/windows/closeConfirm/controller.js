@@ -1,7 +1,7 @@
 // Close-confirm controller keeps the independent child-window exit flow minimal and self-contained.
 import { Window as RuntimeWindow } from "@wailsio/runtime";
 import { DesktopService } from "@bindings/cloudplayer/backend/desktop/index.js";
-import { applyAppTheme, applyPlatformClassNames, systemDarkMedia } from "../../app/helpers/platformTheme.js";
+import { applyAppTheme, applyPlatformClassNames, isWindowsDesktop, systemDarkMedia } from "../../app/helpers/platformTheme.js";
 import { windowTitlebarTemplate, wireWindowChrome } from "../../features/window/chrome.js";
 import { wireChildWindowAutoSize } from "../shared/autoSize.js";
 import { invoke } from "../../wails/tauri-core.js";
@@ -11,14 +11,17 @@ const currentWindow = RuntimeWindow.Get(WINDOW_LABEL);
 let suppressFocusRestore = false;
 
 function renderCloseConfirmWindow(root) {
-  root.innerHTML = `
-    <div class="app-child-window-frame app-child-window-frame--dialog">
-      ${windowTitlebarTemplate({
-        title: "关闭主窗口",
+  const titlebar = isWindowsDesktop()
+    ? ""
+    : windowTitlebarTemplate({
+        title: "关闭主窗口？",
         allowMinimize: false,
         allowMaximize: false,
         className: "app-titlebar--child",
-      })}
+      });
+  root.innerHTML = `
+    <div class="app-child-window-frame app-child-window-frame--dialog">
+      ${titlebar}
       <main class="close-confirm-card">
         <header class="close-confirm-card__head">
           <h1 class="close-confirm-card__title">关闭主窗口？</h1>
@@ -136,7 +139,9 @@ export function bootstrapCloseConfirmWindow() {
   document.addEventListener("DOMContentLoaded", () => {
     applyPlatformClassNames();
     renderCloseConfirmWindow(document.getElementById("app"));
-    wireWindowChrome({ windowName: WINDOW_LABEL, allowMinimize: false, allowMaximize: false });
+    if (!isWindowsDesktop()) {
+      wireWindowChrome({ windowName: WINDOW_LABEL, allowMinimize: false, allowMaximize: false });
+    }
     wireCloseConfirmWindow();
     const autoSize = wireChildWindowAutoSize({
       element: document.querySelector(".app-child-window-frame--dialog"),
