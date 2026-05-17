@@ -17,21 +17,6 @@ type NativeDialogRequest struct {
 	ParentLabel string `json:"parent_label"`
 }
 
-type NativeDialogButton struct {
-	Label   string `json:"label"`
-	Action  string `json:"action"`
-	Default bool   `json:"default"`
-	Cancel  bool   `json:"cancel"`
-}
-
-type NativeDialogChoiceRequest struct {
-	Title       string               `json:"title"`
-	Heading     string               `json:"heading"`
-	Message     string               `json:"message"`
-	ParentLabel string               `json:"parent_label"`
-	Buttons     []NativeDialogButton `json:"buttons"`
-}
-
 func nativeDialogParentWindow(label string) application.Window {
 	trimmed := strings.TrimSpace(label)
 	if trimmed != "" {
@@ -116,39 +101,4 @@ func (s *DesktopService) ShowNativeQuestionDialog(req NativeDialogRequest) (bool
 	}
 	dialog.Show()
 	return accepted, nil
-}
-
-func (s *DesktopService) ShowNativeChoiceDialog(req NativeDialogChoiceRequest) (string, error) {
-	app := application.Get()
-	if app == nil || app.Dialog == nil {
-		return "", fmt.Errorf("application dialog manager unavailable")
-	}
-	if len(req.Buttons) == 0 {
-		return "", fmt.Errorf("native choice dialog requires at least one button")
-	}
-	selected := ""
-	dialog := applyDialogIcon(app.Dialog.Question()).
-		SetTitle(strings.TrimSpace(req.Title)).
-		SetMessage(nativeDialogMessage(req.Heading, req.Message))
-	for index, item := range req.Buttons {
-		label := strings.TrimSpace(item.Label)
-		action := strings.TrimSpace(item.Action)
-		if label == "" || action == "" {
-			continue
-		}
-		button := dialog.AddButton(label).OnClick(func() {
-			selected = action
-		})
-		if item.Default || index == 0 {
-			dialog.SetDefaultButton(button)
-		}
-		if item.Cancel {
-			dialog.SetCancelButton(button)
-		}
-	}
-	if window := nativeDialogParentWindow(req.ParentLabel); window != nil {
-		dialog.AttachToWindow(window)
-	}
-	dialog.Show()
-	return selected, nil
 }
