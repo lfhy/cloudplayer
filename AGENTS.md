@@ -52,6 +52,11 @@
 - Do not add ignore rules that broadly match source package directory names such as `cloudplayer`.
 - If a root-level build artifact must be ignored, use an anchored path rule that cannot match source directories.
 
+## Windows Encoding
+
+- On Windows, treat PowerShell console output and ad-hoc shell edits as potentially encoding-sensitive, especially for UTF-8 files containing Chinese text.
+- When updating text-heavy or encoding-sensitive files such as `README.md`, `CHANGELOG.md`, `AGENTS.md`, or localized frontend copy, prefer a small Node script that reads and writes explicit `utf8` text over shell one-liners.
+
 ## Git Workflow
 
 - After completing the requested implementation and validation successfully, create a normal non-amended commit unless the user explicitly says not to commit.
