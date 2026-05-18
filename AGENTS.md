@@ -61,6 +61,7 @@
 - Maintain release note drafts in `CHANGELOG.md` under `## Unreleased` as work lands when the change is relevant to an upcoming release.
 - When preparing or updating a release workflow, prefer `CHANGELOG.md` as the source of truth for release notes instead of reconstructing everything from commit history.
 - After a tagged release is prepared, archive `CHANGELOG.md` `## Unreleased` into a versioned section with `scripts/archive_unreleased_changelog.sh`.
+- If `apply_patch` becomes unreliable on encoding-sensitive files such as `README.md` or `CHANGELOG.md`, prefer a small Node script that reads and writes explicit `utf8` text over ad-hoc shell editing.
 
 ## Validation
 

@@ -1,4 +1,7 @@
 # CloudPlayer Changelog
+
+- Added `scripts/free-port.mjs` to release occupied listening ports on Windows and macOS during local development.
+
 - Windows buttons now avoid gradient fills and use flatter surfaces aligned with the native shell.
 
 使用方式：
