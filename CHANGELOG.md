@@ -5,6 +5,7 @@
 - Windows buttons now avoid gradient fills and use flatter surfaces aligned with the native shell.
 - Search now fails over to the next music source automatically when the current provider is unavailable.
 - Search provider retries now use short per-attempt timeouts so a stalled source does not block failover.
+- Main-window child-window masking no longer blurs the background while standalone dialogs are open.
 
 使用方式：
 

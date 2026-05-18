@@ -325,5 +325,4 @@
 
 .platform-windows .child-window-mask {
   background: rgba(9, 13, 19, 0.24);
-  backdrop-filter: blur(8px);
 }
