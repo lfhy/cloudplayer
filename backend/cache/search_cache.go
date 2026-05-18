@@ -68,6 +68,10 @@ func (c *SearchCache) Set(key string, response model.SearchResponse, ttl time.Du
 	gcache.Set(key, cloneSearchResponse(response), seconds)
 }
 
+func (c *SearchCache) Delete(key string) {
+	gcache.Delete(key)
+}
+
 func (c *SearchCache) GetSongMetadata(key string) (model.SearchSongMetadataRow, bool) {
 	return gcache.Get[model.SearchSongMetadataRow](key)
 }

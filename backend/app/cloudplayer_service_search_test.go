@@ -7,6 +7,7 @@ import (
 	"testing"
 	"time"
 
+	"cloudplayer/backend/cache"
 	"cloudplayer/backend/config"
 	"cloudplayer/backend/musicsource"
 	"cloudplayer/backend/state"
@@ -168,6 +169,147 @@ func TestSearchSongsFallsBackWhenPrimaryReturnsEmptyPage(t *testing.T) {
 		t.Fatalf("SearchSongs() providerKey = %q", response.ProviderKey)
 	}
 	if len(response.Results) != 1 || response.Results[0].SourceID != "netease:99" {
+		t.Fatalf("SearchSongs() results = %#v", response.Results)
+	}
+}
+
+func TestSearchSongsDoesNotCacheEmptyPrimaryPage(t *testing.T) {
+	tempHome := t.TempDir()
+	t.Setenv("HOME", tempHome)
+	t.Setenv("USERPROFILE", tempHome)
+
+	settings := config.DefaultSettings()
+	settings.MusicSourceProvider = musicsource.ProviderKugou
+	settings.PlaybackFallbackChain = "kugou,netease,pjmp3"
+	if err := config.SaveSettings(settings); err != nil {
+		t.Fatalf("SaveSettings() error = %v", err)
+	}
+
+	previousCurrent := currentSearchProvider
+	previousLookup := searchProviderByKey
+	t.Cleanup(func() {
+		currentSearchProvider = previousCurrent
+		searchProviderByKey = previousLookup
+	})
+
+	kugou := stubSearchProvider{
+		key: musicsource.ProviderKugou,
+		search: func(_ *http.Client, _ string, _ uint32) ([]musicsource.SearchResult, bool, error) {
+			return nil, false, nil
+		},
+	}
+	netease := stubSearchProvider{
+		key: musicsource.ProviderNetease,
+		search: func(_ *http.Client, _ string, _ uint32) ([]musicsource.SearchResult, bool, error) {
+			return []musicsource.SearchResult{{
+				SourceID: musicsource.EncodeSourceID(musicsource.ProviderNetease, "1"),
+				Title:    "Fallback Track",
+				Artist:   "Netease Artist",
+			}}, false, nil
+		},
+	}
+
+	currentSearchProvider = func() musicsource.Provider {
+		return kugou
+	}
+	searchProviderByKey = func(key string) (musicsource.Provider, bool) {
+		if key == musicsource.ProviderKugou {
+			return kugou, true
+		}
+		if key == musicsource.ProviderNetease {
+			return netease, true
+		}
+		return nil, false
+	}
+
+	service := &CloudPlayerService{state: state.NewAppState(nil)}
+	response, err := service.SearchSongs("empty-no-cache", 1)
+	if err != nil {
+		t.Fatalf("SearchSongs() error = %v", err)
+	}
+	if _, ok := service.state.SearchCache.Get(cache.SearchCacheKey(musicsource.ProviderKugou, "empty-no-cache", 1)); ok {
+		t.Fatalf("SearchSongs() cached empty response")
+	}
+	if len(response.Results) != 1 || response.Results[0].SourceID != "netease:1" {
+		t.Fatalf("SearchSongs() fallback results = %#v", response.Results)
+	}
+}
+
+func TestSearchSongsFallsBackWhenPrimaryCachedPageIsEmpty(t *testing.T) {
+	tempHome := t.TempDir()
+	t.Setenv("HOME", tempHome)
+	t.Setenv("USERPROFILE", tempHome)
+
+	settings := config.DefaultSettings()
+	settings.MusicSourceProvider = musicsource.ProviderKugou
+	settings.PlaybackFallbackChain = "kugou,netease,pjmp3"
+	if err := config.SaveSettings(settings); err != nil {
+		t.Fatalf("SaveSettings() error = %v", err)
+	}
+
+	previousCurrent := currentSearchProvider
+	previousLookup := searchProviderByKey
+	t.Cleanup(func() {
+		currentSearchProvider = previousCurrent
+		searchProviderByKey = previousLookup
+	})
+
+	kugouCalls := 0
+	kugou := stubSearchProvider{
+		key: musicsource.ProviderKugou,
+		search: func(_ *http.Client, _ string, _ uint32) ([]musicsource.SearchResult, bool, error) {
+			kugouCalls += 1
+			return []musicsource.SearchResult{{SourceID: musicsource.EncodeSourceID(musicsource.ProviderKugou, "unexpected")}}, false, nil
+		},
+	}
+	netease := stubSearchProvider{
+		key: musicsource.ProviderNetease,
+		search: func(_ *http.Client, _ string, _ uint32) ([]musicsource.SearchResult, bool, error) {
+			return []musicsource.SearchResult{{
+				SourceID: musicsource.EncodeSourceID(musicsource.ProviderNetease, "cached-fallback"),
+				Title:    "Fallback From Cached Empty",
+				Artist:   "Netease Artist",
+			}}, false, nil
+		},
+	}
+
+	currentSearchProvider = func() musicsource.Provider {
+		return kugou
+	}
+	searchProviderByKey = func(key string) (musicsource.Provider, bool) {
+		switch key {
+		case musicsource.ProviderKugou:
+			return kugou, true
+		case musicsource.ProviderNetease:
+			return netease, true
+		default:
+			return nil, false
+		}
+	}
+
+	service := &CloudPlayerService{state: state.NewAppState(nil)}
+	service.state.SearchCache.Set("search:page:v1:kugou|cached-empty|1", SearchResponse{
+		Results: nil,
+		HasNext: false,
+	}, service.state.SearchCacheTTL)
+
+	response, err := service.SearchSongs("cached-empty", 1)
+	if err != nil {
+		t.Fatalf("SearchSongs() error = %v", err)
+	}
+	if kugouCalls != 0 {
+		t.Fatalf("SearchSongs() primary search calls = %d", kugouCalls)
+	}
+	if _, ok := service.state.SearchCache.Get(cache.SearchCacheKey(musicsource.ProviderKugou, "cached-empty", 1)); ok {
+		t.Fatalf("SearchSongs() left cached empty response behind")
+	}
+	if !response.FallbackApplied {
+		t.Fatalf("SearchSongs() fallbackApplied = false")
+	}
+	if response.ProviderKey != musicsource.ProviderNetease {
+		t.Fatalf("SearchSongs() providerKey = %q", response.ProviderKey)
+	}
+	if len(response.Results) != 1 || response.Results[0].SourceID != "netease:cached-fallback" {
 		t.Fatalf("SearchSongs() results = %#v", response.Results)
 	}
 }

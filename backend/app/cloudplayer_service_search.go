@@ -49,6 +49,19 @@ func (s *CloudPlayerService) SearchSongs(keyword string, page uint32) (model.Sea
 
 		cacheKey := cache.SearchCacheKey(provider.Key(), trimmed, resolvedPage)
 		if cached, ok := s.state.SearchCache.Get(cacheKey); ok {
+			if resolvedPage == 1 && len(cached.Results) == 0 && index < len(providerKeys)-1 {
+				s.state.SearchCache.Delete(cacheKey)
+				log.Printf(
+					"SearchSongs cache empty first page: keyword=%q page=%d provider=%s primary=%s fallbackCandidate=%t elapsed=%s",
+					trimmed,
+					resolvedPage,
+					provider.Key(),
+					primaryProvider.Key(),
+					true,
+					time.Since(startedAt).Round(time.Millisecond),
+				)
+				continue
+			}
 			persisted := false
 			if index > 0 {
 				persisted = persistSearchProviderSwitch(settings, primaryProvider.Key(), provider.Key())
@@ -94,7 +107,9 @@ func (s *CloudPlayerService) SearchSongs(keyword string, page uint32) (model.Sea
 			continue
 		}
 
-		s.state.SearchCache.Set(cacheKey, response, s.state.SearchCacheTTL)
+		if len(response.Results) > 0 {
+			s.state.SearchCache.Set(cacheKey, response, s.state.SearchCacheTTL)
+		}
 
 		persisted := false
 		if index > 0 {
