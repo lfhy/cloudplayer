@@ -22,11 +22,6 @@ body.close-confirm-window {
     var(--bg-main);
 }
 
-.platform-windows .close-confirm-window__root {
-  overflow: hidden;
-  border-radius: 24px;
-}
-
 .close-confirm-card {
   width: 100%;
   box-sizing: border-box;

@@ -19,14 +19,12 @@
 }
 
 .platform-windows .lyrics-window {
-  background: transparent;
-  border-radius: 24px;
+  background: var(--bg-main);
 }
 
 .platform-windows .lyrics-window__shell {
-  overflow: hidden;
-  border-radius: 24px;
-  background: var(--bg-main);
+  overflow: visible;
+  background: transparent;
 }
 
 .platform-macos .lyrics-window {

@@ -37,16 +37,6 @@ body {
   background: var(--bg-main);
 }
 
-.platform-windows .app-root {
-  overflow: hidden;
-  border-radius: 24px;
-}
-
-.platform-windows .app-shell {
-  overflow: hidden;
-  border-radius: 24px;
-}
-
 .body-row {
   position: relative;
   display: flex;

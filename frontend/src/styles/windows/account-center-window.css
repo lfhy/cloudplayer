@@ -21,7 +21,6 @@ body.account-center-window {
     radial-gradient(circle at top, rgba(var(--accent-rgb), 0.08), transparent 58%),
     var(--bg-main);
   overflow: hidden;
-  border-radius: 24px;
 }
 
 .account-center-window__card {

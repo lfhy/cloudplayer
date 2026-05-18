@@ -90,17 +90,9 @@ func Run(assets fs.FS, trayTemplateIcon []byte) error {
 			InvisibleTitleBarHeight: 56,
 		},
 	}
-	// Windows uses a frameless window so the frontend can render a custom titlebar without affecting macOS chrome.
+	// Windows keeps the stock titlebar so the shell can lean on native chrome instead of an inner wrapper.
 	if runtime.GOOS == "windows" {
-		mainWindowOptions.Frameless = true
-		mainWindowOptions.BackgroundType = application.BackgroundTypeTranslucent
-		mainWindowOptions.BackgroundColour = application.NewRGBA(0, 0, 0, 0)
 		mainWindowOptions.Windows.BackdropType = application.Mica
-		// Keep the native Win11 rounded frame while hiding the stock caption buttons.
-		mainWindowOptions.Windows.DisableFramelessWindowDecorations = false
-		mainWindowOptions.MinimiseButtonState = application.ButtonHidden
-		mainWindowOptions.MaximiseButtonState = application.ButtonHidden
-		mainWindowOptions.CloseButtonState = application.ButtonHidden
 		configureMainWindowTheme(&mainWindowOptions, initialSettings.AppThemeMode)
 	}
 	mainWindow := app.Window.NewWithOptions(mainWindowOptions)

@@ -12,7 +12,7 @@ import {
   setLyricsReplaceError,
   setTableMutedMessage,
 } from "./view.js";
-import { applyPlatformClassNames, applyThemeFromSettings, listenSystemThemeChange } from "./theme.js";
+import { applyPlatformClassNames, applyThemeFromSettings, isWindowsDesktop, listenSystemThemeChange } from "./theme.js";
 
 async function closeWindow() {
   try {
@@ -34,7 +34,7 @@ async function selectLyricsReplaceRow(idx) {
   lyricsReplaceState.pendingRequestId = "";
   refreshApplyButton();
   const previewEl = document.getElementById("lyrics-replace-preview");
-  if (previewEl) previewEl.textContent = "加载中...";
+  if (previewEl) previewEl.textContent = "\u52a0\u8f7d\u4e2d...";
   setLyricsReplaceError("");
 
   try {
@@ -69,16 +69,16 @@ async function searchLyricsReplaceCandidates() {
     setLyricsReplaceError("");
 
     if (!keyword) {
-      setTableMutedMessage("请输入关键词");
+      setTableMutedMessage("\u8bf7\u8f93\u5165\u5173\u952e\u8bcd");
       return;
     }
     const sources = getLyricsReplaceSourcesFromChips();
     if (!sources.length) {
-      setTableMutedMessage("请至少选择一个来源");
+      setTableMutedMessage("\u8bf7\u81f3\u5c11\u9009\u62e9\u4e00\u4e2a\u6765\u6e90");
       return;
     }
 
-    setTableMutedMessage("搜索中...");
+    setTableMutedMessage("\u641c\u7d22\u4e2d...");
     try {
       lyricsReplaceState.candidates = await invoke("lyrics_search_candidates", {
         keyword,
@@ -97,8 +97,8 @@ async function searchLyricsReplaceCandidates() {
       await selectLyricsReplaceRow(0);
       return;
     }
-    setTableMutedMessage("未找到结果");
-    document.getElementById("lyrics-replace-preview").textContent = "未找到匹配歌词，请换关键词或来源。";
+    setTableMutedMessage("\u672a\u627e\u5230\u7ed3\u679c");
+    document.getElementById("lyrics-replace-preview").textContent = "\u672a\u627e\u5230\u5339\u914d\u6b4c\u8bcd\uff0c\u8bf7\u6362\u5173\u952e\u8bcd\u6216\u6765\u6e90\u3002";
   } finally {
     if (searchBtn) searchBtn.disabled = false;
   }
@@ -178,21 +178,23 @@ function wireApplyResult() {
 export function bootstrapLyricsReplaceWindow() {
   document.addEventListener("DOMContentLoaded", () => {
     applyPlatformClassNames();
-    document.querySelector(".lyrics-window__shell")?.insertAdjacentHTML(
-      "afterbegin",
-      windowTitlebarTemplate({
-        title: "替换歌词",
-        allowMinimize: false,
-        allowMaximize: false,
-        className: "app-titlebar--child app-titlebar--lyrics",
-      })
-    );
-    wireWindowChrome({ windowName: CURRENT_WW_LABEL, allowMinimize: false, allowMaximize: false });
+    if (!isWindowsDesktop()) {
+      document.querySelector(".lyrics-window__shell")?.insertAdjacentHTML(
+        "afterbegin",
+        windowTitlebarTemplate({
+          title: "\u66ff\u6362\u6b4c\u8bcd",
+          allowMinimize: false,
+          allowMaximize: false,
+          className: "app-titlebar--child app-titlebar--lyrics",
+        })
+      );
+      wireWindowChrome({ windowName: CURRENT_WW_LABEL, allowMinimize: false, allowMaximize: false });
+    }
     fillInitialContext();
     wireLyricsReplaceWindow();
     wireThemeRefresh();
     wireApplyResult();
-    setTableMutedMessage(trackContext.keyword ? "正在准备搜索..." : "输入关键词后点击“搜索”");
+    setTableMutedMessage(trackContext.keyword ? "\u6b63\u5728\u51c6\u5907\u641c\u7d22..." : "\u8f93\u5165\u5173\u952e\u8bcd\u540e\u70b9\u51fb\u201c\u641c\u7d22\u201d");
     void applyThemeFromSettings();
     window.setTimeout(() => {
       document.getElementById("lyrics-replace-keyword")?.focus();

@@ -48,50 +48,30 @@
 }
 
 .platform-windows .app-root {
-  padding: 10px;
-  background:
-    radial-gradient(circle at top left, rgba(var(--accent-rgb), 0.14), transparent 28%),
-    linear-gradient(180deg, rgba(255, 255, 255, 0.16), transparent 20%),
-    var(--bg-main);
+  background: var(--bg-main);
 }
 
 .platform-windows .app-shell {
-  position: relative;
-  border: 1px solid var(--win-shell-edge);
-  background: var(--win-shell-surface);
-  box-shadow: var(--shadow-float);
-  backdrop-filter: blur(28px) saturate(160%);
-}
-
-.platform-windows .app-shell::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  background:
-    radial-gradient(circle at top right, rgba(255, 255, 255, 0.22), transparent 26%),
-    linear-gradient(180deg, rgba(255, 255, 255, 0.16), transparent 16%);
+  background: var(--bg-main);
+  box-shadow: none;
+  backdrop-filter: none;
 }
 
 .platform-windows .body-row,
 .platform-windows .main-col,
 .platform-windows .page-active,
 .platform-windows .discover-scroll {
-  position: relative;
-  z-index: 1;
   background: transparent;
 }
 
 .platform-windows .sidebar {
-  background: color-mix(in srgb, var(--bg-card) 72%, transparent);
-  border-right-color: color-mix(in srgb, var(--border) 72%, transparent);
-  backdrop-filter: blur(18px) saturate(150%);
+  background: color-mix(in srgb, var(--bg-card) 90%, var(--bg-main));
+  border-right-color: color-mix(in srgb, var(--border) 82%, transparent);
+  backdrop-filter: none;
 }
 
 .platform-windows .stack {
-  background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.08), transparent 14%),
-    transparent;
+  background: var(--bg-main);
 }
 
 .platform-windows .sidebar-pl-item:hover,
@@ -117,10 +97,6 @@
   display: none !important;
 }
 
-.platform-windows .app-titlebar--main {
-  padding: 10px 12px 4px 16px;
-}
-
 .platform-windows .app-titlebar__lead-copy {
   min-height: 26px;
   padding-inline: 12px;
@@ -138,6 +114,8 @@
 
 .platform-windows .app-child-window-frame {
   border: 0;
+  gap: 0;
+  border-radius: 0;
   background: transparent;
   box-shadow: none;
   backdrop-filter: none;
@@ -145,21 +123,19 @@
 
 .platform-windows .close-confirm-window__root,
 .platform-windows .account-center-window__root {
-  padding: 10px;
-  background:
-    radial-gradient(circle at top, rgba(var(--accent-rgb), 0.12), transparent 56%),
-    var(--bg-main);
+  padding: 14px;
+  background: var(--bg-main);
 }
 
 .platform-windows .close-confirm-card,
 .platform-windows .account-center-window__card,
 .platform-windows .message-dialog-card {
-  padding: 14px;
-  border: 1px solid var(--win-shell-edge);
-  border-radius: 20px;
-  background: var(--win-panel-surface);
-  box-shadow: var(--shadow-float);
-  backdrop-filter: blur(26px) saturate(150%);
+  padding: 2px 0 10px;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  backdrop-filter: none;
 }
 
 .platform-windows .account-center-window__card {
@@ -167,10 +143,10 @@
 }
 
 .platform-windows .lyrics-window__shell {
-  border: 1px solid var(--win-shell-edge);
-  background: var(--win-shell-surface);
-  box-shadow: var(--shadow-float);
-  backdrop-filter: blur(26px) saturate(150%);
+  border: 0;
+  background: var(--bg-main);
+  box-shadow: none;
+  backdrop-filter: none;
 }
 
 .platform-windows .lyrics-window__track,

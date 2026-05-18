@@ -72,6 +72,8 @@ export function applyPlatformClassNames() {
   document.documentElement.classList.toggle("platform-windows", isWindowsDesktop());
 }
 
+export { isWindowsDesktop };
+
 export async function applyThemeFromSettings() {
   try {
     const settings = await invoke("get_settings");
