@@ -94,6 +94,12 @@ export function createSettingsController(deps) {
     settingsFormBaseline = getSettingsFormValues();
   }
 
+  function syncMusicSourceProviderSelection(provider) {
+    const normalized = normalizeMusicSourceProvider(provider);
+    setMusicSourceProviderSelection(normalized);
+    settingsFormBaseline.musicSourceProvider = normalized;
+  }
+
   function fillSettingsFormFromSettings(settings) {
     const theme = normalizeAppTheme(settings?.app_theme ?? settings?.appTheme ?? "coral");
     const mode = normalizeAppThemeMode(settings?.app_theme_mode ?? settings?.appThemeMode ?? "system");
@@ -318,5 +324,5 @@ export function createSettingsController(deps) {
     try { console.info(await invoke("db_status")); } catch (error) { console.warn("db_status", error); }
   }
 
-  return { getSettingsFormValues, loadSettings, openCloseConfirmModal, queueSettingsAutosave, refreshKugouSettingsStatus, toggleMusicOnlineModeFromAccountCenter, wirePreferencesModals };
+  return { getSettingsFormValues, loadSettings, openCloseConfirmModal, queueSettingsAutosave, refreshKugouSettingsStatus, syncMusicSourceProviderSelection, toggleMusicOnlineModeFromAccountCenter, wirePreferencesModals };
 }

@@ -2,11 +2,9 @@ package cloudplayer
 
 import (
 	"fmt"
-	"log"
 	"os"
 	"strings"
 
-	"cloudplayer/backend/cache"
 	"cloudplayer/backend/download"
 	"cloudplayer/backend/importplaylist"
 	"cloudplayer/backend/model"
@@ -14,28 +12,6 @@ import (
 )
 
 // Playback helpers resolve online tracks and expose import parsing to the frontend.
-func (s *CloudPlayerService) SearchSongs(keyword string, page uint32) (model.SearchResponse, error) {
-	trimmed := strings.TrimSpace(keyword)
-	if trimmed == "" {
-		return model.SearchResponse{}, fmt.Errorf("璇疯緭鍏ユ悳绱㈠叧閿瘝")
-	}
-	resolvedPage := maxUint32(page, 1)
-	provider := musicsource.Current()
-	cacheKey := cache.SearchCacheKey(provider.Key(), trimmed, resolvedPage)
-	if cached, ok := s.state.SearchCache.Get(cacheKey); ok {
-		return cached, nil
-	}
-	s.state.RateLimiter.AcquireSlot()
-	results, hasNext, err := provider.Search(s.state.HTTP(), trimmed, resolvedPage)
-	if err != nil {
-		log.Printf("SearchSongs failed: keyword=%q page=%d provider=%s err=%v", trimmed, resolvedPage, provider.Key(), err)
-		return model.SearchResponse{}, err
-	}
-	response := model.SearchResponse{Results: results, HasNext: hasNext}
-	s.state.SearchCache.Set(cacheKey, response, s.state.SearchCacheTTL)
-	return response, nil
-}
-
 func (s *CloudPlayerService) GetPreviewURL(songID string) (string, error) {
 	ref, err := musicsource.ParseSourceID(songID)
 	if err != nil {
@@ -47,7 +23,7 @@ func (s *CloudPlayerService) GetPreviewURL(songID string) (string, error) {
 		return "", err
 	}
 	if strings.TrimSpace(previewURL) == "" {
-		return "", fmt.Errorf("鏈В鏋愬埌 MP3 璇曞惉鍦板潃")
+		return "", fmt.Errorf("閺堫亣袙閺嬫劕鍩?MP3 鐠囨洖鎯夐崷鏉挎絻")
 	}
 	return previewURL, nil
 }

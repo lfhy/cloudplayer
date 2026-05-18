@@ -3,6 +3,7 @@
 - Added `scripts/free-port.mjs` to release occupied listening ports on Windows and macOS during local development.
 
 - Windows buttons now avoid gradient fills and use flatter surfaces aligned with the native shell.
+- Search now fails over to the next music source automatically when the current provider is unavailable.
 
 使用方式：
 

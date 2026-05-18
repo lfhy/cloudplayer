@@ -1,6 +1,7 @@
 # CloudPlayer Wails
 
 - Dev helper: `node ./scripts/free-port.mjs <port> [more-ports...]` releases occupied listening ports on Windows and macOS before you rerun `wails3 dev`.
+- Search now fails over to the next music source automatically when the active provider is unavailable.
 
 
 CloudPlayer Wails 是基于 Wails 3 的桌面音乐播放器，聚焦 macOS 桌面体验，同时保留在线曲库、歌词、下载、歌单导入、桌面歌词和快捷键等能力。

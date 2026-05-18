@@ -247,6 +247,7 @@ const pages = createPageRuntime({
   refreshLocalLibraryTable: (...args) => player.refreshLocalLibraryTable(...args), refreshQuickThemeModeUi: (...args) => refreshQuickThemeModeUi(...args), renderDownloadQueueTable: (...args) => player.renderDownloadQueueTable(...args),
   renderQueuePanel: (...args) => renderQueuePanel(...args), renderRecentPlaysTable: (...args) => renderRecentPlaysTable(...args), resetImportFlow: settings.resetImportFlow, searchState,
   refreshKugouSettingsStatus: (...args) => settings.refreshKugouSettingsStatus(...args),
+  syncMusicSourceProviderSelection: (...args) => settings.syncMusicSourceProviderSelection(...args),
   setImportDraft: settings.setImportDraft, setImportConfigHeader: settings.setImportConfigHeader, setImportMethod: settings.setImportMethod, setImportStep: settings.setImportStep, setLastLibraryFolder: (value) => { lastLibraryFolder = value; },
   setNeteaseCookieState: ({ enabled, value }) => { neteaseCookieEnabled = !!enabled; neteaseCookieValue = String(value || ""); }, setPlayQueue: (rows) => { setPlayQueueValue(rows); },
   setTableMutedMessage,

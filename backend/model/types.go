@@ -8,8 +8,12 @@ import (
 )
 
 type SearchResponse struct {
-	Results []musicsource.SearchResult `json:"results"`
-	HasNext bool                       `json:"has_next"`
+	Results           []musicsource.SearchResult `json:"results"`
+	HasNext           bool                       `json:"has_next"`
+	ProviderKey       string                     `json:"provider_key,omitempty"`
+	FailedProviderKey string                     `json:"failed_provider_key,omitempty"`
+	FallbackApplied   bool                       `json:"fallback_applied,omitempty"`
+	ProviderPersisted bool                       `json:"provider_persisted,omitempty"`
 }
 
 type SearchSongMetadataRow struct {

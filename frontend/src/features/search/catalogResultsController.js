@@ -26,6 +26,7 @@ export function createCatalogResultsController(deps) {
     playFromSearchRow,
     searchState,
     setTableMutedMessage,
+    syncMusicSourceProviderSelection,
     updateSearchToolbar,
     warnRequestFailed,
   } = deps;
@@ -178,6 +179,9 @@ export function createCatalogResultsController(deps) {
       }
       const result = await invoke("search_songs", { keyword, page: targetPage });
       if (requestToken !== searchRequestToken) return;
+      if (result?.provider_persisted === true && result?.provider_key) {
+        syncMusicSourceProviderSelection?.(result.provider_key);
+      }
       searchState.page = targetPage;
       appendSearchResults(result?.results, !append);
       searchState.hasNext = result?.has_next === true;

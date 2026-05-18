@@ -93,6 +93,10 @@ function normalizeSearchResponse(payload) {
   return {
     results: rawResults.map((row) => normalizeSearchRow(row)),
     has_next: [source.has_next, source.hasNext, source.HasNext].some((value) => value === true),
+    provider_key: pickFirstNonEmptyString(source.provider_key, source.providerKey, source.ProviderKey),
+    failed_provider_key: pickFirstNonEmptyString(source.failed_provider_key, source.failedProviderKey, source.FailedProviderKey),
+    fallback_applied: [source.fallback_applied, source.fallbackApplied, source.FallbackApplied].some((value) => value === true),
+    provider_persisted: [source.provider_persisted, source.providerPersisted, source.ProviderPersisted].some((value) => value === true),
   };
 }
 

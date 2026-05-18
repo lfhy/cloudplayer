@@ -47,6 +47,7 @@ export function createPageRuntime(deps) {
     setImportMethod,
     setImportStep,
     setLastLibraryFolder,
+    syncMusicSourceProviderSelection,
     setNeteaseCookieState,
     setPlayQueue,
     setPlaylistDetailRows,
@@ -173,6 +174,7 @@ export function createPageRuntime(deps) {
     setPage: (...args) => setPage(...args),
     setSelectedPlaylist,
     setTableMutedMessage: deps.setTableMutedMessage,
+    syncMusicSourceProviderSelection,
     warnRequestFailed,
   });
 
