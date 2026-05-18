@@ -32,11 +32,6 @@ body.close-confirm-window {
   background: transparent;
 }
 
-.platform-macos .close-confirm-card {
-  /* macOS hidden-inset titlebars still need a little extra breathing room below the traffic lights. */
-  padding-top: 12px;
-}
-
 .close-confirm-card__head {
   display: block;
   padding-inline: 56px;

@@ -59,6 +59,12 @@
   border-radius: 24px;
 }
 
+.platform-macos .app-child-window-frame {
+  /* Hidden-inset macOS titlebars still consume top chrome, so child-window content needs a shared safe inset. */
+  box-sizing: border-box;
+  padding-top: 20px;
+}
+
 .app-child-window-frame--dialog {
   width: min(404px, 100%);
 }
