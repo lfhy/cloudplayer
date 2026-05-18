@@ -23,10 +23,8 @@ export function createExternalOnlineModeToggle(deps) {
       try {
         await persistSettingsFromForm();
         setMusicCollectionModeValue?.(target);
+        await onMusicCollectionModeChanged?.(target);
         setMusicCollectionModeBusy(false, musicCollectionModeStatusText(target));
-        void Promise.resolve(onMusicCollectionModeChanged?.(target)).catch((error) => {
-          console.warn("toggle music collection mode from account center refresh", error);
-        });
         return { mode: target };
       } catch (error) {
         setMusicCollectionModeSelection(previous);

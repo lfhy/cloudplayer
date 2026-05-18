@@ -83,52 +83,60 @@ export function createPlaylistController(deps) {
     });
   }
 
-  async function refreshPlaylistSelect(force = false) {
+  async function refreshPlaylistSelect(force = false, prefetchedPlaylists = null) {
     const select = document.getElementById("import-merge-playlist");
     const mergeBtn = document.getElementById("btn-import-merge");
     if (!select) {
-      await refreshSidebarPlaylists(force);
-      return;
+      return refreshSidebarPlaylists(force, prefetchedPlaylists);
     }
     select.innerHTML = "";
-    let playlists = [];
+    const hasPrefetchedPlaylists = Array.isArray(prefetchedPlaylists);
+    let playlists = hasPrefetchedPlaylists ? prefetchedPlaylists : [];
     try {
-      playlists = await invoke(force ? "refresh_playlists" : "list_playlists");
+      if (!hasPrefetchedPlaylists) {
+        playlists = await invoke(force ? "refresh_playlists" : "list_playlists");
+      }
     } catch (error) {
       console.warn("list_playlists", error);
+      return refreshSidebarPlaylists(force);
     }
     cachedSidebarPlaylists = Array.isArray(playlists) ? playlists : [];
-    playlists.forEach((playlist) => {
+    cachedSidebarPlaylists.forEach((playlist) => {
       const option = document.createElement("option");
       option.value = String(playlist.id);
       option.textContent = `${playlist.name} (id=${playlist.id})`;
       select.appendChild(option);
     });
-    const hasPlaylists = playlists.length > 0;
+    const hasPlaylists = cachedSidebarPlaylists.length > 0;
     select.disabled = !hasPlaylists;
     if (mergeBtn) mergeBtn.disabled = !hasPlaylists || getImportTracks().length === 0;
-    await refreshSidebarPlaylists(force);
+    await refreshSidebarPlaylists(force, cachedSidebarPlaylists);
+    return cachedSidebarPlaylists;
   }
 
-  async function refreshSidebarPlaylists(force = false) {
+  async function refreshSidebarPlaylists(force = false, prefetchedPlaylists = null) {
     const list = document.getElementById("sidebar-playlist-list");
-    if (!list) return;
+    if (!list) return Array.isArray(prefetchedPlaylists) ? prefetchedPlaylists : [];
     renderSidebarPlaylistLoading(force ? "正在刷新歌单…" : "正在加载歌单…");
-    let playlists = [];
+    const hasPrefetchedPlaylists = Array.isArray(prefetchedPlaylists);
+    let playlists = hasPrefetchedPlaylists ? prefetchedPlaylists : [];
     try {
-      playlists = await invoke(force ? "refresh_playlists" : "list_playlists");
+      if (!hasPrefetchedPlaylists) {
+        playlists = await invoke(force ? "refresh_playlists" : "list_playlists");
+      }
     } catch (error) {
       warnRequestFailed(error, "list_playlists sidebar");
       list.innerHTML = `<li class="sidebar-pl-empty muted">${escapeHtml(MSG_REQUEST_FAILED)}</li>`;
-      return;
+      return [];
     }
+    cachedSidebarPlaylists = Array.isArray(playlists) ? playlists : [];
     if (!playlists.length) {
+      cachedSidebarPlaylists = [];
       list.innerHTML = `<li class="sidebar-pl-empty muted">${escapeHtml(playlistSidebarEmptyText(getMusicOnlineModeEnabled?.()))}</li>`;
-      return;
+      return [];
     }
     list.innerHTML = "";
-    cachedSidebarPlaylists = Array.isArray(playlists) ? playlists : [];
-    playlists.forEach((playlist) => {
+    cachedSidebarPlaylists.forEach((playlist) => {
       void syncLikedIdsFromPlaylist(playlist, invoke, getLikedIds).catch((error) => {
         console.warn("sync favorite ids from sidebar playlist", error);
       });
@@ -147,6 +155,7 @@ export function createPlaylistController(deps) {
     syncSidebarPlaylistActiveState();
     refreshPlaylistActionState();
     if (document.querySelector('.page[data-page="home"]')?.classList.contains("page-active")) renderHomePage();
+    return cachedSidebarPlaylists;
   }
 
   async function searchLocalPlaylists(keyword) {

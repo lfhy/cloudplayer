@@ -9,6 +9,20 @@ import (
 	"cloudplayer/backend/importplaylist"
 )
 
+// Offline list projection keeps hybrid cloud forks out of pure-local mode without deleting their cached data.
+func visibleLocalPlaylistRow(row PlaylistRow) (PlaylistRow, bool) {
+	if collectionModeIsOffline() && row.IsCloud && !row.IsFavorites {
+		return PlaylistRow{}, false
+	}
+	if collectionModeIsOffline() {
+		row.CloudSource = ""
+		row.CloudListID = nil
+		row.CloudWritable = false
+		row.IsCloud = false
+	}
+	return row, true
+}
+
 // Local playlist helpers keep the DB-backed playlist path reusable for offline and hybrid modes.
 func (s *CloudPlayerService) listLocalPlaylists() ([]PlaylistRow, error) {
 	if _, err := s.ensureFavoritesPlaylist(); err != nil {
@@ -41,7 +55,11 @@ func (s *CloudPlayerService) listLocalPlaylists() ([]PlaylistRow, error) {
 			value := cloudListID
 			row.CloudListID = &value
 		}
-		result = append(result, row)
+		visibleRow, ok := visibleLocalPlaylistRow(row)
+		if !ok {
+			continue
+		}
+		result = append(result, visibleRow)
 	}
 	return result, rows.Err()
 }
@@ -98,7 +116,11 @@ func (s *CloudPlayerService) localPlaylistByID(playlistID int64) (PlaylistRow, e
 		value := cloudListID
 		row.CloudListID = &value
 	}
-	return row, nil
+	visibleRow, ok := visibleLocalPlaylistRow(row)
+	if !ok {
+		return PlaylistRow{}, sql.ErrNoRows
+	}
+	return visibleRow, nil
 }
 
 func maxInt64(value, minimum int64) int64 {

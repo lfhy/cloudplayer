@@ -103,9 +103,7 @@ async function invalidatePlaybackContext(reason = "unknown") {
 }
 
 async function refreshPlaylistContextAfterSourceMutation() {
-  await pages.refreshSidebarPlaylists(true);
-  await pages.refreshPlaylistSelect(true);
-  const playlists = await invoke("list_playlists");
+  const playlists = await pages.refreshPlaylistSelect(true);
   const first = Array.isArray(playlists) && playlists.length ? playlists[0] : null;
   if (!first) {
     selectedPlaylistId = null;
