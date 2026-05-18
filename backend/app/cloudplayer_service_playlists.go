@@ -10,29 +10,33 @@ import (
 
 // Playlist methods own import rows and background enrichment orchestration.
 func (s *CloudPlayerService) ListPlaylists() ([]PlaylistRow, error) {
-	if collectionModeIsOnline() {
-		rows, err := s.loadKugouPlaylistRows(false)
-		if err != nil {
-			return nil, err
+	return withSQLiteBusyRetryValue(func() ([]PlaylistRow, error) {
+		if collectionModeIsOnline() {
+			rows, err := s.loadKugouPlaylistRows(false)
+			if err != nil {
+				return nil, err
+			}
+			return toPlaylistRows(rows), nil
 		}
-		return toPlaylistRows(rows), nil
-	}
-	if collectionModeIsHybrid() {
-		if err := s.ensureHybridKugouPlaylistForks(false); err != nil {
-			return nil, err
+		if collectionModeIsHybrid() {
+			if err := s.ensureHybridKugouPlaylistForks(false); err != nil {
+				return nil, err
+			}
 		}
-	}
-	return s.listLocalPlaylists()
+		return s.listLocalPlaylists()
+	})
 }
 
 func (s *CloudPlayerService) ListPlaylistImportItems(playlistID int64) ([]PlaylistImportItemRow, error) {
-	if collectionModeIsOnline() {
-		return s.loadKugouPlaylistItems(playlistID, false)
-	}
-	if collectionModeIsHybrid() {
-		return s.ensureHybridPlaylistItems(playlistID, false)
-	}
-	return s.listLocalPlaylistImportItems(playlistID)
+	return withSQLiteBusyRetryValue(func() ([]PlaylistImportItemRow, error) {
+		if collectionModeIsOnline() {
+			return s.loadKugouPlaylistItems(playlistID, false)
+		}
+		if collectionModeIsHybrid() {
+			return s.ensureHybridPlaylistItems(playlistID, false)
+		}
+		return s.listLocalPlaylistImportItems(playlistID)
+	})
 }
 
 func (s *CloudPlayerService) CreatePlaylist(name string) (int64, error) {

@@ -76,6 +76,7 @@ func (s *CloudPlayerService) LocalPathAccessible(path string) bool {
 
 func (s *CloudPlayerService) SaveSettings(patch SettingsPatch) error {
 	settings := config.LoadSettings()
+	previousSettings := settings
 	if patch.Volume != nil {
 		settings.Volume = clampFloat(*patch.Volume, 0, 1)
 	}
@@ -227,36 +228,8 @@ func (s *CloudPlayerService) SaveSettings(patch SettingsPatch) error {
 	if patch.ShareNeteaseCookie != nil {
 		settings.ShareNeteaseCookie = *patch.ShareNeteaseCookie
 	}
-	if patch.MusicOnlineMode != nil {
-		if *patch.MusicOnlineMode {
-			status, err := s.GetKugouLoginStatus()
-			if err != nil {
-				return err
-			}
-			if !status.LoggedIn {
-				return fmt.Errorf("请先登录酷狗概念版后再开启在线模式")
-			}
-		}
-		settings.MusicOnlineMode = *patch.MusicOnlineMode
-		if *patch.MusicOnlineMode {
-			settings.MusicCollectionMode = config.MusicCollectionModeOnline
-		} else if config.NormalizeMusicCollectionMode(settings.MusicCollectionMode) == config.MusicCollectionModeOnline {
-			settings.MusicCollectionMode = config.MusicCollectionModeOffline
-		}
-	}
-	if patch.MusicCollectionMode != nil {
-		mode := config.NormalizeMusicCollectionMode(*patch.MusicCollectionMode)
-		if mode != config.MusicCollectionModeOffline {
-			status, err := s.GetKugouLoginStatus()
-			if err != nil {
-				return err
-			}
-			if !status.LoggedIn {
-				return fmt.Errorf("请先登录酷狗概念版后再切换到云端歌单模式")
-			}
-		}
-		settings.MusicCollectionMode = mode
-		settings.MusicOnlineMode = mode == config.MusicCollectionModeOnline
+	if err := s.applyMusicCollectionModePatch(&settings, patch); err != nil {
+		return err
 	}
 	if patch.AutoCacheOnPlay != nil {
 		settings.AutoCacheOnPlay = *patch.AutoCacheOnPlay
@@ -276,7 +249,10 @@ func (s *CloudPlayerService) SaveSettings(patch SettingsPatch) error {
 	if err := config.SaveSettings(settings); err != nil {
 		return err
 	}
-	if err := s.syncHybridCollectionsAfterModeChange(settings.MusicCollectionMode); err != nil {
+	if err := withSQLiteBusyRetry(func() error {
+		return s.syncHybridCollectionsAfterModeChange(settings.MusicCollectionMode)
+	}); err != nil {
+		_ = config.SaveSettings(previousSettings)
 		return err
 	}
 	s.state.SetSearchCacheTTLHours(settings.SearchCacheTTLHours)

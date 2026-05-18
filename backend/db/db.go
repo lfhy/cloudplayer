@@ -2,6 +2,7 @@ package db
 
 import (
 	"database/sql"
+	"fmt"
 	"path/filepath"
 	"strings"
 
@@ -16,14 +17,15 @@ func Path() string {
 }
 
 func OpenAndInit() (*sql.DB, error) {
-	conn, err := sql.Open("sqlite", Path())
+	dsn := fmt.Sprintf(
+		"file:%s?_pragma=busy_timeout(10000)&_pragma=journal_mode(WAL)&_pragma=foreign_keys(ON)",
+		Path(),
+	)
+	conn, err := sql.Open("sqlite", dsn)
 	if err != nil {
 		return nil, err
 	}
 	if _, err := conn.Exec(`
-		PRAGMA journal_mode=WAL;
-		PRAGMA foreign_keys=ON;
-
 		CREATE TABLE IF NOT EXISTS songs (
 			id INTEGER PRIMARY KEY AUTOINCREMENT,
 			title TEXT NOT NULL DEFAULT '',

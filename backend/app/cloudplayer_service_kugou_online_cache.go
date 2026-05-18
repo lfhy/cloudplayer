@@ -13,37 +13,41 @@ import (
 const kugouOnlineCacheTTL = 12 * time.Hour
 
 func (s *CloudPlayerService) RefreshPlaylists() ([]PlaylistRow, error) {
-	if collectionModeIsOffline() {
-		return s.ListPlaylists()
-	}
-	if collectionModeIsHybrid() {
-		return s.refreshHybridPlaylists()
-	}
-	rows, err := s.refreshKugouPlaylistList()
-	if err != nil {
-		return nil, err
-	}
-	return toPlaylistRows(rows), nil
-}
-
-func (s *CloudPlayerService) RefreshPlaylistImportItems(playlistID int64) ([]PlaylistImportItemRow, error) {
-	if collectionModeIsOffline() {
-		return s.ListPlaylistImportItems(playlistID)
-	}
-	if collectionModeIsHybrid() {
-		if err := s.ensureHybridKugouPlaylistForks(false); err != nil {
-			return nil, err
+	return withSQLiteBusyRetryValue(func() ([]PlaylistRow, error) {
+		if collectionModeIsOffline() {
+			return s.ListPlaylists()
 		}
-		playlist, err := s.localPlaylistByID(playlistID)
+		if collectionModeIsHybrid() {
+			return s.refreshHybridPlaylists()
+		}
+		rows, err := s.refreshKugouPlaylistList()
 		if err != nil {
 			return nil, err
 		}
-		if err := s.refreshHybridPlaylistItems(playlist); err != nil {
-			return nil, err
+		return toPlaylistRows(rows), nil
+	})
+}
+
+func (s *CloudPlayerService) RefreshPlaylistImportItems(playlistID int64) ([]PlaylistImportItemRow, error) {
+	return withSQLiteBusyRetryValue(func() ([]PlaylistImportItemRow, error) {
+		if collectionModeIsOffline() {
+			return s.ListPlaylistImportItems(playlistID)
 		}
-		return s.listLocalPlaylistImportItems(playlistID)
-	}
-	return s.refreshKugouPlaylistItems(playlistID)
+		if collectionModeIsHybrid() {
+			if err := s.ensureHybridKugouPlaylistForks(false); err != nil {
+				return nil, err
+			}
+			playlist, err := s.localPlaylistByID(playlistID)
+			if err != nil {
+				return nil, err
+			}
+			if err := s.refreshHybridPlaylistItems(playlist); err != nil {
+				return nil, err
+			}
+			return s.listLocalPlaylistImportItems(playlistID)
+		}
+		return s.refreshKugouPlaylistItems(playlistID)
+	})
 }
 
 func (s *CloudPlayerService) loadKugouPlaylistRows(force bool) ([]KugouPlaylistRow, error) {
