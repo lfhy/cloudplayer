@@ -5,6 +5,8 @@
 - Windows buttons now avoid gradient fills and use flatter surfaces aligned with the native shell.
 - Search now fails over to the next music source automatically when the current provider is unavailable.
 - Search provider retries now use short per-attempt timeouts so a stalled source does not block failover.
+- Search provider failover now waits up to 10 seconds per source before moving to the next provider.
+- Search now keeps pulling lazy-loaded provider chunks until each app-side results page is filled to 30 rows when possible.
 - Main-window child-window masking no longer blurs the background while standalone dialogs are open.
 - Dev port helpers now detect IPv4, IPv6, loopback, and wildcard listeners consistently so `wails3 dev` port conflicts can be cleared or avoided correctly.
 

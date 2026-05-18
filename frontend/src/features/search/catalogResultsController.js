@@ -36,6 +36,13 @@ export function createCatalogResultsController(deps) {
   const loadMoreThreshold = Math.max(4, Math.floor(rowHeight * 0.1));
   const bottomStatusThreshold = rowHeight * 1.5;
   const metadata = createCatalogMetadataController({ invoke, renderSearchTable, searchState, warnRequestFailed });
+  function logSearchDebug(stage, detail) {
+    void invoke("log_frontend_debug", {
+      scope: "search",
+      stage,
+      detail: JSON.stringify(detail),
+    }).catch(() => {});
+  }
   function clearSelection() {
     searchState.selectedIds = new Set();
   }
@@ -166,9 +173,18 @@ export function createCatalogResultsController(deps) {
     if (!keyword) return;
     const requestToken = ++searchRequestToken;
     const targetPage = pageOverride ?? (append ? searchState.page + 1 : 1);
+    const startedAt = Date.now();
     searchState.busy = !append;
     searchState.loadingMore = append;
     searchState.showBottomStatus = append;
+    logSearchDebug("request-start", {
+      keyword,
+      append,
+      targetPage,
+      requestToken,
+      existingCount: searchState.results.length,
+      scope: searchState.scope,
+    });
     updateSearchToolbar();
     try {
       if (!append) {
@@ -182,12 +198,32 @@ export function createCatalogResultsController(deps) {
       if (result?.provider_persisted === true && result?.provider_key) {
         syncMusicSourceProviderSelection?.(result.provider_key);
       }
+      logSearchDebug("request-success", {
+        keyword,
+        append,
+        targetPage,
+        requestToken,
+        durationMs: Date.now() - startedAt,
+        resultCount: Array.isArray(result?.results) ? result.results.length : 0,
+        hasNext: result?.has_next === true,
+        providerKey: result?.provider_key || "",
+        fallbackApplied: result?.fallback_applied === true,
+        failedProviderKey: result?.failed_provider_key || "",
+      });
       searchState.page = targetPage;
       appendSearchResults(result?.results, !append);
       searchState.hasNext = result?.has_next === true;
       renderSearchTable();
     } catch (error) {
       if (requestToken !== searchRequestToken) return;
+      logSearchDebug("request-failed", {
+        keyword,
+        append,
+        targetPage,
+        requestToken,
+        durationMs: Date.now() - startedAt,
+        message: String(error?.message || error),
+      });
       warnRequestFailed(error, "search_songs");
       if (!append) {
         searchState.results = [];
@@ -198,6 +234,18 @@ export function createCatalogResultsController(deps) {
       if (requestToken !== searchRequestToken) return;
       searchState.busy = false;
       searchState.loadingMore = false;
+      renderSearchTable();
+      logSearchDebug("request-finished", {
+        keyword,
+        append,
+        targetPage,
+        requestToken,
+        durationMs: Date.now() - startedAt,
+        busy: searchState.busy,
+        loadingMore: searchState.loadingMore,
+        resultCount: searchState.results.length,
+        hasNext: searchState.hasNext === true,
+      });
       updateSearchToolbar();
     }
   }

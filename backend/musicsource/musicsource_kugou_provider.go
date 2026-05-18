@@ -12,7 +12,7 @@ import (
 
 type kugouProvider struct{}
 
-const kugouSearchTimeout = 8 * time.Second
+const kugouSearchTimeout = 10 * time.Second
 
 func (kugouProvider) Key() string {
 	return ProviderKugou

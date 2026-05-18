@@ -1,7 +1,9 @@
 package cloudplayer
 
 import (
+	"fmt"
 	"net/http"
+	"slices"
 	"testing"
 	"time"
 
@@ -98,6 +100,228 @@ func TestSearchProviderFailoverOrderRotatesFromPrimary(t *testing.T) {
 		if order[index] != key {
 			t.Fatalf("searchProviderFailoverOrder()[%d] = %q want %q", index, order[index], key)
 		}
+	}
+}
+
+func TestSearchSongsFallsBackWhenPrimaryReturnsEmptyPage(t *testing.T) {
+	tempHome := t.TempDir()
+	t.Setenv("HOME", tempHome)
+	t.Setenv("USERPROFILE", tempHome)
+
+	settings := config.DefaultSettings()
+	settings.MusicSourceProvider = musicsource.ProviderKugou
+	settings.PlaybackFallbackChain = "kugou,netease,pjmp3"
+	if err := config.SaveSettings(settings); err != nil {
+		t.Fatalf("SaveSettings() error = %v", err)
+	}
+
+	previousCurrent := currentSearchProvider
+	previousLookup := searchProviderByKey
+	t.Cleanup(func() {
+		currentSearchProvider = previousCurrent
+		searchProviderByKey = previousLookup
+	})
+
+	kugou := stubSearchProvider{
+		key: musicsource.ProviderKugou,
+		search: func(_ *http.Client, _ string, _ uint32) ([]musicsource.SearchResult, bool, error) {
+			return []musicsource.SearchResult{}, false, nil
+		},
+	}
+	netease := stubSearchProvider{
+		key: musicsource.ProviderNetease,
+		search: func(_ *http.Client, _ string, _ uint32) ([]musicsource.SearchResult, bool, error) {
+			return []musicsource.SearchResult{{
+				SourceID: musicsource.EncodeSourceID(musicsource.ProviderNetease, "99"),
+				Title:    "Fallback From Empty",
+				Artist:   "Netease Artist",
+			}}, false, nil
+		},
+	}
+
+	currentSearchProvider = func() musicsource.Provider {
+		return kugou
+	}
+	searchProviderByKey = func(key string) (musicsource.Provider, bool) {
+		switch key {
+		case musicsource.ProviderKugou:
+			return kugou, true
+		case musicsource.ProviderNetease:
+			return netease, true
+		default:
+			return nil, false
+		}
+	}
+
+	service := &CloudPlayerService{state: state.NewAppState(nil)}
+	response, err := service.SearchSongs("empty-primary", 1)
+	if err != nil {
+		t.Fatalf("SearchSongs() error = %v", err)
+	}
+	if !response.FallbackApplied {
+		t.Fatalf("SearchSongs() fallbackApplied = false")
+	}
+	if !response.ProviderPersisted {
+		t.Fatalf("SearchSongs() providerPersisted = false")
+	}
+	if response.ProviderKey != musicsource.ProviderNetease {
+		t.Fatalf("SearchSongs() providerKey = %q", response.ProviderKey)
+	}
+	if len(response.Results) != 1 || response.Results[0].SourceID != "netease:99" {
+		t.Fatalf("SearchSongs() results = %#v", response.Results)
+	}
+}
+
+func TestSearchSongsAggregatesPrimaryChunksBeforeFallback(t *testing.T) {
+	tempHome := t.TempDir()
+	t.Setenv("HOME", tempHome)
+	t.Setenv("USERPROFILE", tempHome)
+
+	settings := config.DefaultSettings()
+	settings.MusicSourceProvider = musicsource.ProviderKugou
+	settings.PlaybackFallbackChain = "kugou,netease,pjmp3"
+	if err := config.SaveSettings(settings); err != nil {
+		t.Fatalf("SaveSettings() error = %v", err)
+	}
+
+	previousCurrent := currentSearchProvider
+	previousLookup := searchProviderByKey
+	t.Cleanup(func() {
+		currentSearchProvider = previousCurrent
+		searchProviderByKey = previousLookup
+	})
+
+	kugou := stubSearchProvider{
+		key: musicsource.ProviderKugou,
+		search: func(_ *http.Client, _ string, page uint32) ([]musicsource.SearchResult, bool, error) {
+			start := int(page-1) * 10
+			rows := make([]musicsource.SearchResult, 0, 10)
+			for i := 0; i < 10; i++ {
+				index := start + i + 1
+				rows = append(rows, musicsource.SearchResult{
+					SourceID: musicsource.EncodeSourceID(musicsource.ProviderKugou, fmt.Sprintf("%d", index)),
+					Title:    fmt.Sprintf("Kugou %d", index),
+					Artist:   "Kugou Artist",
+				})
+			}
+			return rows, page < 3, nil
+		},
+	}
+	neteaseCalls := 0
+	netease := stubSearchProvider{
+		key: musicsource.ProviderNetease,
+		search: func(_ *http.Client, _ string, _ uint32) ([]musicsource.SearchResult, bool, error) {
+			neteaseCalls += 1
+			return nil, false, assertiveError("unexpected fallback")
+		},
+	}
+
+	currentSearchProvider = func() musicsource.Provider {
+		return kugou
+	}
+	searchProviderByKey = func(key string) (musicsource.Provider, bool) {
+		switch key {
+		case musicsource.ProviderKugou:
+			return kugou, true
+		case musicsource.ProviderNetease:
+			return netease, true
+		default:
+			return nil, false
+		}
+	}
+
+	service := &CloudPlayerService{state: state.NewAppState(nil)}
+	response, err := service.SearchSongs("partial-primary", 1)
+	if err != nil {
+		t.Fatalf("SearchSongs() error = %v", err)
+	}
+	if response.FallbackApplied {
+		t.Fatalf("SearchSongs() fallbackApplied = true")
+	}
+	if response.ProviderPersisted {
+		t.Fatalf("SearchSongs() providerPersisted = true")
+	}
+	if response.ProviderKey != musicsource.ProviderKugou {
+		t.Fatalf("SearchSongs() providerKey = %q", response.ProviderKey)
+	}
+	if len(response.Results) != 30 {
+		t.Fatalf("SearchSongs() len(results) = %d", len(response.Results))
+	}
+	if response.Results[0].SourceID != "kugou:1" || response.Results[29].SourceID != "kugou:30" {
+		t.Fatalf("SearchSongs() aggregated results = %#v", response.Results)
+	}
+	if neteaseCalls != 0 {
+		t.Fatalf("SearchSongs() fallback calls = %d", neteaseCalls)
+	}
+}
+
+func TestSearchSongsSlicesLaterLogicalPageFromAggregatedChunks(t *testing.T) {
+	tempHome := t.TempDir()
+	t.Setenv("HOME", tempHome)
+	t.Setenv("USERPROFILE", tempHome)
+
+	settings := config.DefaultSettings()
+	settings.MusicSourceProvider = musicsource.ProviderKugou
+	settings.PlaybackFallbackChain = "kugou,netease,pjmp3"
+	if err := config.SaveSettings(settings); err != nil {
+		t.Fatalf("SaveSettings() error = %v", err)
+	}
+
+	previousCurrent := currentSearchProvider
+	previousLookup := searchProviderByKey
+	t.Cleanup(func() {
+		currentSearchProvider = previousCurrent
+		searchProviderByKey = previousLookup
+	})
+
+	pagesRequested := make([]uint32, 0, 4)
+	kugou := stubSearchProvider{
+		key: musicsource.ProviderKugou,
+		search: func(_ *http.Client, _ string, page uint32) ([]musicsource.SearchResult, bool, error) {
+			pagesRequested = append(pagesRequested, page)
+			start := int(page-1) * 10
+			rows := make([]musicsource.SearchResult, 0, 10)
+			for i := 0; i < 10; i++ {
+				index := start + i + 1
+				rows = append(rows, musicsource.SearchResult{
+					SourceID: musicsource.EncodeSourceID(musicsource.ProviderKugou, fmt.Sprintf("%d", index)),
+					Title:    fmt.Sprintf("Kugou %d", index),
+					Artist:   "Kugou Artist",
+				})
+			}
+			return rows, page < 4, nil
+		},
+	}
+
+	currentSearchProvider = func() musicsource.Provider {
+		return kugou
+	}
+	searchProviderByKey = func(key string) (musicsource.Provider, bool) {
+		if key == musicsource.ProviderKugou {
+			return kugou, true
+		}
+		return nil, false
+	}
+
+	service := &CloudPlayerService{state: state.NewAppState(nil)}
+	response, err := service.SearchSongs("logical-page-2", 2)
+	if err != nil {
+		t.Fatalf("SearchSongs() error = %v", err)
+	}
+	if response.FallbackApplied {
+		t.Fatalf("SearchSongs() fallbackApplied = true")
+	}
+	if response.HasNext {
+		t.Fatalf("SearchSongs() hasNext = true")
+	}
+	if len(response.Results) != 10 {
+		t.Fatalf("SearchSongs() len(results) = %d", len(response.Results))
+	}
+	if response.Results[0].SourceID != "kugou:31" || response.Results[9].SourceID != "kugou:40" {
+		t.Fatalf("SearchSongs() results = %#v", response.Results)
+	}
+	if !slices.Equal(pagesRequested, []uint32{1, 2, 3, 4}) {
+		t.Fatalf("SearchSongs() pagesRequested = %#v", pagesRequested)
 	}
 }
 
