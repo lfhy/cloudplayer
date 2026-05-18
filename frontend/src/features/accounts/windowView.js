@@ -2,6 +2,7 @@ import { normalizeMusicCollectionMode } from "../../app/helpers/platformTheme.js
 import { iconSvgByName } from "../../app/helpers/icons.js";
 import { proxyRemoteAssetSrc } from "../../wails/tauri-core.js";
 import { createKugouSessionBridge } from "../kugou/session.js";
+import { applyCollectionModeState, formatAccountID, wireKugouCollectionModeToggle } from "./collectionModeUi.js";
 import { kugouAccountPanelTemplate } from "./kugouAccountPanel.js";
 import { ACCOUNT_PROVIDERS } from "./providers.js";
 
@@ -28,9 +29,7 @@ export function createAccountCenterView(deps) {
   function kugouLoadingEl() { return document.getElementById("account-kugou-loading"); }
   function kugouCollectionModeWrapEl() { return document.getElementById("account-kugou-collection-mode-wrap"); }
 
-  function notifyLayoutSettled(delay = 90) {
-    window.setTimeout(() => onLayoutSettled?.(), delay);
-  }
+  function notifyLayoutSettled(delay = 90) { window.setTimeout(() => onLayoutSettled?.(), delay); }
 
   function openAccountCenter(provider = "kugou") {
     activeProvider = provider;
@@ -79,30 +78,15 @@ export function createAccountCenterView(deps) {
     notifyLayoutSettled(30);
   }
 
-  function formatAccountID(value) {
-    const raw = String(value || "").trim();
-    if (!raw) return "";
-    if (!/[eE]\+/.test(raw)) return raw;
-    const parsed = Number(raw);
-    return Number.isFinite(parsed) ? parsed.toFixed(0) : raw;
-  }
-
-  function setKugouState(state) {
-    kugouPanelEl()?.setAttribute("data-account-state", state);
-  }
+  function setKugouState(state) { kugouPanelEl()?.setAttribute("data-account-state", state); }
 
   function setCollectionModeState({ mode = "offline", visible = false, busy = false } = {}) {
-    collectionMode = normalizeMusicCollectionMode(mode);
-    const wrap = kugouCollectionModeWrapEl();
-    if (!wrap) return;
-    wrap.hidden = !visible;
-    const hidden = document.getElementById("account-kugou-collection-mode");
-    if (hidden) hidden.value = collectionMode;
-    wrap.querySelectorAll("[data-account-music-collection-mode-card]").forEach((button) => {
-      const active = button.getAttribute("data-account-music-collection-mode-card") === collectionMode;
-      button.classList.toggle("is-active", active);
-      button.setAttribute("aria-checked", active ? "true" : "false");
-      button.toggleAttribute("disabled", !!busy);
+    collectionMode = applyCollectionModeState({
+      mode,
+      visible,
+      busy,
+      wrap: kugouCollectionModeWrapEl(),
+      hiddenInput: document.getElementById("account-kugou-collection-mode"),
     });
   }
 
@@ -280,25 +264,17 @@ export function createAccountCenterView(deps) {
     document.getElementById("btn-account-kugou-open-import")?.addEventListener("click", async () => {
       await onImportRequested?.("kugou");
     });
-    const switchCollectionMode = async (nextMode) => {
-      setCollectionModeState({ mode: collectionMode, visible: true, busy: true });
-      try {
-        const result = await onOnlineModeToggleRequested?.(normalizeMusicCollectionMode(nextMode));
-        collectionMode = normalizeMusicCollectionMode(result?.mode || nextMode);
-        setCollectionModeState({ mode: collectionMode, visible: true, busy: false });
-        notifyLayoutSettled();
-      } catch (error) {
-        setCollectionModeState({ mode: collectionMode, visible: true, busy: false });
-        alertRequestFailed(error, "toggle music collection mode from account center");
-      }
-    };
-    kugouCollectionModeWrapEl()?.querySelectorAll("[data-account-music-collection-mode-card]").forEach((button) => {
-      button.addEventListener("click", () => {
-        if (button.hasAttribute("disabled")) return;
-        const nextMode = normalizeMusicCollectionMode(button.getAttribute("data-account-music-collection-mode-card"));
-        if (nextMode === collectionMode) return;
-        void switchCollectionMode(nextMode);
-      });
+    wireKugouCollectionModeToggle({
+      alertRequestFailed,
+      getCurrentMode: () => collectionMode,
+      getWrapEl: kugouCollectionModeWrapEl,
+      notifyLayoutSettled,
+      onOnlineModeToggleRequested,
+      setCollectionModeState,
+      setCurrentMode: (mode) => {
+        collectionMode = normalizeMusicCollectionMode(mode);
+      },
+      setKugouLoading,
     });
     document.getElementById("btn-account-kugou-logout")?.addEventListener("click", async () => {
       try {

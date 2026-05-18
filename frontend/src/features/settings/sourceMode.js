@@ -6,6 +6,7 @@ import { unwrapPayload } from "../../wails/shared.js";
 
 const ONLINE_MODE_CONFIRM_LABEL = "online-mode-confirm";
 const ONLINE_MODE_CONFIRM_URL = "/online_mode_confirm.html";
+let pendingCollectionModeChange = null;
 
 // Collection-mode helpers keep mode selection and the online confirmation flow out of the main settings controller.
 export function getMusicCollectionModeSelection() {
@@ -101,31 +102,39 @@ async function confirmEnableMusicOnlineMode() {
 }
 
 export async function toggleMusicCollectionMode(nextMode, deps) {
+  if (pendingCollectionModeChange) return pendingCollectionModeChange;
   const { alertRequestFailed, confirmBeforeEnable = true, onMusicCollectionModeChanged, persistSettingsFromForm } = deps;
-  const normalized = normalizeMusicCollectionMode(nextMode);
-  const previous = getMusicCollectionModeSelection();
-  if (normalized === "online" && previous !== "online" && confirmBeforeEnable) {
-    const accepted = await confirmEnableMusicOnlineMode();
-    if (!accepted) {
-      setMusicCollectionModeSelection(previous);
-      return;
+  pendingCollectionModeChange = (async () => {
+    const normalized = normalizeMusicCollectionMode(nextMode);
+    const previous = getMusicCollectionModeSelection();
+    if (normalized === "online" && previous !== "online" && confirmBeforeEnable) {
+      const accepted = await confirmEnableMusicOnlineMode();
+      if (!accepted) {
+        setMusicCollectionModeSelection(previous);
+        return;
+      }
     }
-  }
-  setMusicCollectionModeSelection(normalized);
-  const busyText = normalized === "offline"
-    ? "正在切回离线歌单…"
-    : normalized === "hybrid"
-      ? "正在切换到混合模式并同步云歌单…"
-      : "正在开启在线模式并同步云歌单…";
-  setMusicCollectionModeBusy(true, busyText);
+    setMusicCollectionModeSelection(normalized);
+    const busyText = normalized === "offline"
+      ? "正在切回离线歌单…"
+      : normalized === "hybrid"
+        ? "正在切换到混合模式并同步云歌单…"
+        : "正在开启在线模式并同步云歌单…";
+    setMusicCollectionModeBusy(true, busyText);
+    try {
+      await persistSettingsFromForm();
+      await onMusicCollectionModeChanged?.(normalized);
+      setMusicCollectionModeBusy(false, musicCollectionModeStatusText(normalized));
+    } catch (error) {
+      setMusicCollectionModeSelection(previous);
+      setMusicCollectionModeBusy(false, "歌单模式切换失败，请稍后重试。");
+      alertRequestFailed(error, "toggle music collection mode");
+    }
+  })();
   try {
-    await persistSettingsFromForm();
-    await onMusicCollectionModeChanged?.(normalized);
-    setMusicCollectionModeBusy(false, musicCollectionModeStatusText(normalized));
-  } catch (error) {
-    setMusicCollectionModeSelection(previous);
-    setMusicCollectionModeBusy(false, "歌单模式切换失败，请稍后重试。");
-    alertRequestFailed(error, "toggle music collection mode");
+    await pendingCollectionModeChange;
+  } finally {
+    pendingCollectionModeChange = null;
   }
 }
 

@@ -14,6 +14,7 @@ import { invoke } from "../../wails/tauri-core.js";
 const WINDOW_LABEL = "account-center";
 const MAIN_WW = { kind: "WebviewWindow", label: "main" };
 const currentWindow = RuntimeWindow.Get(WINDOW_LABEL);
+let pendingCollectionModeToggle = null;
 
 function requestedProvider() {
   const provider = new URLSearchParams(globalThis.location?.search || "").get("provider");
@@ -78,11 +79,11 @@ async function openImportFlow(provider) {
 }
 
 async function toggleOnlineMode(nextMode) {
-  await emitTo(MAIN_WW, "account-center-toggle-online-mode", { nextMode: String(nextMode || "offline") });
-  return new Promise((resolve, reject) => {
+  if (pendingCollectionModeToggle) return pendingCollectionModeToggle;
+  pendingCollectionModeToggle = new Promise((resolve, reject) => {
     const timeout = window.setTimeout(() => {
       reject(new Error("toggle online mode timeout"));
-    }, 20000);
+    }, 45000);
     Events.Once("account-center-toggle-online-mode-result", (event) => {
       window.clearTimeout(timeout);
       const payload = event?.data?.payload || event?.data || {};
@@ -92,7 +93,16 @@ async function toggleOnlineMode(nextMode) {
       }
       resolve({ mode: payload?.mode || "offline" });
     });
+    void emitTo(MAIN_WW, "account-center-toggle-online-mode", { nextMode: String(nextMode || "offline") }).catch((error) => {
+      window.clearTimeout(timeout);
+      reject(error);
+    });
   });
+  try {
+    return await pendingCollectionModeToggle;
+  } finally {
+    pendingCollectionModeToggle = null;
+  }
 }
 
 function cardEl() {
