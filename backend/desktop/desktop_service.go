@@ -5,6 +5,7 @@ package desktop
 import (
 	"fmt"
 
+	"cloudplayer/backend/config"
 	"github.com/wailsapp/wails/v3/pkg/application"
 	"github.com/wailsapp/wails/v3/pkg/events"
 )
@@ -48,6 +49,7 @@ func (s *DesktopService) EnsureWindow(req WindowCreateRequest) error {
 	if req.Label == "" {
 		return fmt.Errorf("window label is required")
 	}
+	currentThemeMode := config.LoadSettings().AppThemeMode
 	if existing, ok := application.Get().Window.GetByName(req.Label); ok {
 		if req.Title != "" {
 			existing.SetTitle(req.Title)
@@ -69,6 +71,9 @@ func (s *DesktopService) EnsureWindow(req WindowCreateRequest) error {
 			existing.SetBackgroundColour(application.NewRGBA(0, 0, 0, 0))
 		}
 		existing.SetAlwaysOnTop(req.AlwaysOnTop)
+		if isThemedDesktopWindowLabel(req.Label) {
+			syncDesktopWindowTheme(existing, currentThemeMode)
+		}
 		existing.Show()
 		emitWindowVisibility(req.Label, true)
 		if req.Focus {
@@ -102,10 +107,19 @@ func (s *DesktopService) EnsureWindow(req WindowCreateRequest) error {
 			WindowLevel:             macWindowLevel(req.AlwaysOnTop),
 		},
 	}
+	if isThemedDesktopWindowLabel(req.Label) {
+		configureDesktopWindowTheme(&options, currentThemeMode)
+	}
 	if req.Transparent {
 		options.BackgroundColour = application.NewRGBA(0, 0, 0, 0)
 	}
 	window := application.Get().Window.NewWithOptions(options)
+	if isThemedDesktopWindowLabel(req.Label) {
+		syncDesktopWindowTheme(window, currentThemeMode)
+		window.OnWindowEvent(events.Common.WindowShow, func(_ *application.WindowEvent) {
+			syncDesktopWindowTheme(window, config.LoadSettings().AppThemeMode)
+		})
+	}
 	AttachWindowPersistenceHooks(window, req.Label)
 	if req.CenterOnMain {
 		centerWindowOnMain(window, req.Width, req.Height)
@@ -164,6 +178,9 @@ func (s *DesktopService) ShowWindow(label string) error {
 	window, ok := application.Get().Window.GetByName(label)
 	if !ok {
 		return fmt.Errorf("window %q not found", label)
+	}
+	if isThemedDesktopWindowLabel(label) {
+		syncDesktopWindowTheme(window, config.LoadSettings().AppThemeMode)
 	}
 	window.Show()
 	emitWindowVisibility(label, true)

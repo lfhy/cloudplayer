@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"cloudplayer/backend/config"
+	"cloudplayer/backend/desktop"
 	"cloudplayer/backend/hotkeys"
 	"github.com/wailsapp/wails/v3/pkg/application"
 )
@@ -284,6 +285,7 @@ func (s *CloudPlayerService) SaveSettings(patch SettingsPatch) error {
 	}
 	applyThemeAssets(s.state, settings.AppTheme, settings.AppThemeCustomAccent)
 	syncMainWindowTheme(settings.AppThemeMode)
+	desktop.SyncDesktopWindowThemes(settings.AppThemeMode)
 	return nil
 }
 

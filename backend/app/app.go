@@ -146,7 +146,9 @@ func Run(assets fs.FS, trayTemplateIcon []byte) error {
 	})
 	if runtime.GOOS == "windows" {
 		app.Event.OnApplicationEvent(events.Windows.SystemThemeChanged, func(_ *application.ApplicationEvent) {
-			syncMainWindowTheme(config.LoadSettings().AppThemeMode)
+			mode := config.LoadSettings().AppThemeMode
+			syncMainWindowTheme(mode)
+			desktop.SyncDesktopWindowThemes(mode)
 		})
 	}
 	app.Event.OnApplicationEvent(events.Mac.ApplicationWillTerminate, func(_ *application.ApplicationEvent) {
