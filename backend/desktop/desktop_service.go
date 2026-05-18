@@ -4,7 +4,6 @@ package desktop
 
 import (
 	"fmt"
-	"runtime"
 
 	"github.com/wailsapp/wails/v3/pkg/application"
 	"github.com/wailsapp/wails/v3/pkg/events"
@@ -89,7 +88,7 @@ func (s *DesktopService) EnsureWindow(req WindowCreateRequest) error {
 		DisableResize:     !req.Resizable,
 		AlwaysOnTop:       req.AlwaysOnTop,
 		Frameless:         !req.Decorations,
-		BackgroundType:    windowBackgroundType(req),
+		BackgroundType:    backgroundType(req.Transparent),
 		IgnoreMouseEvents: false,
 		Windows: application.WindowsWindow{
 			HiddenOnTaskbar:                   req.SkipTaskbar,
@@ -103,10 +102,7 @@ func (s *DesktopService) EnsureWindow(req WindowCreateRequest) error {
 			WindowLevel:             macWindowLevel(req.AlwaysOnTop),
 		},
 	}
-	if windowsNativeFluentWindow(req) {
-		options.Windows.BackdropType = application.Acrylic
-	}
-	if req.Transparent || windowsNativeFluentWindow(req) {
+	if req.Transparent {
 		options.BackgroundColour = application.NewRGBA(0, 0, 0, 0)
 	}
 	window := application.Get().Window.NewWithOptions(options)
@@ -125,17 +121,6 @@ func (s *DesktopService) EnsureWindow(req WindowCreateRequest) error {
 		window.Focus()
 	}
 	return nil
-}
-
-func windowsNativeFluentWindow(req WindowCreateRequest) bool {
-	return runtime.GOOS == "windows" && req.Decorations && !req.Transparent
-}
-
-func windowBackgroundType(req WindowCreateRequest) application.BackgroundType {
-	if windowsNativeFluentWindow(req) {
-		return application.BackgroundTypeTranslucent
-	}
-	return backgroundType(req.Transparent)
 }
 
 // ResizeWindowCenteredOnMain keeps content-driven child windows pinned to the visual center of the main window.
