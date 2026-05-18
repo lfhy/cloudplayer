@@ -8,6 +8,7 @@
 - Search provider failover now waits up to 10 seconds per source before moving to the next provider.
 - Search now keeps pulling lazy-loaded provider chunks until each app-side results page is filled to 30 rows when possible.
 - Search now ignores cached empty first pages from the current provider and still falls through to the next source, which restores queries such as `民谣` when Kugou returns zero rows.
+- Hybrid-mode favorites now reuse and deduplicate the built-in `我喜欢` playlist when the Kugou cloud favorites fork is attached, so repeated likes stop creating extra playlists with the same name.
 - Standalone child windows no longer dim the main window while they are open.
 - Main-window child-window masking no longer blurs the background while standalone dialogs are open.
 - Dev port helpers now detect IPv4, IPv6, loopback, and wildcard listeners consistently so `wails3 dev` port conflicts can be cleared or avoided correctly.

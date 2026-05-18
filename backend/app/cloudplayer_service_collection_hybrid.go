@@ -163,6 +163,25 @@ func (s *CloudPlayerService) upsertHybridPlaylistForkTx(tx *sql.Tx, cloud KugouP
 	if cloud.IsFavorites || name == builtinFavoritesName {
 		targetName = builtinFavoritesName
 		isBuiltin = true
+		var existingFavoritesID int64
+		err := tx.QueryRow(`
+			SELECT id
+			FROM playlists
+			WHERE is_builtin = 1 OR name = ?
+			ORDER BY id ASC
+			LIMIT 1
+		`, builtinFavoritesName).Scan(&existingFavoritesID)
+		switch {
+		case err == nil:
+			_, updateErr := tx.Exec(`
+				UPDATE playlists
+				SET name = ?, is_builtin = 1, cloud_source = ?, cloud_list_id = ?, cloud_writable = 1
+				WHERE id = ?
+			`, targetName, kugouSyncOrigin, cloud.ID, existingFavoritesID)
+			return updateErr
+		case err != sql.ErrNoRows:
+			return err
+		}
 	}
 	_, err := tx.Exec(`
 		INSERT INTO playlists (name, is_builtin, cloud_source, cloud_list_id, cloud_writable)
@@ -186,38 +205,37 @@ func (s *CloudPlayerService) CleanupDuplicateFavoritesPlaylists() error {
 	defer rollback(tx)
 
 	rows, err := tx.Query(`
-		SELECT id, cloud_source, cloud_list_id
+		SELECT id
 		FROM playlists
 		WHERE is_builtin = 1 OR name = ?
-		ORDER BY is_builtin DESC, id ASC
+		ORDER BY
+			CASE
+				WHEN TRIM(cloud_source) <> '' AND cloud_list_id > 0 THEN 0
+				ELSE 1
+			END ASC,
+			is_builtin DESC,
+			id ASC
 	`, builtinFavoritesName)
 	if err != nil {
 		return err
 	}
 	defer rows.Close()
 
-	type favoriteKey struct {
-		source string
-		listID int64
-	}
-	seen := map[favoriteKey]int64{}
+	var keeperID int64
 	var deleteIDs []int64
 	for rows.Next() {
 		var playlistID int64
-		var cloudSource string
-		var cloudListID int64
-		if err := rows.Scan(&playlistID, &cloudSource, &cloudListID); err != nil {
+		if err := rows.Scan(&playlistID); err != nil {
 			return err
 		}
-		key := favoriteKey{source: strings.TrimSpace(cloudSource), listID: cloudListID}
-		if keeperID, ok := seen[key]; ok {
+		if keeperID != 0 {
 			if err := s.movePlaylistRowsTx(tx, playlistID, keeperID); err != nil {
 				return err
 			}
 			deleteIDs = append(deleteIDs, playlistID)
 			continue
 		}
-		seen[key] = playlistID
+		keeperID = playlistID
 	}
 	if err := rows.Err(); err != nil {
 		return err
