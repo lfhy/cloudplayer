@@ -3,6 +3,7 @@ package cloudplayer
 import (
 	"net/http"
 	"testing"
+	"time"
 
 	"cloudplayer/backend/config"
 	"cloudplayer/backend/musicsource"
@@ -97,6 +98,74 @@ func TestSearchProviderFailoverOrderRotatesFromPrimary(t *testing.T) {
 		if order[index] != key {
 			t.Fatalf("searchProviderFailoverOrder()[%d] = %q want %q", index, order[index], key)
 		}
+	}
+}
+
+func TestSearchSongsUsesScopedTimeoutClient(t *testing.T) {
+	tempHome := t.TempDir()
+	t.Setenv("HOME", tempHome)
+	t.Setenv("USERPROFILE", tempHome)
+
+	settings := config.DefaultSettings()
+	settings.MusicSourceProvider = musicsource.ProviderPJMP3
+	settings.PlaybackFallbackChain = "pjmp3,kugou,netease"
+	if err := config.SaveSettings(settings); err != nil {
+		t.Fatalf("SaveSettings() error = %v", err)
+	}
+
+	previousCurrent := currentSearchProvider
+	previousLookup := searchProviderByKey
+	t.Cleanup(func() {
+		currentSearchProvider = previousCurrent
+		searchProviderByKey = previousLookup
+	})
+
+	baseClient := &http.Client{Timeout: 45 * time.Second}
+	provider := stubSearchProvider{
+		key: musicsource.ProviderPJMP3,
+		search: func(client *http.Client, _ string, _ uint32) ([]musicsource.SearchResult, bool, error) {
+			if client == nil {
+				t.Fatalf("SearchSongs() passed nil client")
+			}
+			if client == baseClient {
+				t.Fatalf("SearchSongs() reused shared HTTP client")
+			}
+			if client.Timeout != searchAttemptTimeout {
+				t.Fatalf("SearchSongs() timeout = %v want %v", client.Timeout, searchAttemptTimeout)
+			}
+			return []musicsource.SearchResult{{
+				SourceID: musicsource.EncodeSourceID(musicsource.ProviderPJMP3, "77"),
+				Title:    "Timeout Song",
+				Artist:   "Timeout Artist",
+			}}, false, nil
+		},
+	}
+
+	currentSearchProvider = func() musicsource.Provider {
+		return provider
+	}
+	searchProviderByKey = func(key string) (musicsource.Provider, bool) {
+		if key == musicsource.ProviderPJMP3 {
+			return provider, true
+		}
+		return nil, false
+	}
+
+	service := &CloudPlayerService{state: state.NewAppState(nil)}
+	service.state.SwapHTTPClient(baseClient)
+
+	response, err := service.SearchSongs("timeout", 1)
+	if err != nil {
+		t.Fatalf("SearchSongs() error = %v", err)
+	}
+	if len(response.Results) != 1 || response.Results[0].SourceID != "pjmp3:77" {
+		t.Fatalf("SearchSongs() results = %#v", response.Results)
+	}
+	if got := service.state.HTTP(); got != baseClient {
+		t.Fatalf("HTTP() client pointer changed")
+	}
+	if service.state.HTTP().Timeout != 45*time.Second {
+		t.Fatalf("HTTP() timeout = %v want %v", service.state.HTTP().Timeout, 45*time.Second)
 	}
 }
 

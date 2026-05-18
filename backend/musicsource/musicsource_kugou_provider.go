@@ -5,11 +5,14 @@ import (
 	"fmt"
 	"net/http"
 	"strings"
+	"time"
 
 	kg "github.com/lfhy/kugou-music-api"
 )
 
 type kugouProvider struct{}
+
+const kugouSearchTimeout = 8 * time.Second
 
 func (kugouProvider) Key() string {
 	return ProviderKugou
@@ -20,7 +23,9 @@ func (kugouProvider) Search(_ *http.Client, keyword string, page uint32) ([]Sear
 	if err != nil {
 		return nil, false, err
 	}
-	resp, err := client.Search(context.Background(), kg.SearchRequest{
+	ctx, cancel := context.WithTimeout(context.Background(), kugouSearchTimeout)
+	defer cancel()
+	resp, err := client.Search(ctx, kg.SearchRequest{
 		Keywords: strings.TrimSpace(keyword),
 		Page:     kugouPage(page),
 		Pagesize: 30,

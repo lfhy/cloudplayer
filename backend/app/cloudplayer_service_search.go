@@ -5,7 +5,9 @@ package cloudplayer
 import (
 	"fmt"
 	"log"
+	"net/http"
 	"strings"
+	"time"
 
 	"cloudplayer/backend/cache"
 	"cloudplayer/backend/config"
@@ -15,6 +17,8 @@ import (
 
 var currentSearchProvider = musicsource.Current
 var searchProviderByKey = musicsource.ProviderByKey
+
+const searchAttemptTimeout = 8 * time.Second
 
 func (s *CloudPlayerService) SearchSongs(keyword string, page uint32) (model.SearchResponse, error) {
 	trimmed := strings.TrimSpace(keyword)
@@ -47,7 +51,7 @@ func (s *CloudPlayerService) SearchSongs(keyword string, page uint32) (model.Sea
 		}
 
 		s.state.RateLimiter.AcquireSlot()
-		results, hasNext, err := provider.Search(s.state.HTTP(), trimmed, resolvedPage)
+		results, hasNext, err := provider.Search(searchHTTPClient(s.state.HTTP()), trimmed, resolvedPage)
 		if err != nil {
 			log.Printf("SearchSongs failed: keyword=%q page=%d provider=%s err=%v", trimmed, resolvedPage, provider.Key(), err)
 			failures = append(failures, searchProviderLabel(provider.Key())+" unavailable")
@@ -157,4 +161,13 @@ func searchProviderLabel(providerKey string) string {
 	default:
 		return providerKey
 	}
+}
+
+func searchHTTPClient(base *http.Client) *http.Client {
+	if base == nil {
+		return &http.Client{Timeout: searchAttemptTimeout}
+	}
+	cloned := *base
+	cloned.Timeout = searchAttemptTimeout
+	return &cloned
 }
