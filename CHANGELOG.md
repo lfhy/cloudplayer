@@ -6,6 +6,7 @@
 - Search now fails over to the next music source automatically when the current provider is unavailable.
 - Search provider retries now use short per-attempt timeouts so a stalled source does not block failover.
 - Main-window child-window masking no longer blurs the background while standalone dialogs are open.
+- Dev port helpers now detect IPv4, IPv6, loopback, and wildcard listeners consistently so `wails3 dev` port conflicts can be cleared or avoided correctly.
 
 使用方式：
 

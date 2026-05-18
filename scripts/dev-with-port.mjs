@@ -11,6 +11,7 @@ const MAX_PORT_SPAN = 30;
 const STARTUP_GRACE_MS = 3500;
 const rootDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const extraArgs = process.argv.slice(2);
+const PORT_PROBE_HOSTS = ["127.0.0.1", "::1", "0.0.0.0", "::"];
 
 function parsePort(value, fallback) {
   const parsed = Number.parseInt(String(value || ""), 10);
@@ -21,22 +22,38 @@ function portInUse(text, port) {
   return text.includes(`Port ${port} is already in use`);
 }
 
-function canBind(port) {
+function canBindHost(port, host) {
   return new Promise((resolve) => {
     const server = net.createServer();
     server.unref();
-    server.once("error", () => resolve(false));
-    server.listen({ host: "127.0.0.1", port }, () => {
+    server.once("error", (error) => {
+      if (error?.code === "EAFNOSUPPORT" || error?.code === "EADDRNOTAVAIL") {
+        resolve(true);
+        return;
+      }
+      resolve(false);
+    });
+    server.listen({ host, port }, () => {
       server.close(() => resolve(true));
     });
   });
+}
+
+async function canBindEverywhere(port) {
+  for (const host of PORT_PROBE_HOSTS) {
+    // Wails/Vite may resolve localhost to either loopback or wildcard stacks depending on platform,
+    // so a dev port is only safe when each common local bind target can claim it independently.
+    const ok = await canBindHost(port, host);
+    if (!ok) return false;
+  }
+  return true;
 }
 
 async function pickPort() {
   const basePort = parsePort(process.env.WAILS_VITE_PORT, DEFAULT_PORT);
   for (let offset = 0; offset <= MAX_PORT_SPAN; offset += 1) {
     const port = basePort + offset;
-    if (await canBind(port)) return port;
+    if (await canBindEverywhere(port)) return port;
   }
   throw new Error(`No free Vite port found in range ${basePort}-${basePort + MAX_PORT_SPAN}`);
 }

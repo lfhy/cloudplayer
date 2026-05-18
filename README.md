@@ -1,6 +1,6 @@
 # CloudPlayer Wails
 
-- Dev helper: `node ./scripts/free-port.mjs <port> [more-ports...]` releases occupied listening ports on Windows and macOS before you rerun `wails3 dev`.
+- Dev helper: `node ./scripts/free-port.mjs <port> [more-ports...]` releases occupied IPv4, IPv6, loopback, and wildcard listeners on Windows and macOS before you rerun `wails3 dev`.
 - Search now fails over to the next music source automatically when the active provider is unavailable.
 
 

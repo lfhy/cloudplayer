@@ -20,8 +20,20 @@ function run(command, args) {
   });
 }
 
-function windowsListeningPids(port) {
-  const output = run("netstat", ["-ano", "-p", "tcp"]);
+function powershell(command) {
+  return run("powershell", ["-NoProfile", "-Command", command]);
+}
+
+function parsePidLines(output) {
+  return uniqueIntegers(
+    String(output || "")
+      .split(/\r?\n/)
+      .map((line) => Number.parseInt(line.trim(), 10))
+  );
+}
+
+function windowsNetstatListeningPids(port, protocol) {
+  const output = run("netstat", ["-ano", "-p", protocol]);
   const lines = output.split(/\r?\n/);
   const pids = [];
   for (const line of lines) {
@@ -29,14 +41,27 @@ function windowsListeningPids(port) {
     if (!trimmed.startsWith("TCP")) continue;
     const columns = trimmed.split(/\s+/);
     if (columns.length < 5) continue;
-    const [protocol, localAddress, , state, pidText] = columns;
-    if (protocol !== "TCP" || state !== "LISTENING") continue;
+    const [transport, localAddress, , state, pidText] = columns;
+    if (transport !== "TCP" || state !== "LISTENING") continue;
     const localPort = localAddress.split(":").pop();
     if (Number.parseInt(localPort, 10) !== port) continue;
     const pid = Number.parseInt(pidText, 10);
     if (Number.isInteger(pid) && pid > 0) pids.push(pid);
   }
-  return uniqueIntegers(pids);
+  return pids;
+}
+
+function windowsListeningPids(port) {
+  try {
+    return parsePidLines(
+      powershell(`Get-NetTCPConnection -State Listen -LocalPort ${port} -ErrorAction SilentlyContinue | Select-Object -ExpandProperty OwningProcess -Unique`)
+    );
+  } catch {
+    return uniqueIntegers([
+      ...windowsNetstatListeningPids(port, "tcp"),
+      ...windowsNetstatListeningPids(port, "tcpv6"),
+    ]);
+  }
 }
 
 function unixListeningPids(port) {
