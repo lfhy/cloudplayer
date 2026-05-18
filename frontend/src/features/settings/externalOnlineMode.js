@@ -1,4 +1,4 @@
-import { getMusicCollectionModeSelection, musicCollectionModeStatusText, setMusicCollectionModeBusy, setMusicCollectionModeSelection } from "./sourceMode.js";
+import { getMusicCollectionModeSelection, musicCollectionModeStatusText, primeMusicCollectionModeLoadingUi, setMusicCollectionModeBusy, setMusicCollectionModeSelection } from "./sourceMode.js";
 
 let pendingExternalCollectionModeToggle = null;
 
@@ -16,6 +16,11 @@ export function createExternalOnlineModeToggle(deps) {
       }
       setMusicCollectionModeSelection(target);
       setMusicCollectionModeBusy(true, target === "offline"
+        ? "正在切回离线歌单…"
+        : target === "hybrid"
+          ? "正在切换到混合模式并同步云歌单…"
+          : "正在开启在线模式并同步云歌单…");
+      primeMusicCollectionModeLoadingUi(target === "offline"
         ? "正在切回离线歌单…"
         : target === "hybrid"
           ? "正在切换到混合模式并同步云歌单…"

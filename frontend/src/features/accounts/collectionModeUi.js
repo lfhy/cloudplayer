@@ -44,7 +44,9 @@ export function wireKugouCollectionModeToggle(deps) {
   } = deps;
   const switchCollectionMode = async (nextMode) => {
     const normalized = normalizeMusicCollectionMode(nextMode);
-    setCollectionModeState({ mode: getCurrentMode(), visible: true, busy: true });
+    const previousMode = getCurrentMode();
+    setCurrentMode(normalized);
+    setCollectionModeState({ mode: normalized, visible: true, busy: true });
     setKugouLoading(true, collectionModeBusyText(normalized));
     notifyLayoutSettled(20);
     try {
@@ -53,6 +55,7 @@ export function wireKugouCollectionModeToggle(deps) {
       setCollectionModeState({ mode: getCurrentMode(), visible: true, busy: false });
       notifyLayoutSettled();
     } catch (error) {
+      setCurrentMode(previousMode);
       setCollectionModeState({ mode: getCurrentMode(), visible: true, busy: false });
       alertRequestFailed(error, "toggle music collection mode from account center");
     } finally {

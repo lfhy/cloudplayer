@@ -33,6 +33,26 @@ export function setMusicCollectionModeBusy(busy, message = "") {
   if (status && message) status.textContent = message;
 }
 
+export function primeMusicCollectionModeLoadingUi(message = "正在切换歌单模式…") {
+  const list = document.getElementById("sidebar-playlist-list");
+  if (list) list.innerHTML = `<li class="sidebar-pl-empty muted">${message}</li>`;
+  const select = document.getElementById("import-merge-playlist");
+  if (select) {
+    select.innerHTML = `<option value="">${message}</option>`;
+    select.disabled = true;
+  }
+  const mergeBtn = document.getElementById("btn-import-merge");
+  if (mergeBtn) mergeBtn.disabled = true;
+  const tbody = document.querySelector("#playlist-detail-table tbody");
+  if (tbody) {
+    tbody.innerHTML = `
+      <tr class="search-table__loading">
+        <td colspan="6"><div class="search-table-loading"><p>${message}</p></div></td>
+      </tr>
+    `;
+  }
+}
+
 export function musicCollectionModeStatusText(mode) {
   switch (normalizeMusicCollectionMode(mode)) {
     case "online":
@@ -121,6 +141,7 @@ export async function toggleMusicCollectionMode(nextMode, deps) {
         ? "正在切换到混合模式并同步云歌单…"
         : "正在开启在线模式并同步云歌单…";
     setMusicCollectionModeBusy(true, busyText);
+    primeMusicCollectionModeLoadingUi(busyText);
     try {
       await persistSettingsFromForm();
       await onMusicCollectionModeChanged?.(normalized);
