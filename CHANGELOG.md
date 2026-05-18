@@ -1,4 +1,5 @@
 # CloudPlayer Changelog
+- Windows buttons now avoid gradient fills and use flatter surfaces aligned with the native shell.
 
 使用方式：
 

@@ -139,7 +139,7 @@ body.mini-mode .mini-player {
   height: 44px;
   color: #fff;
   border-color: rgba(var(--accent-rgb), 0.28);
-  background: linear-gradient(135deg, rgba(var(--accent-rgb), 0.95), rgba(var(--accent-rgb), 0.78));
+  background: rgba(var(--accent-rgb), 0.9);
 }
 
 .mini-player__btn:hover:not(:disabled),
@@ -151,11 +151,11 @@ body.mini-mode .mini-player {
 .mini-player__icon.is-on {
   color: #fff;
   border-color: rgba(var(--accent-rgb), 0.34);
-  background: linear-gradient(135deg, rgba(var(--accent-rgb), 0.95), rgba(var(--accent-rgb), 0.74));
+  background: rgba(var(--accent-rgb), 0.86);
 }
 
 .mini-player__btn--main:hover:not(:disabled) {
-  background: linear-gradient(135deg, rgba(var(--accent-rgb), 0.98), rgba(var(--accent-rgb), 0.84));
+  background: rgba(var(--accent-rgb), 0.98);
 }
 
 .mini-player__btn:disabled {

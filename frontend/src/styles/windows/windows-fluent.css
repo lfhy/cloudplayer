@@ -188,11 +188,9 @@
 .platform-windows .import-select,
 .platform-windows .import-textarea {
   border-color: color-mix(in srgb, var(--border) 86%, transparent);
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.22), rgba(255, 255, 255, 0.08));
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.18),
-    0 8px 18px rgba(41, 52, 72, 0.08);
-  backdrop-filter: blur(18px) saturate(150%);
+  background: color-mix(in srgb, var(--bg-card) 88%, var(--bg-main));
+  box-shadow: 0 1px 2px rgba(41, 52, 72, 0.06);
+  backdrop-filter: none;
 }
 
 .platform-windows .btn-outline,
@@ -231,10 +229,8 @@
 .platform-windows .nav-item.active,
 .platform-windows .sidebar-pl-item.is-active {
   border-color: color-mix(in srgb, var(--border) 76%, transparent);
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.18), rgba(255, 255, 255, 0.08));
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.14),
-    0 8px 16px rgba(46, 57, 76, 0.08);
+  background: color-mix(in srgb, var(--bg-card) 82%, rgba(var(--accent-rgb), 0.1));
+  box-shadow: 0 1px 2px rgba(46, 57, 76, 0.06);
 }
 
 .platform-windows .settings-choice,
@@ -248,7 +244,7 @@
   min-height: 36px;
   padding-inline: 14px;
   border: 1px solid color-mix(in srgb, var(--border) 84%, transparent);
-  background: var(--win-panel-surface);
+  background: color-mix(in srgb, var(--bg-card) 92%, var(--bg-main));
 }
 
 .platform-windows .settings-choice:hover,
@@ -259,26 +255,22 @@
 .platform-windows .modal-cancel:hover,
 .platform-windows .discover-toolbar button:not(.btn-accent):hover,
 .platform-windows .fallback-chain-btn:hover {
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.18),
-    0 10px 22px rgba(41, 52, 72, 0.1);
+  box-shadow: 0 2px 6px rgba(41, 52, 72, 0.08);
 }
 
 .platform-windows .btn-accent,
 .platform-windows .account-provider-actions .settings-action-button--accent,
 .platform-windows .message-dialog-card__footer .btn-accent {
   border: 1px solid color-mix(in srgb, var(--accent) 78%, #ffffff 22%);
-  background: linear-gradient(180deg, color-mix(in srgb, var(--accent) 88%, #ffffff 12%), color-mix(in srgb, var(--accent) 94%, #000000 6%));
+  background: color-mix(in srgb, var(--accent) 92%, #ffffff 8%);
   color: #ffffff;
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.18),
-    0 10px 22px rgba(var(--accent-rgb), 0.22);
+  box-shadow: 0 6px 16px rgba(var(--accent-rgb), 0.18);
 }
 
 .platform-windows .btn-accent:hover,
 .platform-windows .account-provider-actions .settings-action-button--accent:hover,
 .platform-windows .message-dialog-card__footer .btn-accent:hover {
-  background: linear-gradient(180deg, color-mix(in srgb, var(--accent) 82%, #ffffff 18%), color-mix(in srgb, var(--accent) 88%, #000000 12%));
+  background: color-mix(in srgb, var(--accent) 86%, #000000 14%);
 }
 
 .platform-windows .close-confirm-choice:hover,
@@ -297,7 +289,7 @@
 .platform-windows .import-select:focus,
 .platform-windows .import-textarea:focus {
   border-color: rgba(var(--accent-rgb), 0.28);
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.3), var(--win-panel-hover));
+  background: color-mix(in srgb, var(--bg-card) 80%, var(--win-panel-hover));
 }
 
 .platform-windows .app-window-control {

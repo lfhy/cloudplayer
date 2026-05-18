@@ -61,7 +61,7 @@
 }
 
 .playlist-manage-modal__confirm--danger {
-  background: linear-gradient(180deg, #e33434, #cf2323);
+  background: #cf2323;
   border-color: #bb1d1d;
   color: #ffffff;
 }
