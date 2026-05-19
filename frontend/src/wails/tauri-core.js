@@ -151,6 +151,7 @@ const invokeMap = {
   poll_kugou_login_qr_code: (args) => CloudPlayerService.PollKugouLoginQRCode(args.key),
   quit_app: () => CloudPlayerService.QuitApp(),
   record_recent_play: (args) => CloudPlayerService.RecordRecentPlay(args.row),
+  repair_music_collection_database: () => CloudPlayerService.RepairMusicCollectionDatabase(),
   reset_desktop_lyrics_bounds: () => CloudPlayerService.ResetDesktopLyricsBounds(),
   rename_playlist: (args) => CloudPlayerService.RenamePlaylist(args.playlistId, args.name),
   replace_playlist_import_items: (args) =>
