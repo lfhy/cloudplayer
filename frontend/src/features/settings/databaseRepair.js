@@ -44,8 +44,32 @@ export async function notifyMusicCollectionRepairFinished(requestId, payload = {
 export async function openMusicCollectionRepairDialog() {
   if (pendingDialog) return pendingDialog;
   pendingDialog = new Promise((resolve, reject) => {
+    let settled = false;
+    let offVisibility = null;
+    let offClosing = null;
+    const finish = (value, asError = false) => {
+      if (settled) return;
+      settled = true;
+      offVisibility?.();
+      offClosing?.();
+      if (asError) {
+        reject(value);
+        return;
+      }
+      resolve(value);
+    };
     Events.Once("settings-database-repair-dialog", (event) => {
-      resolve(normalizeDialogEvent(event?.data));
+      finish(normalizeDialogEvent(event?.data));
+    });
+    offVisibility = Events.On("wails:window:visibility", (event) => {
+      if (String(event?.data?.name || "").trim() !== WINDOW_LABEL) return;
+      if (event?.data?.visible === false) {
+        finish({ type: "cancelled" });
+      }
+    });
+    offClosing = Events.On("wails:window:closing", (event) => {
+      if (String(event?.data?.name || "").trim() !== WINDOW_LABEL) return;
+      finish({ type: "cancelled" });
     });
     void DesktopService.EnsureWindow({
       label: WINDOW_LABEL,
@@ -63,7 +87,7 @@ export async function openMusicCollectionRepairDialog() {
       focus: true,
       mac_title_bar_style: "hiddenInset",
       invisible_title_bar_height: 44,
-    }).catch(reject);
+    }).catch((error) => finish(error, true));
   });
   try {
     return await pendingDialog;
@@ -71,4 +95,3 @@ export async function openMusicCollectionRepairDialog() {
     pendingDialog = null;
   }
 }
-

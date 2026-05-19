@@ -14,6 +14,13 @@ let activeRequestID = "";
 let replySent = false;
 let suppressCancelReply = false;
 
+function resetDialogState() {
+  activeRequestID = "";
+  replySent = false;
+  suppressCancelReply = false;
+  setRepairLoading(false);
+}
+
 function renderDatabaseRepairWindow(root) {
   const titlebar = isWindowsDesktop()
     ? ""
@@ -145,10 +152,18 @@ function wireDatabaseRepairWindow() {
     void focusMainWindow();
   });
   window.addEventListener("focus", () => {
+    if (!activeRequestID) {
+      resetDialogState();
+    }
     void applyThemeFromSettings();
   });
   document.addEventListener("visibilitychange", () => {
-    if (!document.hidden) void applyThemeFromSettings();
+    if (!document.hidden) {
+      if (!activeRequestID) {
+        resetDialogState();
+      }
+      void applyThemeFromSettings();
+    }
   });
   if (systemDarkMedia && typeof systemDarkMedia.addEventListener === "function") {
     systemDarkMedia.addEventListener("change", () => {
@@ -165,6 +180,7 @@ export function bootstrapDatabaseRepairWindow() {
       wireWindowChrome({ windowName: WINDOW_LABEL, allowMinimize: false, allowMaximize: false });
     }
     wireDatabaseRepairWindow();
+    resetDialogState();
     const autoSize = wireChildWindowAutoSize({
       element: document.querySelector(".app-child-window-frame--dialog"),
       windowLabel: WINDOW_LABEL,
