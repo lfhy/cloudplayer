@@ -6,6 +6,7 @@ import { createExternalOnlineModeToggle } from "./externalOnlineMode.js";
 import { DEFAULT_LYRICS_IDLE_LINE1, DEFAULT_LYRICS_IDLE_LINE2, normalizeLyricHexInput, normalizeLyricsIdleLine, normalizeNeteaseApiBase, normalizePlaybackFallbackChain, normalizeSearchCacheTTLHours, settingsFormBaselineDefaults } from "./formHelpers.js";
 import { createFallbackChainEditor } from "./fallbackChainEditor.js";
 import { applyLyricsSourceSelectionToDom, readLyricsSourceSettingsFromDom, wireLyricsSourceSelection } from "./lyricSources.js";
+import { MUSIC_COLLECTION_REPAIR_DEFAULT_STATUS, musicCollectionRepairStatusText, notifyMusicCollectionRepairFinished, openMusicCollectionRepairDialog, setMusicCollectionRepairBusy } from "./databaseRepair.js";
 import { createKugouSettingsStatusRefresher, getMusicCollectionModeSelection, musicCollectionModeStatusText, setMusicCollectionModeAvailability, setMusicCollectionModeBusy, setMusicCollectionModeSelection, toggleMusicCollectionMode, wireMusicCollectionModeSelection } from "./sourceMode.js";
 import { renderLyricsPreview } from "./lyricsPreview.js";
 import { canSaveCustomProxyUrl } from "../../app/helpers/platformTheme.js";
@@ -56,6 +57,7 @@ export function createSettingsController(deps) {
   let settingsSaveInFlight = false;
   let settingsSaveQueued = false;
   let suppressSettingsAutoSave = false;
+  let pendingMusicCollectionDatabaseRepair = null;
   let refreshKugouSettingsStatus = () => {};
   let queueSettingsAutosave = () => {};
   const fallbackChainEditor = createFallbackChainEditor({ onChange: () => queueSettingsAutosave(true) });
@@ -217,6 +219,55 @@ export function createSettingsController(deps) {
     if (immediate) void persistSettingsFromForm();
   };
 
+  async function repairMusicCollectionDatabase() {
+    if (pendingMusicCollectionDatabaseRepair) return pendingMusicCollectionDatabaseRepair;
+    pendingMusicCollectionDatabaseRepair = (async () => {
+      setMusicCollectionRepairBusy(true, "请在子窗口中确认是否修复数据库…");
+      let dialogEvent;
+      try {
+        dialogEvent = await openMusicCollectionRepairDialog();
+      } catch (error) {
+        setMusicCollectionRepairBusy(false, MUSIC_COLLECTION_REPAIR_DEFAULT_STATUS);
+        alertRequestFailed(error, "open repair music collection database dialog");
+        return;
+      }
+      if (dialogEvent?.type !== "requested" || !dialogEvent?.requestId) {
+        setMusicCollectionRepairBusy(false, MUSIC_COLLECTION_REPAIR_DEFAULT_STATUS);
+        return;
+      }
+      setMusicCollectionRepairBusy(true, "正在整理数据库、清理本地云歌单并切回离线模式…");
+      let repairResult = null;
+      try {
+        repairResult = await invoke("repair_music_collection_database");
+        await notifyMusicCollectionRepairFinished(dialogEvent.requestId, { ok: true, result: repairResult });
+      } catch (error) {
+        await notifyMusicCollectionRepairFinished(dialogEvent.requestId, {
+          ok: false,
+          message: error instanceof Error ? error.message : String(error || "repair music collection database failed"),
+        }).catch(() => {});
+        setMusicCollectionRepairBusy(false, "数据库修复失败，请稍后重试。");
+        alertRequestFailed(error, "repair music collection database");
+        return;
+      }
+      setMusicCollectionRepairBusy(false, musicCollectionRepairStatusText(repairResult));
+      try {
+        const latestSettings = await invoke("get_settings");
+        const repairedMode = latestSettings?.music_collection_mode ?? latestSettings?.musicCollectionMode ?? ((latestSettings?.music_online_mode ?? latestSettings?.musicOnlineMode) ? "online" : "offline");
+        fillSettingsFormFromSettings(latestSettings);
+        setMusicCollectionModeValue?.(repairedMode);
+        await onMusicCollectionModeChanged?.(repairedMode);
+        await refreshKugouSettingsStatus();
+      } catch (error) {
+        console.warn("sync repaired music collection state", error);
+      }
+    })();
+    try {
+      await pendingMusicCollectionDatabaseRepair;
+    } finally {
+      pendingMusicCollectionDatabaseRepair = null;
+    }
+  }
+
   function openCloseConfirmModal() { openCloseConfirmModalDom(); }
   function closeCloseConfirmModal() { closeCloseConfirmModalDom(); }
   const toggleMusicOnlineModeFromAccountCenter = createExternalOnlineModeToggle({ alertRequestFailed, onMusicCollectionModeChanged, persistSettingsFromForm: (...args) => persistSettingsFromForm(...args), setMusicCollectionModeValue });
@@ -272,6 +323,9 @@ export function createSettingsController(deps) {
       onMusicCollectionModeChanged,
       persistSettingsFromForm,
     }));
+    document.getElementById("btn-repair-music-collection-db")?.addEventListener("click", () => {
+      void repairMusicCollectionDatabase();
+    });
     fallbackChainEditor.render();
     document.getElementById("btn-open-app-log-location")?.addEventListener("click", async () => {
       try {
@@ -318,6 +372,7 @@ export function createSettingsController(deps) {
       if (settings?.desktop_lyrics_visible) queueMicrotask(() => void openDesktopLyricsFromSettingsIfNeeded(settings));
       renderLyricsPreview(getSettingsFormValues());
       void refreshKugouSettingsStatus();
+      setMusicCollectionRepairBusy(false, MUSIC_COLLECTION_REPAIR_DEFAULT_STATUS);
     } catch (error) {
       console.warn("get_settings", error);
     }

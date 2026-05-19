@@ -24,6 +24,15 @@ export function sourcePanelTemplate() {
           <p id="setting-music-collection-mode-status" class="settings-field-hint muted">离线模式使用本地歌单；在线模式直接操作酷狗云端；混合模式会把云歌单 fork 到本地并尽量回写云端。</p>
         </div>
         <div class="settings-field">
+          <span class="settings-field-label">数据库修复</span>
+          <div class="settings-inline-stack">
+            <div class="settings-inline-row">
+              <button type="button" id="btn-repair-music-collection-db" class="settings-action-button">修复数据库</button>
+            </div>
+            <p id="setting-music-collection-repair-status" class="settings-field-hint muted">清理本地缓存的云歌单副本并切回离线模式，之后再次切换到在线 / 混合模式时会重新拉取云歌单。</p>
+          </div>
+        </div>
+        <div class="settings-field">
           <span class="settings-field-label">酷狗账号同步</span>
           <div class="settings-inline-stack">
             <div id="setting-kugou-profile" class="settings-provider-card" hidden>

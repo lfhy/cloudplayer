@@ -29,6 +29,7 @@
 @import "./styles/windows/lyrics-shell.css";
 @import "./styles/windows/lyrics-replace.css";
 @import "./styles/windows/close-confirm.css";
+@import "./styles/windows/database-repair.css";
 @import "./styles/windows/message-dialog.css";
 @import "./styles/windows/account-center-window.css";
 @import "./styles/components/modal.css";
