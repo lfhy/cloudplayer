@@ -66,19 +66,11 @@ else:
 header = text[:start].rstrip()
 template = """## Unreleased
 
-### 本次更新
+### 更新内容
 
 - 暂无。
 
-### 重点变更
-
-- 暂无。
-
-### 修复
-
-- 暂无。
-
-### 已知问题
+### 问题修复
 
 - 暂无。"""
 release_section = f"""## {tag} - {release_date}
