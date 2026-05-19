@@ -1,4 +1,10 @@
 /* Database-repair child window keeps the destructive cleanup flow compact while still surfacing a clear loading state. */
+.database-repair-frame {
+  gap: 0;
+  overflow: visible;
+  border-radius: 0;
+}
+
 .database-repair-card {
   max-width: 436px;
   min-height: 132px;

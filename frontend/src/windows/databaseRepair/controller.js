@@ -24,7 +24,7 @@ function renderDatabaseRepairWindow(root) {
         className: "app-titlebar--child",
       });
   root.innerHTML = `
-    <div class="app-child-window-frame app-child-window-frame--dialog">
+    <div class="app-child-window-frame app-child-window-frame--dialog database-repair-frame">
       ${titlebar}
       <main class="close-confirm-card database-repair-card">
         <header class="close-confirm-card__head">
@@ -177,4 +177,3 @@ export function bootstrapDatabaseRepairWindow() {
     window.addEventListener("beforeunload", () => autoSize.cleanup());
   });
 }
-
