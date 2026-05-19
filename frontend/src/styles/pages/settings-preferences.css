@@ -126,6 +126,11 @@
   max-width: 420px;
 }
 
+/* Preserve semantic hidden state for compact stacks such as account-center mode controls. */
+.settings-inline-stack[hidden] {
+  display: none !important;
+}
+
 .settings-provider-card {
   display: grid;
   grid-template-columns: 48px minmax(0, 1fr);
