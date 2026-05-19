@@ -9,6 +9,7 @@ import { loadLikedSet, saveLikedSet } from "./app/helpers/likedSet.js";
 import { audioDiagPayload, createPlayEventLogger } from "./app/helpers/playerDiagnostics.js";
 import { escapeHtml, setTableMutedMessage } from "./app/helpers/text.js";
 import { formatDurationMs, formatTime } from "./app/helpers/time.js";
+import { installFrontendErrorLogging } from "./app/helpers/installFrontendErrorLogging.js";
 import { applyAppTheme, applyPlatformClassNames, normalizeAccentHex, normalizeAppTheme, normalizeAppThemeMode, normalizeCloseAction, normalizeMusicCollectionMode, normalizeMusicSourceProvider, normalizeNetworkProxyMode, normalizeNetworkProxyUrl, normalizeSettingsTab, setMusicSourceProviderSelection as applyMusicSourceProviderSelectionUi, setNetworkProxyModeSelection as applyNetworkProxyModeSelectionUi, setSettingsTab as applySettingsTabUi, setThemeCardSelection as applyThemeCardSelectionUi, setThemeModeSelection as applyThemeModeSelectionUi, systemDarkMedia } from "./app/helpers/platformTheme.js";
 import { createAccountCenterController } from "./features/accounts/controller.js";
 import { createBasePlayerRuntime } from "./app/runtime/basePlayerRuntime.js";
@@ -23,6 +24,8 @@ import { createMiniModeController } from "./features/player/miniModeController.j
 import { wireChildWindowMask } from "./features/window/childWindowMask.js";
 
 // Composition root: only shared mutable state and runtime assembly stay here.
+installFrontendErrorLogging();
+
 const searchState = { keyword: "", page: 1, hasNext: false, results: [], scope: "catalog", busy: false, playlistResults: [], view: "home" };
 let playQueue = [], playIndex = 0, seekDragging = false, playLoadGeneration = 0, audioSourceGeneration = 0, audioProgressLogLastTs = 0;
 let playModeIndex = 0, qualityPref = "128", importTracks = [], desktopLyricsOpen = false, desktopLyricsWindow = null, desktopLyricsLocked = true;

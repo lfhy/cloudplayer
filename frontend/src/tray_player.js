@@ -1,4 +1,5 @@
 import { setCoverImageSource } from "./app/helpers/covers.js";
+import { installFrontendErrorLogging } from "./app/helpers/installFrontendErrorLogging.js";
 import { iconSvgByName } from "./app/helpers/icons.js";
 import { invoke } from "./wails/tauri-core.js";
 import { emitTo, listen } from "./wails/tauri-event.js";
@@ -8,6 +9,8 @@ const PREV_ICON = iconSvgByName("skip-previous-bold");
 const NEXT_ICON = iconSvgByName("skip-next-bold");
 const PLAY_ICON = iconSvgByName("play-bold");
 const PAUSE_ICON = iconSvgByName("pause-bold");
+
+installFrontendErrorLogging();
 
 function applyTrayTheme(payload = {}) {
   const root = document.documentElement;
