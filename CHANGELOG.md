@@ -57,4 +57,4 @@
 - 按仓库规则拆分 Dart 模型与导入页相关文件，消除 `lib/` 中超长手写文件。
 - 补充 `go test ./...` 与 macOS `flutter run -d macos` 集成验证路径。
 - 修正桌面发布脚本对相对输出目录的处理，避免 macOS GitHub Actions 打包产物在归档后移动失败。
-- 将桌面发布流拆分为 5 条独立 GitHub Actions workflow，分别发布 macOS `amd64 / arm64 / universal` 的 `zip + dmg`，以及 Windows `amd64 / arm64` 的 `zip + installer.exe`。
+- 将桌面发布流拆分为 4 条独立 GitHub Actions workflow，分别发布 macOS `amd64 / arm64 / universal` 的 `zip + dmg`，以及 Windows `amd64` 的 `zip + installer.exe`。
