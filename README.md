@@ -1,117 +1,94 @@
-# CloudPlayer Wails
+# CloudPlayer Flutter
 
-- Dev helper: `node ./scripts/free-port.mjs <port> [more-ports...]` releases occupied IPv4, IPv6, loopback, and wildcard listeners on Windows and macOS before you rerun `wails3 dev`.
-- Search now fails over to the next music source automatically when the active provider is unavailable.
-- Search now stitches multiple provider chunks into one 30-row logical page before the infinite-scroll UI asks for more results.
-
-
-CloudPlayer Wails 是基于 Wails 3 的桌面音乐播放器，聚焦 macOS 桌面体验，同时保留在线曲库、歌词、下载、歌单导入、桌面歌词和快捷键等能力。
+CloudPlayer Flutter 是 CloudPlayer 的 Flutter 桌面版仓库，当前沿用旧 `cloudplayer-wails` 的 Go 后端能力，通过 Flutter 重建桌面主界面与播放器交互，重点继续对齐 macOS 桌面体验，同时保留在线曲库、歌词、歌单导入、桌面歌词、托盘和播放恢复等核心能力。
 
 ## 下载使用
 
-- 前往 [GitHub Releases](https://github.com/lfhy/cloudplayer/releases) 下载对应平台安装包或压缩包。
-- Windows 提供 `.zip` 便携版和 `installer.exe` 安装版，优先使用安装版；macOS 可下载 `.dmg` 或 `.zip` 版本。
-- macOS 发布包内现在附带 `fix_cloudplayer_quarantine.command`，双击后会执行 `xattr -dr com.apple.quarantine /Applications/CloudPlayer.app`。
-- 发布 workflow 现在会直接整理 tag 区间内的提交记录生成 release body：提交标题转小写后包含 `fix` 的归到 `问题修复`，其余归到 `更新内容`；`CHANGELOG.md` 继续作为人工草稿，发版后可运行 `./scripts/archive_unreleased_changelog.sh vX.Y.Z` 归档。
-- Windows 主窗口现在使用系统原生标题栏和透明系统背景，不再渲染自绘顶栏，并会跟随应用当前的浅色/暗色主题模式同步标题栏颜色。
-- 开发、构建、发布和调试说明请参考 `DEV.md`。
-- 开发模式现在会自动为 Vite 退避到下一个空闲端口，避免固定 `9245` 被占用时直接启动失败。
-- macOS 首次打开若提示“已损坏”，先执行：`xattr -dr com.apple.quarantine /Applications/CloudPlayer.app`
+- 当前 Flutter 版仓库已经补齐 `v*` tag 触发的 GitHub Actions 发布流，可产出 `Windows x64` 与 `macOS` 桌面压缩包。
+- 发布入口对应 [`.github/workflows/release-desktop.yml`](./.github/workflows/release-desktop.yml)，推送版本标签后会自动构建并发布 release。
+- macOS 本地开发和构建依赖完整 `Xcode.app`，如果系统默认 `xcode-select` 仍指向 Command Line Tools，请显式指定 `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer`。
+- 当前仓库更偏向开发中的 Flutter 重构版本；如果你只是想直接使用成熟版本，建议同时关注旧 Wails 版仓库的 release 节奏。
 
 ## 功能概览
 
-- 在线曲库搜索与播放
-- 播放与暂停支持轻量淡入淡出，切换状态时更顺滑
-- 设置页默认在线曲库渠道改为酷狗概念版，仍可手动切回泡椒音乐源
-- 歌单详情支持批量模式，和搜索页保持一致的多选交互
-- 本地歌单、云歌单、导入歌单与播放信息补全
-- 歌单、每日推荐、最近播放和搜索结果复用统一曲目表格，支持点击歌手或专辑发起搜索
-- 曲目列表和底部播放控件支持直接切换「我喜欢」，并与内建歌单状态同步
-- 下载管理
-- 边听边存：可在设置中开启播放在线歌曲时自动加入缓存下载队列
-- 搜索首页支持按音乐风格快速检索，卡片每次随机展示 7 个并固定保留“随便听听”
-- 歌词聚合、替换、缓存和桌面歌词显示
-- 酷狗相关登录与歌单导入能力
-- 三态歌单模式：
-  `离线模式` 使用本地歌单与本地「我喜欢」；
-  `在线模式` 直接使用酷狗云端歌单与云端「我喜欢」并支持 12 小时缓存；
-  `混合模式` 会把云歌单 fork 到本地，刷新时继续从云端拉新歌，写入类操作优先回写云端，失败时保留本地副本
-- 播放状态持久化：播放队列、播放位置、歌曲时长和歌词进度可在重启后恢复，启动时进度会优先恢复显示
-- 托盘、快捷键、窗口管理和主题设置
-- 主窗口关闭确认现在会弹出独立子窗口，而不是覆盖在主界面里的拟态框
-- 登录账号子窗口会根据当前内容状态自动收缩尺寸，避免登录后留下大块空白
-- 登录账号子窗口现在可直接执行导入歌单、退出登录，以及切换离线 / 在线 / 混合三种歌单模式
-- 登录账号、关闭主窗口、在线模式确认和统一消息提示这些独立子窗口弹出时，会自动居中到主窗口附近，但不会再把主窗口压暗
-- 在线模式下如果歌曲不属于酷狗云端，添加到云歌单或写入「我喜欢」失败时会弹出统一消息子窗口，直接说明失败原因
-- 偏好设置新增“修复数据库”入口：会先弹出确认子窗口，确认后显示 loading，并在后台清掉本地缓存的云歌单副本、清空酷狗云歌单缓存、强制切回离线模式；后续再次切换到在线 / 混合模式时会重新拉取云歌单
-- Mini 模式回到主窗口内布局，同时保留独立的 Mini 置顶偏好
-- 歌单详情、搜索结果、每日推荐、最近播放和首页列表会同步高亮当前曲目；再次点击当前曲目时会直接切换播放或暂停
-- 前端内置思源黑体 SC，尽量统一 Windows 和 macOS 的文字观感
+- 在线曲库搜索与播放。
+- 首页、搜索、每日推荐、最近播放、歌单、导入、设置、下载管理等主页面已经接通。
+- 歌单、每日推荐、最近播放和搜索结果复用统一曲目表格，支持点击歌手名或专辑名直接发起搜索。
+- 曲目列表和底部播放区支持直接切换「我喜欢」，并同步内建歌单状态。
+- 歌单详情支持批量模式，可多选并从当前歌单移除。
+- 本地歌单、导入歌单、每日推荐保存为歌单，以及导入后补全播放信息。
+- 导入流程已接通本地目录、分享链接、纯文本和酷狗歌单导入。
+- 播放状态持久化已经恢复，播放队列、当前曲目、播放位置和时长可在重启后继续恢复。
+- 沉浸模式、同窗口 `Mini` 模式和 macOS 原生桌面歌词已经接回。
+- 桌面歌词已恢复旧版时间锚点和逐字高亮语义，逐字插值由 macOS 原生层完成。
+- 偏好设置支持亮色 / 暗色主题切换、桌面歌词颜色设置和常用播放偏好。
+- macOS 托盘已恢复左键显示主界面、右键菜单播放控制，以及跟随主题变化的默认封面占位。
+- Windows 平台工程已经补齐，桥接层和发布脚本可直接参与 Windows 构建。
+
+## 当前状态
+
+- Flutter 前端位于 `lib/`，Go 业务后端位于 `backend/`，两者通过 `bridge/` 下的 `c-shared` 动态库桥接。
+- 当前主验证路径是 macOS，仓库规则要求最终集成验证使用 `flutter run -d macos`。
+- 旧 Wails 版的大部分核心使用路径已经迁入，但下载实时事件流、部分子窗口流程和若干细节交互仍在继续补齐。
 
 ## 开发指南
 
-- 环境要求、开发启动、构建命令、发布流程、目录结构和迁移说明请参考 `DEV.md`
-- 图标调色可直接打开本地工具页 `build/icon-color-lab.html`
+### 环境要求
+
+- Flutter 3.44+
+- Go 1.23+
+- macOS 可用的完整 Xcode.app
+- CocoaPods
+
+### 常用命令
+
+```bash
+make bridge
+make smoke
+make analyze
+make test
+make run
+flutter analyze
+dart run tool/bridge_smoke.dart
+go test ./...
+DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer flutter run -d macos
+```
+
+其中：
+
+- `make bridge` 会重建 Go `c-shared` bridge 动态库。
+- `make smoke` 会重建 bridge，并输出动态库路径、媒体代理基址和数据库状态。
+- `make analyze` 会执行 `flutter analyze`。
+- `make test` 会执行 `go test ./...`。
+- `make run` 会先重建 bridge，再启动 Flutter macOS 桌面端。
+
+### 目录结构
+
+- `backend/`: 复用旧版 CloudPlayer 的 Go 业务实现。
+- `bridge/`: Go `c-shared` 桥接层，导出给 Dart FFI 使用。
+- `lib/`: Flutter 页面、状态管理、播放器、主题和窗口逻辑。
+- `macos/Runner/`: macOS 原生窗口、托盘、桌面歌词等平台侧实现。
+- `tool/bridge_smoke.dart`: Dart 直连 Go bridge 的 smoke 验证脚本。
+- `scripts/`: 发布和打包辅助脚本。
+
+## GitHub 发布
+
+- 推送 `v*` tag 后，GitHub Actions 会触发 [`release-desktop.yml`](./.github/workflows/release-desktop.yml)。
+- 该 workflow 会分别构建 `Windows x64` 和 `macOS` 桌面压缩包，并自动创建对应 GitHub release。
+- 也可以手动触发 workflow，并传入 `tag_name` 发布指定标签。
 
 ## 项目截图
 
 ### 主界面
 
-![CloudPlayer 主界面](docs/screenshots/image1.png)
+![CloudPlayer 主界面](docs/screenshots/main-window.png)
 
-### 沉浸模式
+## 当前限制
 
-![CloudPlayer 沉浸模式](docs/screenshots/image2.png)
+- 当前 Flutter 版仍在持续对齐旧 Wails 版的细节体验，部分子窗口流程和边角交互还没有完全做到 1:1。
+- 下载管理目前仍以前端镜像队列为主，旧版下载实时事件流尚未完整接回。
+- 桌面歌词已经迁到 macOS 原生浮层，但围绕歌词的个别旧版独立窗口流程还没有全部恢复。
 
-### Mini 模式
-
-![CloudPlayer Mini 模式](docs/screenshots/image3.png)
-
-### 歌单列表
-
-![CloudPlayer 歌单列表](docs/screenshots/image4.png)
-
-### 桌面歌词与菜单歌词
-
-![CloudPlayer 桌面歌词与菜单歌词](docs/screenshots/image5.png)
-
-### 交流群
+## 交流群
 
 QQ群：`572532027`
-
-![CloudPlayer 交流群二维码](docs/screenshots/qrcode.jpg)
-## Playback diagnostics
-
-- Remote media proxy now uses a streaming HTTP client without the shared 45s total timeout, which prevents long audio playback from being cut off mid-stream.
-- App logs now capture remote media fetch start/status/copy failures and richer audio-element diagnostics, making Windows playback failures easier to trace.
-- Release builds now also forward frontend `console.warn` / `console.error`, uncaught `window.error`, and `unhandledrejection` failures into the same desktop log files, so `查看详细日志` still shows actionable traces outside dev mode.
-- Each desktop app launch now also writes a separate `session-YYYYMMDD-HHMMSS-pid.log`, so support traces still exist even if the shared `cloudplayer.log` is not updated.
-- Track switches now update the player to the next song immediately, only show `加载中...` if the source resolution lingers, and surface playback failure reasons inline in the player subtitle instead of opening a native alert.
-
-## Windows window chrome
-
-- Windows now runs the main window and standard child windows with a shared custom titlebar, so the native caption buttons are hidden and replaced by the in-app controls.
-- The main window keeps minimize / maximize / close, while standard child windows now only keep a close button in the custom titlebar.
-- macOS keeps the existing native titlebar behavior, while Windows child windows such as account center, close confirm, online-mode confirm, and lyrics replace now use the same frameless top bar.
-- Windows custom-chrome windows now keep the native Win11 outer frame styling, so the app surface gets a visible rounded-corner silhouette instead of only rounding inner panels.
-- Windows main and child windows now also use a Fluent-style Mica/Acrylic surface treatment, so the shell, account-login window, and compact dialogs share the same glassier Win11 look.
-
-## Kugou playback recovery
-
-- Kugou login status now auto-runs the daily listen-song / VIP refresh path when the saved session is still valid, with a cooldown to avoid hammering the API after a failed attempt.
-- Kugou playback no longer treats one-minute preview URLs as normal full-track playback. When a real full-track URL is unavailable, CloudPlayer falls back to a PJMP3 match instead of staying stuck on the expired Kugou source.
-- Switching the default source, toggling online mode, logging into Kugou, or logging out of Kugou now clears the persisted playback queue and resume snapshot so stale online `source_id` values do not poison later playback attempts.
-
-## Recent plays and dock polish
-
-- Failed track switches now clear the previous seek state before loading the target source, so a broken next track does not keep showing the last song's progress.
-- Recent plays can now be cleared from both the home screen and the recent page, and the action removes the persisted `recent_plays` history instead of only clearing the current session list.
-- The main dock volume slider now uses a thicker track and thumb so it is easier to grab on desktop.
-
-## Netease source and playback fallback
-
-- CloudPlayer now includes a built-in `netease` music source provider implemented locally, based on the request flow of `chaunsin/netease-cloud-music` without importing that library directly.
-- Preferences now let you choose `kugou`, `pjmp3`, or `netease` as the default online source, and also configure the playback fallback chain order visually.
-- When the current source cannot resolve a playable track, CloudPlayer now retries other configured providers in order instead of failing immediately on the first source.
-- Playback failure messages shown in the main player now prefer a short Chinese summary, while detailed provider-level failure reasons are written to the desktop app logs.
-- Preferences now include a `查看详细日志` entry that opens the app log location directly for diagnostics.

@@ -1,0 +1,13 @@
+{
+  "images" : [
+    {
+      "filename" : "trayicon_template_macos.png",
+      "idiom" : "mac",
+      "scale" : "1x"
+    }
+  ],
+  "info" : {
+    "author" : "xcode",
+    "version" : 1
+  }
+}

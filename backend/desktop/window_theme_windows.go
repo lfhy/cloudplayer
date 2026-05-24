@@ -62,9 +62,6 @@ func syncDesktopWindowTheme(window application.Window, mode string) {
 	}
 	normalizedMode := config.NormalizeAppThemeMode(mode)
 	isDarkMode := normalizedMode != "light"
-	if normalizedMode == "system" {
-		isDarkMode = w32.IsCurrentlyDarkMode()
-	}
 	application.InvokeSync(func() {
 		hwnd := uintptr(nativeWindow)
 		if w32.AllowDarkModeForWindow != nil {
@@ -93,14 +90,10 @@ func SyncDesktopWindowThemes(mode string) {
 }
 
 func desktopWindowsThemeForMode(mode string) application.Theme {
-	switch config.NormalizeAppThemeMode(mode) {
-	case "light":
+	if config.NormalizeAppThemeMode(mode) == "light" {
 		return application.Light
-	case "system":
-		return application.SystemDefault
-	default:
-		return application.Dark
 	}
+	return application.Dark
 }
 
 func desktopRGBColour(red, green, blue uint8) uint32 {

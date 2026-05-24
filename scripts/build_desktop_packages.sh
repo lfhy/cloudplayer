@@ -1,40 +1,28 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# This script orchestrates the existing Wails tasks into a repeatable desktop release flow.
+# Build portable desktop release archives for the current host platform and
+# stage the Go bridge next to the packaged executable before zipping.
+
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 APP_NAME="${APP_NAME:-CloudPlayer}"
 ARTIFACT_PREFIX="${ARTIFACT_PREFIX:-cloudplayer}"
-RELEASE_DIR="${RELEASE_DIR:-$ROOT_DIR/bin/releases}"
-MACOS_QUARANTINE_HELPER="$ROOT_DIR/build/darwin/fix_cloudplayer_quarantine.command"
-TARGETS_CSV="${TARGETS:-windows/amd64,windows/arm64,macos/amd64,macos/arm64}"
-WINDOWS_FORMAT="${WINDOWS_FORMAT:-nsis}"
-INCLUDE_MACOS_UNIVERSAL="${INCLUDE_MACOS_UNIVERSAL:-false}"
-USE_WINDOWS_CGO="${USE_WINDOWS_CGO:-0}"
-INCLUDE_WINDOWS_DUAL="${INCLUDE_WINDOWS_DUAL:-true}"
-DRY_RUN=false
-SKIP_CLEAN=false
+PLATFORM=""
+VERSION=""
+BUILD_NUMBER="1"
+OUTPUT_DIR="$ROOT_DIR/dist/release"
 
 usage() {
   cat <<'EOF'
-Usage: ./scripts/build_desktop_packages.sh [options]
+Usage: ./scripts/build_desktop_packages.sh --platform <windows|macos> --version <x.y.z> [options]
 
 Options:
-  --targets <csv>              Comma-separated targets:
-                               windows/amd64,windows/arm64,macos/amd64,macos/arm64
-  --windows-format <format>    Windows package format: nsis or msix
-  --release-dir <path>         Output directory, default: bin/releases
-  --include-macos-universal    Also build a universal macOS package
-  --skip-windows-dual          Skip the combined Windows dual-arch installer
-  --use-windows-cgo            Enable CGO for Windows builds
-  --skip-clean                 Keep existing release directory contents
-  --dry-run                    Print commands without executing
-  -h, --help                   Show this help
+  --platform <name>        Build the current host's windows or macos package
+  --version <x.y.z>        Release version passed to flutter build
+  --build-number <num>     Build number passed to flutter build
+  --output-dir <path>      Output directory for archives
+  -h, --help               Show this help
 EOF
-}
-
-log() {
-  printf '==> %s\n' "$*"
 }
 
 fail() {
@@ -42,253 +30,90 @@ fail() {
   exit 1
 }
 
-run_task() {
-  local task_name="$1"
-  shift
-  local command=(wails3 task "$task_name" "$@")
-  if [[ "$DRY_RUN" == "true" ]]; then
-    printf '+'
-    printf ' %q' "${command[@]}"
-    printf '\n'
-    return
-  fi
-  (cd "$ROOT_DIR" && "${command[@]}")
+require_cmd() {
+  command -v "$1" >/dev/null 2>&1 || fail "Missing command: $1"
 }
 
-archive_macos_bundle() {
-  local package_root="$1"
-  local archive_path="$2"
-  local parent_dir
-  local package_name
-  local archive_name
-  parent_dir="$(dirname "$package_root")"
-  package_name="$(basename "$package_root")"
-  archive_name="$(basename "$archive_path")"
+to_windows_path() {
+  if command -v cygpath >/dev/null 2>&1; then
+    cygpath -w "$1"
+    return
+  fi
+  printf '%s' "$1"
+}
+
+build_windows() {
+  require_cmd flutter
+  require_cmd go
+  require_cmd powershell.exe
+  mkdir -p "$ROOT_DIR/bin/bridge" "$OUTPUT_DIR"
+  (
+    cd "$ROOT_DIR"
+    go build -buildmode=c-shared -o bin/bridge/cloudplayer_bridge.dll ./bridge
+    flutter build windows --release \
+      --build-name "$VERSION" \
+      --build-number "$BUILD_NUMBER"
+  )
+  local release_dir="$ROOT_DIR/build/windows/x64/runner/Release"
+  local bridge_dll="$ROOT_DIR/bin/bridge/cloudplayer_bridge.dll"
+  local archive_path="$OUTPUT_DIR/$ARTIFACT_PREFIX-windows-x64.zip"
+  [[ -d "$release_dir" ]] || fail "Windows release directory not found: $release_dir"
+  [[ -f "$bridge_dll" ]] || fail "Windows bridge was not built: $bridge_dll"
+  cp "$bridge_dll" "$release_dir/cloudplayer_bridge.dll"
+  local release_dir_win archive_path_win
+  release_dir_win="$(to_windows_path "$release_dir")"
+  archive_path_win="$(to_windows_path "$archive_path")"
+  powershell.exe -NoProfile -Command \
+    "if (Test-Path '$archive_path_win') { Remove-Item '$archive_path_win' -Force }; Compress-Archive -Path '$release_dir_win\\*' -DestinationPath '$archive_path_win' -Force" >/dev/null
+  [[ -f "$archive_path" ]] || fail "Windows archive was not created: $archive_path"
+}
+
+build_macos() {
+  require_cmd flutter
+  require_cmd go
+  require_cmd ditto
+  mkdir -p "$ROOT_DIR/bin/bridge" "$OUTPUT_DIR"
+  (
+    cd "$ROOT_DIR"
+    MACOSX_DEPLOYMENT_TARGET="${MACOSX_DEPLOYMENT_TARGET:-11.0}" \
+      go build -buildmode=c-shared -o bin/bridge/libcloudplayer_bridge.dylib ./bridge
+    flutter build macos --release \
+      --build-name "$VERSION" \
+      --build-number "$BUILD_NUMBER"
+  )
+  local app_bundle="$ROOT_DIR/build/macos/Build/Products/Release/$APP_NAME.app"
+  local bridge_dylib="$ROOT_DIR/bin/bridge/libcloudplayer_bridge.dylib"
+  local archive_name="$ARTIFACT_PREFIX-darwin-$(uname -m).zip"
+  local archive_path="$OUTPUT_DIR/$archive_name"
+  [[ -d "$app_bundle" ]] || fail "macOS app bundle not found: $app_bundle"
+  [[ -f "$bridge_dylib" ]] || fail "macOS bridge was not built: $bridge_dylib"
+  cp "$bridge_dylib" "$app_bundle/Contents/MacOS/libcloudplayer_bridge.dylib"
   rm -f "$archive_path"
-  if command -v ditto >/dev/null 2>&1; then
-    (cd "$parent_dir" && ditto -c -k --sequesterRsrc --keepParent "$package_name" "$archive_name")
-    return
-  fi
-  command -v zip >/dev/null 2>&1 || fail "zip or ditto is required to archive macOS bundles"
-  (cd "$parent_dir" && zip -qry "$archive_name" "$package_name")
-}
-
-copy_macos_quarantine_helper() {
-  local target_dir="$1"
-  [[ -f "$MACOS_QUARANTINE_HELPER" ]] || fail "macOS quarantine helper script is missing"
-  cp "$MACOS_QUARANTINE_HELPER" "$target_dir/fix_cloudplayer_quarantine.command"
-  chmod +x "$target_dir/fix_cloudplayer_quarantine.command"
-}
-
-archive_windows_exe() {
-  local exe_path="$1"
-  local archive_path="$2"
-  local temp_dir
-  local exe_name
-  temp_dir="$(mktemp -d)"
-  exe_name="$(basename "$exe_path")"
-  cp "$exe_path" "$temp_dir/$exe_name"
-  if command -v cygpath >/dev/null 2>&1 && command -v powershell.exe >/dev/null 2>&1; then
-    local windows_exe_path
-    local windows_archive_path
-    windows_exe_path="$(cygpath -w "$temp_dir/$exe_name")"
-    windows_archive_path="$(cygpath -w "$archive_path")"
-    powershell.exe -NoProfile -Command "Compress-Archive -LiteralPath '$windows_exe_path' -DestinationPath '$windows_archive_path' -Force" >/dev/null
-  else
-    command -v zip >/dev/null 2>&1 || fail "zip is required to archive Windows portable builds"
-    (cd "$temp_dir" && zip -qry "$archive_path" "$exe_name")
-  fi
-  rm -rf "$temp_dir"
-}
-
-ensure_prerequisites() {
-  command -v wails3 >/dev/null 2>&1 || fail "wails3 is required"
-  [[ "$DRY_RUN" == "true" ]] && return
-  for target in "${TARGETS[@]}"; do
-    case "$target" in
-      windows/*)
-        if [[ "$WINDOWS_FORMAT" == "nsis" ]] && ! command -v makensis >/dev/null 2>&1; then
-          fail "NSIS packaging requires makensis; install NSIS or use --windows-format msix"
-        fi
-        ;;
-      macos/*)
-        if [[ "$(uname -s)" != "Darwin" ]] && ! command -v docker >/dev/null 2>&1; then
-          fail "Cross-building macOS packages on non-macOS hosts requires Docker"
-        fi
-        ;;
-    esac
-  done
-}
-
-parse_targets() {
-  local item
-  IFS=',' read -r -a raw_targets <<< "$TARGETS_CSV"
-  TARGETS=()
-  for item in "${raw_targets[@]}"; do
-    item="${item//[[:space:]]/}"
-    [[ -n "$item" ]] || continue
-    case "$item" in
-      windows/amd64|windows/arm64|macos/amd64|macos/arm64)
-        TARGETS+=("$item")
-        ;;
-      *)
-        fail "Unsupported target: $item"
-        ;;
-    esac
-  done
-  [[ "${#TARGETS[@]}" -gt 0 ]] || fail "No valid targets were provided"
-}
-
-prepare_release_dir() {
-  [[ "$DRY_RUN" == "true" ]] && return
-  mkdir -p "$RELEASE_DIR"
-  if [[ "$SKIP_CLEAN" != "true" ]]; then
-    rm -rf "$RELEASE_DIR/windows" "$RELEASE_DIR/macos"
-  fi
-}
-
-stage_windows_package() {
-  local arch="$1"
-  local target_dir="$RELEASE_DIR/windows/$arch"
-  local installer_path=""
-  local arch_upper
-  local artifact_prefix
-  artifact_prefix="$ARTIFACT_PREFIX"
-  arch_upper="$(printf '%s' "$arch" | tr '[:lower:]' '[:upper:]')"
-  log "Building Windows ${arch} package"
-  run_task windows:package "ARCH=$arch" "FORMAT=$WINDOWS_FORMAT" "CGO_ENABLED=$USE_WINDOWS_CGO"
-  [[ "$DRY_RUN" == "true" ]] && return
-  mkdir -p "$target_dir"
-  case "$WINDOWS_FORMAT" in
-    nsis)
-      if [[ -f "$ROOT_DIR/bin/$APP_NAME-$arch-installer.exe" ]]; then
-        installer_path="$ROOT_DIR/bin/$APP_NAME-$arch-installer.exe"
-      elif [[ -f "$ROOT_DIR/bin/$APP_NAME-$arch_upper-installer.exe" ]]; then
-        installer_path="$ROOT_DIR/bin/$APP_NAME-$arch_upper-installer.exe"
-      else
-        installer_path="$(find "$ROOT_DIR/bin" -maxdepth 1 -type f -name "$APP_NAME-*-installer.exe" | sort | tail -n 1)"
-      fi
-      [[ -n "$installer_path" && -f "$installer_path" ]] || fail "Windows ${arch} installer was not created"
-      cp "$installer_path" "$target_dir/$artifact_prefix-windows-$arch-installer.exe"
-      ;;
-    msix)
-      installer_path="$ROOT_DIR/bin/$APP_NAME-$arch.msix"
-      [[ -f "$installer_path" ]] || fail "Windows ${arch} MSIX package was not created"
-      cp "$installer_path" "$target_dir/$artifact_prefix-windows-$arch.msix"
-      ;;
-    *)
-      fail "Unsupported windows format: $WINDOWS_FORMAT"
-      ;;
-  esac
-  local portable_path="$ROOT_DIR/bin/$APP_NAME.exe"
-  local portable_archive="$target_dir/$artifact_prefix-windows-$arch.zip"
-  [[ -f "$portable_path" ]] || fail "Windows ${arch} portable build was not created"
-  cp "$portable_path" "$target_dir/$artifact_prefix-windows-$arch.exe"
-  archive_windows_exe "$target_dir/$artifact_prefix-windows-$arch.exe" "$portable_archive"
-  rm -f "$target_dir/$artifact_prefix-windows-$arch.exe"
-}
-
-stage_windows_dual_package() {
-  local target_dir="$RELEASE_DIR/windows/dual"
-  local installer_path="$ROOT_DIR/bin/$APP_NAME-amd64_arm64-installer.exe"
-  local artifact_prefix
-  artifact_prefix="$ARTIFACT_PREFIX"
-  log "Building Windows dual-arch package"
-  run_task windows:package:dual "FORMAT=$WINDOWS_FORMAT" "CGO_ENABLED=$USE_WINDOWS_CGO"
-  [[ "$DRY_RUN" == "true" ]] && return
-  [[ "$WINDOWS_FORMAT" == "nsis" ]] || fail "Windows dual package currently supports nsis only"
-  [[ -f "$installer_path" ]] || fail "Windows dual-arch installer was not created"
-  mkdir -p "$target_dir"
-  cp "$installer_path" "$target_dir/$artifact_prefix-windows-amd64-arm64-installer.exe"
-  [[ -f "$target_dir/$artifact_prefix-windows-amd64-arm64-installer.exe" ]] || fail "Dual-arch installer copy failed"
-}
-
-stage_macos_package() {
-  local arch="$1"
-  local target_dir="$RELEASE_DIR/macos/$arch"
-  local dmg_path="$ROOT_DIR/bin/$APP_NAME.dmg"
-  local artifact_prefix
-  artifact_prefix="$ARTIFACT_PREFIX"
-  local package_root="$target_dir/$artifact_prefix-darwin-$arch"
-  local bundle_copy="$package_root/$APP_NAME.app"
-  log "Building macOS ${arch} package"
-  run_task darwin:package:dmg "ARCH=$arch"
-  [[ "$DRY_RUN" == "true" ]] && return
-  [[ -d "$ROOT_DIR/bin/$APP_NAME.app" ]] || fail "macOS ${arch} app bundle was not created"
-  [[ -f "$dmg_path" ]] || fail "macOS ${arch} dmg was not created"
-  rm -rf "$package_root"
-  mkdir -p "$target_dir"
-  mkdir -p "$package_root"
-  cp -R "$ROOT_DIR/bin/$APP_NAME.app" "$bundle_copy"
-  copy_macos_quarantine_helper "$package_root"
-  archive_macos_bundle "$package_root" "$target_dir/$artifact_prefix-darwin-$arch.zip"
-  [[ -f "$target_dir/$artifact_prefix-darwin-$arch.zip" ]] || fail "macOS ${arch} zip was not created"
-  cp "$dmg_path" "$target_dir/$artifact_prefix-darwin-$arch.dmg"
-  [[ -f "$target_dir/$artifact_prefix-darwin-$arch.dmg" ]] || fail "macOS ${arch} dmg copy failed"
-  if [[ -f "$ROOT_DIR/bin/$APP_NAME" ]]; then
-    cp "$ROOT_DIR/bin/$APP_NAME" "$target_dir/$artifact_prefix-darwin-$arch"
-  fi
-}
-
-stage_macos_universal_package() {
-  local target_dir="$RELEASE_DIR/macos/universal"
-  local dmg_path="$ROOT_DIR/bin/$APP_NAME.dmg"
-  local artifact_prefix
-  artifact_prefix="$ARTIFACT_PREFIX"
-  local package_root="$target_dir/$artifact_prefix-darwin-universal"
-  local bundle_copy="$package_root/$APP_NAME.app"
-  log "Building macOS universal package"
-  run_task darwin:package:dmg:universal
-  [[ "$DRY_RUN" == "true" ]] && return
-  [[ -d "$ROOT_DIR/bin/$APP_NAME.app" ]] || fail "macOS universal app bundle was not created"
-  [[ -f "$dmg_path" ]] || fail "macOS universal dmg was not created"
-  rm -rf "$package_root"
-  mkdir -p "$target_dir"
-  mkdir -p "$package_root"
-  cp -R "$ROOT_DIR/bin/$APP_NAME.app" "$bundle_copy"
-  copy_macos_quarantine_helper "$package_root"
-  archive_macos_bundle "$package_root" "$target_dir/$artifact_prefix-darwin-universal.zip"
-  [[ -f "$target_dir/$artifact_prefix-darwin-universal.zip" ]] || fail "macOS universal zip was not created"
-  cp "$dmg_path" "$target_dir/$artifact_prefix-darwin-universal.dmg"
-  [[ -f "$target_dir/$artifact_prefix-darwin-universal.dmg" ]] || fail "macOS universal dmg copy failed"
-  if [[ -f "$ROOT_DIR/bin/$APP_NAME" ]]; then
-    cp "$ROOT_DIR/bin/$APP_NAME" "$target_dir/$artifact_prefix-darwin-universal"
-  fi
+  (
+    cd "$(dirname "$app_bundle")"
+    ditto -c -k --sequesterRsrc --keepParent "$(basename "$app_bundle")" "$archive_name"
+    mv "$archive_name" "$archive_path"
+  )
+  [[ -f "$archive_path" ]] || fail "macOS archive was not created: $archive_path"
 }
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
-    --targets)
-      TARGETS_CSV="$2"
+    --platform)
+      PLATFORM="${2:-}"
       shift 2
       ;;
-    --windows-format)
-      WINDOWS_FORMAT="$2"
+    --version)
+      VERSION="${2:-}"
       shift 2
       ;;
-    --release-dir)
-      RELEASE_DIR="$2"
+    --build-number)
+      BUILD_NUMBER="${2:-}"
       shift 2
       ;;
-    --include-macos-universal)
-      INCLUDE_MACOS_UNIVERSAL="true"
-      shift
-      ;;
-    --skip-windows-dual)
-      INCLUDE_WINDOWS_DUAL="false"
-      shift
-      ;;
-    --use-windows-cgo)
-      USE_WINDOWS_CGO="1"
-      shift
-      ;;
-    --skip-clean)
-      SKIP_CLEAN="true"
-      shift
-      ;;
-    --dry-run)
-      DRY_RUN="true"
-      shift
+    --output-dir)
+      OUTPUT_DIR="${2:-}"
+      shift 2
       ;;
     -h|--help)
       usage
@@ -300,46 +125,17 @@ while [[ $# -gt 0 ]]; do
   esac
 done
 
-case "$WINDOWS_FORMAT" in
-  nsis|msix) ;;
+[[ -n "$PLATFORM" ]] || fail "--platform is required"
+[[ -n "$VERSION" ]] || fail "--version is required"
+
+case "$PLATFORM" in
+  windows)
+    build_windows
+    ;;
+  macos)
+    build_macos
+    ;;
   *)
-    fail "windows format must be nsis or msix"
+    fail "Unsupported platform: $PLATFORM"
     ;;
 esac
-
-parse_targets
-ensure_prerequisites
-prepare_release_dir
-
-for target in "${TARGETS[@]}"; do
-  case "$target" in
-    windows/*)
-      stage_windows_package "${target#windows/}"
-      ;;
-    macos/*)
-      stage_macos_package "${target#macos/}"
-      ;;
-  esac
-done
-
-if [[ "$INCLUDE_WINDOWS_DUAL" == "true" ]]; then
-  for target in "${TARGETS[@]}"; do
-    if [[ "$target" == "windows/amd64" ]]; then
-      has_windows_amd64=true
-    fi
-    if [[ "$target" == "windows/arm64" ]]; then
-      has_windows_arm64=true
-    fi
-  done
-  if [[ "${has_windows_amd64:-false}" == "true" && "${has_windows_arm64:-false}" == "true" ]]; then
-    stage_windows_dual_package
-  fi
-fi
-
-if [[ "$INCLUDE_MACOS_UNIVERSAL" == "true" ]]; then
-  stage_macos_universal_package
-fi
-
-if [[ "$DRY_RUN" != "true" ]]; then
-  log "Release packages written to $RELEASE_DIR"
-fi

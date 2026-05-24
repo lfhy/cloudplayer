@@ -1,7 +1,9 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# Generate a GitHub release body by grouping commit subjects into two sections.
+# Generate a GitHub release body from commit subjects between the current tag
+# and the previous reachable tag, mirroring the legacy desktop release flow.
+
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 TARGET_TAG="${1:-${TARGET_TAG:-}}"
 OUTPUT_FILE="${2:-${OUTPUT_FILE:-}}"
@@ -17,16 +19,7 @@ require_cmd() {
 
 previous_tag() {
   local tag="$1"
-  local candidate
-  candidate="$(git -C "$ROOT_DIR" describe --tags --abbrev=0 "${tag}^" 2>/dev/null || true)"
-  printf '%s' "$candidate"
-}
-
-is_fix_subject() {
-  local subject="$1"
-  local lowered
-  lowered="$(printf '%s' "$subject" | tr '[:upper:]' '[:lower:]')"
-  [[ "$lowered" == *fix* ]]
+  git -C "$ROOT_DIR" describe --tags --abbrev=0 "${tag}^" 2>/dev/null || true
 }
 
 collect_commits() {
@@ -34,31 +27,33 @@ collect_commits() {
   git -C "$ROOT_DIR" log --no-merges --format='%s%x09%h' "$range"
 }
 
+is_fix_subject() {
+  local lowered
+  lowered="$(printf '%s' "$1" | tr '[:upper:]' '[:lower:]')"
+  [[ "$lowered" == *fix* ]]
+}
+
 main() {
   [[ -n "$TARGET_TAG" ]] || fail "TARGET_TAG is required"
   [[ -n "$OUTPUT_FILE" ]] || fail "OUTPUT_FILE is required"
   require_cmd git
 
-  local prev_tag=""
+  local prev_tag range updates="" fixes=""
   prev_tag="$(previous_tag "$TARGET_TAG")"
-  local range
   if [[ -n "$prev_tag" ]]; then
     range="$prev_tag..$TARGET_TAG"
   else
     range="$(git -C "$ROOT_DIR" rev-list --max-parents=0 "$TARGET_TAG")..$TARGET_TAG"
   fi
 
-  local updates=""
-  local fixes=""
-
   while IFS=$'\t' read -r subject hash; do
     [[ -n "${subject:-}" ]] || continue
     local entry="- \`$hash\` $subject"
     if is_fix_subject "$subject"; then
       fixes+="${entry}"$'\n'
-      continue
+    else
+      updates+="${entry}"$'\n'
     fi
-    updates+="${entry}"$'\n'
   done < <(collect_commits "$range")
 
   {

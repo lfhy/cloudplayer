@@ -37,18 +37,18 @@ func configureMainWindowTheme(options *application.WebviewWindowOptions, mode st
 }
 
 func windowsThemeForMode(mode string) application.Theme {
-	switch config.NormalizeAppThemeMode(mode) {
-	case "light":
+	if config.NormalizeAppThemeMode(mode) == "light" {
 		return application.Light
-	case "system":
-		return application.SystemDefault
-	default:
-		return application.Dark
 	}
+	return application.Dark
 }
 
 func syncMainWindowTheme(mode string) {
-	window, ok := application.Get().Window.GetByName("main")
+	app := application.Get()
+	if app == nil {
+		return
+	}
+	window, ok := app.Window.GetByName("main")
 	if !ok {
 		return
 	}

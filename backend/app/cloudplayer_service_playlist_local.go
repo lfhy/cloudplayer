@@ -66,7 +66,7 @@ func (s *CloudPlayerService) listLocalPlaylists() ([]PlaylistRow, error) {
 
 func (s *CloudPlayerService) listLocalPlaylistImportItems(playlistID int64) ([]PlaylistImportItemRow, error) {
 	rows, err := s.state.DB.Query(`
-		SELECT id, sort_order, title, artist, album, pjmp3_source_id, kugou_file_id, sync_origin, cover_url, duration_ms
+		SELECT id, sort_order, title, artist, album, pjmp3_source_id, kugou_file_id, sync_origin, cover_url, cover_cache_path, duration_ms
 		FROM playlist_import_items
 		WHERE playlist_id = ?
 		ORDER BY sort_order DESC, id DESC
@@ -79,7 +79,7 @@ func (s *CloudPlayerService) listLocalPlaylistImportItems(playlistID int64) ([]P
 	var result []PlaylistImportItemRow
 	for rows.Next() {
 		var row PlaylistImportItemRow
-		if err := rows.Scan(&row.ID, &row.SortOrder, &row.Title, &row.Artist, &row.Album, &row.Pjmp3SourceID, &row.KugouFileID, &row.SyncOrigin, &row.CoverURL, &row.DurationMS); err != nil {
+		if err := rows.Scan(&row.ID, &row.SortOrder, &row.Title, &row.Artist, &row.Album, &row.Pjmp3SourceID, &row.KugouFileID, &row.SyncOrigin, &row.CoverURL, &row.CoverCachePath, &row.DurationMS); err != nil {
 			return nil, err
 		}
 		result = append(result, row)
@@ -242,11 +242,11 @@ func (s *CloudPlayerService) deleteLocalPlaylistImportItem(playlistID, itemID in
 func (s *CloudPlayerService) localPlaylistImportItemByID(playlistID, itemID int64) (PlaylistImportItemRow, error) {
 	var row PlaylistImportItemRow
 	err := s.state.DB.QueryRow(`
-		SELECT id, sort_order, title, artist, album, pjmp3_source_id, kugou_file_id, sync_origin, cover_url, duration_ms
+		SELECT id, sort_order, title, artist, album, pjmp3_source_id, kugou_file_id, sync_origin, cover_url, cover_cache_path, duration_ms
 		FROM playlist_import_items
 		WHERE playlist_id = ? AND id = ?
 		LIMIT 1
-	`, playlistID, itemID).Scan(&row.ID, &row.SortOrder, &row.Title, &row.Artist, &row.Album, &row.Pjmp3SourceID, &row.KugouFileID, &row.SyncOrigin, &row.CoverURL, &row.DurationMS)
+	`, playlistID, itemID).Scan(&row.ID, &row.SortOrder, &row.Title, &row.Artist, &row.Album, &row.Pjmp3SourceID, &row.KugouFileID, &row.SyncOrigin, &row.CoverURL, &row.CoverCachePath, &row.DurationMS)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return PlaylistImportItemRow{}, fmt.Errorf("未找到该导入条目")

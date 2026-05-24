@@ -18,9 +18,6 @@ func syncNativeWindowTheme(window application.Window, mode string) {
 	}
 	normalizedMode := config.NormalizeAppThemeMode(mode)
 	isDarkMode := normalizedMode != "light"
-	if normalizedMode == "system" {
-		isDarkMode = w32.IsCurrentlyDarkMode()
-	}
 	application.InvokeSync(func() {
 		hwnd := uintptr(nativeWindow)
 		if w32.AllowDarkModeForWindow != nil {

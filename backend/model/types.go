@@ -52,16 +52,17 @@ type FavoriteTrackIn struct {
 }
 
 type PlaylistImportItemRow struct {
-	ID            int64  `json:"id"`
-	SortOrder     int64  `json:"sort_order"`
-	Title         string `json:"title"`
-	Artist        string `json:"artist"`
-	Album         string `json:"album"`
-	Pjmp3SourceID string `json:"pjmp3_source_id"`
-	KugouFileID   int64  `json:"kugou_file_id,omitempty"`
-	SyncOrigin    string `json:"sync_origin,omitempty"`
-	CoverURL      string `json:"cover_url"`
-	DurationMS    int64  `json:"duration_ms"`
+	ID             int64  `json:"id"`
+	SortOrder      int64  `json:"sort_order"`
+	Title          string `json:"title"`
+	Artist         string `json:"artist"`
+	Album          string `json:"album"`
+	Pjmp3SourceID  string `json:"pjmp3_source_id"`
+	KugouFileID    int64  `json:"kugou_file_id,omitempty"`
+	SyncOrigin     string `json:"sync_origin,omitempty"`
+	CoverURL       string `json:"cover_url"`
+	CoverCachePath string `json:"cover_cache_path,omitempty"`
+	DurationMS     int64  `json:"duration_ms"`
 }
 
 type SharePlaylistResponse struct {
@@ -94,15 +95,16 @@ type RecentPlayIn struct {
 }
 
 type RecentPlayRow struct {
-	Kind          string  `json:"kind"`
-	Title         string  `json:"title"`
-	Artist        string  `json:"artist"`
-	Album         string  `json:"album"`
-	CoverURL      *string `json:"cover_url"`
-	Pjmp3SourceID *string `json:"pjmp3_source_id"`
-	FilePath      *string `json:"file_path"`
-	DurationMS    int64   `json:"duration_ms"`
-	PlayedAt      int64   `json:"played_at"`
+	Kind           string  `json:"kind"`
+	Title          string  `json:"title"`
+	Artist         string  `json:"artist"`
+	Album          string  `json:"album"`
+	CoverURL       *string `json:"cover_url"`
+	CoverCachePath *string `json:"cover_cache_path,omitempty"`
+	Pjmp3SourceID  *string `json:"pjmp3_source_id"`
+	FilePath       *string `json:"file_path"`
+	DurationMS     int64   `json:"duration_ms"`
+	PlayedAt       int64   `json:"played_at"`
 }
 
 type DailyRecommendationResponse struct {

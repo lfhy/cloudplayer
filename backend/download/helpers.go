@@ -73,7 +73,11 @@ func recordDownloadSuccess() error {
 }
 
 func emitTask(task DownloadTaskEvent) {
-	_ = application.Get().Event.Emit("download-task-changed", task)
+	app := application.Get()
+	if app == nil {
+		return
+	}
+	_ = app.Event.Emit("download-task-changed", task)
 }
 
 func getJSON(client *http.Client, method, requestURL string, body io.Reader, headers map[string]string, timeout time.Duration) (map[string]any, error) {

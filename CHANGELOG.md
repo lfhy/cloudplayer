@@ -1,53 +1,58 @@
-# CloudPlayer Changelog
-
-- Added `scripts/free-port.mjs` to release occupied listening ports on Windows and macOS during local development.
-
-- Windows buttons now avoid gradient fills and use flatter surfaces aligned with the native shell.
-- Search now fails over to the next music source automatically when the current provider is unavailable.
-- Search provider retries now use short per-attempt timeouts so a stalled source does not block failover.
-- Search provider failover now waits up to 10 seconds per source before moving to the next provider.
-- Search now keeps pulling lazy-loaded provider chunks until each app-side results page is filled to 30 rows when possible.
-- Search now ignores cached empty first pages from the current provider and still falls through to the next source, which restores queries such as `民谣` when Kugou returns zero rows.
-- Hybrid-mode favorites now reuse and deduplicate the built-in `我喜欢` playlist when the Kugou cloud favorites fork is attached, so repeated likes stop creating extra playlists with the same name.
-- Standalone child windows no longer dim the main window while they are open.
-- Main-window child-window masking no longer blurs the background while standalone dialogs are open.
-- Dev port helpers now detect IPv4, IPv6, loopback, and wildcard listeners consistently so `wails3 dev` port conflicts can be cleared or avoided correctly.
-
-使用方式：
-
-- 日常开发时，把准备发版的内容持续补到 `## Unreleased` 下面。
-- 打 tag 触发 release 时，发布 workflow 会直接按 tag 区间内的提交记录整理 release body：标题转小写后包含 `fix` 的归到 `问题修复`，其余归到 `更新内容`。
-- 发版完成后，运行 `./scripts/archive_unreleased_changelog.sh vX.Y.Z` 归档 `## Unreleased`，再继续在模板里累积下一版内容。
+# Changelog
 
 ## Unreleased
 
-### 更新内容
-
-- 暂无。
-
-### 问题修复
-
-- 暂无。
-
-## v1.1.3 - 2026-05-19
-
-### 更新内容
-
-- 新增统一消息子窗口，在线模式下添加非酷狗云端歌曲到歌单时不再只弹浏览器式失败提示，而会展示明确原因。
-- 偏好设置和登录账号子窗口里的收藏模式切换已改为离线 / 在线 / 混合三态。
-- 混合模式会把酷狗云歌单 fork 到本地，刷新时继续从云端拉取新内容；新增、重命名、追加歌曲和“我喜欢”会优先回写云端，失败时保留本地。
-- 偏好设置新增“修复数据库”入口，会用独立子窗口确认并显示 loading；确认后会清理本地缓存的云歌单副本、清空酷狗云歌单缓存并切回离线模式，供后续重新切换时重新拉取云歌单。
-
-### 问题修复
-
-- 账号中心子窗口现在只会在酷狗账号已登录时显示离线 / 在线 / 混合歌单模式切换按钮，游客态和已过期态都会保持隐藏。
-- Release 版本现在也会把前端 `console.warn` / `console.error`、未捕获的 `window.error` 和 `unhandledrejection` 写入桌面日志，避免“查看详细日志”只打开空文件夹。
-- SQLite 现在为本地歌单库启用忙等超时，并在模式切换相关的歌单同步 / 刷新链路里重试 `SQLITE_BUSY`，切换在线 / 混合模式时不再因为短暂锁竞争直接失败。
-- 账号窗口切换离线 / 在线 / 混合模式时现在会立即切换选中按钮，并把主界面歌单区域先切到 loading 占位后再等待主窗口刷新完成；同时修复了回包监听竞态、重复触发和超时误报，离线模式也不再继续显示混合模式同步下来的酷狗歌单。
-- 修复数据库流程现在会在执行清理前强制把歌单模式切回离线，并清掉本地云歌单副本与酷狗缓存，避免混合模式下刚清完就立刻又把云歌单重新 fork 回本地。
-- macOS 自绘子窗口现在统一预留 20px 顶部安全区，关闭确认、消息提示、在线模式确认和账号窗口不再整体偏上，也不会再显得底部空一截。
-- Windows 现在对消息提示和在线模式确认走原生系统弹窗，避免自绘子窗口底部圆角 / 按钮裁切，并让播放失败提示只显示错误消息正文，不再展示完整运行时 JSON。
-- Windows 主窗口和自绘子窗口现在统一改成更接近 Fluent Design 的 Mica / Acrylic 视觉，主界面、登录窗口和确认类子窗口都使用新的玻璃化表面、按钮和标题栏样式。
-- Windows 子窗口现在保留原生标题栏与关闭按钮，但不再强制使用半透明 Acrylic 背景，避免 `wails.localhost` 子页出现 502。
-- 修复了桌面歌词窗口上下两行字号不一致的问题，两行现在会保持一致的主要字号。
-- 统一了前端请求失败提示入口，失败时会优先显示实际错误内容，再回退到通用提示。
+- 初始化 Flutter + Go FFI 版 CloudPlayer 仓库结构，并迁移旧仓库规则。
+- 复用旧 Go 后端代码，增加无 Wails 运行时下的兼容保护。
+- 新增 `bridge/` 动态库入口和 Dart FFI 调用层。
+- 新增 Fluent 风格主界面壳子与首页、搜索、歌单、每日推荐、最近播放、导入、设置、下载管理页面骨架。
+- 新增 `tool/bridge_smoke.dart` 用于验证 Go 动态库构建和加载。
+- 接回旧版后端媒体代理，并让 Flutter 端封面优先使用本地缓存、其次走 bridge 本地媒体代理显示。
+- 新增 `Makefile`，固化 `make bridge`、`make smoke` 与 `make run` 启动路径。
+- 还原旧版搜索页首页态 / 结果态结构、快速搜索卡片和范围切换行为。
+- 进一步对齐旧版搜索页的搜索框、结果顶部工具条，以及本地歌单命中卡片展示。
+- 调整搜索首页的搜索框与快速搜索卡片尺寸，避免在常用窗口宽度下卡片被撑大。
+- 将主界面内联 `InfoBar` 状态提示改为自动消失的悬浮 toast，避免挤压页面布局。
+- 对齐底部播放控件布局、图标样式与封面媒体代理加载链路。
+- 新增同窗口沉浸模式，支持从底部封面进入、右上角退出，并接通旧后端歌词接口展示滚动歌词。
+- 新增同窗口 `Mini` 模式，支持窗口尺寸切换、退出恢复和 `Mini` 置顶开关。
+- 修正同窗口 `Mini` 模式仍让主壳参与窄窗口布局的问题，避免首页预览行在切换时持续触发 `RenderFlex overflow`。
+- 隐藏沉浸歌词区域的桌面端滚动条，保留自动居中滚动体验。
+- 新增 macOS 原生桌面歌词浮层，支持透明置顶、位置记忆、字号缩放和锁定点击穿透。
+- 在偏好设置里补回桌面歌词颜色选择器，保留十六进制输入，同时支持项目内风格的点击选色与即时生效。
+- 对齐旧版播放切换体验，为底部播放区、Mini 模式和沉浸歌词补上播放 / 暂停时的淡入淡出过渡。
+- 将侧边栏右下角入口、macOS 应用名称和 AppIcon 对齐回旧版 CloudPlayer 标记与产物命名。
+- 迁回旧版 macOS 菜单栏托盘入口，补上模板图标、显示主窗口、退出和上一首 / 播放暂停 / 下一首快捷控制，并让歌词 / 曲名标签跟随播放即时同步。
+- 继续补齐 macOS 菜单栏快捷播放器：左键弹出紧凑控制面板，右键保留菜单，同时修正托盘模板图标过大的问题。
+- 将 macOS 菜单栏快捷播放器样式进一步对齐旧版 Wails，恢复贴边浮层、封面区、横向控制区和紧凑进度条视觉。
+- 修正 macOS 菜单栏快捷播放器在亮色模式下的文字、按钮和占位封面前景色，避免浅色外观不可读。
+- 调整 `make bridge` / `make run` 的 macOS 构建参数，统一 Go bridge 的 deployment target，避免启动前刷出一串版本不匹配的 linker warning。
+- 将桌面歌词的打开 / 关闭与锁定按钮补回到底部播放器工具区，位置和职责对齐旧版 Wails。
+- 修正桌面歌词跟随当前激活歌词行的投影逻辑，并将锁定按钮移到右上角操作栏，避免遮挡歌词开头。
+- 恢复播放队列与进度快照持久化，并在应用启动时自动加载上次播放曲目和进度。
+- 将侧边栏与 dock 弹窗图标恢复为原图标形状并改用主题色前景，同时把默认封面占位对齐到旧版 Wails fallback cover。
+- 调整默认封面占位底色为跟随主题模式的黑/白底，避免托盘与 Flutter 侧在亮暗色下继续使用灰阶背景。
+- 取消跟随系统和多套旧暗色主题模式，统一为亮色 / 暗色两档，并修正切换主题后 macOS 托盘封面占位不会立即刷新背景的问题。
+- 歌单详情页补回可点击的批量多选模式，并将歌单重命名入口改到侧边栏歌单项右键菜单。
+- 修正桌面歌词投影错误回归，恢复双行轮换到第二行的过渡，并让逐字高亮重新跟随当前激活歌词行。
+- 将桌面歌词 payload 补齐回旧版时间锚点和逐字词段语义，改由 macOS 原生层自行按时间插值高亮进度。
+- 修正桌面歌词原生层按整行容器裁剪高亮的问题，改为按文本实际绘制宽度推进，避免和 Mini / 沉浸模式出现视觉错位。
+- 修正桌面歌词原生层用插值时间累计进度导致首行也逐渐跑偏的问题，改回按真实播放上报时间做防回退与字符进度计算。
+- 修正普通偏好保存会覆盖播放快照的问题，恢复播放进度按秒持久化，并确保应用重启后能继续从上次进度恢复。
+- 将 macOS 桌面歌词原生绘制调整为随歌词颜色自动加深的阴影方案，避免描边过粗并保持复杂背景下的可读性。
+- 简化 macOS 托盘交互，左键点击状态栏图标只显示主界面，右键菜单保留上一首 / 播放暂停 / 下一首控制。
+- 修正顶部 dock 弹窗播放按钮的符号缩放方式，避免上一首 / 播放 / 下一首图标被横向挤压后变形。
+- 补回 Windows 桌面平台工程、跨平台 bridge 加载路径与 tag 触发的 GitHub Actions 发布流，支持按 `v*` 标签构建 Windows x64 与 macOS 桌面压缩包并自动发布 release。
+- 修正 macOS 启动后主窗口未自动拿到前台焦点的问题，恢复左上角红绿灯与主界面的激活态。
+- 恢复旧版列表内歌手名、专辑名的点击搜索行为，点击后会切到搜索页并用当前文案直接发起搜索。
+- 继续对齐底部 dock 右侧工具区，补回旧版 `Mini / 界面模式 / 音质 / 词 / 锁 / 音量` 结构与图标风格。
+- 继续对齐旧版列表页工具栏按钮与表格喜欢图标，统一歌单、搜索、每日推荐和最近播放页面的视觉语言。
+- 修正旧版风格列表工具栏按钮被错误挤成纵向排列的问题，恢复横向布局。
+- 去掉 `播放全部` 文本按钮里的 emoji 风险字符，改为自绘播放图形，并恢复列表页当前曲目 / 正在播放高亮。
+- 修正 macOS 侧边栏左上角留白跟随亮暗主题变化的问题，深色模式下保持与亮色一致的顶部布局。
+- 修正“我的歌单”侧边栏项在 hover 时过快丢失高亮的问题，使其与上方固定导航项的悬停表现保持一致，同时保留右键菜单入口。
+- 修正“每日推荐”保存为歌单后因歌单查询倒序而导致顺序翻转的问题，保存时改为倒序写入以保持最终显示顺序与页面一致。
+- 还原旧版导入页三步流，并接通本地目录、分享链接、文本与酷狗歌单导入。
+- 新增导入结果导出、合并已有歌单、下载目录选择与歌单补全播放信息入口。
+- 按仓库规则拆分 Dart 模型与导入页相关文件，消除 `lib/` 中超长手写文件。
+- 补充 `go test ./...` 与 macOS `flutter run -d macos` 集成验证路径。

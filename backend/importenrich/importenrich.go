@@ -233,5 +233,9 @@ func enrichSongPageAndAlbumSearch(db *sql.DB, client *http.Client, limiter *rate
 }
 
 func emitEvent(name string, payload any) {
-	_ = application.Get().Event.Emit(name, payload)
+	app := application.Get()
+	if app == nil {
+		return
+	}
+	_ = app.Event.Emit(name, payload)
 }

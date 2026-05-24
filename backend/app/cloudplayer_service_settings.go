@@ -22,16 +22,9 @@ func (s *CloudPlayerService) LogPlayEvent(stage string, url *string, errorCode *
 	return nil
 }
 
-// Frontend diagnostics funnel through the backend logger so release builds still keep browser-side failures.
+// Frontend debug messages funnel through the backend logger so UI repros land in the app log file.
 func (s *CloudPlayerService) LogFrontendDebug(scope, stage, detail string) error {
-	trimmedScope := strings.TrimSpace(scope)
-	trimmedStage := strings.TrimSpace(stage)
-	trimmedDetail := strings.TrimSpace(detail)
-	if strings.HasPrefix(trimmedScope, "runtime-") {
-		log.Printf("frontend runtime scope=%s window=%s detail=%s", trimmedScope, trimmedStage, trimmedDetail)
-		return nil
-	}
-	log.Printf("frontend debug scope=%s stage=%s detail=%s", trimmedScope, trimmedStage, trimmedDetail)
+	log.Printf("frontend debug scope=%s stage=%s detail=%s", strings.TrimSpace(scope), strings.TrimSpace(stage), strings.TrimSpace(detail))
 	return nil
 }
 
@@ -68,7 +61,11 @@ func (s *CloudPlayerService) ApplyGlobalHotkeys(cfg config.GlobalHotkeys) (hotke
 }
 
 func (s *CloudPlayerService) SetDesktopLyricsClickThrough(ignoreCursorEvents bool) error {
-	window, ok := application.Get().Window.GetByName("lyrics")
+	app := application.Get()
+	if app == nil {
+		return nil
+	}
+	window, ok := app.Window.GetByName("lyrics")
 	if !ok {
 		return nil
 	}

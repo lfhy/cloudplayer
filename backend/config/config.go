@@ -13,9 +13,9 @@ import (
 const BaseURL = "https://pjmp3.com"
 
 const (
-	NetworkProxyModeDirect = "direct"
-	NetworkProxyModeSystem = "system"
-	NetworkProxyModeCustom = "custom"
+	NetworkProxyModeDirect     = "direct"
+	NetworkProxyModeSystem     = "system"
+	NetworkProxyModeCustom     = "custom"
 	MusicCollectionModeOffline = "offline"
 	MusicCollectionModeOnline  = "online"
 	MusicCollectionModeHybrid  = "hybrid"
@@ -89,7 +89,7 @@ func DefaultSettings() Settings {
 		LyricsProviderOrder:         "qq,kugou,netease,lrclib",
 		MainWindowCloseAction:       "ask",
 		AppTheme:                    "coral",
-		AppThemeMode:                "system",
+		AppThemeMode:                "dark",
 		AppThemeCustomAccent:        "#c62f2f",
 		GlobalHotkeys:               DefaultGlobalHotkeys(),
 		DesktopLyricsColorBase:      "#ffffff",
@@ -253,10 +253,12 @@ func NormalizeAppTheme(value string) string {
 
 func NormalizeAppThemeMode(value string) string {
 	switch strings.ToLower(strings.TrimSpace(value)) {
-	case "system", "light", "graphite", "midnight", "forestnight":
-		return strings.ToLower(strings.TrimSpace(value))
+	case "light":
+		return "light"
+	case "system", "graphite", "midnight", "forestnight", "dark":
+		return "dark"
 	default:
-		return "system"
+		return "dark"
 	}
 }
 

@@ -7,6 +7,7 @@ import (
 	"io"
 	"log"
 	"net/http"
+	"net/url"
 	"os"
 	"path/filepath"
 	"strings"
@@ -18,6 +19,20 @@ import (
 )
 
 // Remote media proxy keeps third-party avatars, covers and stream URLs behind the app's HTTP client.
+func NewRemoteMediaHandler(state *state.AppState, next http.Handler) http.Handler {
+	return remoteMediaHandler(state, next)
+}
+
+// RemoteMediaURL returns a stable local proxy URL for any third-party media URL.
+func RemoteMediaURL(rawURL, baseURL string) string {
+	trimmedURL := strings.TrimSpace(rawURL)
+	trimmedBase := strings.TrimRight(strings.TrimSpace(baseURL), "/")
+	if trimmedURL == "" || trimmedBase == "" {
+		return ""
+	}
+	return trimmedBase + "/__remote_media__?url=" + url.QueryEscape(trimmedURL)
+}
+
 func remoteMediaHandler(state *state.AppState, next http.Handler) http.Handler {
 	return http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
 		switch request.URL.Path {
