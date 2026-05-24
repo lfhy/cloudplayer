@@ -1,0 +1,88 @@
+# Builds and publishes the macOS universal desktop release assets on version tags.
+name: release-macos-universal
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+    inputs:
+      tag_name:
+        description: "Release tag to publish"
+        required: true
+        type: string
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release-macos-universal-${{ github.ref }}
+  cancel-in-progress: false
+
+defaults:
+  run:
+    shell: bash
+
+env:
+  FLUTTER_VERSION: "3.44.0"
+
+jobs:
+  publish:
+    name: macos-universal
+    runs-on: macos-14
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+          ref: ${{ github.event.inputs.tag_name || github.ref }}
+
+      - uses: actions/setup-go@v6
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: stable
+          cache: true
+
+      - name: Enable macOS desktop
+        run: flutter config --enable-macos-desktop
+
+      - name: Build macOS universal packages
+        env:
+          RAW_TAG: ${{ github.event.inputs.tag_name || github.ref_name }}
+        run: |
+          VERSION_NAME="${RAW_TAG#v}"
+          flutter pub get
+          ./scripts/build_desktop_packages.sh \
+            --platform macos \
+            --arch universal \
+            --version "$VERSION_NAME" \
+            --build-number "${GITHUB_RUN_NUMBER}" \
+            --output-dir dist/macos/universal
+
+      - uses: actions/upload-artifact@v6
+        with:
+          name: cloudplayer-darwin-universal
+          path: dist/macos/universal/*
+          if-no-files-found: error
+
+      - name: Generate release body
+        env:
+          TARGET_TAG: ${{ github.event.inputs.tag_name || github.ref_name }}
+          OUTPUT_FILE: dist/release-body.md
+        run: ./scripts/generate_release_body.sh
+
+      - name: Publish release assets
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TARGET_TAG: ${{ github.event.inputs.tag_name || github.ref_name }}
+        run: |
+          ./scripts/publish_release_assets.sh \
+            --tag "$TARGET_TAG" \
+            --name "CloudPlayer $TARGET_TAG" \
+            --body-file dist/release-body.md \
+            dist/macos/universal/cloudplayer-darwin-universal.zip \
+            dist/macos/universal/cloudplayer-darwin-universal.dmg
