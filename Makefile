@@ -2,6 +2,9 @@
 
 DEVELOPER_DIR ?= /Applications/Xcode.app/Contents/Developer
 FLUTTER_DEVICE ?= macos
+ENV_LOCAL ?= .env.local
+ANDROID_EMULATOR ?= CloudPlayer_API_36
+ANDROID_DEVICE ?= emulator-5554
 MACOSX_DEPLOYMENT_TARGET ?= 11.0
 BRIDGE_OUT := bin/bridge/libcloudplayer_bridge.dylib
 BRIDGE_ARM64_OUT := bin/bridge/libcloudplayer_bridge-arm64.dylib
@@ -11,8 +14,9 @@ BRIDGE_SDKROOT := $(shell DEVELOPER_DIR=$(DEVELOPER_DIR) xcrun --sdk macosx --sh
 BRIDGE_CGO_CFLAGS := $(BRIDGE_MIN_VERSION_FLAG)
 BRIDGE_CGO_CXXFLAGS := $(BRIDGE_MIN_VERSION_FLAG)
 BRIDGE_CGO_LDFLAGS := $(BRIDGE_MIN_VERSION_FLAG) -Wl,-no_warn_duplicate_libraries
+LOCAL_ENV_ZSH := source ~/.zshrc; if [[ -f "$(ENV_LOCAL)" ]]; then set -a; source "$(ENV_LOCAL)"; set +a; fi
 
-.PHONY: bridge bridge-arm64 bridge-amd64 bridge-universal smoke analyze test run
+.PHONY: bridge bridge-arm64 bridge-amd64 bridge-universal smoke analyze test run android-emulator android-run
 
 bridge: bridge-universal
 
@@ -60,3 +64,9 @@ test:
 
 run: bridge
 	DEVELOPER_DIR=$(DEVELOPER_DIR) flutter run -d $(FLUTTER_DEVICE)
+
+android-emulator:
+	zsh -lc '$(LOCAL_ENV_ZSH); flutter emulators --launch "$(ANDROID_EMULATOR)"'
+
+android-run:
+	zsh -lc '$(LOCAL_ENV_ZSH); flutter run -d "$(ANDROID_DEVICE)" --debug'

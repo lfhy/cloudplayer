@@ -1,4 +1,5 @@
 # Miscellaneous
+/.env.local
 *.class
 *.log
 *.pyc

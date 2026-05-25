@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- 新增 `make android-emulator` 与 `make android-run`，统一从仓库根目录 `.env.local` 加载 Android 本机代理环境并启动模拟器 / Flutter debug 会话。
 - 新增 Android 平台工程，并将启动链路拆分为桌面完整模式与移动端预览壳层，避免 Android 误初始化桌面窗口、托盘和桌面歌词逻辑。
 - 初始化 Flutter + Go FFI 版 CloudPlayer 仓库结构，并迁移旧仓库规则。
 - 复用旧 Go 后端代码，增加无 Wails 运行时下的兼容保护。

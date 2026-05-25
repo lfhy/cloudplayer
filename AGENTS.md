@@ -52,6 +52,26 @@
 - Do not add ignore rules that broadly match source package directory names such as `cloudplayer`.
 - If a root-level build artifact must be ignored, use an anchored path rule that cannot match source directories.
 
+## Environment Setup
+
+- When installing local development toolchains, SDKs, package managers, emulators, or large third-party dependencies for this repository, prefer domestic mirror sources first when they are available and trustworthy.
+- Before starting any large environment download, check whether Homebrew, Flutter, Android, Dart, or other required tooling can be pointed at an existing domestic mirror.
+- Do not default to long official-source downloads for environment setup if a suitable domestic mirror path exists; prefer the mirror-backed path and document any unavoidable exceptions.
+- If a dependency cannot practically use a domestic mirror because the upstream does not expose a supported mirrorable repository, state that constraint explicitly before continuing with the download.
+- Keep machine-specific network proxy settings in the repository root `.env.local` file and do not commit that file.
+- Before Android or Flutter commands that may need network access, load the local shell environment and then export values from `.env.local` into the current shell:
+  `source ~/.zshrc`
+  `set -a`
+  `source ./.env.local`
+  `set +a`
+- Before Android validation, load shell environment with `source ~/.zshrc` so `JAVA_HOME`, `ANDROID_HOME`, `ANDROID_SDK_ROOT`, `adb`, `emulator`, and `flutter` all resolve consistently.
+- Use the existing Android emulator named `CloudPlayer_API_36` for local validation unless the task explicitly requires another device profile.
+- Prefer repository Make targets over ad-hoc Android launch commands so `.env.local` and shell initialization are loaded consistently.
+- Preferred Android local run path:
+  `make android-emulator`
+  `make android-run`
+- If Flutter or Gradle needs artifacts that are unavailable from domestic mirrors, keep the mirror-first repository configuration in the Android Gradle files and fall back to the shell proxy for the remaining official upstream downloads.
+
 ## Git Workflow
 
 - After completing the requested implementation and validation successfully, create a normal non-amended commit unless the user explicitly says not to commit.
