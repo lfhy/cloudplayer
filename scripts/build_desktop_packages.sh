@@ -57,6 +57,15 @@ to_windows_path() {
   printf '%s' "$1"
 }
 
+resolve_windows_toolchain_path() {
+  local path="$1"
+  if command -v cygpath >/dev/null 2>&1; then
+    cygpath -m "$path"
+    return
+  fi
+  printf '%s' "$path"
+}
+
 build_windows() {
   local arch_label="$1"
   require_cmd flutter
@@ -84,7 +93,18 @@ build_windows() {
 
   (
     cd "$ROOT_DIR"
-    go build -buildmode=c-shared -o bin/bridge/cloudplayer_bridge.dll ./bridge
+    local go_cc="${CC:-}"
+    local go_cxx="${CXX:-}"
+    if [[ -n "$go_cc" ]]; then
+      go_cc="$(resolve_windows_toolchain_path "$go_cc")"
+    fi
+    if [[ -n "$go_cxx" ]]; then
+      go_cxx="$(resolve_windows_toolchain_path "$go_cxx")"
+    fi
+    env \
+      ${go_cc:+CC="$go_cc"} \
+      ${go_cxx:+CXX="$go_cxx"} \
+      go build -buildmode=c-shared -o bin/bridge/cloudplayer_bridge.dll ./bridge
     flutter build windows --release \
       --build-name "$VERSION" \
       --build-number "$BUILD_NUMBER"
@@ -148,7 +168,9 @@ build_macos_bridge_single() {
 build_macos_bridge() {
   local arch_label="$1"
   local bridge_dir="$ROOT_DIR/bin/bridge"
-  local bridge_path
+  local bridge_path=""
+  local arm64_bridge=""
+  local amd64_bridge=""
 
   mkdir -p "$bridge_dir"
 
@@ -164,8 +186,8 @@ build_macos_bridge() {
       build_macos_bridge_single amd64 x86_64 "$bridge_path"
       ;;
     universal)
-      local arm64_bridge="$bridge_dir/libcloudplayer_bridge-arm64-release.dylib"
-      local amd64_bridge="$bridge_dir/libcloudplayer_bridge-amd64-release.dylib"
+      arm64_bridge="$bridge_dir/libcloudplayer_bridge-arm64-release.dylib"
+      amd64_bridge="$bridge_dir/libcloudplayer_bridge-amd64-release.dylib"
       bridge_path="$bridge_dir/libcloudplayer_bridge-universal-release.dylib"
       rm -f \
         "$arm64_bridge" "${arm64_bridge%.dylib}.h" \
@@ -252,9 +274,9 @@ build_macos() {
   esac
 
   rm -rf "$ROOT_DIR/build/macos/Build/Products/Release/$APP_NAME.app"
+  build_macos_bridge "$arch_label"
   (
     cd "$ROOT_DIR"
-    build_macos_bridge "$arch_label"
     FLUTTER_XCODE_ARCHS="$flutter_archs" \
       flutter build macos --release \
         --build-name "$VERSION" \
