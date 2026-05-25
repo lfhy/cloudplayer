@@ -66,6 +66,40 @@ resolve_windows_toolchain_path() {
   printf '%s' "$path"
 }
 
+resolve_windows_release_dir() {
+  local arch_label="$1"
+  local candidates=()
+  local candidate=""
+
+  case "$arch_label" in
+    amd64)
+      candidates=(
+        "$ROOT_DIR/build/windows/x64/runner/Release"
+        "$ROOT_DIR/build/windows/windows-x64/runner/Release"
+      )
+      ;;
+    arm64)
+      candidates=(
+        "$ROOT_DIR/build/windows/arm64/runner/Release"
+        "$ROOT_DIR/build/windows/windows-arm64/runner/Release"
+      )
+      ;;
+    *)
+      fail "Unsupported Windows arch: $arch_label"
+      ;;
+  esac
+
+  # Flutter's Windows output directory naming changed across SDK releases.
+  for candidate in "${candidates[@]}"; do
+    if [[ -f "$candidate/$APP_NAME.exe" ]]; then
+      printf '%s\n' "$candidate"
+      return
+    fi
+  done
+
+  fail "Windows release directory not found. Checked: ${candidates[*]}"
+}
+
 build_windows() {
   local arch_label="$1"
   require_cmd flutter
@@ -77,12 +111,10 @@ build_windows() {
   local release_dir archive_path installer_path
   case "$arch_label" in
     amd64)
-      release_dir="$ROOT_DIR/build/windows/windows-x64/runner/Release"
       archive_path="$OUTPUT_DIR/$ARTIFACT_PREFIX-windows-amd64.zip"
       installer_path="$OUTPUT_DIR/$ARTIFACT_PREFIX-windows-amd64-installer.exe"
       ;;
     arm64)
-      release_dir="$ROOT_DIR/build/windows/windows-arm64/runner/Release"
       archive_path="$OUTPUT_DIR/$ARTIFACT_PREFIX-windows-arm64.zip"
       installer_path="$OUTPUT_DIR/$ARTIFACT_PREFIX-windows-arm64-installer.exe"
       ;;
@@ -110,6 +142,7 @@ build_windows() {
       --build-number "$BUILD_NUMBER"
   )
 
+  release_dir="$(resolve_windows_release_dir "$arch_label")"
   local bridge_dll="$ROOT_DIR/bin/bridge/cloudplayer_bridge.dll"
   [[ -d "$release_dir" ]] || fail "Windows release directory not found: $release_dir"
   [[ -f "$bridge_dll" ]] || fail "Windows bridge was not built: $bridge_dll"

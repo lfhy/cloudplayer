@@ -59,3 +59,4 @@
 - 修正桌面发布脚本对相对输出目录的处理，避免 macOS GitHub Actions 打包产物在归档后移动失败。
 - 将桌面发布流收敛回 1 条聚合 GitHub Actions workflow，并行构建 macOS `amd64 / arm64 / universal` 与 Windows `amd64` 产物，再统一发布到同一个 release。
 - 修正桌面发布脚本里的 macOS bridge 路径作用域错误，以及 Windows GitHub runner 下 cgo 编译器路径兼容问题，恢复 tag 发布构建。
+- 修正 Windows 桌面发布脚本对 Flutter 新版 `build/windows/x64` 输出目录的兼容处理，避免 GitHub Actions 在打包阶段误判产物目录不存在。
