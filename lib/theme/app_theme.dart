@@ -8,6 +8,7 @@ class AppPalette {
     required this.brightness,
     required this.accent,
     required this.windowBackground,
+    required this.windowChromeBlend,
     required this.panelBackground,
     required this.cardBackground,
     required this.borderColor,
@@ -19,6 +20,7 @@ class AppPalette {
   final Brightness brightness;
   final AccentColor accent;
   final Color windowBackground;
+  final Color windowChromeBlend;
   final Color panelBackground;
   final Color cardBackground;
   final Color borderColor;
@@ -39,6 +41,7 @@ AppPalette paletteForSettings(AppSettings? settings) {
       brightness: Brightness.light,
       accent: accent,
       windowBackground: const Color(0xFFF7F7F7),
+      windowChromeBlend: const Color(0xFFECEFF3),
       panelBackground: Colors.white,
       cardBackground: Colors.white,
       borderColor: const Color(0xFFE5E5E5),
@@ -51,6 +54,7 @@ AppPalette paletteForSettings(AppSettings? settings) {
     brightness: Brightness.dark,
     accent: accent,
     windowBackground: const Color(0xFF16181C),
+    windowChromeBlend: const Color(0xFF1E232A),
     panelBackground: const Color(0xFF22252B),
     cardBackground: const Color(0xFF22252B),
     borderColor: const Color(0x1AFFFFFF),

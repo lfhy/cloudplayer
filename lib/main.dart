@@ -1,6 +1,7 @@
 // Main bootstraps the Go bridge, media runtime, and desktop window host before showing the Fluent shell.
 
 import 'dart:async';
+import 'dart:io';
 
 import 'package:cloudplayer_flutter/app/app.dart';
 import 'package:cloudplayer_flutter/bridge/cloudplayer_api.dart';
@@ -20,14 +21,18 @@ Future<void> main() async {
   unawaited(controller.initialize());
 
   await windowManager.waitUntilReadyToShow(
-    const WindowOptions(
+    WindowOptions(
       size: Size(1100, 700),
       minimumSize: Size(1000, 680),
       center: true,
       title: 'CloudPlayer',
       backgroundColor: Color(0x00000000),
-      titleBarStyle: TitleBarStyle.hidden,
-      windowButtonVisibility: true,
+      // Windows should keep the native title bar so the system close button
+      // remains available during Flutter desktop development and release runs.
+      titleBarStyle: Platform.isWindows
+          ? TitleBarStyle.normal
+          : TitleBarStyle.hidden,
+      windowButtonVisibility: !Platform.isWindows,
     ),
     () async {
       await windowManager.show();

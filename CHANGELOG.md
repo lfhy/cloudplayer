@@ -2,9 +2,11 @@
 
 ## Unreleased
 
+- Windows dev/release builds now regenerate `windows/runner/resources/app_icon.ico` from the shared app icon asset, and the main shell now blends the sidebar directly into the native title-bar area instead of separating them with a hard top cut.
 - Fixed Windows Flutter startup crashes caused by bridge-side desktop theme sync calling into a missing Wails application host.
 - Windows desktop packaging now bundles `cloudplayer_bridge.dll` with the release output and installs the Microsoft Visual C++ runtime automatically from the installer when it is missing.
 - Added a Windows one-command development script for proxy/mirror setup, bridge rebuilds, and `flutter run -d windows`.
+- Added a Windows double-click launcher that wraps the PowerShell development bootstrap script.
 
 - 初始化 Flutter + Go FFI 版 CloudPlayer 仓库结构，并迁移旧仓库规则。
 - 复用旧 Go 后端代码，增加无 Wails 运行时下的兼容保护。
