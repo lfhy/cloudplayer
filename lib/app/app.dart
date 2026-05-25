@@ -6,6 +6,7 @@ import 'dart:io';
 import 'package:cloudplayer_flutter/services/macos_tray_channel.dart';
 import 'package:cloudplayer_flutter/state/app_controller.dart';
 import 'package:cloudplayer_flutter/theme/app_theme.dart';
+import 'package:cloudplayer_flutter/utils/platform_environment.dart';
 import 'package:cloudplayer_flutter/widgets/child_window_dialog.dart';
 import 'package:cloudplayer_flutter/widgets/app_shell.dart';
 import 'package:fluent_ui/fluent_ui.dart';
@@ -27,18 +28,22 @@ class _CloudPlayerAppState extends State<CloudPlayerApp> with WindowListener {
   @override
   void initState() {
     super.initState();
+    if (!isDesktopHost) return;
     windowManager.addListener(this);
     unawaited(windowManager.setPreventClose(true));
   }
 
   @override
   void dispose() {
-    windowManager.removeListener(this);
+    if (isDesktopHost) {
+      windowManager.removeListener(this);
+    }
     super.dispose();
   }
 
   @override
   void onWindowClose() {
+    if (!isDesktopHost) return;
     unawaited(_handleWindowClose());
   }
 

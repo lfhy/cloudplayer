@@ -63,6 +63,9 @@
 ## Validation
 
 - After each meaningful refactor batch, run the narrowest useful validation first.
+- For macOS launch and integrated smoke validation, prefer repository scripts over ad-hoc commands.
+- Use `make run` as the default macOS app launch path because it rebuilds the Go bridge before invoking Flutter.
+- Do not bypass the scripted startup path with bare `flutter run -d macos` unless the task explicitly requires isolating Flutter-only startup behavior.
 - Before finishing, run the full macOS regression path through `flutter run -d macos` smoke validation.
 - Treat `flutter run -d macos` as the final integrated build-and-run check for this repository.
 - The final validation must confirm the app launches and renders correctly on macOS.
