@@ -97,3 +97,4 @@ QQ群：`572532027`
 
 - Windows installers now bundle the Microsoft Visual C++ runtime and install it automatically when the target machine is missing it.
 - The Windows bridge startup path now skips Wails-only window theme sync when running under the Flutter FFI host, which prevents a native crash during settings persistence.
+- For local Windows development, run `powershell -ExecutionPolicy Bypass -File .\scripts\dev_windows.ps1` to apply the expected proxy settings, rebuild the Go bridge, and launch `flutter run -d windows`. Add `-UseCnMirror` only when you explicitly want Flutter and pub downloads to use the domestic mirror endpoints.
