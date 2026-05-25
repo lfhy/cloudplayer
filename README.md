@@ -93,3 +93,7 @@ DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer flutter run -d macos
 ## 交流群
 
 QQ群：`572532027`
+## Windows Packaging Notes
+
+- Windows installers now bundle the Microsoft Visual C++ runtime and install it automatically when the target machine is missing it.
+- The Windows bridge startup path now skips Wails-only window theme sync when running under the Flutter FFI host, which prevents a native crash during settings persistence.

@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- Fixed Windows Flutter startup crashes caused by bridge-side desktop theme sync calling into a missing Wails application host.
+- Windows desktop packaging now bundles `cloudplayer_bridge.dll` with the release output and installs the Microsoft Visual C++ runtime automatically from the installer when it is missing.
+
 - 初始化 Flutter + Go FFI 版 CloudPlayer 仓库结构，并迁移旧仓库规则。
 - 复用旧 Go 后端代码，增加无 Wails 运行时下的兼容保护。
 - 新增 `bridge/` 动态库入口和 Dart FFI 调用层。
