@@ -3,6 +3,7 @@
 ## Unreleased
 
 - Windows dev/release builds now regenerate `windows/runner/resources/app_icon.ico` from the shared app icon asset, and the main shell now blends the sidebar directly into the native title-bar area instead of separating them with a hard top cut.
+- Windows title-bar theming now follows the in-app light/dark palette and applies explicit caption/text colors, so the native chrome no longer drifts away from the Flutter shell in dark mode.
 - Fixed Windows Flutter startup crashes caused by bridge-side desktop theme sync calling into a missing Wails application host.
 - Windows desktop packaging now bundles `cloudplayer_bridge.dll` with the release output and installs the Microsoft Visual C++ runtime automatically from the installer when it is missing.
 - Added a Windows one-command development script for proxy/mirror setup, bridge rebuilds, and `flutter run -d windows`.

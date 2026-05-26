@@ -39,7 +39,7 @@ class AppShell extends StatelessWidget {
     }
     return NavigationView(
       content: Container(
-        decoration: BoxDecoration(gradient: _shellBackgroundGradient(palette)),
+        color: palette.windowBackground,
         child: Stack(
           children: <Widget>[
             if (!controller.miniModeOpen)
@@ -110,9 +110,8 @@ class _Sidebar extends StatelessWidget {
     final controller = context.watch<AppController>();
     return DecoratedBox(
       decoration: BoxDecoration(
-        color: Colors.transparent,
+        color: palette.windowBackground,
         border: Border(right: BorderSide(color: palette.borderColor)),
-        gradient: _sidebarBackgroundGradient(palette),
       ),
       child: Padding(
         padding: EdgeInsets.fromLTRB(8, _sidebarTopGap(), 8, 12),
@@ -261,32 +260,6 @@ class _Sidebar extends StatelessWidget {
       _ => 12,
     };
   }
-}
-
-LinearGradient _shellBackgroundGradient(AppPalette palette) {
-  return LinearGradient(
-    begin: Alignment.topCenter,
-    end: Alignment.bottomCenter,
-    colors: <Color>[
-      palette.windowChromeBlend,
-      palette.windowBackground,
-      palette.windowBackground,
-    ],
-    stops: const <double>[0, 0.12, 0.28],
-  );
-}
-
-LinearGradient _sidebarBackgroundGradient(AppPalette palette) {
-  return LinearGradient(
-    begin: Alignment.topCenter,
-    end: Alignment.bottomCenter,
-    colors: <Color>[
-      palette.windowChromeBlend.withValues(alpha: 0.96),
-      palette.windowBackground.withValues(alpha: 0.94),
-      palette.windowBackground.withValues(alpha: 0.98),
-    ],
-    stops: const <double>[0, 0.18, 0.42],
-  );
 }
 
 class _NavButton extends StatelessWidget {

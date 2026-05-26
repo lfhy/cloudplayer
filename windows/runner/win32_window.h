@@ -5,6 +5,7 @@
 
 #include <functional>
 #include <memory>
+#include <optional>
 #include <string>
 
 // A class abstraction for a high DPI-aware Win32 Window. Intended to be
@@ -52,6 +53,13 @@ class Win32Window {
   // If true, closing this window will quit the application.
   void SetQuitOnClose(bool quit_on_close);
 
+  // Overrides the native frame brightness to match the Flutter theme.
+  void SetFrameDarkMode(bool enable_dark_mode);
+
+  // Applies explicit caption and text colors when the host OS supports them.
+  void SetCaptionColor(COLORREF color);
+  void SetTextColor(COLORREF color);
+
   // Return a RECT representing the bounds of the current client area.
   RECT GetClientArea();
 
@@ -87,10 +95,14 @@ class Win32Window {
   // Retrieves a class instance pointer for |window|
   static Win32Window* GetThisFromHandle(HWND const window) noexcept;
 
-  // Update the window frame's theme to match the system theme.
-  static void UpdateTheme(HWND const window);
+  // Update the window frame's theme to match the resolved preference.
+  void UpdateTheme();
+
+  // Returns the system app theme preference when no explicit override exists.
+  static bool SystemPrefersDarkMode();
 
   bool quit_on_close_ = false;
+  std::optional<bool> frame_dark_mode_override_;
 
   // window handle for top level window.
   HWND window_handle_ = nullptr;
