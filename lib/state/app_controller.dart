@@ -8,10 +8,10 @@ import 'package:cloudplayer_flutter/models/app_models.dart';
 import 'package:cloudplayer_flutter/services/android_system_volume_service.dart';
 import 'package:cloudplayer_flutter/services/desktop_lyrics_channel.dart';
 import 'package:cloudplayer_flutter/services/desktop_lyrics_projection.dart';
+import 'package:cloudplayer_flutter/services/platform_file_service.dart';
 import 'package:cloudplayer_flutter/services/macos_tray_channel.dart';
 import 'package:cloudplayer_flutter/utils/platform_environment.dart';
 import 'package:cloudplayer_flutter/windows/mini_mode_window_controller.dart';
-import 'package:file_picker/file_picker.dart';
 import 'package:fluent_ui/fluent_ui.dart';
 import 'package:media_kit/media_kit.dart';
 
@@ -289,9 +289,7 @@ class AppController extends ChangeNotifier {
   }
 
   Future<void> importFromFolder() async {
-    final selectedPath = await FilePicker.getDirectoryPath(
-      dialogTitle: '选择本地音乐目录',
-    );
+    final selectedPath = await pickDirectoryPath(confirmButtonText: '选择目录');
     if (selectedPath == null || selectedPath.isEmpty) return;
     final result = await api.scanMusicFolder(selectedPath);
     await refreshLocalSongs();
@@ -409,9 +407,7 @@ class AppController extends ChangeNotifier {
   }
 
   Future<void> pickDownloadFolder() async {
-    final selectedPath = await FilePicker.getDirectoryPath(
-      dialogTitle: '下载保存目录',
-    );
+    final selectedPath = await pickDirectoryPath(confirmButtonText: '选择目录');
     if (selectedPath == null || selectedPath.isEmpty) return;
     final current = settings;
     if (current == null) return;

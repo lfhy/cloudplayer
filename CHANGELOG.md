@@ -5,6 +5,8 @@
 - 新增 Android arm64-v8a release APK 发布链路，GitHub Actions 现在会在 Linux runner 上安装 Android NDK、构建 Go bridge `.so`，并将 Android APK 与桌面端产物一起汇总到同一条 release 流。
 - 修正 Android 构建脚本对宿主机 NDK 工具链目录的硬编码，Android bridge 构建现在可在 macOS 与 Linux runner 上复用同一套路径解析。
 - 修正 Android Gradle Flutter SDK 路径解析对本机 `local.properties` 的强依赖，支持在 CI 环境下优先使用 `FLUTTER_ROOT`。
+- 将目录 / 文件导出选择链路切换到 Flutter 官方 `file_selector`，移除 Android release 构建对 `file_picker` 插件注册的依赖，并为移动端导出补上应用私有目录回退。
+- 收紧 release workflow 的手动触发发布条件，关闭 `publish_release` 时不再额外跑失败的 release 汇总 job。
 - 对齐移动端首页与沉浸播放器体验：去掉重复首页入口、收紧底部浮岛导航、恢复沉浸歌词 / 播放链路，并接通 Android 系统音量控制。
 - 修正沉浸歌词自动换成两行时整段同时高亮的问题，改为按视觉换行后的每一行顺序推进播放高亮。
 - 调整桌面端底部播放器右侧工具区的按钮对齐和音质入口样式，将音质切换改为统一尺寸的图标按钮。

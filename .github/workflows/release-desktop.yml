@@ -270,7 +270,7 @@ jobs:
 
   publish:
     name: publish
-    if: always()
+    if: github.event_name == 'push' || github.event.inputs.publish_release == 'true'
     runs-on: ubuntu-latest
     needs:
       - windows-amd64

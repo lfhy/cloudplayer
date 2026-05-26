@@ -7,10 +7,10 @@ import 'package:cloudplayer_flutter/pages/import/import_export.dart';
 import 'package:cloudplayer_flutter/pages/import/import_kugou_panel.dart';
 import 'package:cloudplayer_flutter/pages/import/import_page_widgets.dart';
 import 'package:cloudplayer_flutter/pages/import/import_result_table.dart';
+import 'package:cloudplayer_flutter/services/platform_file_service.dart';
 import 'package:cloudplayer_flutter/state/app_controller.dart';
 import 'package:cloudplayer_flutter/theme/app_theme.dart';
 import 'package:cloudplayer_flutter/widgets/child_window_dialog.dart';
-import 'package:file_picker/file_picker.dart';
 import 'package:fluent_ui/fluent_ui.dart';
 import 'package:provider/provider.dart';
 
@@ -83,10 +83,7 @@ class _ImportPageState extends State<ImportPage> {
     );
   }
 
-  void _syncDraftControllers(
-    AppController controller,
-    AppSettings? settings,
-  ) {
+  void _syncDraftControllers(AppController controller, AppSettings? settings) {
     final suggestedName = controller.importSuggestedName.trim();
     final shouldReplaceName =
         suggestedName.isNotEmpty &&
@@ -294,7 +291,10 @@ class _ImportPageState extends State<ImportPage> {
             const SizedBox(width: 10),
             FilledButton(
               onPressed: () => _runGuarded(() async {
-                await controller.parseImportText(_textController.text, _textFormat);
+                await controller.parseImportText(
+                  _textController.text,
+                  _textFormat,
+                );
                 if (!mounted) return;
                 setState(() => _stage = _ImportStage.result);
               }),
@@ -319,7 +319,8 @@ class _ImportPageState extends State<ImportPage> {
               ComboBoxItem<int>(value: playlist.id, child: Text(playlist.name)),
         )
         .toList();
-    final canMerge = _mergePlaylistId != null && controller.importTracks.isNotEmpty;
+    final canMerge =
+        _mergePlaylistId != null && controller.importTracks.isNotEmpty;
     return ImportCard(
       palette: widget.palette,
       child: Column(
@@ -349,8 +350,9 @@ class _ImportPageState extends State<ImportPage> {
                 onPressed: controller.importTracks.isEmpty
                     ? null
                     : () => _runGuarded(
-                          () => _exportImportTracks(controller.importTracks, 'txt'),
-                        ),
+                        () =>
+                            _exportImportTracks(controller.importTracks, 'txt'),
+                      ),
                 child: const Text('导出为 TXT'),
               ),
               const SizedBox(width: 8),
@@ -358,8 +360,9 @@ class _ImportPageState extends State<ImportPage> {
                 onPressed: controller.importTracks.isEmpty
                     ? null
                     : () => _runGuarded(
-                          () => _exportImportTracks(controller.importTracks, 'csv'),
-                        ),
+                        () =>
+                            _exportImportTracks(controller.importTracks, 'csv'),
+                      ),
                 child: const Text('导出为 CSV'),
               ),
               const SizedBox(width: 8),
@@ -367,10 +370,10 @@ class _ImportPageState extends State<ImportPage> {
                 onPressed: controller.importTracks.isEmpty
                     ? null
                     : () => _runGuarded(
-                          () => controller.saveImportAsNewPlaylist(
-                            _playlistNameController.text,
-                          ),
+                        () => controller.saveImportAsNewPlaylist(
+                          _playlistNameController.text,
                         ),
+                      ),
                 child: const Text('保存新歌单'),
               ),
             ],
@@ -386,15 +389,18 @@ class _ImportPageState extends State<ImportPage> {
                   isExpanded: true,
                   placeholder: const Text('选择歌单'),
                   items: playlistItems,
-                  onChanged: (value) => setState(() => _mergePlaylistId = value),
+                  onChanged: (value) =>
+                      setState(() => _mergePlaylistId = value),
                 ),
               ),
               const SizedBox(width: 10),
               Button(
                 onPressed: canMerge
                     ? () => _runGuarded(
-                          () => controller.mergeImportIntoPlaylist(_mergePlaylistId!),
-                        )
+                        () => controller.mergeImportIntoPlaylist(
+                          _mergePlaylistId!,
+                        ),
+                      )
                     : null,
                 child: const Text('合并'),
               ),
@@ -445,18 +451,26 @@ class _ImportPageState extends State<ImportPage> {
     final baseName = _playlistNameController.text.trim().isEmpty
         ? '导入歌单'
         : _playlistNameController.text.trim();
-    final filePath = await FilePicker.saveFile(
-      dialogTitle: format == 'csv' ? '导出为 CSV' : '导出为 TXT',
-      fileName: '$baseName.$format',
+    final exportTarget = await selectExportPath(
+      suggestedName: '$baseName.$format',
     );
-    if (filePath == null || filePath.isEmpty) {
+    if (exportTarget == null) {
       return;
     }
     final content = switch (format) {
       'csv' => buildImportCsvExport(tracks),
       _ => buildImportTextExport(tracks),
     };
-    await File(filePath).writeAsString(content);
+    await File(exportTarget.path).writeAsString(content);
+    if (!mounted || !exportTarget.usedFallbackPath) {
+      return;
+    }
+    await showChildMessageDialog(
+      context: context,
+      palette: widget.palette,
+      title: '导出完成',
+      message: 'Android 暂不支持系统另存为，文件已导出到：\n${exportTarget.path}',
+    );
   }
 
   void _selectMethod(AppController controller, String method) {
