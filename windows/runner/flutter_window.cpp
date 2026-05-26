@@ -18,6 +18,22 @@ COLORREF ColorRefFromArgb(int32_t argb) {
   return RGB(red, green, blue);
 }
 
+std::optional<int32_t> ReadInt32Value(
+    const flutter::EncodableMap& arguments,
+    const char* key) {
+  const auto value_it = arguments.find(flutter::EncodableValue(key));
+  if (value_it == arguments.end()) {
+    return std::nullopt;
+  }
+  if (const auto* int32_value = std::get_if<int32_t>(&value_it->second)) {
+    return *int32_value;
+  }
+  if (const auto* int64_value = std::get_if<int64_t>(&value_it->second)) {
+    return static_cast<int32_t>(*int64_value);
+  }
+  return std::nullopt;
+}
+
 }  // namespace
 
 bool FlutterWindow::OnCreate() {
@@ -117,27 +133,14 @@ void FlutterWindow::RegisterWindowThemeChannel() {
           result->Error("bad-args", "darkMode must be a bool.");
           return;
         }
-        const auto caption_color_it =
-            arguments->find(flutter::EncodableValue("captionColor"));
-        if (caption_color_it == arguments->end()) {
+        const auto caption_color = ReadInt32Value(*arguments, "captionColor");
+        if (!caption_color.has_value()) {
           result->Error("bad-args", "Missing captionColor.");
           return;
         }
-        const auto* caption_color =
-            std::get_if<int32_t>(&caption_color_it->second);
-        if (caption_color == nullptr) {
-          result->Error("bad-args", "captionColor must be an int.");
-          return;
-        }
-        const auto text_color_it =
-            arguments->find(flutter::EncodableValue("textColor"));
-        if (text_color_it == arguments->end()) {
+        const auto text_color = ReadInt32Value(*arguments, "textColor");
+        if (!text_color.has_value()) {
           result->Error("bad-args", "Missing textColor.");
-          return;
-        }
-        const auto* text_color = std::get_if<int32_t>(&text_color_it->second);
-        if (text_color == nullptr) {
-          result->Error("bad-args", "textColor must be an int.");
           return;
         }
         SetFrameDarkMode(*dark_mode);
