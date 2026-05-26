@@ -8,10 +8,21 @@ import (
 
 	"cloudplayer/backend/musicsource"
 	"cloudplayer/backend/ratelimiter"
-	"github.com/wailsapp/wails/v3/pkg/application"
 )
 
 const enrichDelay = 120 * time.Millisecond
+
+var emitEnrichEvent = func(string, any) {}
+
+// SetEventEmitter lets the desktop shell bridge enrich progress into Wails
+// events without forcing the mobile bridge to import desktop-only packages.
+func SetEventEmitter(fn func(string, any)) {
+	if fn == nil {
+		emitEnrichEvent = func(string, any) {}
+		return
+	}
+	emitEnrichEvent = fn
+}
 
 type importRow struct {
 	ID             int64
@@ -233,9 +244,5 @@ func enrichSongPageAndAlbumSearch(db *sql.DB, client *http.Client, limiter *rate
 }
 
 func emitEvent(name string, payload any) {
-	app := application.Get()
-	if app == nil {
-		return
-	}
-	_ = app.Event.Emit(name, payload)
+	emitEnrichEvent(name, payload)
 }

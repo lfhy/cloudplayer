@@ -6,6 +6,7 @@ import 'dart:ui';
 import 'package:cloudplayer_flutter/models/app_models.dart';
 import 'package:cloudplayer_flutter/state/app_controller.dart';
 import 'package:cloudplayer_flutter/theme/app_theme.dart';
+import 'package:cloudplayer_flutter/utils/platform_environment.dart';
 import 'package:cloudplayer_flutter/widgets/immersive_player_lyrics.dart';
 import 'package:cloudplayer_flutter/widgets/playback_presence.dart';
 import 'package:cloudplayer_flutter/widgets/track_artwork.dart';
@@ -25,6 +26,7 @@ class ImmersivePlayer extends StatefulWidget {
 class _ImmersivePlayerState extends State<ImmersivePlayer> {
   bool _draggingSeek = false;
   double _seekPreviewMs = 0;
+  static const double _compactWidthThreshold = 560;
 
   @override
   Widget build(BuildContext context) {
@@ -108,60 +110,20 @@ class _ImmersivePlayerState extends State<ImmersivePlayer> {
                   ),
                   Positioned.fill(
                     child: Padding(
-                      padding: const EdgeInsets.fromLTRB(64, 48, 64, 40),
-                      child: Row(
-                        children: <Widget>[
-                          SizedBox(
-                            width: 320,
-                            child: _MetaPanel(
-                              palette: widget.palette,
-                              track: track,
-                              isPlaying: controller.isPlaying,
-                              currentMs: currentMs,
-                              totalMs: totalMs,
-                              onPlayPause: controller.currentTrack == null
-                                  ? null
-                                  : controller.togglePlayPause,
-                              onPrevious: controller.canNavigateQueue
-                                  ? controller.playPrevious
-                                  : null,
-                              onNext: controller.canNavigateQueue
-                                  ? controller.playNext
-                                  : null,
-                              onSeekStart: () => setState(() {
-                                _draggingSeek = true;
-                                _seekPreviewMs = currentMs;
-                              }),
-                              onSeekChanged: (value) => setState(() {
-                                _seekPreviewMs = value;
-                              }),
-                              onSeekEnd: (value) async {
-                                await controller.seekTo(
-                                  Duration(milliseconds: value.round()),
-                                );
-                                if (!mounted) return;
-                                setState(() {
-                                  _draggingSeek = false;
-                                  _seekPreviewMs = value;
-                                });
-                              },
-                            ),
-                          ),
-                          const SizedBox(width: 72),
-                          Expanded(
-                            child: Center(
-                              child: ImmersiveLyricsPanel(
-                                palette: widget.palette,
-                                track: track,
-                                entries: controller.lyricsEntries,
-                                payload: controller.lyricsPayload,
-                                position: controller.position,
-                                busy: controller.lyricsBusy,
-                                isPlaying: controller.isPlaying,
-                              ),
-                            ),
-                          ),
-                        ],
+                      padding: EdgeInsets.fromLTRB(
+                        isMobileHost ? 18 : 64,
+                        isMobileHost ? 60 : 48,
+                        isMobileHost ? 18 : 64,
+                        isMobileHost ? 18 : 40,
+                      ),
+                      child: LayoutBuilder(
+                        builder: (context, constraints) => _buildLayout(
+                          controller: controller,
+                          track: track,
+                          currentMs: currentMs,
+                          totalMs: totalMs,
+                          compact: constraints.maxWidth < _compactWidthThreshold,
+                        ),
                       ),
                     ),
                   ),
@@ -188,6 +150,68 @@ class _ImmersivePlayerState extends State<ImmersivePlayer> {
         ? 1
         : currentTrack.durationMs.clamp(1, 1 << 31).toDouble();
   }
+
+  Widget _buildLayout({
+    required AppController controller,
+    required TrackRow? track,
+    required double currentMs,
+    required double totalMs,
+    required bool compact,
+  }) {
+    final metaPanel = _MetaPanel(
+      palette: widget.palette,
+      track: track,
+      isPlaying: controller.isPlaying,
+      currentMs: currentMs,
+      totalMs: totalMs,
+      compact: compact,
+      onPlayPause: controller.currentTrack == null
+          ? null
+          : controller.togglePlayPause,
+      onPrevious: controller.canNavigateQueue ? controller.playPrevious : null,
+      onNext: controller.canNavigateQueue ? controller.playNext : null,
+      onSeekStart: () => setState(() {
+        _draggingSeek = true;
+        _seekPreviewMs = currentMs;
+      }),
+      onSeekChanged: (value) => setState(() {
+        _seekPreviewMs = value;
+      }),
+      onSeekEnd: (value) async {
+        await controller.seekTo(Duration(milliseconds: value.round()));
+        if (!mounted) return;
+        setState(() {
+          _draggingSeek = false;
+          _seekPreviewMs = value;
+        });
+      },
+    );
+    final lyricsPanel = ImmersiveLyricsPanel(
+      palette: widget.palette,
+      track: track,
+      entries: controller.lyricsEntries,
+      payload: controller.lyricsPayload,
+      position: controller.position,
+      busy: controller.lyricsBusy,
+      isPlaying: controller.isPlaying,
+    );
+    if (compact) {
+      return Column(
+        children: <Widget>[
+          metaPanel,
+          const SizedBox(height: 18),
+          Expanded(child: lyricsPanel),
+        ],
+      );
+    }
+    return Row(
+      children: <Widget>[
+        SizedBox(width: 320, child: metaPanel),
+          const SizedBox(width: 72),
+          Expanded(child: Center(child: lyricsPanel)),
+        ],
+      );
+  }
 }
 
 class _MetaPanel extends StatelessWidget {
@@ -197,6 +221,7 @@ class _MetaPanel extends StatelessWidget {
     required this.isPlaying,
     required this.currentMs,
     required this.totalMs,
+    required this.compact,
     required this.onPlayPause,
     required this.onPrevious,
     required this.onNext,
@@ -210,6 +235,7 @@ class _MetaPanel extends StatelessWidget {
   final bool isPlaying;
   final double currentMs;
   final double totalMs;
+  final bool compact;
   final Future<void> Function()? onPlayPause;
   final Future<void> Function()? onPrevious;
   final Future<void> Function()? onNext;
@@ -226,23 +252,25 @@ class _MetaPanel extends StatelessWidget {
       pausedOffset: const Offset(-0.012, 0.01),
       duration: const Duration(milliseconds: 320),
       child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
+        mainAxisAlignment: compact
+            ? MainAxisAlignment.start
+            : MainAxisAlignment.center,
         children: <Widget>[
           TrackArtwork(
             track: track,
             palette: palette,
-            size: 240,
-            radius: 24,
-            iconSize: 76,
+            size: compact ? 156 : 240,
+            radius: compact ? 20 : 24,
+            iconSize: compact ? 48 : 76,
           ),
-          const SizedBox(height: 24),
+          SizedBox(height: compact ? 18 : 24),
           Text(
             track?.title ?? '未播放',
             textAlign: TextAlign.center,
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
-            style: const TextStyle(
-              fontSize: 22,
+            style: TextStyle(
+              fontSize: compact ? 18 : 22,
               height: 1.25,
               fontWeight: FontWeight.w700,
               color: Colors.white,
@@ -257,7 +285,7 @@ class _MetaPanel extends StatelessWidget {
                 : track!.artist,
             textAlign: TextAlign.center,
             style: TextStyle(
-              fontSize: 14,
+              fontSize: compact ? 13 : 14,
               color: Colors.white.withValues(alpha: 0.78),
             ),
           ),
@@ -270,11 +298,11 @@ class _MetaPanel extends StatelessWidget {
                 : track!.album,
             textAlign: TextAlign.center,
             style: TextStyle(
-              fontSize: 12,
+              fontSize: compact ? 11 : 12,
               color: Colors.white.withValues(alpha: 0.52),
             ),
           ),
-          const SizedBox(height: 28),
+          SizedBox(height: compact ? 20 : 28),
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: <Widget>[
@@ -297,7 +325,7 @@ class _MetaPanel extends StatelessWidget {
               ),
             ],
           ),
-          const SizedBox(height: 26),
+          SizedBox(height: compact ? 18 : 26),
           Row(
             children: <Widget>[
               SizedBox(
@@ -305,7 +333,7 @@ class _MetaPanel extends StatelessWidget {
                 child: Text(
                   _formatDuration(currentMs.round()),
                   style: TextStyle(
-                    fontSize: 11,
+                    fontSize: compact ? 10 : 11,
                     color: Colors.white.withValues(alpha: 0.6),
                   ),
                 ),
@@ -325,7 +353,7 @@ class _MetaPanel extends StatelessWidget {
                   _formatDuration(totalMs.round()),
                   textAlign: TextAlign.end,
                   style: TextStyle(
-                    fontSize: 11,
+                    fontSize: compact ? 10 : 11,
                     color: Colors.white.withValues(alpha: 0.6),
                   ),
                 ),

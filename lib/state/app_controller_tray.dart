@@ -7,10 +7,12 @@ const int _trayLabelMaxLength = 28;
 
 extension AppControllerTray on AppController {
   Future<void> bindTray() async {
+    if (!isDesktopHost) return;
     await MacosTrayChannel.instance.bind(_handleTrayEvent);
   }
 
   Future<void> syncTrayState() async {
+    if (!isDesktopHost) return;
     await bindTray();
     final track = currentTrack;
     await MacosTrayChannel.instance.syncState(<String, dynamic>{
@@ -35,6 +37,7 @@ extension AppControllerTray on AppController {
     String method,
     Map<String, dynamic> payload,
   ) async {
+    if (!isDesktopHost) return;
     if (method != 'command') return;
     switch (payload['action']) {
       case 'prev':

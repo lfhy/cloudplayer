@@ -1,3 +1,5 @@
+//go:build darwin || (linux && !android) || windows
+
 package desktop
 
 // Native dialog helpers keep Windows-specific message/confirm flows out of the custom child-window chrome.

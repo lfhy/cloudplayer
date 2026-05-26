@@ -1,3 +1,5 @@
+//go:build darwin || (linux && !android) || windows
+
 package cloudplayer
 
 // Windows titlebar theme helpers keep native chrome aligned with the app theme mode.

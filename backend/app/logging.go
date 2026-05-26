@@ -156,6 +156,8 @@ func appLogDir() (string, error) {
 		return filepath.Join(config.ConfigDir(), "logs"), nil
 	}
 	switch runtime.GOOS {
+	case "android", "ios":
+		return filepath.Join(config.ConfigDir(), "logs"), nil
 	case "darwin":
 		return filepath.Join(home, "Library", "Logs", "CloudPlayer"), nil
 	case "windows":

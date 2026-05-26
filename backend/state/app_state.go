@@ -14,8 +14,14 @@ import (
 	"cloudplayer/backend/hotkeys"
 	"cloudplayer/backend/httpclient"
 	"cloudplayer/backend/ratelimiter"
-	"github.com/wailsapp/wails/v3/pkg/application"
 )
+
+// SystemTrayController keeps the shared app state independent from Wails-only
+// tray types so the bridge runtime can compile on mobile targets.
+type SystemTrayController interface {
+	SetLabel(string)
+	SetTemplateIcon([]byte)
+}
 
 type AppState struct {
 	DB                   *sql.DB
@@ -28,7 +34,7 @@ type AppState struct {
 	RateLimiter          *ratelimiter.Limiter
 	DownloadCh           chan download.DownloadJob
 	Hotkeys              *hotkeys.HotkeyManager
-	SystemTray           *application.SystemTray
+	SystemTray           SystemTrayController
 	AppTheme             string
 	AppThemeCustomAccent string
 }

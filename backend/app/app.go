@@ -1,3 +1,5 @@
+//go:build darwin || (linux && !android) || windows
+
 package cloudplayer
 
 // App startup stays in one place so the root entry file can stay thin after directory refactors.
@@ -170,7 +172,7 @@ func Run(assets fs.FS, trayTemplateIcon []byte) error {
 	} else if icon := appIconForTheme(initialSettings.AppTheme, initialSettings.AppThemeCustomAccent); len(icon) > 0 {
 		systemTray.SetIcon(icon)
 	}
-	state.SystemTray = systemTray
+	state.SystemTray = systemTrayAdapter{tray: systemTray}
 	systemTray.SetTooltip("CloudPlayer")
 	systemTray.SetMenu(trayMenu)
 	systemTray.AttachWindow(trayWindow).WindowOffset(1)

@@ -6,7 +6,9 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
+	"sync"
 )
 
 // Settings persists app-wide preferences and lightweight playback resume state to disk.
@@ -76,6 +78,11 @@ type GlobalHotkeys struct {
 	VolumeDown string `json:"volume_down"`
 	Enabled    bool   `json:"enabled"`
 }
+
+var (
+	configDirMu       sync.RWMutex
+	configDirOverride string
+)
 
 func DefaultSettings() Settings {
 	return Settings{
@@ -157,7 +164,22 @@ func DefaultGlobalHotkeys() GlobalHotkeys {
 	}
 }
 
+// SetConfigDir lets mobile hosts provide an app-private writable data root
+// before the bridge runtime touches the filesystem.
+func SetConfigDir(path string) {
+	configDirMu.Lock()
+	configDirOverride = strings.TrimSpace(path)
+	configDirMu.Unlock()
+}
+
 func ConfigDir() string {
+	configDirMu.RLock()
+	override := configDirOverride
+	configDirMu.RUnlock()
+	if override != "" {
+		_ = os.MkdirAll(override, 0o755)
+		return override
+	}
 	home, err := os.UserHomeDir()
 	if err != nil || home == "" {
 		home = "."
@@ -168,6 +190,9 @@ func ConfigDir() string {
 }
 
 func DefaultDownloadDir() string {
+	if runtime.GOOS == "android" {
+		return filepath.Join(ConfigDir(), "downloads")
+	}
 	home, err := os.UserHomeDir()
 	if err != nil || home == "" {
 		home = "."

@@ -2,9 +2,11 @@
 
 import 'package:cloudplayer_flutter/models/app_models.dart';
 import 'package:cloudplayer_flutter/pages/search/search_quick_cards.dart';
+import 'package:cloudplayer_flutter/pages/search/search_results_loading.dart';
 import 'package:cloudplayer_flutter/pages/search/search_widgets.dart';
 import 'package:cloudplayer_flutter/state/app_controller.dart';
 import 'package:cloudplayer_flutter/theme/app_theme.dart';
+import 'package:cloudplayer_flutter/utils/platform_environment.dart';
 import 'package:cloudplayer_flutter/widgets/legacy_action_button.dart';
 import 'package:cloudplayer_flutter/widgets/track_list.dart';
 import 'package:fluent_ui/fluent_ui.dart';
@@ -23,6 +25,8 @@ class _SearchPageState extends State<SearchPage> {
   late final TextEditingController _controller;
   late List<SearchQuickCard> _quickCards;
   late String _shuffleSeed;
+  bool _didSyncInitialKeyword = false;
+  String _pendingQuery = '';
 
   @override
   void initState() {
@@ -39,12 +43,24 @@ class _SearchPageState extends State<SearchPage> {
   }
 
   @override
-  Widget build(BuildContext context) {
-    final app = context.watch<AppController>();
-    if (_controller.text.isEmpty && app.searchKeyword.isNotEmpty) {
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (_didSyncInitialKeyword) {
+      return;
+    }
+    final app = context.read<AppController>();
+    if (app.searchKeyword.isNotEmpty) {
       _controller.text = app.searchKeyword;
     }
-    final query = app.searchKeyword.trim();
+    _didSyncInitialKeyword = true;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final app = context.watch<AppController>();
+    final query = _pendingQuery.isNotEmpty
+        ? _pendingQuery
+        : app.searchKeyword.trim();
     final results = app.searchResponse?.results ?? const <TrackRow>[];
     final showResults = query.isNotEmpty;
     return Column(
@@ -135,9 +151,55 @@ class _SearchPageState extends State<SearchPage> {
 
   Widget _buildResultsView(AppController app, List<TrackRow> results) {
     final playlistMatches = app.playlistSearchResults;
+    final loading =
+        app.busy ||
+        (_pendingQuery.isNotEmpty && app.searchKeyword.trim() != _pendingQuery);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: <Widget>[
+        if (isMobileHost) ...<Widget>[
+          SizedBox(
+            height: 40,
+            child: Row(
+              children: <Widget>[
+                Button(
+                  onPressed: () => _clearSearch(app),
+                  style: ButtonStyle(
+                    padding: WidgetStateProperty.all(
+                      const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                    ),
+                    backgroundColor: WidgetStateProperty.resolveWith((states) {
+                      if (states.isHovered || states.isPressed) {
+                        return widget.palette.subtleBackground;
+                      }
+                      return Colors.transparent;
+                    }),
+                    shape: WidgetStateProperty.all(
+                      RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: const <Widget>[
+                      Icon(FluentIcons.chevron_left, size: 12),
+                      SizedBox(width: 4),
+                      Text(
+                        '返回',
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 10),
+        ],
         Row(
           crossAxisAlignment: CrossAxisAlignment.end,
           children: <Widget>[
@@ -194,60 +256,102 @@ class _SearchPageState extends State<SearchPage> {
         ),
         const SizedBox(height: 16),
         Expanded(
-          child: app.busy
-              ? const Center(child: ProgressRing())
-              : app.searchScope == SearchScope.playlists
-              ? PlaylistSearchResults(
-                  palette: widget.palette,
-                  playlists: playlistMatches,
-                )
-              : Column(
-                  children: <Widget>[
-                    Expanded(
-                      child: TrackListView(
-                        tracks: results,
-                        palette: widget.palette,
-                        favoriteIds: app.favoriteIds,
-                        onPlay: (track, index) =>
-                            app.playTrack(track, queue: results, index: index),
-                        onToggleFavorite: app.toggleFavorite,
-                        onDownload: app.enqueueDownload,
-                        currentTrack: app.currentTrack,
-                        currentTrackPlaying: app.isPlaying,
-                        showIndex: true,
-                        showFavoriteAction: false,
-                        showDownloadAction: false,
-                        onArtistSearch: (keyword) => app.triggerTrackSearch(keyword),
-                        onAlbumSearch: (keyword) => app.triggerTrackSearch(keyword),
-                        emptyText: '输入关键词后开始搜索。',
+          child: AnimatedSwitcher(
+            duration: const Duration(milliseconds: 220),
+            switchInCurve: const Cubic(0.22, 1, 0.36, 1),
+            switchOutCurve: Curves.easeOut,
+            transitionBuilder: (child, animation) {
+              return FadeTransition(
+                opacity: animation,
+                child: SlideTransition(
+                  position: Tween<Offset>(
+                    begin: const Offset(0, 0.04),
+                    end: Offset.zero,
+                  ).animate(animation),
+                  child: child,
+                ),
+              );
+            },
+            child: loading
+                ? SearchResultsLoadingPanel(
+                    key: ValueKey<String>('loading-${app.searchScope.name}'),
+                    palette: widget.palette,
+                    showTableHeader: app.searchScope == SearchScope.catalog,
+                  )
+                : app.searchScope == SearchScope.playlists
+                ? PlaylistSearchResults(
+                    key: const ValueKey<String>('playlist-results'),
+                    palette: widget.palette,
+                    playlists: playlistMatches,
+                  )
+                : Column(
+                    key: const ValueKey<String>('catalog-results'),
+                    children: <Widget>[
+                      Expanded(
+                        child: TrackListView(
+                          tracks: results,
+                          palette: widget.palette,
+                          favoriteIds: app.favoriteIds,
+                          onPlay: (track, index) => app.playTrack(
+                            track,
+                            queue: results,
+                            index: index,
+                          ),
+                          onToggleFavorite: app.toggleFavorite,
+                          onDownload: app.enqueueDownload,
+                          currentTrack: app.currentTrack,
+                          currentTrackPlaying: app.isPlaying,
+                          showIndex: true,
+                          showFavoriteAction: false,
+                          showDownloadAction: false,
+                          onArtistSearch: (keyword) =>
+                              app.triggerTrackSearch(keyword),
+                          onAlbumSearch: (keyword) =>
+                              app.triggerTrackSearch(keyword),
+                          emptyText: '输入关键词后开始搜索。',
+                        ),
                       ),
-                    ),
-                    if (results.isNotEmpty)
-                      Padding(
-                        padding: const EdgeInsets.only(top: 10),
-                        child: Align(
-                          alignment: Alignment.centerRight,
-                          child: Text(
-                            _catalogStatusText(app.searchResponse),
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: widget.palette.mutedForeground,
+                      if (results.isNotEmpty)
+                        Padding(
+                          padding: const EdgeInsets.only(top: 10),
+                          child: Align(
+                            alignment: Alignment.centerRight,
+                            child: Text(
+                              _catalogStatusText(app.searchResponse),
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: widget.palette.mutedForeground,
+                              ),
                             ),
                           ),
                         ),
-                      ),
-                  ],
-                ),
+                    ],
+                  ),
+          ),
         ),
       ],
     );
   }
 
   Future<void> _submitSearch(AppController app, String keyword) async {
-    _controller.text = keyword.trim();
-    await app.performSearch(keyword);
+    final trimmed = keyword.trim();
+    _controller.text = trimmed;
+    if (trimmed.isEmpty) {
+      setState(() {
+        _pendingQuery = '';
+      });
+      await app.performSearch('');
+      return;
+    }
+    setState(() {
+      _pendingQuery = trimmed;
+    });
+    await Future<void>.delayed(Duration.zero);
+    await WidgetsBinding.instance.endOfFrame;
+    await app.performSearch(trimmed);
     if (!mounted) return;
     setState(() {
+      _pendingQuery = '';
       _quickCards = pickSearchQuickCards();
       _shuffleSeed = pickSearchShuffleSeed();
     });
@@ -263,6 +367,14 @@ class _SearchPageState extends State<SearchPage> {
     } else {
       setState(() {});
     }
+  }
+
+  Future<void> _clearSearch(AppController app) async {
+    _controller.clear();
+    setState(() {
+      _pendingQuery = '';
+    });
+    await app.performSearch('');
   }
 
   String _catalogStatusText(SearchCatalogResponse? response) {

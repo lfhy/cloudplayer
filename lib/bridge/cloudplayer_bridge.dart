@@ -58,6 +58,7 @@ class CloudPlayerBridge {
   static CloudPlayerBridge _openBridge(String libraryPath) {
     final library = DynamicLibrary.open(libraryPath);
     final bridge = CloudPlayerBridge._(library, libraryPath);
+    bridge._initializeRuntime();
     final runtimeInfo =
         bridge.call('get_runtime_info') as Map<String, dynamic>?;
     bridge._mediaProxyBase =
@@ -70,8 +71,23 @@ class CloudPlayerBridge {
   final _DartFree _free;
   String _mediaProxyBase = '';
 
+  static String? mobileConfigDirPath;
+
   String get libraryPath => _libraryPath;
   String get mediaProxyBase => _mediaProxyBase;
+
+  void _initializeRuntime() {
+    if (!Platform.isAndroid && !Platform.isIOS) {
+      return;
+    }
+    final configDir = mobileConfigDirPath?.trim() ?? '';
+    if (configDir.isEmpty) {
+      throw CloudPlayerBridgeException(
+        'Could not resolve an application support directory for the mobile bridge.',
+      );
+    }
+    call('initialize_runtime', <String, dynamic>{'config_dir': configDir});
+  }
 
   dynamic call(String method, [Object? args]) {
     final methodPtr = method.toNativeUtf8();
@@ -120,7 +136,12 @@ class CloudPlayerBridge {
   }
 
   static String? _bundledLibraryPath() {
-    final executableDir = File(Platform.resolvedExecutable).absolute.parent.path;
+    if (Platform.isAndroid) {
+      return _bridgeLibraryFileName();
+    }
+    final executableDir = File(
+      Platform.resolvedExecutable,
+    ).absolute.parent.path;
     final fileName = _bridgeLibraryFileName();
     final candidates = <String>[
       path.join(executableDir, fileName),
@@ -143,6 +164,9 @@ class CloudPlayerBridge {
     }
     if (Platform.isMacOS) {
       return 'libcloudplayer_bridge.dylib';
+    }
+    if (Platform.isAndroid) {
+      return 'libcloudplayer_bridge.so';
     }
     if (Platform.isLinux) {
       return 'libcloudplayer_bridge.so';

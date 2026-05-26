@@ -70,6 +70,7 @@
 - Preferred Android local run path:
   `make android-emulator`
   `make android-run`
+- Use `make android-run` instead of bare `flutter run -d android`; the scripted path must rebuild the Android Go bridge, sync `jniLibs`, and then launch the emulator session with `.env.local` loaded.
 - If Flutter or Gradle needs artifacts that are unavailable from domestic mirrors, keep the mirror-first repository configuration in the Android Gradle files and fall back to the shell proxy for the remaining official upstream downloads.
 
 ## Git Workflow

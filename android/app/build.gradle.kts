@@ -8,6 +8,12 @@ android {
     namespace = "dev.cloudplayer.cloudplayer_flutter"
     compileSdk = flutter.compileSdkVersion
 
+    sourceSets {
+        getByName("main") {
+            jniLibs.srcDirs("../../bin/bridge/android/jniLibs")
+        }
+    }
+
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17

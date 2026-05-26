@@ -10,10 +10,21 @@ import (
 	"time"
 
 	"cloudplayer/backend/config"
-	"github.com/wailsapp/wails/v3/pkg/application"
 )
 
 // Helper functions keep shared download formatting and HTTP utilities provider-agnostic.
+var emitTaskEvent = func(DownloadTaskEvent) {}
+
+// SetTaskEmitter lets desktop hosts forward queue changes to the Wails event bus
+// while mobile bridge builds keep the hook as a no-op.
+func SetTaskEmitter(fn func(DownloadTaskEvent)) {
+	if fn == nil {
+		emitTaskEvent = func(DownloadTaskEvent) {}
+		return
+	}
+	emitTaskEvent = fn
+}
+
 func normalizeQuality(value string) string {
 	switch strings.ToLower(strings.TrimSpace(value)) {
 	case "flac":
@@ -73,11 +84,7 @@ func recordDownloadSuccess() error {
 }
 
 func emitTask(task DownloadTaskEvent) {
-	app := application.Get()
-	if app == nil {
-		return
-	}
-	_ = app.Event.Emit("download-task-changed", task)
+	emitTaskEvent(task)
 }
 
 func getJSON(client *http.Client, method, requestURL string, body io.Reader, headers map[string]string, timeout time.Duration) (map[string]any, error) {

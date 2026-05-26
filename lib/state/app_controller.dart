@@ -8,6 +8,7 @@ import 'package:cloudplayer_flutter/models/app_models.dart';
 import 'package:cloudplayer_flutter/services/desktop_lyrics_channel.dart';
 import 'package:cloudplayer_flutter/services/desktop_lyrics_projection.dart';
 import 'package:cloudplayer_flutter/services/macos_tray_channel.dart';
+import 'package:cloudplayer_flutter/utils/platform_environment.dart';
 import 'package:cloudplayer_flutter/windows/mini_mode_window_controller.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:fluent_ui/fluent_ui.dart';
@@ -84,10 +85,12 @@ class AppController extends ChangeNotifier {
       await _player.setVolume((settings?.volume ?? 0.7) * 100);
       await refreshAll();
       await restorePersistedPlayback();
-      await bindDesktopLyrics();
-      await bindTray();
-      await syncDesktopLyricsWindow(immediate: true);
-      await syncTrayState();
+      if (isDesktopHost) {
+        await bindDesktopLyrics();
+        await bindTray();
+        await syncDesktopLyricsWindow(immediate: true);
+        await syncTrayState();
+      }
       bootError = '';
     } catch (error) {
       bootError = error.toString();

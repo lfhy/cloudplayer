@@ -1,3 +1,5 @@
+//go:build darwin || (linux && !android) || windows
+
 package cloudplayer
 
 import "github.com/wailsapp/wails/v3/pkg/application"

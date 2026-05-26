@@ -6,12 +6,14 @@ import 'package:cloudplayer_flutter/models/app_models.dart';
 import 'package:cloudplayer_flutter/state/app_controller.dart';
 import 'package:cloudplayer_flutter/theme/app_theme.dart';
 import 'package:cloudplayer_flutter/widgets/child_window_dialog.dart';
+import 'package:cloudplayer_flutter/widgets/player_dock_mobile.dart';
 import 'package:cloudplayer_flutter/widgets/playback_presence.dart';
 import 'package:cloudplayer_flutter/widgets/player_dock_buttons.dart';
 import 'package:cloudplayer_flutter/widgets/player_dock_flyouts.dart';
 import 'package:cloudplayer_flutter/widgets/player_dock_tools.dart';
 import 'package:cloudplayer_flutter/widgets/player_dock_utils.dart';
 import 'package:cloudplayer_flutter/widgets/track_artwork.dart';
+import 'package:cloudplayer_flutter/utils/platform_environment.dart';
 import 'package:fluent_ui/fluent_ui.dart';
 import 'package:provider/provider.dart';
 
@@ -196,6 +198,18 @@ class _PlayerDockState extends State<PlayerDock> {
         .clamp(0, progressMax.toInt())
         .toDouble();
     final volume = (controller.settings?.volume ?? 0.7) * 100;
+    final mobileDock = isMobileHost;
+    if (mobileDock) {
+      return Align(
+        alignment: Alignment.center,
+        child: MobilePlayerDockLayout(
+          palette: widget.palette,
+          controller: controller,
+          track: track,
+          volume: volume,
+        ),
+      );
+    }
     return Container(
       constraints: const BoxConstraints(minHeight: 84),
       padding: const EdgeInsets.fromLTRB(18, 10, 18, 12),
@@ -228,7 +242,7 @@ class _PlayerDockState extends State<PlayerDock> {
                     onPressed: () => unawaited(controller.toggleImmersive()),
                     style: ButtonStyle(
                       padding: WidgetStateProperty.all(EdgeInsets.zero),
-                      backgroundColor: WidgetStatePropertyAll<Color>(
+                      backgroundColor: const WidgetStatePropertyAll<Color>(
                         Colors.transparent,
                       ),
                       shape: WidgetStateProperty.all(

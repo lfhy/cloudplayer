@@ -7,6 +7,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:cloudplayer_flutter/state/app_controller.dart';
 import 'package:cloudplayer_flutter/theme/app_theme.dart';
+import 'package:cloudplayer_flutter/utils/platform_environment.dart';
 import 'package:cloudplayer_flutter/widgets/mini_player_controls.dart';
 import 'package:cloudplayer_flutter/widgets/mini_player_lyrics.dart';
 import 'package:cloudplayer_flutter/widgets/track_artwork.dart';
@@ -71,37 +72,7 @@ class _MiniPlayerState extends State<MiniPlayer> {
                   ),
                   child: Column(
                     children: <Widget>[
-                      DragToMoveArea(
-                        child: MiniPlayerHeader(
-                          palette: widget.palette,
-                          trackTitle: track?.title ?? '未播放',
-                          trackSubtitle: _miniSubtitle(track),
-                          onPrevious: controller.canNavigateQueue
-                              ? () => unawaited(controller.playPrevious())
-                              : null,
-                          onPlayPause: controller.currentTrack == null
-                              ? null
-                              : () => unawaited(controller.togglePlayPause()),
-                          onNext: controller.canNavigateQueue
-                              ? () => unawaited(controller.playNext())
-                              : null,
-                          onTogglePin: controller.settings == null
-                              ? null
-                              : () => unawaited(
-                                  controller.toggleMiniModeAlwaysOnTop(),
-                                ),
-                          onExit: () => unawaited(controller.closeMiniMode()),
-                          isPlaying: controller.isPlaying,
-                          pinned: controller.miniModeAlwaysOnTop,
-                          cover: TrackArtwork(
-                            track: track,
-                            palette: widget.palette,
-                            size: 64,
-                            radius: 14,
-                            iconSize: 28,
-                          ),
-                        ),
-                      ),
+                      _miniHeader(controller, track),
                       const SizedBox(height: 14),
                       MiniPlayerProgressBar(
                         palette: widget.palette,
@@ -147,6 +118,41 @@ class _MiniPlayerState extends State<MiniPlayer> {
         ),
       ),
     );
+  }
+
+  Widget _miniHeader(AppController controller, dynamic track) {
+    final header = MiniPlayerHeader(
+      palette: widget.palette,
+      trackTitle: track?.title ?? '未播放',
+      trackSubtitle: _miniSubtitle(track),
+      onPrevious: controller.canNavigateQueue
+          ? () => unawaited(controller.playPrevious())
+          : null,
+      onPlayPause: controller.currentTrack == null
+          ? null
+          : () => unawaited(controller.togglePlayPause()),
+      onNext: controller.canNavigateQueue
+          ? () => unawaited(controller.playNext())
+          : null,
+      onTogglePin: controller.settings == null || !isDesktopHost
+          ? null
+          : () => unawaited(controller.toggleMiniModeAlwaysOnTop()),
+      onOpenImmersive: controller.currentTrack == null
+          ? null
+          : () => unawaited(controller.openImmersive()),
+      onExit: () => unawaited(controller.closeMiniMode()),
+      isPlaying: controller.isPlaying,
+      pinned: controller.miniModeAlwaysOnTop,
+      showPinAction: isDesktopHost,
+      cover: TrackArtwork(
+        track: track,
+        palette: widget.palette,
+        size: 64,
+        radius: 14,
+        iconSize: 28,
+      ),
+    );
+    return isDesktopHost ? DragToMoveArea(child: header) : header;
   }
 
   Gradient _backgroundGradient() {

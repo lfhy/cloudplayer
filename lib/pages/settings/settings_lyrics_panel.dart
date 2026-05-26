@@ -12,6 +12,7 @@ class _LyricsPanel extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final controller = context.read<AppController>();
+    final desktopLyricsSupported = isDesktopHost;
     final providers = settings.lyricsProviderOrder
         .split(',')
         .map((value) => value.trim())
@@ -65,19 +66,21 @@ class _LyricsPanel extends StatelessWidget {
               label: settings.desktopLyricsVisible ? '隐藏桌面歌词' : '显示桌面歌词',
               active: settings.desktopLyricsVisible,
               palette: palette,
-              onPressed: () => controller.toggleDesktopLyrics(),
+              onPressed: desktopLyricsSupported
+                  ? () => controller.toggleDesktopLyrics()
+                  : null,
             ),
             _ChoiceChip(
               label: settings.desktopLyricsLocked ? '已锁定' : '未锁定',
               active: settings.desktopLyricsLocked,
               palette: palette,
-              onPressed: settings.desktopLyricsVisible
+              onPressed: desktopLyricsSupported && settings.desktopLyricsVisible
                   ? () => controller.toggleDesktopLyricsLocked()
                   : null,
             ),
             _DesktopLyricsActionButton(
               palette: palette,
-              onPressed: settings.desktopLyricsVisible
+              onPressed: desktopLyricsSupported && settings.desktopLyricsVisible
                   ? () => controller.resetDesktopLyricsBounds()
                   : null,
               label: '重置歌词位置',
@@ -85,7 +88,9 @@ class _LyricsPanel extends StatelessWidget {
           ],
         ),
         _HintText(
-          settings.desktopLyricsVisible
+          !desktopLyricsSupported
+              ? '移动端不提供独立桌面歌词窗口，但会继续使用同一套歌词来源和样式配置。'
+              : settings.desktopLyricsVisible
               ? '锁定后桌面歌词会变为点穿窗口。'
               : '打开后会在 macOS 桌面显示独立歌词窗口。',
         ),

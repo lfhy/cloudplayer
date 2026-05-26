@@ -285,6 +285,7 @@ class _ControlsPanel extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final controller = context.read<AppController>();
+    final closeBehaviorEnabled = isDesktopHost;
     return _SettingsPanel(
       palette: palette,
       children: <Widget>[
@@ -296,15 +297,21 @@ class _ControlsPanel extends StatelessWidget {
             ComboBoxItem(value: 'tray', child: Text('最小化到系统托盘')),
             ComboBoxItem(value: 'quit', child: Text('退出应用')),
           ],
-          onChanged: (value) {
-            if (value == null) return;
-            controller.updateSettings(
-              settings.copyWith(mainWindowCloseAction: value),
-            );
-          },
+          onChanged: closeBehaviorEnabled
+              ? (value) {
+                  if (value == null) return;
+                  controller.updateSettings(
+                    settings.copyWith(mainWindowCloseAction: value),
+                  );
+                }
+              : null,
         ),
         const SizedBox(height: 18),
-        _HintText('后台也能响应；默认使用 Ctrl+Alt+ 组合以避免中文输入法占用 Ctrl+Space。'),
+        _HintText(
+          closeBehaviorEnabled
+              ? '后台也能响应；默认使用 Ctrl+Alt+ 组合以避免中文输入法占用 Ctrl+Space。'
+              : '移动端不涉及主窗口关闭到托盘的桌面行为。',
+        ),
       ],
     );
   }

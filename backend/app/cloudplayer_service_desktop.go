@@ -1,3 +1,5 @@
+//go:build darwin || (linux && !android) || windows
+
 package cloudplayer
 
 // Desktop-facing service methods proxy to the dedicated desktop package while keeping Wails bindings stable.

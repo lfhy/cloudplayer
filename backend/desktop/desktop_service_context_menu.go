@@ -1,3 +1,5 @@
+//go:build darwin || (linux && !android) || windows
+
 package desktop
 
 // DesktopService exposes native context menus for lightweight utility windows.

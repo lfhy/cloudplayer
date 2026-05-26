@@ -1,3 +1,5 @@
+//go:build darwin || (linux && !android) || windows
+
 package desktop
 
 import (

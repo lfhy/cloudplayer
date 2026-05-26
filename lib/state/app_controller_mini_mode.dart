@@ -39,14 +39,19 @@ extension AppControllerMiniMode on AppController {
       }
       _notifyStateChanged();
       await ensureLyricsForCurrentTrack();
-      await state.window.enter(alwaysOnTop: miniModeAlwaysOnTop);
+      if (isDesktopHost) {
+        await state.window.enter(alwaysOnTop: miniModeAlwaysOnTop);
+      }
       return;
     }
     _notifyStateChanged();
-    await state.window.exit();
+    if (isDesktopHost) {
+      await state.window.exit();
+    }
   }
 
   Future<void> toggleMiniModeAlwaysOnTop() async {
+    if (!isDesktopHost) return;
     final current = settings;
     if (current == null) return;
     final next = current.copyWith(

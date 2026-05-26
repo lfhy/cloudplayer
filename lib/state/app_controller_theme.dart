@@ -12,6 +12,8 @@ extension AppControllerThemeSettings on AppController {
     settings = current.copyWith(appThemeMode: mode);
     _notifyStateChanged();
     await api.saveSettings(settings!);
-    await syncTrayState();
+    if (isDesktopHost) {
+      await syncTrayState();
+    }
   }
 }

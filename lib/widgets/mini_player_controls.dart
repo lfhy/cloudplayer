@@ -20,7 +20,9 @@ class MiniPlayerHeader extends StatelessWidget {
     required this.onPlayPause,
     required this.onNext,
     required this.onTogglePin,
+    required this.onOpenImmersive,
     required this.onExit,
+    required this.showPinAction,
   });
 
   final AppPalette palette;
@@ -33,7 +35,9 @@ class MiniPlayerHeader extends StatelessWidget {
   final VoidCallback? onPlayPause;
   final VoidCallback? onNext;
   final VoidCallback? onTogglePin;
+  final VoidCallback? onOpenImmersive;
   final VoidCallback? onExit;
+  final bool showPinAction;
 
   @override
   Widget build(BuildContext context) {
@@ -44,10 +48,12 @@ class MiniPlayerHeader extends StatelessWidget {
           palette: palette,
           isPlaying: isPlaying,
           pinned: pinned,
+          showPinAction: showPinAction,
           onPrevious: onPrevious,
           onPlayPause: onPlayPause,
           onNext: onNext,
           onTogglePin: onTogglePin,
+          onOpenImmersive: onOpenImmersive,
           onExit: onExit,
         );
         return Column(
@@ -170,20 +176,24 @@ class _MiniPlayerActions extends StatelessWidget {
     required this.palette,
     required this.isPlaying,
     required this.pinned,
+    required this.showPinAction,
     required this.onPrevious,
     required this.onPlayPause,
     required this.onNext,
     required this.onTogglePin,
+    required this.onOpenImmersive,
     required this.onExit,
   });
 
   final AppPalette palette;
   final bool isPlaying;
   final bool pinned;
+  final bool showPinAction;
   final VoidCallback? onPrevious;
   final VoidCallback? onPlayPause;
   final VoidCallback? onNext;
   final VoidCallback? onTogglePin;
+  final VoidCallback? onOpenImmersive;
   final VoidCallback? onExit;
 
   @override
@@ -215,13 +225,22 @@ class _MiniPlayerActions extends StatelessWidget {
           icon: LegacyDockGlyph.skipNextBold,
         ),
         const SizedBox(width: 8),
-        _MiniIconButton(
+        _MiniFluentIconButton(
           palette: palette,
-          tooltip: pinned ? '关闭 Mini 置顶' : '开启 Mini 置顶',
-          onPressed: onTogglePin,
-          active: pinned,
-          icon: LegacyDockGlyph.pinCircle,
+          tooltip: '进入沉浸模式',
+          onPressed: onOpenImmersive,
+          icon: FluentIcons.music_in_collection,
         ),
+        if (showPinAction) ...<Widget>[
+          const SizedBox(width: 8),
+          _MiniIconButton(
+            palette: palette,
+            tooltip: pinned ? '关闭 Mini 置顶' : '开启 Mini 置顶',
+            onPressed: onTogglePin,
+            active: pinned,
+            icon: LegacyDockGlyph.pinCircle,
+          ),
+        ],
         const SizedBox(width: 8),
         _MiniIconButton(
           palette: palette,
@@ -346,6 +365,53 @@ class _MiniIconButton extends StatelessWidget {
           size: 16,
           color: active ? Colors.white : palette.strongForeground,
         ),
+      ),
+    );
+    return Tooltip(message: tooltip, child: button);
+  }
+}
+
+class _MiniFluentIconButton extends StatelessWidget {
+  const _MiniFluentIconButton({
+    required this.palette,
+    required this.tooltip,
+    required this.onPressed,
+    required this.icon,
+  });
+
+  final AppPalette palette;
+  final String tooltip;
+  final VoidCallback? onPressed;
+  final IconData icon;
+
+  @override
+  Widget build(BuildContext context) {
+    final button = SizedBox(
+      width: 34,
+      height: 34,
+      child: Button(
+        onPressed: onPressed,
+        style: ButtonStyle(
+          padding: WidgetStateProperty.all(EdgeInsets.zero),
+          backgroundColor: WidgetStateProperty.resolveWith((state) {
+            if (state.isHovered) {
+              return palette.brightness == Brightness.light
+                  ? Colors.white.withValues(alpha: 0.74)
+                  : Colors.white.withValues(alpha: 0.10);
+            }
+            return palette.brightness == Brightness.light
+                ? Colors.white.withValues(alpha: 0.62)
+                : Colors.white.withValues(alpha: 0.06);
+          }),
+          foregroundColor: WidgetStateProperty.all(palette.strongForeground),
+          shape: WidgetStateProperty.all(
+            RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(10),
+              side: BorderSide(color: palette.borderColor),
+            ),
+          ),
+        ),
+        child: Icon(icon, size: 16, color: palette.strongForeground),
       ),
     );
     return Tooltip(message: tooltip, child: button);

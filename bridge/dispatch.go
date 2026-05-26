@@ -9,14 +9,17 @@ import (
 )
 
 func invokeBridgeMethod(method string, args json.RawMessage) (any, error) {
-	runtime, err := ensureRuntime()
-	if err != nil {
-		return nil, err
-	}
-
 	normalized := strings.ToLower(strings.TrimSpace(method))
 	if normalized == "" {
 		return nil, fmt.Errorf("bridge method is required")
+	}
+	if result, handled, err := invokeBootstrapMethod(normalized, args); handled {
+		return result, err
+	}
+
+	runtime, err := ensureRuntime()
+	if err != nil {
+		return nil, err
 	}
 
 	if result, handled, err := invokeSettingsMethod(runtime, normalized, args); handled {

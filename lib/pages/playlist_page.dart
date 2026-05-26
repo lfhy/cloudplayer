@@ -3,6 +3,7 @@
 import 'package:cloudplayer_flutter/models/app_models.dart';
 import 'package:cloudplayer_flutter/state/app_controller.dart';
 import 'package:cloudplayer_flutter/theme/app_theme.dart';
+import 'package:cloudplayer_flutter/utils/platform_environment.dart';
 import 'package:cloudplayer_flutter/widgets/legacy_action_button.dart';
 import 'package:cloudplayer_flutter/widgets/track_artwork.dart';
 import 'package:cloudplayer_flutter/widgets/track_list.dart';
@@ -20,24 +21,25 @@ class PlaylistPage extends StatefulWidget {
 
 class _PlaylistPageState extends State<PlaylistPage> {
   bool _selectionMode = false;
+  bool _showMobileDetail = false;
   Set<int> _selectedTrackIds = <int>{};
   int? _selectionPlaylistId;
 
   @override
   Widget build(BuildContext context) {
     final controller = context.watch<AppController>();
+    if (isMobileHost && !_showMobileDetail) {
+      return _buildMobilePlaylistList(controller);
+    }
     final playlist = controller.selectedPlaylist;
-    final coverTrack = controller.playlistTracks.isNotEmpty
-        ? controller.playlistTracks.first
-        : null;
+    final coverTrack =
+        controller.playlistTracks.isNotEmpty ? controller.playlistTracks.first : null;
     _syncSelectionState(playlist?.id, controller.playlistTracks);
     if (playlist == null) {
-      return Center(
-        child: Text(
-          '暂无歌单。',
-          style: TextStyle(color: widget.palette.mutedForeground),
-        ),
-      );
+      return Center(child: Text('暂无歌单。', style: TextStyle(color: widget.palette.mutedForeground)));
+    }
+    if (isMobileHost) {
+      return _buildMobilePlaylistDetail(controller, playlist, coverTrack);
     }
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -108,6 +110,207 @@ class _PlaylistPageState extends State<PlaylistPage> {
           ],
         ),
         const SizedBox(height: 14),
+        Expanded(
+          child: TrackListView(
+            tracks: controller.playlistTracks,
+            palette: widget.palette,
+            favoriteIds: controller.favoriteIds,
+            onPlay: (track, index) => controller.playTrack(
+              track,
+              queue: controller.playlistTracks,
+              index: index,
+            ),
+            onToggleFavorite: controller.toggleFavorite,
+            onDownload: controller.enqueueDownload,
+            currentTrack: controller.currentTrack,
+            currentTrackPlaying: controller.isPlaying,
+            showDownloadAction: false,
+            selectionMode: _selectionMode,
+            selectedTrackIds: _selectedTrackIds,
+            onToggleSelection: _toggleTrackSelection,
+            onArtistSearch: (keyword) => controller.triggerTrackSearch(keyword),
+            onAlbumSearch: (keyword) => controller.triggerTrackSearch(keyword),
+            emptyText: '这个歌单里还没有曲目。',
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildMobilePlaylistList(AppController controller) {
+    if (controller.playlists.isEmpty) {
+      return Center(child: Text('暂无歌单。', style: TextStyle(color: widget.palette.mutedForeground)));
+    }
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: <Widget>[
+        const Text('我的歌单', style: TextStyle(fontSize: 24, fontWeight: FontWeight.w700)),
+        const SizedBox(height: 12),
+        Expanded(
+          child: ListView.separated(
+            padding: const EdgeInsets.only(top: 4, bottom: 8),
+            itemCount: controller.playlists.length,
+            separatorBuilder: (_, index) => const SizedBox(height: 10),
+            itemBuilder: (context, index) {
+              final playlist = controller.playlists[index];
+              return Button(
+                onPressed: () => _openMobilePlaylist(controller, playlist),
+                style: ButtonStyle(
+                  padding: WidgetStateProperty.all(EdgeInsets.zero),
+                  backgroundColor: WidgetStateProperty.resolveWith((states) {
+                    if (states.isHovered || states.isPressed) {
+                      return widget.palette.subtleBackground;
+                    }
+                    return widget.palette.cardBackground;
+                  }),
+                  shape: WidgetStateProperty.all(
+                    RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(18),
+                      side: BorderSide(color: widget.palette.borderColor),
+                    ),
+                  ),
+                ),
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(14, 14, 12, 14),
+                  child: Row(
+                    children: <Widget>[
+                      Container(
+                        width: 56,
+                        height: 56,
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(14),
+                          color: widget.palette.subtleBackground,
+                        ),
+                        child: Icon(
+                          playlist.isFavorites
+                              ? FluentIcons.heart_fill
+                              : playlist.isCloud
+                              ? FluentIcons.cloud
+                              : FluentIcons.library,
+                          color: widget.palette.accent.normal,
+                          size: 22,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: <Widget>[
+                            Text(
+                              playlist.name,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              playlist.isFavorites
+                                  ? '我喜欢'
+                                  : playlist.isCloud
+                                  ? '云端歌单'
+                                  : '本地歌单',
+                              style: TextStyle(fontSize: 12, color: widget.palette.mutedForeground),
+                            ),
+                          ],
+                        ),
+                      ),
+                      Icon(FluentIcons.chevron_right, size: 14, color: widget.palette.mutedForeground),
+                    ],
+                  ),
+                ),
+              );
+            },
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildMobilePlaylistDetail(
+    AppController controller,
+    PlaylistRow playlist,
+    TrackRow? coverTrack,
+  ) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: <Widget>[
+        SizedBox(
+          height: 40,
+          child: Row(
+            children: <Widget>[
+              Button(
+                onPressed: _closeMobilePlaylistDetail,
+                style: ButtonStyle(
+                  padding: WidgetStateProperty.all(
+                    const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                  ),
+                  backgroundColor: WidgetStateProperty.resolveWith((states) {
+                    if (states.isHovered || states.isPressed) {
+                      return widget.palette.subtleBackground;
+                    }
+                    return Colors.transparent;
+                  }),
+                  shape: WidgetStateProperty.all(
+                    RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: <Widget>[
+                    const Icon(FluentIcons.chevron_left, size: 12),
+                    const SizedBox(width: 4),
+                    const Text('歌单列表', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 10),
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: <Widget>[
+            TrackArtwork(
+              track: coverTrack,
+              palette: widget.palette,
+              size: 72,
+              radius: 16,
+              iconSize: 26,
+              placeholderIcon: FluentIcons.album,
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: <Widget>[
+                  Text(
+                    playlist.name,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      fontSize: 24,
+                      height: 1.1,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    '共 ${controller.playlistTracks.length} 首曲目',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: widget.palette.mutedForeground,
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  _buildToolbar(context, controller),
+                ],
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 12),
         Expanded(
           child: TrackListView(
             tracks: controller.playlistTracks,
@@ -232,6 +435,27 @@ class _PlaylistPageState extends State<PlaylistPage> {
 
   void _exitSelectionMode() {
     setState(() {
+      _selectionMode = false;
+      _selectedTrackIds = <int>{};
+    });
+  }
+
+  Future<void> _openMobilePlaylist(
+    AppController controller,
+    PlaylistRow playlist,
+  ) async {
+    await controller.selectPlaylist(playlist);
+    if (!mounted) {
+      return;
+    }
+    setState(() {
+      _showMobileDetail = true;
+    });
+  }
+
+  void _closeMobilePlaylistDetail() {
+    setState(() {
+      _showMobileDetail = false;
       _selectionMode = false;
       _selectedTrackIds = <int>{};
     });

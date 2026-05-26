@@ -5,6 +5,7 @@ import 'dart:async';
 
 import 'package:cloudplayer_flutter/state/app_controller.dart';
 import 'package:cloudplayer_flutter/theme/app_theme.dart';
+import 'package:cloudplayer_flutter/utils/platform_environment.dart';
 import 'package:cloudplayer_flutter/widgets/player_dock_buttons.dart';
 import 'package:cloudplayer_flutter/widgets/legacy_dock_icons.dart';
 import 'package:cloudplayer_flutter/widgets/player_dock_flyouts.dart';
@@ -16,11 +17,13 @@ class PlayerDockToolsSection extends StatefulWidget {
     required this.palette,
     required this.controller,
     required this.volume,
+    this.compact = false,
   });
 
   final AppPalette palette;
   final AppController controller;
   final double volume;
+  final bool compact;
 
   @override
   State<PlayerDockToolsSection> createState() => _PlayerDockToolsSectionState();
@@ -39,6 +42,8 @@ class _PlayerDockToolsSectionState extends State<PlayerDockToolsSection> {
   @override
   Widget build(BuildContext context) {
     final controller = widget.controller;
+    final desktopControlsEnabled = isDesktopHost && !widget.compact;
+    final compact = widget.compact || isMobileHost;
     final desktopOpen = controller.desktopLyricsOpen;
     final desktopLocked = controller.settings?.desktopLyricsLocked ?? true;
     final quickThemeMode = controller.settings?.appThemeMode == 'light'
@@ -49,6 +54,48 @@ class _PlayerDockToolsSectionState extends State<PlayerDockToolsSection> {
         : desktopLocked
         ? '解锁桌面歌词'
         : '锁定桌面歌词';
+    if (compact) {
+      return Row(
+        mainAxisSize: MainAxisSize.min,
+        children: <Widget>[
+          DockChipButton(
+            palette: widget.palette,
+            iconOnly: true,
+            tooltip: _quickThemeTooltip(quickThemeMode),
+            onPressed: controller.settings == null
+                ? null
+                : () => unawaited(_toggleQuickThemeMode(controller)),
+            child: Icon(
+              _quickThemeIcon(quickThemeMode),
+              size: 14,
+              color: controller.settings == null
+                  ? widget.palette.strongForeground.withValues(alpha: 0.42)
+                  : widget.palette.strongForeground,
+            ),
+          ),
+          const SizedBox(width: 8),
+          DockIconButton(
+            palette: widget.palette,
+            active: controller.isEffectivelyMuted,
+            tooltip: '静音',
+            onPressed: controller.settings == null
+                ? null
+                : () => unawaited(controller.toggleMute()),
+            child: LegacyDockIcon(
+              glyph: controller.isEffectivelyMuted
+                  ? LegacyDockGlyph.volumeMute
+                  : LegacyDockGlyph.volumeSmall,
+              size: 15,
+              color: controller.settings == null
+                  ? widget.palette.mutedForeground.withValues(alpha: 0.42)
+                  : controller.isEffectivelyMuted
+                  ? widget.palette.accent.normal
+                  : widget.palette.mutedForeground,
+            ),
+          ),
+        ],
+      );
+    }
     return Padding(
       padding: const EdgeInsets.only(left: 18),
       child: Row(
@@ -58,12 +105,17 @@ class _PlayerDockToolsSectionState extends State<PlayerDockToolsSection> {
             palette: widget.palette,
             active: controller.miniModeOpen,
             emphasizeActive: true,
-            tooltip: '进入 Mini 模式',
-            onPressed: () => unawaited(controller.toggleMiniMode()),
+            tooltip: desktopControlsEnabled ? '进入 Mini 模式' : '仅桌面端可用',
+            onPressed: desktopControlsEnabled
+                ? () => unawaited(controller.toggleMiniMode())
+                : null,
             child: LegacyDockIcon(
               glyph: LegacyDockGlyph.enterMini,
               size: 15,
-              color: _toolColor(active: controller.miniModeOpen, enabled: true),
+              color: _toolColor(
+                active: controller.miniModeOpen,
+                enabled: desktopControlsEnabled,
+              ),
             ),
           ),
           const SizedBox(width: 10),
@@ -104,8 +156,8 @@ class _PlayerDockToolsSectionState extends State<PlayerDockToolsSection> {
             palette: widget.palette,
             active: desktopOpen,
             emphasizeActive: true,
-            tooltip: '桌面歌词（独立窗口）',
-            onPressed: controller.settings == null
+            tooltip: desktopControlsEnabled ? '桌面歌词（独立窗口）' : '仅桌面端可用',
+            onPressed: controller.settings == null || !desktopControlsEnabled
                 ? null
                 : () => unawaited(controller.toggleDesktopLyrics()),
             child: const Text(
@@ -123,7 +175,10 @@ class _PlayerDockToolsSectionState extends State<PlayerDockToolsSection> {
             active: desktopOpen && desktopLocked,
             emphasizeActive: true,
             tooltip: lyricsLockTooltip,
-            onPressed: controller.settings == null || !desktopOpen
+            onPressed:
+                controller.settings == null ||
+                    !desktopOpen ||
+                    !desktopControlsEnabled
                 ? null
                 : () => unawaited(controller.toggleDesktopLyricsLocked()),
             child: LegacyDockIcon(
@@ -143,6 +198,7 @@ class _PlayerDockToolsSectionState extends State<PlayerDockToolsSection> {
             settingsReady: controller.settings != null,
             volume: widget.volume,
             muted: controller.isEffectivelyMuted,
+            compact: false,
             onToggleMute: () => unawaited(controller.toggleMute()),
             onChanged: (value) => controller.setVolume(value / 100),
           ),
@@ -253,6 +309,7 @@ class _DockVolumeControl extends StatelessWidget {
     required this.settingsReady,
     required this.volume,
     required this.muted,
+    required this.compact,
     required this.onToggleMute,
     required this.onChanged,
   });
@@ -261,6 +318,7 @@ class _DockVolumeControl extends StatelessWidget {
   final bool settingsReady;
   final double volume;
   final bool muted;
+  final bool compact;
   final VoidCallback onToggleMute;
   final ValueChanged<double> onChanged;
 
@@ -288,7 +346,7 @@ class _DockVolumeControl extends StatelessWidget {
         ),
         const SizedBox(width: 8),
         SizedBox(
-          width: 112,
+          width: compact ? 84 : 112,
           child: Slider(
             value: volume,
             max: 100,

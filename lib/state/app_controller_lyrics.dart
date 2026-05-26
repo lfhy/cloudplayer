@@ -5,11 +5,25 @@ part of 'app_controller.dart';
 
 extension AppControllerLyrics on AppController {
   Future<void> toggleImmersive() async {
-    immersiveOpen = !immersiveOpen;
-    _notifyStateChanged();
     if (immersiveOpen) {
-      await ensureLyricsForCurrentTrack();
+      closeImmersive();
+      return;
     }
+    await openImmersive();
+  }
+
+  Future<void> openImmersive() async {
+    if (miniModeOpen) {
+      await setMiniMode(false);
+    }
+    if (immersiveOpen) {
+      return;
+    }
+    immersiveOpen = true;
+    _notifyStateChanged();
+    await ensureLyricsForCurrentTrack(
+      force: lyricsPayload == null && lyricsEntries.isEmpty,
+    );
   }
 
   void closeImmersive() {

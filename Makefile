@@ -9,6 +9,11 @@ MACOSX_DEPLOYMENT_TARGET ?= 11.0
 BRIDGE_OUT := bin/bridge/libcloudplayer_bridge.dylib
 BRIDGE_ARM64_OUT := bin/bridge/libcloudplayer_bridge-arm64.dylib
 BRIDGE_AMD64_OUT := bin/bridge/libcloudplayer_bridge-amd64.dylib
+ANDROID_BRIDGE_DIR := bin/bridge/android
+ANDROID_BRIDGE_OUT := $(ANDROID_BRIDGE_DIR)/libcloudplayer_bridge.so
+ANDROID_JNILIBS_DIR := $(ANDROID_BRIDGE_DIR)/jniLibs/arm64-v8a
+ANDROID_JNILIBS_OUT := $(ANDROID_JNILIBS_DIR)/libcloudplayer_bridge.so
+ANDROID_NDK_VERSION ?= 28.2.13676358
 BRIDGE_MIN_VERSION_FLAG := -mmacosx-version-min=$(MACOSX_DEPLOYMENT_TARGET)
 BRIDGE_SDKROOT := $(shell DEVELOPER_DIR=$(DEVELOPER_DIR) xcrun --sdk macosx --show-sdk-path)
 BRIDGE_CGO_CFLAGS := $(BRIDGE_MIN_VERSION_FLAG)
@@ -16,7 +21,7 @@ BRIDGE_CGO_CXXFLAGS := $(BRIDGE_MIN_VERSION_FLAG)
 BRIDGE_CGO_LDFLAGS := $(BRIDGE_MIN_VERSION_FLAG) -Wl,-no_warn_duplicate_libraries
 LOCAL_ENV_ZSH := source ~/.zshrc; if [[ -f "$(ENV_LOCAL)" ]]; then set -a; source "$(ENV_LOCAL)"; set +a; fi
 
-.PHONY: bridge bridge-arm64 bridge-amd64 bridge-universal smoke analyze test run android-emulator android-run
+.PHONY: bridge bridge-arm64 bridge-amd64 bridge-universal android-bridge android-bridge-sync smoke analyze test run android-emulator android-run
 
 bridge: bridge-universal
 
@@ -53,6 +58,20 @@ bridge-amd64:
 bridge-universal: bridge-arm64 bridge-amd64
 	lipo -create -output $(BRIDGE_OUT) $(BRIDGE_ARM64_OUT) $(BRIDGE_AMD64_OUT)
 
+android-bridge:
+	@mkdir -p $(ANDROID_BRIDGE_DIR)
+	zsh -lc '$(LOCAL_ENV_ZSH); \
+		ndk_bin="$$ANDROID_HOME/ndk/$(ANDROID_NDK_VERSION)/toolchains/llvm/prebuilt/darwin-x86_64/bin"; \
+		env CGO_ENABLED=1 GOOS=android GOARCH=arm64 \
+		CC="$$ndk_bin/aarch64-linux-android24-clang" \
+		CXX="$$ndk_bin/aarch64-linux-android24-clang++" \
+		AR="$$ndk_bin/llvm-ar" \
+		go build -buildmode=c-shared -o "$(ANDROID_BRIDGE_OUT)" ./bridge'
+
+android-bridge-sync: android-bridge
+	@mkdir -p $(ANDROID_JNILIBS_DIR)
+	cp $(ANDROID_BRIDGE_OUT) $(ANDROID_JNILIBS_OUT)
+
 smoke: bridge
 	dart run tool/bridge_smoke.dart
 
@@ -68,5 +87,5 @@ run: bridge
 android-emulator:
 	zsh -lc '$(LOCAL_ENV_ZSH); flutter emulators --launch "$(ANDROID_EMULATOR)"'
 
-android-run:
+android-run: android-bridge-sync
 	zsh -lc '$(LOCAL_ENV_ZSH); flutter run -d "$(ANDROID_DEVICE)" --debug'

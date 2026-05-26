@@ -7,9 +7,7 @@ import (
 	"strings"
 
 	"cloudplayer/backend/config"
-	"cloudplayer/backend/desktop"
 	"cloudplayer/backend/hotkeys"
-	"github.com/wailsapp/wails/v3/pkg/application"
 )
 
 // Settings and window-management methods stay together because they update shared app state.
@@ -58,19 +56,6 @@ func (s *CloudPlayerService) ApplyGlobalHotkeys(cfg config.GlobalHotkeys) (hotke
 		return hotkeys.HotkeyApplyReport{}, err
 	}
 	return report, nil
-}
-
-func (s *CloudPlayerService) SetDesktopLyricsClickThrough(ignoreCursorEvents bool) error {
-	app := application.Get()
-	if app == nil {
-		return nil
-	}
-	window, ok := app.Window.GetByName("lyrics")
-	if !ok {
-		return nil
-	}
-	window.SetIgnoreMouseEvents(ignoreCursorEvents)
-	return nil
 }
 
 func (s *CloudPlayerService) LocalPathAccessible(path string) bool {
@@ -263,9 +248,12 @@ func (s *CloudPlayerService) SaveSettings(patch SettingsPatch) error {
 	if err := s.state.ApplyNetworkSettings(settings); err != nil {
 		return err
 	}
-	applyThemeAssets(s.state, settings.AppTheme, settings.AppThemeCustomAccent)
-	syncMainWindowTheme(settings.AppThemeMode)
-	desktop.SyncDesktopWindowThemes(settings.AppThemeMode)
+	syncThemeStateAfterSettingsChange(
+		s.state,
+		settings.AppTheme,
+		settings.AppThemeCustomAccent,
+		settings.AppThemeMode,
+	)
 	return nil
 }
 

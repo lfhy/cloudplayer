@@ -1,3 +1,5 @@
+//go:build darwin || (linux && !android) || windows
+
 package desktop
 
 // DesktopService coordinates secondary desktop windows such as tray and lyrics overlays.

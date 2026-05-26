@@ -21,24 +21,25 @@ class HomePage extends StatelessWidget {
         controller.dailyRecommendation?.rows.take(6).toList() ??
         const <TrackRow>[];
     final recentRows = controller.recentTracks.take(6).toList();
-    return SingleChildScrollView(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: <Widget>[
-          _Header(
-            palette: palette,
-            greeting: greeting,
-            dateLine: dateLine,
-            playlistCount: controller.playlists.length,
-            recentCount: controller.recentTracks.length,
-            downloadCount: controller.downloadQueue.length,
-          ),
-          const SizedBox(height: 18),
-          Row(
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final compact = constraints.maxWidth < 760;
+        return SingleChildScrollView(
+          child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: <Widget>[
-              Expanded(
-                child: _PreviewColumn(
+              _Header(
+                palette: palette,
+                greeting: greeting,
+                dateLine: dateLine,
+                playlistCount: controller.playlists.length,
+                recentCount: controller.recentTracks.length,
+                downloadCount: controller.downloadQueue.length,
+                compact: compact,
+              ),
+              const SizedBox(height: 18),
+              if (compact) ...<Widget>[
+                _PreviewColumn(
                   palette: palette,
                   eyebrow: '每日推荐',
                   title: '今天听这些',
@@ -51,10 +52,8 @@ class HomePage extends StatelessWidget {
                     index: index,
                   ),
                 ),
-              ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: _PreviewColumn(
+                const SizedBox(height: 16),
+                _PreviewColumn(
                   palette: palette,
                   eyebrow: '继续收听',
                   title: '最近播放',
@@ -67,11 +66,48 @@ class HomePage extends StatelessWidget {
                     index: index,
                   ),
                 ),
-              ),
+              ] else
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: <Widget>[
+                    Expanded(
+                      child: _PreviewColumn(
+                        palette: palette,
+                        eyebrow: '每日推荐',
+                        title: '今天听这些',
+                        rows: dailyRows,
+                        emptyText: '需要一些播放记录后才会生成每日推荐。',
+                        onOpen: () => controller.setPage(AppPage.daily),
+                        onPlay: (track, index) => controller.playTrack(
+                          track,
+                          queue:
+                              controller.dailyRecommendation?.rows ?? dailyRows,
+                          index: index,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: _PreviewColumn(
+                        palette: palette,
+                        eyebrow: '继续收听',
+                        title: '最近播放',
+                        rows: recentRows,
+                        emptyText: '还没有最近播放，去搜索或导入歌单开始吧。',
+                        onOpen: () => controller.setPage(AppPage.recent),
+                        onPlay: (track, index) => controller.playTrack(
+                          track,
+                          queue: controller.recentTracks,
+                          index: index,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
             ],
           ),
-        ],
-      ),
+        );
+      },
     );
   }
 }
@@ -84,6 +120,7 @@ class _Header extends StatelessWidget {
     required this.playlistCount,
     required this.recentCount,
     required this.downloadCount,
+    required this.compact,
   });
 
   final AppPalette palette;
@@ -92,6 +129,7 @@ class _Header extends StatelessWidget {
   final int playlistCount;
   final int recentCount;
   final int downloadCount;
+  final bool compact;
 
   @override
   Widget build(BuildContext context) {
@@ -102,7 +140,7 @@ class _Header extends StatelessWidget {
       crossAxisAlignment: WrapCrossAlignment.center,
       children: <Widget>[
         SizedBox(
-          width: 360,
+          width: compact ? 280 : 360,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: <Widget>[
@@ -141,8 +179,9 @@ class _Header extends StatelessWidget {
             _StatPill(label: '下载中', value: downloadCount, palette: palette),
           ],
         ),
-        Row(
-          mainAxisSize: MainAxisSize.min,
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
           children: <Widget>[
             FilledButton(
               onPressed: () => controller.setPage(AppPage.search),

@@ -3,7 +3,8 @@
 ## Unreleased
 
 - 新增 `make android-emulator` 与 `make android-run`，统一从仓库根目录 `.env.local` 加载 Android 本机代理环境并启动模拟器 / Flutter debug 会话。
-- 新增 Android 平台工程，并将启动链路拆分为桌面完整模式与移动端预览壳层，避免 Android 误初始化桌面窗口、托盘和桌面歌词逻辑。
+- 新增 Android NDK bridge 构建与 `jniLibs` 同步链路，`make android-run` 现在会先构建 `arm64-v8a` 的 Go `.so` 再启动 Flutter Android 调试会话。
+- Android 启动路径已切到真实应用壳层，播放、搜索、歌单、设置等能力通过打包进 APK 的 Go bridge 提供，同时安全屏蔽桌面窗口、托盘和桌面歌词专属逻辑。
 - 初始化 Flutter + Go FFI 版 CloudPlayer 仓库结构，并迁移旧仓库规则。
 - 复用旧 Go 后端代码，增加无 Wails 运行时下的兼容保护。
 - 新增 `bridge/` 动态库入口和 Dart FFI 调用层。

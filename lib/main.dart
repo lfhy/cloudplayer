@@ -1,27 +1,29 @@
 // Main bootstraps the Go bridge, media runtime, and desktop window host before showing the Fluent shell.
 
 import 'dart:async';
+import 'dart:io';
 
 import 'package:cloudplayer_flutter/app/app.dart';
-import 'package:cloudplayer_flutter/app/android_preview_app.dart';
 import 'package:cloudplayer_flutter/bridge/cloudplayer_api.dart';
+import 'package:cloudplayer_flutter/bridge/cloudplayer_bridge.dart';
 import 'package:cloudplayer_flutter/state/app_controller.dart';
 import 'package:cloudplayer_flutter/utils/platform_environment.dart';
 import 'package:fluent_ui/fluent_ui.dart';
 import 'package:media_kit/media_kit.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:provider/provider.dart';
 import 'package:window_manager/window_manager.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  if (isMobileHost) {
-    runApp(const AndroidPreviewApp());
-    return;
-  }
 
   MediaKit.ensureInitialized();
   if (isDesktopHost) {
     await windowManager.ensureInitialized();
+  }
+  if (Platform.isAndroid || Platform.isIOS) {
+    final supportDir = await getApplicationSupportDirectory();
+    CloudPlayerBridge.mobileConfigDirPath = supportDir.path;
   }
   final api = await CloudPlayerApi.bootstrap();
   final controller = AppController(api);

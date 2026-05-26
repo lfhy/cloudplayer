@@ -1,3 +1,5 @@
+//go:build darwin || (linux && !android) || windows
+
 package cloudplayer
 
 // macOS application menu replaces the stock Wails menus with CloudPlayer-focused entries.

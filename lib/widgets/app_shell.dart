@@ -12,10 +12,12 @@ import 'package:cloudplayer_flutter/pages/search_page.dart';
 import 'package:cloudplayer_flutter/pages/settings_page.dart';
 import 'package:cloudplayer_flutter/state/app_controller.dart';
 import 'package:cloudplayer_flutter/theme/app_theme.dart';
+import 'package:cloudplayer_flutter/utils/platform_environment.dart';
 import 'package:cloudplayer_flutter/widgets/immersive_player.dart';
 import 'package:cloudplayer_flutter/widgets/mini_player.dart';
 import 'package:cloudplayer_flutter/widgets/app_status_toast.dart';
 import 'package:cloudplayer_flutter/widgets/child_window_dialog.dart';
+import 'package:cloudplayer_flutter/widgets/mobile_page_stage.dart';
 import 'package:cloudplayer_flutter/widgets/player_dock.dart';
 import 'package:cloudplayer_flutter/widgets/sidebar_color_icon.dart';
 import 'package:cloudplayer_flutter/widgets/sidebar_account_menu.dart';
@@ -31,6 +33,7 @@ class AppShell extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final controller = context.watch<AppController>();
+    final mobileHost = isMobileHost;
     if (controller.booting) {
       return const NavigationView(content: Center(child: ProgressRing()));
     }
@@ -43,31 +46,55 @@ class AppShell extends StatelessWidget {
         child: Stack(
           children: <Widget>[
             if (!controller.miniModeOpen)
-              Row(
+              Column(
                 children: <Widget>[
-                  SizedBox(width: 216, child: _Sidebar(palette: palette)),
                   Expanded(
-                    child: Column(
+                    child: Row(
                       children: <Widget>[
-                        Expanded(
-                          child: Container(
-                            color: palette.windowBackground,
-                            padding: const EdgeInsets.fromLTRB(24, 24, 24, 18),
-                            child: Stack(
-                              children: <Widget>[
-                                Positioned.fill(
-                                  child: _pageFor(controller.currentPage),
-                                ),
-                                AppStatusToast(
-                                  palette: palette,
-                                  message: controller.statusMessage,
-                                  onDismiss: controller.clearStatus,
-                                ),
-                              ],
-                            ),
+                        if (!mobileHost)
+                          SizedBox(
+                            width: 216,
+                            child: _Sidebar(palette: palette),
                           ),
+                        Expanded(
+                          child: mobileHost
+                              ? MobilePageStage(
+                                  palette: palette,
+                                  page: _pageFor(controller.currentPage),
+                                )
+                              : Column(
+                                  children: <Widget>[
+                                    Expanded(
+                                      child: Container(
+                                        color: palette.windowBackground,
+                                        padding: const EdgeInsets.fromLTRB(
+                                          24,
+                                          24,
+                                          24,
+                                          18,
+                                        ),
+                                        child: Stack(
+                                          children: <Widget>[
+                                            Positioned.fill(
+                                              child: _pageFor(
+                                                controller.currentPage,
+                                              ),
+                                            ),
+                                            AppStatusToast(
+                                              palette: palette,
+                                              message:
+                                                  controller.statusMessage,
+                                              onDismiss:
+                                                  controller.clearStatus,
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    ),
+                                    PlayerDock(palette: palette),
+                                  ],
+                                ),
                         ),
-                        PlayerDock(palette: palette),
                       ],
                     ),
                   ),

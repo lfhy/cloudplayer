@@ -4,15 +4,18 @@
 part of 'app_controller.dart';
 
 extension AppControllerDesktopLyrics on AppController {
-  bool get desktopLyricsOpen => settings?.desktopLyricsVisible ?? false;
+  bool get desktopLyricsOpen =>
+      isDesktopHost && (settings?.desktopLyricsVisible ?? false);
 
   Future<void> bindDesktopLyrics() async {
+    if (!isDesktopHost) return;
     if (_desktopLyricsBound) return;
     _desktopLyricsBound = true;
     DesktopLyricsChannel.instance.bind(_handleDesktopLyricsEvent);
   }
 
   Future<void> toggleDesktopLyrics() async {
+    if (!isDesktopHost) return;
     final current = settings;
     if (current == null) return;
     await updateSettings(
@@ -21,6 +24,7 @@ extension AppControllerDesktopLyrics on AppController {
   }
 
   Future<void> toggleDesktopLyricsLocked() async {
+    if (!isDesktopHost) return;
     final current = settings;
     if (current == null) return;
     await _saveDesktopLyricsSettings(
@@ -30,6 +34,7 @@ extension AppControllerDesktopLyrics on AppController {
   }
 
   Future<void> resetDesktopLyricsBounds() async {
+    if (!isDesktopHost) return;
     await api.resetDesktopLyricsBounds();
     await DesktopLyricsChannel.instance.resetBounds();
     settings = await api.getSettings();
@@ -40,6 +45,7 @@ extension AppControllerDesktopLyrics on AppController {
   }
 
   Future<void> syncDesktopLyricsWindow({bool immediate = false}) async {
+    if (!isDesktopHost) return;
     await bindDesktopLyrics();
     _desktopLyricsSyncTimer?.cancel();
     if (settings == null || !desktopLyricsOpen) {
@@ -62,6 +68,7 @@ extension AppControllerDesktopLyrics on AppController {
   }
 
   Future<void> _pushDesktopLyricsState() async {
+    if (!isDesktopHost) return;
     final current = settings;
     if (current == null || !current.desktopLyricsVisible) {
       await DesktopLyricsChannel.instance.hide();
@@ -82,6 +89,7 @@ extension AppControllerDesktopLyrics on AppController {
     String method,
     Map<String, dynamic> payload,
   ) async {
+    if (!isDesktopHost) return;
     switch (method) {
       case 'closed':
         await _handleDesktopLyricsClosed();
@@ -104,6 +112,7 @@ extension AppControllerDesktopLyrics on AppController {
   }
 
   Future<void> _handleDesktopLyricsClosed() async {
+    if (!isDesktopHost) return;
     final current = settings;
     if (current == null || !current.desktopLyricsVisible) return;
     settings = current.copyWith(desktopLyricsVisible: false);
@@ -114,6 +123,7 @@ extension AppControllerDesktopLyrics on AppController {
   Future<void> _handleDesktopLyricsLockChanged(
     Map<String, dynamic> payload,
   ) async {
+    if (!isDesktopHost) return;
     final current = settings;
     if (current == null) return;
     final locked = _payloadBool(payload, 'locked', fallback: true);
@@ -127,6 +137,7 @@ extension AppControllerDesktopLyrics on AppController {
   Future<void> _handleDesktopLyricsScaleChanged(
     Map<String, dynamic> payload,
   ) async {
+    if (!isDesktopHost) return;
     final current = settings;
     if (current == null) return;
     final scale = _payloadDouble(payload, 'scale', fallback: 1).clamp(0.5, 2.5);
@@ -138,6 +149,7 @@ extension AppControllerDesktopLyrics on AppController {
   }
 
   void _handleDesktopLyricsBoundsChanged(Map<String, dynamic> payload) {
+    if (!isDesktopHost) return;
     final current = settings;
     if (current == null) return;
     final next = current.copyWith(
@@ -160,6 +172,7 @@ extension AppControllerDesktopLyrics on AppController {
     AppSettings next, {
     required bool syncWindow,
   }) async {
+    if (!isDesktopHost) return;
     settings = next;
     _notifyStateChanged();
     if (syncWindow) {
