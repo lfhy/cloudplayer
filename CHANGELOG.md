@@ -5,6 +5,13 @@
 - 新增 `make android-emulator` 与 `make android-run`，统一从仓库根目录 `.env.local` 加载 Android 本机代理环境并启动模拟器 / Flutter debug 会话。
 - 新增 Android NDK bridge 构建与 `jniLibs` 同步链路，`make android-run` 现在会先构建 `arm64-v8a` 的 Go `.so` 再启动 Flutter Android 调试会话。
 - Android 启动路径已切到真实应用壳层，播放、搜索、歌单、设置等能力通过打包进 APK 的 Go bridge 提供，同时安全屏蔽桌面窗口、托盘和桌面歌词专属逻辑。
+- Embedded Source Han Sans SC as a shared Flutter font family so Windows and macOS now render the shell with the same bundled typeface and weight mapping.
+- Windows dev/release builds now regenerate `windows/runner/resources/app_icon.ico` from the shared app icon asset, and the main shell now blends the sidebar directly into the native title-bar area instead of separating them with a hard top cut.
+- Windows title-bar theming now follows the in-app light/dark palette and applies explicit caption/text colors, so the native chrome no longer drifts away from the Flutter shell in dark mode.
+- Fixed Windows Flutter startup crashes caused by bridge-side desktop theme sync calling into a missing Wails application host.
+- Windows desktop packaging now bundles `cloudplayer_bridge.dll` with the release output and installs the Microsoft Visual C++ runtime automatically from the installer when it is missing.
+- Added a Windows one-command development script for proxy/mirror setup, bridge rebuilds, and `flutter run -d windows`.
+- Added a Windows double-click launcher that wraps the PowerShell development bootstrap script.
 - 初始化 Flutter + Go FFI 版 CloudPlayer 仓库结构，并迁移旧仓库规则。
 - 复用旧 Go 后端代码，增加无 Wails 运行时下的兼容保护。
 - 新增 `bridge/` 动态库入口和 Dart FFI 调用层。

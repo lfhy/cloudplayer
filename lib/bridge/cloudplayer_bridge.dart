@@ -56,7 +56,18 @@ class CloudPlayerBridge {
   }
 
   static CloudPlayerBridge _openBridge(String libraryPath) {
-    final library = DynamicLibrary.open(libraryPath);
+    DynamicLibrary library;
+    try {
+      library = DynamicLibrary.open(libraryPath);
+    } on ArgumentError catch (error) {
+      throw CloudPlayerBridgeException(
+        'Failed to load bridge library at $libraryPath.\n$error',
+      );
+    } on UnsupportedError catch (error) {
+      throw CloudPlayerBridgeException(
+        'Bridge library is not supported on this Windows setup.\n$error',
+      );
+    }
     final bridge = CloudPlayerBridge._(library, libraryPath);
     bridge._initializeRuntime();
     final runtimeInfo =

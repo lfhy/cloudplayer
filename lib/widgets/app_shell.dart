@@ -135,23 +135,10 @@ class _Sidebar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final controller = context.watch<AppController>();
-    final topGradient = palette.brightness == Brightness.light
-        ? const LinearGradient(
-            colors: <Color>[
-              Color(0xFFE8EAEE),
-              Color(0xFFEFF0F3),
-              Color(0xFFF7F7F7),
-            ],
-            stops: <double>[0, 0.2, 0.52],
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-          )
-        : null;
     return DecoratedBox(
       decoration: BoxDecoration(
         color: palette.windowBackground,
         border: Border(right: BorderSide(color: palette.borderColor)),
-        gradient: topGradient,
       ),
       child: Padding(
         padding: EdgeInsets.fromLTRB(8, _sidebarTopGap(), 8, 12),
@@ -294,7 +281,11 @@ class _Sidebar extends StatelessWidget {
 
   double _sidebarTopGap() {
     // Legacy Wails kept the macOS sidebar inset stable across light/dark modes.
-    return defaultTargetPlatform == TargetPlatform.macOS ? 46 : 12;
+    return switch (defaultTargetPlatform) {
+      TargetPlatform.macOS => 46,
+      TargetPlatform.windows => 8,
+      _ => 12,
+    };
   }
 }
 

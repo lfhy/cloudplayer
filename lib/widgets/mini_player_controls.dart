@@ -298,7 +298,6 @@ class _MiniTransportButton extends StatelessWidget {
           shape: WidgetStateProperty.all(
             RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(999),
-              side: BorderSide(color: palette.borderColor),
             ),
           ),
         ),
@@ -356,7 +355,6 @@ class _MiniIconButton extends StatelessWidget {
           shape: WidgetStateProperty.all(
             RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(10),
-              side: BorderSide(color: palette.borderColor),
             ),
           ),
         ),

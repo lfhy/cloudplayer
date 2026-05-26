@@ -16,12 +16,17 @@ namespace {
 #define DWMWA_USE_IMMERSIVE_DARK_MODE 20
 #endif
 
+#ifndef DWMWA_CAPTION_COLOR
+#define DWMWA_CAPTION_COLOR 35
+#endif
+
+#ifndef DWMWA_TEXT_COLOR
+#define DWMWA_TEXT_COLOR 36
+#endif
+
 constexpr const wchar_t kWindowClassName[] = L"FLUTTER_RUNNER_WIN32_WINDOW";
 
-/// Registry key for app theme preference.
-///
-/// A value of 0 indicates apps should use dark mode. A non-zero or missing
-/// value indicates apps should use light mode.
+/// Registry key for the Windows app theme preference.
 constexpr const wchar_t kGetPreferredBrightnessRegKey[] =
   L"Software\\Microsoft\\Windows\\CurrentVersion\\Themes\\Personalize";
 constexpr const wchar_t kGetPreferredBrightnessRegValue[] = L"AppsUseLightTheme";
@@ -144,7 +149,7 @@ bool Win32Window::Create(const std::wstring& title,
     return false;
   }
 
-  UpdateTheme(window);
+  UpdateTheme();
 
   return OnCreate();
 }
@@ -214,7 +219,7 @@ Win32Window::MessageHandler(HWND hwnd,
       return 0;
 
     case WM_DWMCOLORIZATIONCOLORCHANGED:
-      UpdateTheme(hwnd);
+      UpdateTheme();
       return 0;
   }
 
@@ -263,6 +268,27 @@ void Win32Window::SetQuitOnClose(bool quit_on_close) {
   quit_on_close_ = quit_on_close;
 }
 
+void Win32Window::SetFrameDarkMode(bool enable_dark_mode) {
+  frame_dark_mode_override_ = enable_dark_mode;
+  UpdateTheme();
+}
+
+void Win32Window::SetCaptionColor(COLORREF color) {
+  if (!window_handle_) {
+    return;
+  }
+  DwmSetWindowAttribute(window_handle_, DWMWA_CAPTION_COLOR, &color,
+                        sizeof(color));
+}
+
+void Win32Window::SetTextColor(COLORREF color) {
+  if (!window_handle_) {
+    return;
+  }
+  DwmSetWindowAttribute(window_handle_, DWMWA_TEXT_COLOR, &color,
+                        sizeof(color));
+}
+
 bool Win32Window::OnCreate() {
   // No-op; provided for subclasses.
   return true;
@@ -272,7 +298,17 @@ void Win32Window::OnDestroy() {
   // No-op; provided for subclasses.
 }
 
-void Win32Window::UpdateTheme(HWND const window) {
+void Win32Window::UpdateTheme() {
+  if (!window_handle_) {
+    return;
+  }
+  const BOOL enable_dark_mode =
+      frame_dark_mode_override_.value_or(SystemPrefersDarkMode());
+  DwmSetWindowAttribute(window_handle_, DWMWA_USE_IMMERSIVE_DARK_MODE,
+                        &enable_dark_mode, sizeof(enable_dark_mode));
+}
+
+bool Win32Window::SystemPrefersDarkMode() {
   DWORD light_mode;
   DWORD light_mode_size = sizeof(light_mode);
   LSTATUS result = RegGetValue(HKEY_CURRENT_USER, kGetPreferredBrightnessRegKey,
@@ -281,8 +317,7 @@ void Win32Window::UpdateTheme(HWND const window) {
                                &light_mode_size);
 
   if (result == ERROR_SUCCESS) {
-    BOOL enable_dark_mode = light_mode == 0;
-    DwmSetWindowAttribute(window, DWMWA_USE_IMMERSIVE_DARK_MODE,
-                          &enable_dark_mode, sizeof(enable_dark_mode));
+    return light_mode == 0;
   }
+  return false;
 }

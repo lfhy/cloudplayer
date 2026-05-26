@@ -4,6 +4,7 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:cloudplayer_flutter/services/macos_tray_channel.dart';
+import 'package:cloudplayer_flutter/services/windows_window_theme_channel.dart';
 import 'package:cloudplayer_flutter/state/app_controller.dart';
 import 'package:cloudplayer_flutter/theme/app_theme.dart';
 import 'package:cloudplayer_flutter/utils/platform_environment.dart';
@@ -22,6 +23,7 @@ class CloudPlayerApp extends StatefulWidget {
 
 class _CloudPlayerAppState extends State<CloudPlayerApp> with WindowListener {
   bool _handlingClose = false;
+  Brightness? _lastNativeWindowBrightness;
   final GlobalKey<NavigatorState> _rootNavigatorKey =
       GlobalKey<NavigatorState>();
 
@@ -113,6 +115,7 @@ class _CloudPlayerAppState extends State<CloudPlayerApp> with WindowListener {
     return Consumer<AppController>(
       builder: (context, controller, _) {
         final palette = paletteForSettings(controller.settings);
+        _syncNativeWindowTheme(palette);
         return FluentApp(
           title: 'CloudPlayer',
           debugShowCheckedModeBanner: false,
@@ -121,6 +124,21 @@ class _CloudPlayerAppState extends State<CloudPlayerApp> with WindowListener {
           home: AppShell(palette: palette),
         );
       },
+    );
+  }
+
+  void _syncNativeWindowTheme(AppPalette palette) {
+    if (_lastNativeWindowBrightness == palette.brightness) {
+      // Keep pushing if colors changed within the same brightness mode.
+    } else {
+      _lastNativeWindowBrightness = palette.brightness;
+    }
+    unawaited(
+      WindowsWindowThemeChannel.instance.sync(
+        darkMode: palette.brightness == Brightness.dark,
+        captionColor: palette.windowBackground.toARGB32(),
+        textColor: palette.strongForeground.toARGB32(),
+      ),
     );
   }
 }

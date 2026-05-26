@@ -81,7 +81,11 @@ func syncDesktopWindowTheme(window application.Window, mode string) {
 }
 
 func SyncDesktopWindowThemes(mode string) {
-	for _, window := range application.Get().Window.GetAll() {
+	app := application.Get()
+	if app == nil {
+		return
+	}
+	for _, window := range app.Window.GetAll() {
 		if window == nil || !isThemedDesktopWindowLabel(window.Name()) {
 			continue
 		}

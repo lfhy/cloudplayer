@@ -3,7 +3,9 @@ param(
   [Parameter(Mandatory = $true)][string]$SourceDir,
   [Parameter(Mandatory = $true)][string]$OutputDir,
   [Parameter(Mandatory = $true)][string]$Version,
-  [Parameter(Mandatory = $true)][ValidateSet('amd64', 'arm64')][string]$Arch
+  [Parameter(Mandatory = $true)][ValidateSet('amd64', 'arm64')][string]$Arch,
+  [Parameter(Mandatory = $true)][string]$VcRedistPath,
+  [Parameter(Mandatory = $true)][string]$VcRedistFileName
 )
 
 $ErrorActionPreference = 'Stop'
@@ -18,7 +20,9 @@ function Resolve-IsccPath {
     'C:\Program Files (x86)\Inno Setup 7\ISCC.exe',
     'C:\Program Files (x86)\Inno Setup 6\ISCC.exe',
     'C:\Program Files\Inno Setup 7\ISCC.exe',
-    'C:\Program Files\Inno Setup 6\ISCC.exe'
+    'C:\Program Files\Inno Setup 6\ISCC.exe',
+    (Join-Path $env:LOCALAPPDATA 'Programs\Inno Setup 7\ISCC.exe'),
+    (Join-Path $env:LOCALAPPDATA 'Programs\Inno Setup 6\ISCC.exe')
   )
 
   foreach ($candidate in $candidates) {
@@ -32,6 +36,7 @@ function Resolve-IsccPath {
 
 $sourceDirPath = (Resolve-Path -LiteralPath $SourceDir).Path
 $outputDirPath = (Resolve-Path -LiteralPath $OutputDir).Path
+$vcRedistPathResolved = (Resolve-Path -LiteralPath $VcRedistPath).Path
 $scriptRoot = Split-Path -Parent $MyInvocation.MyCommand.Path
 $issPath = Join-Path $scriptRoot '..\windows\installer\CloudPlayer.iss'
 $issPath = (Resolve-Path -LiteralPath $issPath).Path
@@ -65,4 +70,6 @@ $outputBaseName = "cloudplayer-windows-$($archConfig.Display)-installer"
   "/DArchSlug=$($archConfig.Display)" `
   "/DArchitecturesAllowed=$($archConfig.Allowed)" `
   "/DArchitecturesInstallIn64BitMode=$($archConfig.InstallMode)" `
+  "/DVcRedistPath=$vcRedistPathResolved" `
+  "/DVcRedistFileName=$VcRedistFileName" `
   $issPath

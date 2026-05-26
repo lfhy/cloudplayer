@@ -31,14 +31,18 @@ Future<void> main() async {
 
   if (isDesktopHost) {
     await windowManager.waitUntilReadyToShow(
-      const WindowOptions(
+      WindowOptions(
         size: Size(1100, 700),
         minimumSize: Size(1000, 680),
         center: true,
         title: 'CloudPlayer',
         backgroundColor: Color(0x00000000),
-        titleBarStyle: TitleBarStyle.hidden,
-        windowButtonVisibility: true,
+        // Windows should keep the native title bar so the system close button
+        // remains available during Flutter desktop development and release runs.
+        titleBarStyle: Platform.isWindows
+            ? TitleBarStyle.normal
+            : TitleBarStyle.hidden,
+        windowButtonVisibility: !Platform.isWindows,
       ),
       () async {
         await windowManager.show();

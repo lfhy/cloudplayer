@@ -13,6 +13,8 @@ VERSION=""
 BUILD_NUMBER="1"
 OUTPUT_DIR="$ROOT_DIR/dist/release"
 MACOS_BRIDGE_OUTPUT=""
+WINDOWS_VC_REDIST_X64_URL="${WINDOWS_VC_REDIST_X64_URL:-https://aka.ms/vs/17/release/vc_redist.x64.exe}"
+WINDOWS_VC_REDIST_ARM64_URL="${WINDOWS_VC_REDIST_ARM64_URL:-https://aka.ms/vs/17/release/vc_redist.arm64.exe}"
 
 usage() {
   cat <<'EOF'
@@ -100,6 +102,47 @@ resolve_windows_release_dir() {
   fail "Windows release directory not found. Checked: ${candidates[*]}"
 }
 
+download_windows_file() {
+  local url="$1"
+  local output_path="$2"
+  local output_dir output_path_win
+
+  require_cmd powershell.exe
+  output_dir="$(dirname "$output_path")"
+  mkdir -p "$output_dir"
+
+  if [[ -s "$output_path" ]]; then
+    return
+  fi
+
+  output_path_win="$(to_windows_path "$output_path")"
+  powershell.exe -NoProfile -ExecutionPolicy Bypass -Command "
+    \$ErrorActionPreference = 'Stop'
+    \$ProgressPreference = 'SilentlyContinue'
+    \$url = '$url'
+    \$output = '$output_path_win'
+    \$parent = Split-Path -Parent \$output
+    if (-not (Test-Path -LiteralPath \$parent)) {
+      New-Item -ItemType Directory -Path \$parent | Out-Null
+    }
+    \$attempt = 0
+    while (\$true) {
+      try {
+        Invoke-WebRequest -Uri \$url -OutFile \$output
+        break
+      } catch {
+        \$attempt += 1
+        if (\$attempt -ge 5) {
+          throw
+        }
+        Start-Sleep -Seconds (2 * \$attempt)
+      }
+    }
+  " >/dev/null
+
+  [[ -s "$output_path" ]] || fail "Failed to download Windows prerequisite: $url"
+}
+
 build_windows() {
   local arch_label="$1"
   require_cmd flutter
@@ -144,9 +187,27 @@ build_windows() {
 
   release_dir="$(resolve_windows_release_dir "$arch_label")"
   local bridge_dll="$ROOT_DIR/bin/bridge/cloudplayer_bridge.dll"
+  local vc_redist_url=""
+  local vc_redist_file_name=""
+  local vc_redist_path=""
   [[ -d "$release_dir" ]] || fail "Windows release directory not found: $release_dir"
   [[ -f "$bridge_dll" ]] || fail "Windows bridge was not built: $bridge_dll"
   cp "$bridge_dll" "$release_dir/cloudplayer_bridge.dll"
+
+  case "$arch_label" in
+    amd64)
+      vc_redist_url="$WINDOWS_VC_REDIST_X64_URL"
+      vc_redist_file_name="vc_redist.x64.exe"
+      ;;
+    arm64)
+      vc_redist_url="$WINDOWS_VC_REDIST_ARM64_URL"
+      vc_redist_file_name="vc_redist.arm64.exe"
+      ;;
+    *)
+      fail "Unsupported Windows arch: $arch_label"
+      ;;
+  esac
+  vc_redist_path="$ROOT_DIR/bin/prerequisites/$vc_redist_file_name"
 
   local release_dir_win archive_path_win
   release_dir_win="$(to_windows_path "$release_dir")"
@@ -155,12 +216,18 @@ build_windows() {
     "if (Test-Path '$archive_path_win') { Remove-Item '$archive_path_win' -Force }; Compress-Archive -Path '$release_dir_win\\*' -DestinationPath '$archive_path_win' -Force" >/dev/null
   [[ -f "$archive_path" ]] || fail "Windows archive was not created: $archive_path"
 
+  # Bundle the VC++ redistributable with the installer so end users do not
+  # have to discover and install the runtime manually.
+  download_windows_file "$vc_redist_url" "$vc_redist_path"
+
   powershell.exe -NoProfile -ExecutionPolicy Bypass \
     -File "$(to_windows_path "$ROOT_DIR/scripts/build_windows_installer.ps1")" \
     -SourceDir "$release_dir_win" \
     -OutputDir "$(to_windows_path "$OUTPUT_DIR")" \
     -Version "$VERSION" \
-    -Arch "$arch_label" >/dev/null
+    -Arch "$arch_label" \
+    -VcRedistPath "$(to_windows_path "$vc_redist_path")" \
+    -VcRedistFileName "$vc_redist_file_name" >/dev/null
   [[ -f "$installer_path" ]] || fail "Windows installer was not created: $installer_path"
 }
 

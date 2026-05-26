@@ -33,10 +33,20 @@ migrate_working_dir/
 .pub/
 /build/
 /coverage/
+/dist/
+/frontend/bindings/
+/frontend/dist/
+/frontend/node_modules/
+/.task/
 /bin/bridge/*.dylib
 /bin/bridge/*.dll
 /bin/bridge/*.so
 /bin/bridge/*.h
+/bin/*.exe
+/bin/*.log
+/bin/*.pid
+/bin/prerequisites/
+/bin/releases-test/
 
 # Symbolication related
 app.*.symbols

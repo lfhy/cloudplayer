@@ -83,9 +83,6 @@ class DockChipButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final borderColor = iconOnly
-        ? Colors.transparent
-        : palette.borderColor.withValues(alpha: 0.82);
     final foreground = active
         ? palette.accent.normal
         : palette.strongForeground;
@@ -123,7 +120,6 @@ class DockChipButton extends StatelessWidget {
           shape: WidgetStateProperty.all(
             RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(8),
-              side: BorderSide(color: borderColor),
             ),
           ),
         ),
@@ -173,11 +169,6 @@ class DockTransportButton extends StatelessWidget {
           shape: WidgetStateProperty.all(
             RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(999),
-              side: BorderSide(
-                color: main
-                    ? palette.accent.normal.withValues(alpha: 0.35)
-                    : palette.borderColor,
-              ),
             ),
           ),
         ),
@@ -222,9 +213,6 @@ class DockModeButton extends StatelessWidget {
           shape: WidgetStateProperty.all(
             RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(8),
-              side: BorderSide(
-                color: palette.borderColor.withValues(alpha: 0.7),
-              ),
             ),
           ),
         ),
