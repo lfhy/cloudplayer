@@ -58,18 +58,17 @@ class _MiniPlayerState extends State<MiniPlayer> {
           },
           child: Focus(
             autofocus: true,
-            child: DecoratedBox(
-              decoration: BoxDecoration(gradient: _backgroundGradient()),
-              child: SafeArea(
-                top: false,
-                bottom: false,
-                child: Padding(
-                  padding: EdgeInsets.fromLTRB(
-                    16,
-                    defaultTargetPlatform == TargetPlatform.macOS ? 38 : 14,
-                    16,
-                    16,
-                  ),
+              child: DecoratedBox(
+                decoration: BoxDecoration(gradient: _backgroundGradient()),
+                child: SafeArea(
+                  bottom: false,
+                  child: Padding(
+                    padding: EdgeInsets.fromLTRB(
+                      16,
+                      defaultTargetPlatform == TargetPlatform.macOS ? 38 : 8,
+                      16,
+                      16,
+                    ),
                   child: Column(
                     children: <Widget>[
                       _miniHeader(controller, track),

@@ -4,32 +4,64 @@
 part of 'app_controller.dart';
 
 extension AppControllerLyrics on AppController {
-  Future<void> toggleImmersive() async {
+  Future<void> toggleImmersive({bool? showLyrics}) async {
     if (immersiveOpen) {
       closeImmersive();
       return;
     }
-    await openImmersive();
+    await openImmersive(showLyrics: showLyrics);
   }
 
-  Future<void> openImmersive() async {
+  Future<void> openImmersive({bool? showLyrics}) async {
     if (miniModeOpen) {
       await setMiniMode(false);
     }
+    final nextShowLyrics = showLyrics ?? !isMobileHost;
     if (immersiveOpen) {
+      if (immersiveLyricsVisible != nextShowLyrics) {
+        immersiveLyricsVisible = nextShowLyrics;
+        _notifyStateChanged();
+      }
+      if (immersiveLyricsVisible) {
+        await ensureLyricsForCurrentTrack(
+          force: lyricsPayload == null && lyricsEntries.isEmpty,
+        );
+      }
       return;
     }
+    immersiveLyricsVisible = nextShowLyrics;
     immersiveOpen = true;
     _notifyStateChanged();
-    await ensureLyricsForCurrentTrack(
-      force: lyricsPayload == null && lyricsEntries.isEmpty,
+    if (immersiveLyricsVisible) {
+      await ensureLyricsForCurrentTrack(
+        force: lyricsPayload == null && lyricsEntries.isEmpty,
+      );
+      return;
+    }
+    unawaited(
+      ensureLyricsForCurrentTrack(
+        force: lyricsPayload == null && lyricsEntries.isEmpty,
+      ),
     );
   }
 
   void closeImmersive() {
     if (!immersiveOpen) return;
     immersiveOpen = false;
+    immersiveLyricsVisible = false;
     _notifyStateChanged();
+  }
+
+  Future<void> toggleImmersiveLyricsView() async {
+    if (!immersiveOpen || !isMobileHost) return;
+    immersiveLyricsVisible = !immersiveLyricsVisible;
+    _notifyStateChanged();
+    if (!immersiveLyricsVisible) {
+      return;
+    }
+    await ensureLyricsForCurrentTrack(
+      force: lyricsPayload == null && lyricsEntries.isEmpty,
+    );
   }
 
   Future<void> ensureLyricsForCurrentTrack({bool force = false}) async {

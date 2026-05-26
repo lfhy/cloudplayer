@@ -59,6 +59,7 @@ class AppController extends ChangeNotifier {
   int playIndex = -1;
   bool isPlaying = false;
   bool immersiveOpen = false;
+  bool immersiveLyricsVisible = false;
   bool lyricsBusy = false;
   Duration position = Duration.zero;
   Duration duration = Duration.zero;

@@ -256,78 +256,52 @@ class _SearchPageState extends State<SearchPage> {
         ),
         const SizedBox(height: 16),
         Expanded(
-          child: AnimatedSwitcher(
-            duration: const Duration(milliseconds: 220),
-            switchInCurve: const Cubic(0.22, 1, 0.36, 1),
-            switchOutCurve: Curves.easeOut,
-            transitionBuilder: (child, animation) {
-              return FadeTransition(
-                opacity: animation,
-                child: SlideTransition(
-                  position: Tween<Offset>(
-                    begin: const Offset(0, 0.04),
-                    end: Offset.zero,
-                  ).animate(animation),
-                  child: child,
-                ),
-              );
-            },
-            child: loading
-                ? SearchResultsLoadingPanel(
-                    key: ValueKey<String>('loading-${app.searchScope.name}'),
-                    palette: widget.palette,
-                    showTableHeader: app.searchScope == SearchScope.catalog,
-                  )
-                : app.searchScope == SearchScope.playlists
-                ? PlaylistSearchResults(
-                    key: const ValueKey<String>('playlist-results'),
-                    palette: widget.palette,
-                    playlists: playlistMatches,
-                  )
-                : Column(
-                    key: const ValueKey<String>('catalog-results'),
-                    children: <Widget>[
-                      Expanded(
-                        child: TrackListView(
-                          tracks: results,
-                          palette: widget.palette,
-                          favoriteIds: app.favoriteIds,
-                          onPlay: (track, index) => app.playTrack(
-                            track,
-                            queue: results,
-                            index: index,
-                          ),
-                          onToggleFavorite: app.toggleFavorite,
-                          onDownload: app.enqueueDownload,
-                          currentTrack: app.currentTrack,
-                          currentTrackPlaying: app.isPlaying,
-                          showIndex: true,
-                          showFavoriteAction: false,
-                          showDownloadAction: false,
-                          onArtistSearch: (keyword) =>
-                              app.triggerTrackSearch(keyword),
-                          onAlbumSearch: (keyword) =>
-                              app.triggerTrackSearch(keyword),
-                          emptyText: '输入关键词后开始搜索。',
-                        ),
+          child: loading
+              ? SearchResultsLoadingPanel(palette: widget.palette)
+              : app.searchScope == SearchScope.playlists
+              ? PlaylistSearchResults(
+                  palette: widget.palette,
+                  playlists: playlistMatches,
+                )
+              : Column(
+                  children: <Widget>[
+                    Expanded(
+                      child: TrackListView(
+                        tracks: results,
+                        palette: widget.palette,
+                        favoriteIds: app.favoriteIds,
+                        onPlay: (track, index) =>
+                            app.playTrack(track, queue: results, index: index),
+                        onToggleFavorite: app.toggleFavorite,
+                        onDownload: app.enqueueDownload,
+                        currentTrack: app.currentTrack,
+                        currentTrackPlaying: app.isPlaying,
+                        showIndex: true,
+                        showFavoriteAction: false,
+                        showDownloadAction: false,
+                        onArtistSearch: (keyword) =>
+                            app.triggerTrackSearch(keyword),
+                        onAlbumSearch: (keyword) =>
+                            app.triggerTrackSearch(keyword),
+                        emptyText: '输入关键词后开始搜索。',
                       ),
-                      if (results.isNotEmpty)
-                        Padding(
-                          padding: const EdgeInsets.only(top: 10),
-                          child: Align(
-                            alignment: Alignment.centerRight,
-                            child: Text(
-                              _catalogStatusText(app.searchResponse),
-                              style: TextStyle(
-                                fontSize: 12,
-                                color: widget.palette.mutedForeground,
-                              ),
+                    ),
+                    if (results.isNotEmpty)
+                      Padding(
+                        padding: const EdgeInsets.only(top: 10),
+                        child: Align(
+                          alignment: Alignment.centerRight,
+                          child: Text(
+                            _catalogStatusText(app.searchResponse),
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: widget.palette.mutedForeground,
                             ),
                           ),
                         ),
-                    ],
-                  ),
-          ),
+                      ),
+                  ],
+                ),
         ),
       ],
     );

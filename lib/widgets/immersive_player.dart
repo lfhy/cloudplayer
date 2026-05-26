@@ -1,8 +1,5 @@
-// In-window immersive mode overlays the main shell with large artwork, shared
-// transport controls, and synced lyrics from the bridge-backed lyric cache.
-
+// In-window immersive mode overlays the main shell with large artwork, shared transport controls, and synced lyrics from the bridge-backed lyric cache.
 import 'dart:ui';
-
 import 'package:cloudplayer_flutter/models/app_models.dart';
 import 'package:cloudplayer_flutter/state/app_controller.dart';
 import 'package:cloudplayer_flutter/theme/app_theme.dart';
@@ -13,7 +10,6 @@ import 'package:cloudplayer_flutter/widgets/track_artwork.dart';
 import 'package:fluent_ui/fluent_ui.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
-
 class ImmersivePlayer extends StatefulWidget {
   const ImmersivePlayer({super.key, required this.palette});
 
@@ -22,7 +18,6 @@ class ImmersivePlayer extends StatefulWidget {
   @override
   State<ImmersivePlayer> createState() => _ImmersivePlayerState();
 }
-
 class _ImmersivePlayerState extends State<ImmersivePlayer> {
   bool _draggingSeek = false;
   double _seekPreviewMs = 0;
@@ -112,9 +107,9 @@ class _ImmersivePlayerState extends State<ImmersivePlayer> {
                     child: Padding(
                       padding: EdgeInsets.fromLTRB(
                         isMobileHost ? 18 : 64,
-                        isMobileHost ? 60 : 48,
+                        isMobileHost ? 28 : 48,
                         isMobileHost ? 18 : 64,
-                        isMobileHost ? 18 : 40,
+                        isMobileHost ? 12 : 40,
                       ),
                       child: LayoutBuilder(
                         builder: (context, constraints) => _buildLayout(
@@ -122,7 +117,9 @@ class _ImmersivePlayerState extends State<ImmersivePlayer> {
                           track: track,
                           currentMs: currentMs,
                           totalMs: totalMs,
-                          compact: constraints.maxWidth < _compactWidthThreshold,
+                          compact:
+                              constraints.maxWidth < _compactWidthThreshold ||
+                              (isMobileHost && constraints.maxHeight < 740),
                         ),
                       ),
                     ),
@@ -158,6 +155,7 @@ class _ImmersivePlayerState extends State<ImmersivePlayer> {
     required double totalMs,
     required bool compact,
   }) {
+    final showLyrics = !isMobileHost || controller.immersiveLyricsVisible;
     final metaPanel = _MetaPanel(
       palette: widget.palette,
       track: track,
@@ -165,6 +163,10 @@ class _ImmersivePlayerState extends State<ImmersivePlayer> {
       currentMs: currentMs,
       totalMs: totalMs,
       compact: compact,
+      showLyricsHint: isMobileHost && !showLyrics,
+      onArtworkPressed: controller.currentTrack == null || !isMobileHost
+          ? null
+          : () { controller.toggleImmersiveLyricsView(); },
       onPlayPause: controller.currentTrack == null
           ? null
           : controller.togglePlayPause,
@@ -196,10 +198,18 @@ class _ImmersivePlayerState extends State<ImmersivePlayer> {
       isPlaying: controller.isPlaying,
     );
     if (compact) {
+      if (!showLyrics) {
+        return Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 320),
+            child: metaPanel,
+          ),
+        );
+      }
       return Column(
         children: <Widget>[
           metaPanel,
-          const SizedBox(height: 18),
+          const SizedBox(height: 12),
           Expanded(child: lyricsPanel),
         ],
       );
@@ -222,6 +232,8 @@ class _MetaPanel extends StatelessWidget {
     required this.currentMs,
     required this.totalMs,
     required this.compact,
+    required this.showLyricsHint,
+    required this.onArtworkPressed,
     required this.onPlayPause,
     required this.onPrevious,
     required this.onNext,
@@ -236,6 +248,8 @@ class _MetaPanel extends StatelessWidget {
   final double currentMs;
   final double totalMs;
   final bool compact;
+  final bool showLyricsHint;
+  final VoidCallback? onArtworkPressed;
   final Future<void> Function()? onPlayPause;
   final Future<void> Function()? onPrevious;
   final Future<void> Function()? onNext;
@@ -245,6 +259,7 @@ class _MetaPanel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final dense = compact && MediaQuery.sizeOf(context).height < 760;
     return PlaybackPresence(
       playing: isPlaying,
       pausedOpacity: 0.8,
@@ -256,21 +271,30 @@ class _MetaPanel extends StatelessWidget {
             ? MainAxisAlignment.start
             : MainAxisAlignment.center,
         children: <Widget>[
-          TrackArtwork(
-            track: track,
-            palette: palette,
-            size: compact ? 156 : 240,
-            radius: compact ? 20 : 24,
-            iconSize: compact ? 48 : 76,
+          Button(
+            onPressed: onArtworkPressed,
+            style: ButtonStyle(
+              padding: WidgetStateProperty.all(EdgeInsets.zero),
+              backgroundColor: const WidgetStatePropertyAll<Color>(
+                Colors.transparent,
+              ),
+            ),
+            child: TrackArtwork(
+              track: track,
+              palette: palette,
+              size: dense ? 124 : compact ? 148 : 240,
+              radius: dense ? 18 : compact ? 20 : 24,
+              iconSize: dense ? 40 : compact ? 44 : 76,
+            ),
           ),
-          SizedBox(height: compact ? 18 : 24),
+          SizedBox(height: dense ? 14 : compact ? 18 : 24),
           Text(
             track?.title ?? '未播放',
             textAlign: TextAlign.center,
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
             style: TextStyle(
-              fontSize: compact ? 18 : 22,
+              fontSize: dense ? 16 : compact ? 18 : 22,
               height: 1.25,
               fontWeight: FontWeight.w700,
               color: Colors.white,
@@ -285,24 +309,26 @@ class _MetaPanel extends StatelessWidget {
                 : track!.artist,
             textAlign: TextAlign.center,
             style: TextStyle(
-              fontSize: compact ? 13 : 14,
+              fontSize: dense ? 12 : compact ? 13 : 14,
               color: Colors.white.withValues(alpha: 0.78),
             ),
           ),
-          const SizedBox(height: 4),
+          SizedBox(height: dense ? 2 : 4),
           Text(
-            track == null
+            showLyricsHint
+                ? '点击封面查看歌词'
+                : track == null
                 ? '在这里查看歌词沉浸模式'
                 : track!.album.trim().isEmpty
                 ? (track!.localPath.trim().isEmpty ? '正在聆听' : '本地音乐')
                 : track!.album,
             textAlign: TextAlign.center,
             style: TextStyle(
-              fontSize: compact ? 11 : 12,
+              fontSize: dense ? 10 : compact ? 11 : 12,
               color: Colors.white.withValues(alpha: 0.52),
             ),
           ),
-          SizedBox(height: compact ? 20 : 28),
+          SizedBox(height: dense ? 16 : compact ? 20 : 28),
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: <Widget>[
@@ -310,7 +336,7 @@ class _MetaPanel extends StatelessWidget {
                 icon: FluentIcons.previous,
                 onPressed: onPrevious == null ? null : () => onPrevious!.call(),
               ),
-              const SizedBox(width: 20),
+              SizedBox(width: dense ? 14 : 20),
               _ImmersiveTransportButton(
                 icon: isPlaying ? FluentIcons.pause : FluentIcons.play,
                 onPressed: onPlayPause == null
@@ -318,14 +344,14 @@ class _MetaPanel extends StatelessWidget {
                     : () => onPlayPause!.call(),
                 main: true,
               ),
-              const SizedBox(width: 20),
+              SizedBox(width: dense ? 14 : 20),
               _ImmersiveTransportButton(
                 icon: FluentIcons.next,
                 onPressed: onNext == null ? null : () => onNext!.call(),
               ),
             ],
           ),
-          SizedBox(height: compact ? 18 : 26),
+          SizedBox(height: dense ? 14 : compact ? 18 : 26),
           Row(
             children: <Widget>[
               SizedBox(

@@ -67,7 +67,9 @@ class MobilePlayerDockLayout extends StatelessWidget {
                     width: 42,
                     height: 42,
                     child: Button(
-                      onPressed: () => unawaited(controller.toggleMiniMode()),
+                      onPressed: controller.currentTrack == null
+                          ? null
+                          : () => unawaited(controller.openImmersive()),
                       style: ButtonStyle(
                         padding: WidgetStateProperty.all(EdgeInsets.zero),
                         backgroundColor: const WidgetStatePropertyAll<Color>(
