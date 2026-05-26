@@ -95,6 +95,7 @@ DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer flutter run -d macos
 QQ群：`572532027`
 ## Windows Packaging Notes
 
+- The Flutter desktop shell now embeds `SourceHanSansSC` from `assets/fonts/` so Windows and macOS share the same bundled UI typeface instead of relying on different system fonts.
 - Windows runner icon generation is now standardized on the shared app icon asset. Run `powershell -ExecutionPolicy Bypass -File .\scripts\generate_windows_icon.ps1` after replacing the app icon source if you need to refresh `windows/runner/resources/app_icon.ico`.
 - The Windows desktop shell intentionally keeps the native title bar in dev and release builds, and the sidebar now blends directly into the title-bar transition area with a transparent gradient instead of introducing a separate hard divider.
 - Windows installers now bundle the Microsoft Visual C++ runtime and install it automatically when the target machine is missing it.

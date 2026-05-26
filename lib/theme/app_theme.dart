@@ -65,7 +65,7 @@ FluentThemeData buildThemeData(AppSettings? settings) {
   return FluentThemeData(
     brightness: palette.brightness,
     accentColor: palette.accent,
-    fontFamily: 'PingFang SC',
+    fontFamily: 'SourceHanSansSC',
     visualDensity: VisualDensity.standard,
     scaffoldBackgroundColor: palette.windowBackground,
     cardColor: palette.cardBackground,

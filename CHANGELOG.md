@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Embedded Source Han Sans SC as a shared Flutter font family so Windows and macOS now render the shell with the same bundled typeface and weight mapping.
 - Windows dev/release builds now regenerate `windows/runner/resources/app_icon.ico` from the shared app icon asset, and the main shell now blends the sidebar directly into the native title-bar area instead of separating them with a hard top cut.
 - Windows title-bar theming now follows the in-app light/dark palette and applies explicit caption/text colors, so the native chrome no longer drifts away from the Flutter shell in dark mode.
 - Fixed Windows Flutter startup crashes caused by bridge-side desktop theme sync calling into a missing Wails application host.
