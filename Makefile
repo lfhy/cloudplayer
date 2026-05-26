@@ -14,6 +14,7 @@ ANDROID_BRIDGE_OUT := $(ANDROID_BRIDGE_DIR)/libcloudplayer_bridge.so
 ANDROID_JNILIBS_DIR := $(ANDROID_BRIDGE_DIR)/jniLibs/arm64-v8a
 ANDROID_JNILIBS_OUT := $(ANDROID_JNILIBS_DIR)/libcloudplayer_bridge.so
 ANDROID_NDK_VERSION ?= 28.2.13676358
+ANDROID_NDK_HOST_TAG ?= $(shell sh -c 'case "$$(uname -s)" in Darwin) echo darwin-x86_64 ;; Linux) echo linux-x86_64 ;; MINGW*|MSYS*|CYGWIN*) echo windows-x86_64 ;; *) echo unsupported ;; esac')
 BRIDGE_MIN_VERSION_FLAG := -mmacosx-version-min=$(MACOSX_DEPLOYMENT_TARGET)
 BRIDGE_SDKROOT := $(shell DEVELOPER_DIR=$(DEVELOPER_DIR) xcrun --sdk macosx --show-sdk-path)
 BRIDGE_CGO_CFLAGS := $(BRIDGE_MIN_VERSION_FLAG)
@@ -61,7 +62,8 @@ bridge-universal: bridge-arm64 bridge-amd64
 android-bridge:
 	@mkdir -p $(ANDROID_BRIDGE_DIR)
 	zsh -lc '$(LOCAL_ENV_ZSH); \
-		ndk_bin="$$ANDROID_HOME/ndk/$(ANDROID_NDK_VERSION)/toolchains/llvm/prebuilt/darwin-x86_64/bin"; \
+		ndk_bin="$$ANDROID_HOME/ndk/$(ANDROID_NDK_VERSION)/toolchains/llvm/prebuilt/$(ANDROID_NDK_HOST_TAG)/bin"; \
+		test -d "$$ndk_bin" || { echo "Missing Android NDK toolchain: $$ndk_bin" >&2; exit 1; }; \
 		env CGO_ENABLED=1 GOOS=android GOARCH=arm64 \
 		CC="$$ndk_bin/aarch64-linux-android24-clang" \
 		CXX="$$ndk_bin/aarch64-linux-android24-clang++" \

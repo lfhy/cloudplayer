@@ -255,10 +255,11 @@ class _ImmersiveLyricLine extends StatelessWidget {
           : FontWeight.w500,
       color: _textColor(),
     );
-    final child = Text(
-      text.isEmpty ? ' ' : text,
-      textAlign: TextAlign.center,
+    final child = _VisualLyricText(
+      text: text,
       style: baseStyle,
+      state: state,
+      progress: progress,
     );
     if (state != _LyricVisualState.active) {
       return PlaybackPresence(
@@ -277,30 +278,7 @@ class _ImmersiveLyricLine extends StatelessWidget {
       pausedScale: 1,
       pausedOffset: const Offset(0, 0.01),
       duration: const Duration(milliseconds: 320),
-      child: ShaderMask(
-        blendMode: BlendMode.srcIn,
-        shaderCallback: (bounds) => LinearGradient(
-          begin: Alignment.centerLeft,
-          end: Alignment.centerRight,
-          colors: <Color>[
-            Colors.white,
-            Colors.white,
-            Colors.white.withValues(alpha: 0.24),
-            Colors.white.withValues(alpha: 0.24),
-          ],
-          stops: <double>[
-            0,
-            progress.clamp(0.0, 1.0),
-            progress.clamp(0.0, 1.0),
-            1,
-          ],
-        ).createShader(bounds),
-        child: Text(
-          text.isEmpty ? ' ' : text,
-          textAlign: TextAlign.center,
-          style: baseStyle.copyWith(color: Colors.white),
-        ),
-      ),
+      child: child,
     );
   }
 
@@ -314,3 +292,112 @@ class _ImmersiveLyricLine extends StatelessWidget {
 }
 
 enum _LyricVisualState { past, active, future }
+
+class _VisualLyricText extends StatelessWidget {
+  const _VisualLyricText({
+    required this.text,
+    required this.style,
+    required this.state,
+    required this.progress,
+  });
+
+  final String text;
+  final TextStyle style;
+  final _LyricVisualState state;
+  final double progress;
+
+  @override
+  Widget build(BuildContext context) {
+    final lineText = text.isEmpty ? ' ' : text;
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final visualLines = _measureVisualLines(
+          context: context,
+          text: lineText,
+          style: style,
+          maxWidth: constraints.maxWidth.isFinite ? constraints.maxWidth : 680,
+        );
+        if (state != _LyricVisualState.active) {
+          return Column(
+            mainAxisSize: MainAxisSize.min,
+            children: <Widget>[
+              for (final line in visualLines)
+                Text(line, textAlign: TextAlign.center, style: style),
+            ],
+          );
+        }
+        return Column(
+          mainAxisSize: MainAxisSize.min,
+          children: <Widget>[
+            for (var index = 0; index < visualLines.length; index++)
+              ShaderMask(
+                blendMode: BlendMode.srcIn,
+                shaderCallback: (bounds) => LinearGradient(
+                  begin: Alignment.centerLeft,
+                  end: Alignment.centerRight,
+                  colors: <Color>[
+                    Colors.white,
+                    Colors.white,
+                    Colors.white.withValues(alpha: 0.24),
+                    Colors.white.withValues(alpha: 0.24),
+                  ],
+                  stops: <double>[
+                    0,
+                    _lineProgress(index, visualLines.length),
+                    _lineProgress(index, visualLines.length),
+                    1,
+                  ],
+                ).createShader(bounds),
+                child: Text(
+                  visualLines[index],
+                  textAlign: TextAlign.center,
+                  style: style.copyWith(color: Colors.white),
+                ),
+              ),
+          ],
+        );
+      },
+    );
+  }
+
+  List<String> _measureVisualLines({
+    required BuildContext context,
+    required String text,
+    required TextStyle style,
+    required double maxWidth,
+  }) {
+    final painter = TextPainter(
+      text: TextSpan(text: text, style: style),
+      textAlign: TextAlign.center,
+      textDirection: Directionality.of(context),
+    )..layout(maxWidth: maxWidth);
+    final metrics = painter.computeLineMetrics();
+    if (metrics.length <= 1) {
+      return <String>[text];
+    }
+    final lines = <String>[];
+    var top = 0.0;
+    for (final metric in metrics) {
+      final probeOffset = Offset(
+        metric.left + (metric.width <= 1 ? 0.5 : metric.width / 2),
+        top + metric.height / 2,
+      );
+      final position = painter.getPositionForOffset(probeOffset);
+      final range = painter.getLineBoundary(position);
+      final line = text
+          .substring(range.start, range.end)
+          .replaceAll('\n', '')
+          .trimRight();
+      lines.add(line.isEmpty ? ' ' : line);
+      top += metric.height;
+    }
+    return lines.isEmpty ? <String>[text] : lines;
+  }
+
+  double _lineProgress(int index, int lineCount) {
+    if (lineCount <= 1) {
+      return progress.clamp(0.0, 1.0);
+    }
+    return (progress * lineCount - index).clamp(0.0, 1.0);
+  }
+}

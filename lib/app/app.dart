@@ -11,6 +11,7 @@ import 'package:cloudplayer_flutter/utils/platform_environment.dart';
 import 'package:cloudplayer_flutter/widgets/child_window_dialog.dart';
 import 'package:cloudplayer_flutter/widgets/app_shell.dart';
 import 'package:fluent_ui/fluent_ui.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:window_manager/window_manager.dart';
 
@@ -24,6 +25,7 @@ class CloudPlayerApp extends StatefulWidget {
 class _CloudPlayerAppState extends State<CloudPlayerApp> with WindowListener {
   bool _handlingClose = false;
   Brightness? _lastNativeWindowBrightness;
+  Brightness? _lastSystemUiBrightness;
   final GlobalKey<NavigatorState> _rootNavigatorKey =
       GlobalKey<NavigatorState>();
 
@@ -116,6 +118,7 @@ class _CloudPlayerAppState extends State<CloudPlayerApp> with WindowListener {
       builder: (context, controller, _) {
         final palette = paletteForSettings(controller.settings);
         _syncNativeWindowTheme(palette);
+        _syncSystemUiTheme(palette);
         return FluentApp(
           title: 'CloudPlayer',
           debugShowCheckedModeBanner: false,
@@ -138,6 +141,29 @@ class _CloudPlayerAppState extends State<CloudPlayerApp> with WindowListener {
         darkMode: palette.brightness == Brightness.dark,
         captionColor: palette.windowBackground.toARGB32(),
         textColor: palette.strongForeground.toARGB32(),
+      ),
+    );
+  }
+
+  void _syncSystemUiTheme(AppPalette palette) {
+    if (!isMobileHost && !Platform.isAndroid) {
+      return;
+    }
+    if (_lastSystemUiBrightness == palette.brightness) {
+      return;
+    }
+    _lastSystemUiBrightness = palette.brightness;
+    final darkMode = palette.brightness == Brightness.dark;
+    SystemChrome.setSystemUIOverlayStyle(
+      SystemUiOverlayStyle(
+        statusBarColor: Colors.transparent,
+        systemNavigationBarColor: Colors.transparent,
+        statusBarIconBrightness: darkMode ? Brightness.light : Brightness.dark,
+        systemNavigationBarIconBrightness: darkMode
+            ? Brightness.light
+            : Brightness.dark,
+        statusBarBrightness: darkMode ? Brightness.dark : Brightness.light,
+        systemNavigationBarDividerColor: Colors.transparent,
       ),
     );
   }

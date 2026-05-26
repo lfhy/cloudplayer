@@ -7,7 +7,7 @@ extension AppControllerPlayback on AppController {
 
   bool get canNavigateQueue => playQueue.isNotEmpty;
 
-  bool get isEffectivelyMuted => (settings?.volume ?? 0) <= 0.001;
+  bool get isEffectivelyMuted => effectiveVolumeFraction <= 0.001;
 
   Future<void> playTrack(
     TrackRow track, {
@@ -96,6 +96,10 @@ extension AppControllerPlayback on AppController {
   }
 
   Future<void> setVolume(double value, {bool persist = true}) async {
+    if (usesPlatformSystemVolume) {
+      await setSystemVolumeFraction(value);
+      return;
+    }
     final current = settings;
     if (current == null) return;
     final nextVolume = value.clamp(0.0, 1.0);
@@ -111,6 +115,10 @@ extension AppControllerPlayback on AppController {
   }
 
   Future<void> toggleMute() async {
+    if (usesPlatformSystemVolume) {
+      await toggleSystemMute();
+      return;
+    }
     if (isEffectivelyMuted) {
       await setVolume(_lastNonZeroVolume > 0.001 ? _lastNonZeroVolume : 0.7);
       return;
@@ -226,6 +234,9 @@ extension AppControllerPlayback on AppController {
     try {
       final media = await _resolveMedia(track);
       await _player.open(media, play: autoplay);
+      if (usesPlatformSystemVolume) {
+        await _player.setVolume(100);
+      }
       if (initialPosition > Duration.zero) {
         await _player.seek(initialPosition);
       }

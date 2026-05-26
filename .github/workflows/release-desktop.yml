@@ -1,5 +1,5 @@
-# Builds desktop release assets per target and publishes collected artifacts in one release job.
-name: desktop-release
+# Builds desktop and Android release assets per target and publishes them in one release job.
+name: release
 
 on:
   push:
@@ -16,7 +16,7 @@ permissions:
   contents: write
 
 concurrency:
-  group: desktop-release-${{ github.event.inputs.tag_name || github.ref }}
+  group: release-${{ github.event.inputs.tag_name || github.ref }}
   cancel-in-progress: false
 
 defaults:
@@ -25,6 +25,7 @@ defaults:
 
 env:
   FLUTTER_VERSION: "3.44.0"
+  ANDROID_NDK_VERSION: "28.2.13676358"
 
 jobs:
   windows-amd64:
@@ -211,6 +212,52 @@ jobs:
           path: dist/macos/universal/*
           if-no-files-found: error
 
+  android-arm64:
+    name: android-arm64
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+          ref: ${{ github.event.inputs.tag_name || github.ref }}
+
+      - uses: actions/setup-go@v6
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: stable
+          cache: true
+
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - uses: android-actions/setup-android@v3
+
+      - name: Install Android NDK
+        run: sdkmanager "ndk;${ANDROID_NDK_VERSION}"
+
+      - name: Build Android arm64 release APK
+        env:
+          RAW_TAG: ${{ github.event.inputs.tag_name || github.ref_name }}
+        run: |
+          VERSION_NAME="${RAW_TAG#v}"
+          ./scripts/build_android_release.sh \
+            --version "$VERSION_NAME" \
+            --build-number "${GITHUB_RUN_NUMBER}" \
+            --output-dir dist/android/arm64-v8a
+
+      - uses: actions/upload-artifact@v6
+        with:
+          name: cloudplayer-android-arm64-v8a
+          path: dist/android/arm64-v8a/*
+          if-no-files-found: error
+
   publish:
     name: publish
     if: always()
@@ -220,6 +267,7 @@ jobs:
       - macos-amd64
       - macos-arm64
       - macos-universal
+      - android-arm64
     steps:
       - uses: actions/checkout@v5
         with:

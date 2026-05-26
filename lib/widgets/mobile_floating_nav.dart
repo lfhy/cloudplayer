@@ -7,6 +7,7 @@ import 'dart:ui' as ui;
 import 'package:cloudplayer_flutter/models/app_models.dart';
 import 'package:cloudplayer_flutter/state/app_controller.dart';
 import 'package:cloudplayer_flutter/theme/app_theme.dart';
+import 'package:cloudplayer_flutter/widgets/advanced_menu_flyout.dart';
 import 'package:cloudplayer_flutter/widgets/playback_presence.dart';
 import 'package:cloudplayer_flutter/widgets/player_dock_buttons.dart';
 import 'package:cloudplayer_flutter/widgets/track_artwork.dart';
@@ -14,6 +15,7 @@ import 'package:fluent_ui/fluent_ui.dart';
 import 'package:provider/provider.dart';
 
 part 'mobile_floating_nav_sections.dart';
+part 'mobile_floating_nav_islands.dart';
 
 class MobileFloatingNav extends StatelessWidget {
   const MobileFloatingNav({
@@ -81,6 +83,8 @@ class MobileFloatingNav extends StatelessWidget {
                         ),
                 ),
               ),
+              const SizedBox(width: 10),
+              _AdvancedIsland(palette: palette),
               const SizedBox(width: 10),
               _SearchIsland(palette: palette),
             ],

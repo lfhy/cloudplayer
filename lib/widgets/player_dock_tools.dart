@@ -100,107 +100,118 @@ class _PlayerDockToolsSectionState extends State<PlayerDockToolsSection> {
       padding: const EdgeInsets.only(left: 18),
       child: Row(
         mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: <Widget>[
-          DockIconButton(
-            palette: widget.palette,
-            active: controller.miniModeOpen,
-            emphasizeActive: true,
-            tooltip: desktopControlsEnabled ? '进入 Mini 模式' : '仅桌面端可用',
-            onPressed: desktopControlsEnabled
-                ? () => unawaited(controller.toggleMiniMode())
-                : null,
-            child: LegacyDockIcon(
-              glyph: LegacyDockGlyph.enterMini,
-              size: 15,
-              color: _toolColor(
-                active: controller.miniModeOpen,
-                enabled: desktopControlsEnabled,
+          _ToolSlot(
+            child: DockIconButton(
+              palette: widget.palette,
+              active: controller.miniModeOpen,
+              emphasizeActive: true,
+              tooltip: desktopControlsEnabled ? '进入 Mini 模式' : '仅桌面端可用',
+              onPressed: desktopControlsEnabled
+                  ? () => unawaited(controller.toggleMiniMode())
+                  : null,
+              child: LegacyDockIcon(
+                glyph: LegacyDockGlyph.enterMini,
+                size: 15,
+                color: _toolColor(
+                  active: controller.miniModeOpen,
+                  enabled: desktopControlsEnabled,
+                ),
               ),
             ),
           ),
           const SizedBox(width: 10),
-          DockChipButton(
-            palette: widget.palette,
-            iconOnly: true,
-            tooltip: _quickThemeTooltip(quickThemeMode),
-            onPressed: controller.settings == null
-                ? null
-                : () => unawaited(_toggleQuickThemeMode(controller)),
-            child: Icon(
-              _quickThemeIcon(quickThemeMode),
-              size: 14,
-              color: controller.settings == null
-                  ? widget.palette.strongForeground.withValues(alpha: 0.42)
-                  : widget.palette.strongForeground,
+          _ToolSlot(
+            child: DockChipButton(
+              palette: widget.palette,
+              iconOnly: true,
+              tooltip: _quickThemeTooltip(quickThemeMode),
+              onPressed: controller.settings == null
+                  ? null
+                  : () => unawaited(_toggleQuickThemeMode(controller)),
+              child: Icon(
+                _quickThemeIcon(quickThemeMode),
+                size: 14,
+                color: controller.settings == null
+                    ? widget.palette.strongForeground.withValues(alpha: 0.42)
+                    : widget.palette.strongForeground,
+              ),
             ),
           ),
           const SizedBox(width: 10),
-          FlyoutTarget(
-            controller: _qualityController,
-            child: DockChipButton(
-              palette: widget.palette,
-              tooltip: '音质偏好（展示；下载以菜单为准）',
-              onPressed: _showQualityMenu,
-              child: Text(
-                _qualityLabel(_qualityPreference),
-                style: TextStyle(
-                  fontSize: 11,
-                  fontWeight: FontWeight.w600,
+          _ToolSlot(
+            child: FlyoutTarget(
+              controller: _qualityController,
+              child: DockChipButton(
+                palette: widget.palette,
+                iconOnly: true,
+                tooltip: '音质偏好：${_qualityLabel(_qualityPreference)}（下载以菜单为准）',
+                onPressed: _showQualityMenu,
+                child: Icon(
+                  FluentIcons.music_in_collection,
+                  size: 14,
                   color: widget.palette.strongForeground,
                 ),
               ),
             ),
           ),
           const SizedBox(width: 10),
-          DockIconButton(
-            palette: widget.palette,
-            active: desktopOpen,
-            emphasizeActive: true,
-            tooltip: desktopControlsEnabled ? '桌面歌词（独立窗口）' : '仅桌面端可用',
-            onPressed: controller.settings == null || !desktopControlsEnabled
-                ? null
-                : () => unawaited(controller.toggleDesktopLyrics()),
-            child: const Text(
-              '词',
-              style: TextStyle(
-                fontSize: 13,
-                height: 1,
-                fontWeight: FontWeight.w700,
+          _ToolSlot(
+            child: DockIconButton(
+              palette: widget.palette,
+              active: desktopOpen,
+              emphasizeActive: true,
+              tooltip: desktopControlsEnabled ? '桌面歌词（独立窗口）' : '仅桌面端可用',
+              onPressed: controller.settings == null || !desktopControlsEnabled
+                  ? null
+                  : () => unawaited(controller.toggleDesktopLyrics()),
+              child: const Text(
+                '词',
+                style: TextStyle(
+                  fontSize: 13,
+                  height: 1,
+                  fontWeight: FontWeight.w700,
+                ),
               ),
             ),
           ),
           const SizedBox(width: 4),
-          DockIconButton(
-            palette: widget.palette,
-            active: desktopOpen && desktopLocked,
-            emphasizeActive: true,
-            tooltip: lyricsLockTooltip,
-            onPressed:
-                controller.settings == null ||
-                    !desktopOpen ||
-                    !desktopControlsEnabled
-                ? null
-                : () => unawaited(controller.toggleDesktopLyricsLocked()),
-            child: LegacyDockIcon(
-              glyph: desktopLocked
-                  ? LegacyDockGlyph.lock
-                  : LegacyDockGlyph.unlock,
-              size: 14,
-              color: _toolColor(
-                active: desktopOpen && desktopLocked,
-                enabled: controller.settings != null && desktopOpen,
+          _ToolSlot(
+            child: DockIconButton(
+              palette: widget.palette,
+              active: desktopOpen && desktopLocked,
+              emphasizeActive: true,
+              tooltip: lyricsLockTooltip,
+              onPressed:
+                  controller.settings == null ||
+                      !desktopOpen ||
+                      !desktopControlsEnabled
+                  ? null
+                  : () => unawaited(controller.toggleDesktopLyricsLocked()),
+              child: LegacyDockIcon(
+                glyph: desktopLocked
+                    ? LegacyDockGlyph.lock
+                    : LegacyDockGlyph.unlock,
+                size: 14,
+                color: _toolColor(
+                  active: desktopOpen && desktopLocked,
+                  enabled: controller.settings != null && desktopOpen,
+                ),
               ),
             ),
           ),
           const SizedBox(width: 10),
-          _DockVolumeControl(
-            palette: widget.palette,
-            settingsReady: controller.settings != null,
-            volume: widget.volume,
-            muted: controller.isEffectivelyMuted,
-            compact: false,
-            onToggleMute: () => unawaited(controller.toggleMute()),
-            onChanged: (value) => controller.setVolume(value / 100),
+          _ToolSlot(
+            child: _DockVolumeControl(
+              palette: widget.palette,
+              settingsReady: controller.settings != null,
+              volume: widget.volume,
+              muted: controller.isEffectivelyMuted,
+              compact: false,
+              onToggleMute: () => unawaited(controller.toggleMute()),
+              onChanged: (value) => controller.setVolume(value / 100),
+            ),
           ),
         ],
       ),
@@ -336,6 +347,7 @@ class _DockVolumeControl extends StatelessWidget {
         : palette.mutedForeground;
     return Row(
       mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.center,
       children: <Widget>[
         DockIconButton(
           palette: palette,
@@ -355,5 +367,16 @@ class _DockVolumeControl extends StatelessWidget {
         ),
       ],
     );
+  }
+}
+
+class _ToolSlot extends StatelessWidget {
+  const _ToolSlot({required this.child});
+
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(height: 30, child: Center(child: child));
   }
 }

@@ -5,6 +5,7 @@ import 'dart:math' as math;
 
 import 'package:cloudplayer_flutter/bridge/cloudplayer_api.dart';
 import 'package:cloudplayer_flutter/models/app_models.dart';
+import 'package:cloudplayer_flutter/services/android_system_volume_service.dart';
 import 'package:cloudplayer_flutter/services/desktop_lyrics_channel.dart';
 import 'package:cloudplayer_flutter/services/desktop_lyrics_projection.dart';
 import 'package:cloudplayer_flutter/services/macos_tray_channel.dart';
@@ -15,6 +16,8 @@ import 'package:fluent_ui/fluent_ui.dart';
 import 'package:media_kit/media_kit.dart';
 
 part 'app_controller_desktop_lyrics.dart';
+part 'app_controller_android_volume.dart';
+part 'app_controller_core.dart';
 part 'app_controller_mini_mode.dart';
 part 'app_controller_playback.dart';
 part 'app_controller_playlist_ops.dart';
@@ -64,6 +67,9 @@ class AppController extends ChangeNotifier {
   Duration position = Duration.zero;
   Duration duration = Duration.zero;
   double _lastNonZeroVolume = 0.7;
+  int _androidSystemVolume = 0;
+  int _androidSystemVolumeMax = 15;
+  StreamSubscription<AndroidSystemVolumeSnapshot>? _androidSystemVolumeSub;
   bool _desktopLyricsBound = false;
   Timer? _desktopLyricsSyncTimer;
   Timer? _desktopLyricsPersistTimer;
@@ -83,7 +89,12 @@ class AppController extends ChangeNotifier {
     try {
       settings = await api.getSettings();
       bridgeLibraryPath = api.libraryPath;
-      await _player.setVolume((settings?.volume ?? 0.7) * 100);
+      await _player.setVolume(
+        usesPlatformSystemVolume ? 100 : (settings?.volume ?? 0.7) * 100,
+      );
+      if (usesPlatformSystemVolume) {
+        await _bindAndroidSystemVolume();
+      }
       await refreshAll();
       await restorePersistedPlayback();
       if (isDesktopHost) {
@@ -244,7 +255,9 @@ class AppController extends ChangeNotifier {
         settings?.appThemeMode != next.appThemeMode && Platform.isMacOS;
     settings = next;
     notifyListeners();
-    await _player.setVolume(next.volume * 100);
+    if (!usesPlatformSystemVolume) {
+      await _player.setVolume(next.volume * 100);
+    }
     await syncDesktopLyricsWindow(immediate: true);
     await api.saveSettings(next);
     if (shouldRefreshTrayTheme) {
@@ -408,7 +421,7 @@ class AppController extends ChangeNotifier {
   void clearStatus() {
     if (statusMessage.isEmpty) return;
     statusMessage = '';
-    notifyListeners();
+    _notifyStateChanged();
   }
 
   // Playback helpers use this wrapper so extension members do not call the
@@ -419,80 +432,12 @@ class AppController extends ChangeNotifier {
 
   @override
   void dispose() {
+    _androidSystemVolumeSub?.cancel();
     _desktopLyricsSyncTimer?.cancel();
     _desktopLyricsPersistTimer?.cancel();
     MacosTrayChannel.instance.clearCache();
     _player.dispose();
     super.dispose();
-  }
-
-  void _applyImportDraft(
-    List<TrackRow> tracks, {
-    required String suggestedName,
-    required String method,
-  }) {
-    importTracks = tracks;
-    importSuggestedName = suggestedName;
-    selectedImportMethod = method;
-    notifyListeners();
-  }
-
-  Future<List<PlaylistSearchResult>> _searchLocalPlaylists(
-    String keyword,
-  ) async {
-    final normalized = keyword.trim().toLowerCase();
-    if (normalized.isEmpty) {
-      return <PlaylistSearchResult>[];
-    }
-    final rows = await api.listPlaylists();
-    final results = await Future.wait(
-      rows.map((playlist) async {
-        final items = await api.listPlaylistImportItems(playlist.id);
-        final matchedTracks = items
-            .where((track) {
-              final haystack = <String>[
-                playlist.name,
-                track.title,
-                track.artist,
-                track.album,
-              ].join(' ').toLowerCase();
-              return haystack.contains(normalized);
-            })
-            .toList(growable: false);
-        final playlistMatched = playlist.name.toLowerCase().contains(
-          normalized,
-        );
-        if (!playlistMatched && matchedTracks.isEmpty) {
-          return null;
-        }
-        return PlaylistSearchResult(
-          playlist: playlist,
-          trackCount: items.length,
-          matchedTracks: matchedTracks,
-          coverTrack: _pickPlaylistSearchCover(matchedTracks, items),
-        );
-      }),
-    );
-    return results.whereType<PlaylistSearchResult>().toList(growable: false);
-  }
-
-  TrackRow? _pickPlaylistSearchCover(
-    List<TrackRow> primary,
-    List<TrackRow> fallback,
-  ) {
-    for (final track in primary) {
-      if (track.coverUrl.trim().isNotEmpty ||
-          track.coverCachePath.trim().isNotEmpty) {
-        return track;
-      }
-    }
-    for (final track in fallback) {
-      if (track.coverUrl.trim().isNotEmpty ||
-          track.coverCachePath.trim().isNotEmpty) {
-        return track;
-      }
-    }
-    return fallback.isEmpty ? null : fallback.first;
   }
 }
 

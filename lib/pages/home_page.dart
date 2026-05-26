@@ -133,104 +133,68 @@ class _Header extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final controller = context.read<AppController>();
-    return Wrap(
-      spacing: 16,
-      runSpacing: 12,
-      crossAxisAlignment: WrapCrossAlignment.center,
+    final headline = Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: <Widget>[
-        SizedBox(
-          width: compact ? 280 : 360,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: <Widget>[
-              Text(
-                'CloudPlayer',
-                style: TextStyle(
-                  color: palette.accent.normal,
-                  fontSize: 11,
-                  fontWeight: FontWeight.w700,
-                  letterSpacing: 1.2,
-                ),
-              ),
-              const SizedBox(height: 2),
-              Text(
-                greeting,
-                style: TextStyle(
-                  fontSize: 26,
-                  fontWeight: FontWeight.w700,
-                  color: palette.strongForeground,
-                ),
-              ),
-              const SizedBox(height: 4),
-              Text(
-                dateLine,
-                style: TextStyle(color: palette.mutedForeground, fontSize: 13),
-              ),
-            ],
+        Text(
+          'CloudPlayer',
+          style: TextStyle(
+            color: palette.accent.normal,
+            fontSize: 11,
+            fontWeight: FontWeight.w700,
+            letterSpacing: 1.2,
           ),
         ),
-        Wrap(
-          spacing: 6,
-          runSpacing: 6,
-          children: <Widget>[
-            _StatPill(label: '歌单', value: playlistCount, palette: palette),
-            _StatPill(label: '播放记录', value: recentCount, palette: palette),
-            _StatPill(label: '下载中', value: downloadCount, palette: palette),
-          ],
+        const SizedBox(height: 2),
+        Text(
+          greeting,
+          style: TextStyle(
+            fontSize: 26,
+            fontWeight: FontWeight.w700,
+            color: palette.strongForeground,
+          ),
         ),
-        Wrap(
-          spacing: 8,
-          runSpacing: 8,
-          children: <Widget>[
-            FilledButton(
-              onPressed: () => controller.setPage(AppPage.search),
-              style: ButtonStyle(
-                padding: WidgetStateProperty.all(
-                  const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                ),
-                shape: WidgetStateProperty.all(
-                  RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(14),
-                  ),
-                ),
-              ),
-              child: const Row(
-                mainAxisSize: MainAxisSize.min,
-                children: <Widget>[
-                  Icon(FluentIcons.search, size: 14),
-                  SizedBox(width: 6),
-                  Text('搜索'),
-                ],
-              ),
+        const SizedBox(height: 4),
+        Text(
+          dateLine,
+          style: TextStyle(color: palette.mutedForeground, fontSize: 13),
+        ),
+      ],
+    );
+    final stats = Wrap(
+      spacing: 6,
+      runSpacing: 6,
+      alignment: compact ? WrapAlignment.start : WrapAlignment.end,
+      children: <Widget>[
+        _StatPill(label: '歌单', value: playlistCount, palette: palette),
+        _StatPill(label: '播放记录', value: recentCount, palette: palette),
+        _StatPill(label: '下载中', value: downloadCount, palette: palette),
+      ],
+    );
+    if (compact) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[headline, const SizedBox(height: 12), stats],
+      );
+    }
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.end,
+      children: <Widget>[
+        Expanded(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 420),
+            child: headline,
+          ),
+        ),
+        const SizedBox(width: 24),
+        Flexible(
+          child: Align(
+            alignment: Alignment.centerRight,
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 320),
+              child: stats,
             ),
-            const SizedBox(width: 8),
-            Button(
-              onPressed: () => controller.setPage(AppPage.import),
-              style: ButtonStyle(
-                padding: WidgetStateProperty.all(
-                  const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                ),
-                backgroundColor: WidgetStateProperty.resolveWith(
-                  (_) => palette.subtleBackground,
-                ),
-                shape: WidgetStateProperty.all(
-                  RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(14),
-                    side: BorderSide(color: palette.borderColor),
-                  ),
-                ),
-              ),
-              child: const Row(
-                mainAxisSize: MainAxisSize.min,
-                children: <Widget>[
-                  Icon(FluentIcons.upload, size: 14),
-                  SizedBox(width: 6),
-                  Text('导入歌单'),
-                ],
-              ),
-            ),
-          ],
+          ),
         ),
       ],
     );
