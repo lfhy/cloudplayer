@@ -1,5 +1,7 @@
 // Search page restores the legacy home/results split, while keeping search actions wired to the shared controller.
 
+import 'dart:async';
+
 import 'package:cloudplayer_flutter/models/app_models.dart';
 import 'package:cloudplayer_flutter/pages/search/search_quick_cards.dart';
 import 'package:cloudplayer_flutter/pages/search/search_results_loading.dart';
@@ -63,15 +65,23 @@ class _SearchPageState extends State<SearchPage> {
         : app.searchKeyword.trim();
     final results = app.searchResponse?.results ?? const <TrackRow>[];
     final showResults = query.isNotEmpty;
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: <Widget>[
-        Expanded(
-          child: showResults
-              ? _buildResultsView(app, results)
-              : _buildHomeView(app),
-        ),
-      ],
+    return PopScope(
+      canPop: !isMobileHost || !showResults,
+      onPopInvokedWithResult: (didPop, _) {
+        if (!didPop && isMobileHost && showResults) {
+          unawaited(_clearSearch(app));
+        }
+      },
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          Expanded(
+            child: showResults
+                ? _buildResultsView(app, results)
+                : _buildHomeView(app),
+          ),
+        ],
+      ),
     );
   }
 

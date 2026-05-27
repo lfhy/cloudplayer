@@ -19,6 +19,7 @@ part 'app_controller_desktop_lyrics.dart';
 part 'app_controller_android_volume.dart';
 part 'app_controller_core.dart';
 part 'app_controller_mini_mode.dart';
+part 'app_controller_navigation.dart';
 part 'app_controller_playback.dart';
 part 'app_controller_playlist_ops.dart';
 part 'app_controller_search.dart';

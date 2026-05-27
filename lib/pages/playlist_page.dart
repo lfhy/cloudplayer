@@ -1,6 +1,7 @@
 // Playlist detail page keeps the old hero summary while reusing the shared track list below.
 
 import 'package:cloudplayer_flutter/models/app_models.dart';
+import 'package:cloudplayer_flutter/pages/playlist/playlist_desktop_detail.dart';
 import 'package:cloudplayer_flutter/state/app_controller.dart';
 import 'package:cloudplayer_flutter/theme/app_theme.dart';
 import 'package:cloudplayer_flutter/utils/platform_environment.dart';
@@ -28,123 +29,79 @@ class _PlaylistPageState extends State<PlaylistPage> {
   @override
   Widget build(BuildContext context) {
     final controller = context.watch<AppController>();
-    if (isMobileHost && !_showMobileDetail) {
-      return _buildMobilePlaylistList(controller);
-    }
-    final playlist = controller.selectedPlaylist;
-    final coverTrack =
-        controller.playlistTracks.isNotEmpty ? controller.playlistTracks.first : null;
-    _syncSelectionState(playlist?.id, controller.playlistTracks);
-    if (playlist == null) {
-      return Center(child: Text('暂无歌单。', style: TextStyle(color: widget.palette.mutedForeground)));
-    }
-    if (isMobileHost) {
-      return _buildMobilePlaylistDetail(controller, playlist, coverTrack);
-    }
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: <Widget>[
-        const SizedBox(height: 24),
-        Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: <Widget>[
-            Container(
-              width: 120,
-              height: 120,
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(12),
-                boxShadow: <BoxShadow>[
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.16),
-                    blurRadius: 26,
-                    offset: const Offset(0, 10),
-                  ),
-                ],
+    return PopScope(
+      canPop: !isMobileHost || (!_selectionMode && !_showMobileDetail),
+      onPopInvokedWithResult: (didPop, _) {
+        if (!didPop) {
+          _handleSystemBack();
+        }
+      },
+      child: Builder(
+        builder: (context) {
+          if (isMobileHost && !_showMobileDetail) {
+            return _buildMobilePlaylistList(controller);
+          }
+          final playlist = controller.selectedPlaylist;
+          final coverTrack = controller.playlistTracks.isNotEmpty
+              ? controller.playlistTracks.first
+              : null;
+          _syncSelectionState(playlist?.id, controller.playlistTracks);
+          if (playlist == null) {
+            return Center(
+              child: Text(
+                '暂无歌单。',
+                style: TextStyle(color: widget.palette.mutedForeground),
               ),
-              child: TrackArtwork(
-                track: coverTrack,
-                palette: widget.palette,
-                size: 120,
-                radius: 12,
-                iconSize: 42,
-                placeholderIcon: FluentIcons.album,
-              ),
-            ),
-            const SizedBox(width: 16),
-            Expanded(
-              child: Padding(
-                padding: const EdgeInsets.only(top: 2),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: <Widget>[
-                    Text(
-                      playlist.name,
-                      style: const TextStyle(
-                        fontSize: 42,
-                        height: 1.05,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      playlist.isCloud ? '云端歌单' : '本地歌单',
-                      style: TextStyle(
-                        fontSize: 16,
-                        color: widget.palette.mutedForeground,
-                      ),
-                    ),
-                    const SizedBox(height: 6),
-                    Text(
-                      '共 ${controller.playlistTracks.length} 首曲目',
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: widget.palette.mutedForeground,
-                      ),
-                    ),
-                    const SizedBox(height: 10),
-                    _buildToolbar(context, controller),
-                  ],
-                ),
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 14),
-        Expanded(
-          child: TrackListView(
-            tracks: controller.playlistTracks,
+            );
+          }
+          if (isMobileHost) {
+            return _buildMobilePlaylistDetail(controller, playlist, coverTrack);
+          }
+          return DesktopPlaylistDetail(
             palette: widget.palette,
-            favoriteIds: controller.favoriteIds,
-            onPlay: (track, index) => controller.playTrack(
-              track,
-              queue: controller.playlistTracks,
-              index: index,
-            ),
-            onToggleFavorite: controller.toggleFavorite,
-            onDownload: controller.enqueueDownload,
-            currentTrack: controller.currentTrack,
-            currentTrackPlaying: controller.isPlaying,
-            showDownloadAction: false,
+            controller: controller,
+            playlist: playlist,
+            coverTrack: coverTrack,
             selectionMode: _selectionMode,
             selectedTrackIds: _selectedTrackIds,
+            toolbar: _buildToolbar(context, controller),
             onToggleSelection: _toggleTrackSelection,
-            onArtistSearch: (keyword) => controller.triggerTrackSearch(keyword),
-            onAlbumSearch: (keyword) => controller.triggerTrackSearch(keyword),
-            emptyText: '这个歌单里还没有曲目。',
-          ),
-        ),
-      ],
+          );
+        },
+      ),
     );
+  }
+
+  void _handleSystemBack() {
+    if (!isMobileHost) {
+      return;
+    }
+    if (_selectionMode) {
+      _exitSelectionMode();
+      return;
+    }
+    if (_showMobileDetail) {
+      _closeMobilePlaylistDetail();
+      return;
+    }
   }
 
   Widget _buildMobilePlaylistList(AppController controller) {
     if (controller.playlists.isEmpty) {
-      return Center(child: Text('暂无歌单。', style: TextStyle(color: widget.palette.mutedForeground)));
+      return Center(
+        child: Text(
+          '暂无歌单。',
+          style: TextStyle(color: widget.palette.mutedForeground),
+        ),
+      );
     }
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: <Widget>[
-        const Text('我的歌单', style: TextStyle(fontSize: 24, fontWeight: FontWeight.w700)),
+        const Text(
+          '我的歌单',
+          style: TextStyle(fontSize: 24, fontWeight: FontWeight.w700),
+        ),
         const SizedBox(height: 12),
         Expanded(
           child: ListView.separated(
@@ -200,7 +157,10 @@ class _PlaylistPageState extends State<PlaylistPage> {
                               playlist.name,
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
-                              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
+                              style: const TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w700,
+                              ),
                             ),
                             const SizedBox(height: 4),
                             Text(
@@ -209,12 +169,19 @@ class _PlaylistPageState extends State<PlaylistPage> {
                                   : playlist.isCloud
                                   ? '云端歌单'
                                   : '本地歌单',
-                              style: TextStyle(fontSize: 12, color: widget.palette.mutedForeground),
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: widget.palette.mutedForeground,
+                              ),
                             ),
                           ],
                         ),
                       ),
-                      Icon(FluentIcons.chevron_right, size: 14, color: widget.palette.mutedForeground),
+                      Icon(
+                        FluentIcons.chevron_right,
+                        size: 14,
+                        color: widget.palette.mutedForeground,
+                      ),
                     ],
                   ),
                 ),
@@ -261,7 +228,13 @@ class _PlaylistPageState extends State<PlaylistPage> {
                   children: <Widget>[
                     const Icon(FluentIcons.chevron_left, size: 12),
                     const SizedBox(width: 4),
-                    const Text('歌单列表', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
+                    const Text(
+                      '歌单列表',
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
                   ],
                 ),
               ),

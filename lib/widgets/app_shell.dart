@@ -1,5 +1,7 @@
 // The app shell owns sidebar navigation, top-level page switching, and the shared player dock.
 
+import 'dart:async';
+
 import 'package:flutter/foundation.dart';
 import 'package:cloudplayer_flutter/models/app_models.dart';
 import 'package:cloudplayer_flutter/pages/daily_page.dart';
@@ -40,74 +42,84 @@ class AppShell extends StatelessWidget {
     if (controller.bootError.isNotEmpty) {
       return NavigationView(content: Center(child: Text(controller.bootError)));
     }
-    return NavigationView(
-      content: Container(
-        color: palette.windowBackground,
-        child: Stack(
-          children: <Widget>[
-            if (!controller.miniModeOpen)
-              Column(
-                children: <Widget>[
-                  Expanded(
-                    child: Row(
-                      children: <Widget>[
-                        if (!mobileHost)
-                          SizedBox(
-                            width: 216,
-                            child: _Sidebar(palette: palette),
-                          ),
-                        Expanded(
-                          child: mobileHost
-                              ? MobilePageStage(
-                                  palette: palette,
-                                  page: _pageFor(controller.currentPage),
-                                )
-                              : Column(
-                                  children: <Widget>[
-                                    Expanded(
-                                      child: Container(
-                                        color: palette.windowBackground,
-                                        padding: const EdgeInsets.fromLTRB(
-                                          24,
-                                          24,
-                                          24,
-                                          18,
-                                        ),
-                                        child: Stack(
-                                          children: <Widget>[
-                                            Positioned.fill(
-                                              child: _pageFor(
-                                                controller.currentPage,
+    return PopScope(
+      canPop:
+          !mobileHost ||
+          (!controller.immersiveOpen && controller.currentPage == AppPage.home),
+      onPopInvokedWithResult: (didPop, _) {
+        if (!didPop) {
+          unawaited(controller.handleSystemBack());
+        }
+      },
+      child: NavigationView(
+        content: Container(
+          color: palette.windowBackground,
+          child: Stack(
+            children: <Widget>[
+              if (!controller.miniModeOpen)
+                Column(
+                  children: <Widget>[
+                    Expanded(
+                      child: Row(
+                        children: <Widget>[
+                          if (!mobileHost)
+                            SizedBox(
+                              width: 216,
+                              child: _Sidebar(palette: palette),
+                            ),
+                          Expanded(
+                            child: mobileHost
+                                ? MobilePageStage(
+                                    palette: palette,
+                                    page: _pageFor(controller.currentPage),
+                                  )
+                                : Column(
+                                    children: <Widget>[
+                                      Expanded(
+                                        child: Container(
+                                          color: palette.windowBackground,
+                                          padding: const EdgeInsets.fromLTRB(
+                                            24,
+                                            24,
+                                            24,
+                                            18,
+                                          ),
+                                          child: Stack(
+                                            children: <Widget>[
+                                              Positioned.fill(
+                                                child: _pageFor(
+                                                  controller.currentPage,
+                                                ),
                                               ),
-                                            ),
-                                            AppStatusToast(
-                                              palette: palette,
-                                              message:
-                                                  controller.statusMessage,
-                                              onDismiss:
-                                                  controller.clearStatus,
-                                            ),
-                                          ],
+                                              AppStatusToast(
+                                                palette: palette,
+                                                message:
+                                                    controller.statusMessage,
+                                                onDismiss:
+                                                    controller.clearStatus,
+                                              ),
+                                            ],
+                                          ),
                                         ),
                                       ),
-                                    ),
-                                    PlayerDock(palette: palette),
-                                  ],
-                                ),
-                        ),
-                      ],
+                                      PlayerDock(palette: palette),
+                                    ],
+                                  ),
+                          ),
+                        ],
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
+              Positioned.fill(
+                child: IgnorePointer(
+                  ignoring: !controller.miniModeOpen,
+                  child: MiniPlayer(palette: palette),
+                ),
               ),
-            Positioned.fill(
-              child: IgnorePointer(
-                ignoring: !controller.miniModeOpen,
-                child: MiniPlayer(palette: palette),
-              ),
-            ),
-            Positioned.fill(child: ImmersivePlayer(palette: palette)),
-          ],
+              Positioned.fill(child: ImmersivePlayer(palette: palette)),
+            ],
+          ),
         ),
       ),
     );
