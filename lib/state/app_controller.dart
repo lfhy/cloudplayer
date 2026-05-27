@@ -74,7 +74,6 @@ class AppController extends ChangeNotifier {
   bool _desktopLyricsBound = false;
   Timer? _desktopLyricsSyncTimer;
   Timer? _desktopLyricsPersistTimer;
-  Timer? _favoritesPlaylistRefreshTimer;
   bool _favoritesPlaylistRefreshInFlight = false;
   int _favoritesPlaylistRefreshPlaylistId = -1;
   bool _restoringPlaybackSnapshot = false;
@@ -238,6 +237,7 @@ class AppController extends ChangeNotifier {
       await api.addFavoriteTrack(track);
       favoriteIds.add(track.sourceId);
     }
+    _refreshFavoritesPlaylistAfterFavoriteMutation();
     notifyListeners();
   }
 
@@ -436,7 +436,6 @@ class AppController extends ChangeNotifier {
 
   @override
   void dispose() {
-    _favoritesPlaylistRefreshTimer?.cancel();
     _androidSystemVolumeSub?.cancel();
     _desktopLyricsSyncTimer?.cancel();
     _desktopLyricsPersistTimer?.cancel();

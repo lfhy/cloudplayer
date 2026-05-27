@@ -1,9 +1,7 @@
-// Favorites sync keeps the cloud-backed "我喜欢" playlist fresh while the user
-// is browsing it, so new server-side additions can update hearts and rows.
+// Favorites sync keeps the cloud-backed "我喜欢" playlist fresh on entry and
+// after explicit heart actions, without polling in the background.
 
 part of 'app_controller.dart';
-
-const Duration _favoritesPlaylistRefreshInterval = Duration(seconds: 45);
 
 extension AppControllerFavoritesSync on AppController {
   bool get _shouldAutoRefreshFavoritesPlaylist {
@@ -16,8 +14,6 @@ extension AppControllerFavoritesSync on AppController {
 
   void _syncFavoritesPlaylistAutoRefresh() {
     if (!_shouldAutoRefreshFavoritesPlaylist) {
-      _favoritesPlaylistRefreshTimer?.cancel();
-      _favoritesPlaylistRefreshTimer = null;
       _favoritesPlaylistRefreshPlaylistId = -1;
       return;
     }
@@ -26,10 +22,13 @@ extension AppControllerFavoritesSync on AppController {
       _favoritesPlaylistRefreshPlaylistId = playlistId;
       unawaited(_refreshFavoritesPlaylistState());
     }
-    _favoritesPlaylistRefreshTimer ??= Timer.periodic(
-      _favoritesPlaylistRefreshInterval,
-      (_) => unawaited(_refreshFavoritesPlaylistState()),
-    );
+  }
+
+  void _refreshFavoritesPlaylistAfterFavoriteMutation() {
+    if (!_shouldAutoRefreshFavoritesPlaylist) {
+      return;
+    }
+    unawaited(_refreshFavoritesPlaylistState());
   }
 
   Future<void> _refreshFavoritesPlaylistState() async {
