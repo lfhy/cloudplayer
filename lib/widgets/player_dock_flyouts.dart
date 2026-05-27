@@ -115,23 +115,19 @@ class DockFlyoutActionButton extends StatelessWidget {
     final iconColor = danger ? foreground : palette.accent.normal;
     return SizedBox(
       width: double.infinity,
-      child: Button(
+      child: HoverButton(
         onPressed: onPressed,
-        style: ButtonStyle(
-          padding: WidgetStateProperty.all(EdgeInsets.zero),
-          backgroundColor: WidgetStateProperty.resolveWith(
-            (state) =>
-                state.isHovered ? palette.subtleBackground : Colors.transparent,
-          ),
-          foregroundColor: WidgetStatePropertyAll<Color>(foreground),
-          shape: WidgetStateProperty.all(
-            RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-          ),
-        ),
-        child: Container(
+        builder: (context, states) => AnimatedContainer(
+          duration: const Duration(milliseconds: 110),
+          curve: Curves.easeOutCubic,
           width: double.infinity,
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-          alignment: Alignment.centerLeft,
+          decoration: BoxDecoration(
+            color: states.isHovered
+                ? palette.subtleBackground
+                : Colors.transparent,
+            borderRadius: BorderRadius.circular(12),
+          ),
           child: Row(
             children: <Widget>[
               SizedBox(
@@ -145,7 +141,12 @@ class DockFlyoutActionButton extends StatelessWidget {
                 child: Text(
                   label,
                   textAlign: TextAlign.left,
-                  style: const TextStyle(fontSize: 12),
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: onPressed == null
+                        ? foreground.withValues(alpha: 0.42)
+                        : foreground,
+                  ),
                 ),
               ),
             ],
@@ -173,82 +174,81 @@ class _QueueItemButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Button(
+    return HoverButton(
       onPressed: () => onPressed(),
-      style: ButtonStyle(
-        padding: WidgetStateProperty.all(EdgeInsets.zero),
-        backgroundColor: WidgetStateProperty.resolveWith(
-          (state) => active
-              ? palette.accent.normal.withValues(alpha: 0.1)
-              : state.isHovered
-              ? palette.subtleBackground
-              : Colors.transparent,
-        ),
-        shape: WidgetStateProperty.all(
-          RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        ),
-      ),
-      child: Container(
-        width: double.infinity,
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-        alignment: Alignment.centerLeft,
-        child: Row(
-          children: <Widget>[
-            SizedBox(
-              width: 28,
-              child: Text(
-                '${index + 1}'.padLeft(2, '0'),
-                style: TextStyle(
-                  fontSize: 11,
-                  fontWeight: FontWeight.w700,
-                  color: active
-                      ? palette.accent.normal
-                      : palette.mutedForeground,
+      builder: (context, states) {
+        final hovered = states.isHovered;
+        return AnimatedContainer(
+          duration: const Duration(milliseconds: 110),
+          curve: Curves.easeOutCubic,
+          width: double.infinity,
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+          decoration: BoxDecoration(
+            color: active
+                ? palette.accent.normal.withValues(alpha: 0.1)
+                : hovered
+                ? palette.subtleBackground
+                : Colors.transparent,
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Row(
+            children: <Widget>[
+              SizedBox(
+                width: 28,
+                child: Text(
+                  '${index + 1}'.padLeft(2, '0'),
+                  style: TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w700,
+                    color: active
+                        ? palette.accent.normal
+                        : palette.mutedForeground,
+                  ),
                 ),
               ),
-            ),
-            TrackArtwork(
-              track: track,
-              palette: palette,
-              size: 48,
-              radius: 12,
-              iconSize: 18,
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: <Widget>[
-                  Text(
-                    track.title,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w700,
-                      color: active
-                          ? palette.accent.normal
-                          : palette.strongForeground,
-                    ),
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    track.artist.trim().isEmpty
-                        ? (track.localPath.trim().isEmpty ? '在线曲目' : '本地音乐')
-                        : track.artist,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      fontSize: 11,
-                      color: palette.mutedForeground,
-                    ),
-                  ),
-                ],
+              TrackArtwork(
+                track: track,
+                palette: palette,
+                size: 48,
+                radius: 12,
+                iconSize: 18,
               ),
-            ),
-          ],
-        ),
-      ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: <Widget>[
+                    Text(
+                      track.title,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w700,
+                        color: active
+                            ? palette.accent.normal
+                            : palette.strongForeground,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      track.artist.trim().isEmpty
+                          ? (track.localPath.trim().isEmpty ? '在线曲目' : '本地音乐')
+                          : track.artist,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        fontSize: 11,
+                        color: palette.mutedForeground,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        );
+      },
     );
   }
 }
