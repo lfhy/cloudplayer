@@ -89,6 +89,19 @@ class CloudPlayerApi {
         .toList();
   }
 
+  Future<List<TrackRow>> refreshPlaylistImportItems(int playlistId) async {
+    final payload =
+        (_bridge.call('refresh_playlist_import_items', <String, dynamic>{
+              'playlist_id': playlistId,
+            })
+            as List<dynamic>? ??
+        <dynamic>[]);
+    return payload
+        .whereType<Map<String, dynamic>>()
+        .map(TrackRow.fromPlaylistJson)
+        .toList();
+  }
+
   Future<int> createPlaylist(String name) async {
     final result = _bridge.call('create_playlist', <String, dynamic>{
       'name': name,

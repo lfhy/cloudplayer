@@ -22,6 +22,7 @@ part 'app_controller_mini_mode.dart';
 part 'app_controller_playback.dart';
 part 'app_controller_playlist_ops.dart';
 part 'app_controller_search.dart';
+part 'app_controller_favorites_sync.dart';
 part 'app_controller_theme.dart';
 part 'app_controller_tray.dart';
 part 'app_controller_lyrics.dart';
@@ -73,6 +74,9 @@ class AppController extends ChangeNotifier {
   bool _desktopLyricsBound = false;
   Timer? _desktopLyricsSyncTimer;
   Timer? _desktopLyricsPersistTimer;
+  Timer? _favoritesPlaylistRefreshTimer;
+  bool _favoritesPlaylistRefreshInFlight = false;
+  int _favoritesPlaylistRefreshPlaylistId = -1;
   bool _restoringPlaybackSnapshot = false;
   String _lastPersistedPlaybackTrackKey = '';
   int _lastPersistedPlaybackSecond = -1;
@@ -96,6 +100,7 @@ class AppController extends ChangeNotifier {
         await _bindAndroidSystemVolume();
       }
       await refreshAll();
+      _syncFavoritesPlaylistAutoRefresh();
       await restorePersistedPlayback();
       if (isDesktopHost) {
         await bindDesktopLyrics();
@@ -139,6 +144,7 @@ class AppController extends ChangeNotifier {
       selectedPlaylist = null;
       playlistTracks = <TrackRow>[];
     }
+    _syncFavoritesPlaylistAutoRefresh();
     notifyListeners();
   }
 
@@ -170,6 +176,7 @@ class AppController extends ChangeNotifier {
       return;
     }
     playlistTracks = await api.listPlaylistImportItems(playlist.id);
+    _syncFavoritesPlaylistAutoRefresh();
     notifyListeners();
   }
 
@@ -178,6 +185,7 @@ class AppController extends ChangeNotifier {
     if (page == AppPage.playlist) {
       await loadSelectedPlaylist();
     }
+    _syncFavoritesPlaylistAutoRefresh();
     notifyListeners();
   }
 
@@ -428,6 +436,7 @@ class AppController extends ChangeNotifier {
 
   @override
   void dispose() {
+    _favoritesPlaylistRefreshTimer?.cancel();
     _androidSystemVolumeSub?.cancel();
     _desktopLyricsSyncTimer?.cancel();
     _desktopLyricsPersistTimer?.cancel();
