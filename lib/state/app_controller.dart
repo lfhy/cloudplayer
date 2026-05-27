@@ -5,6 +5,8 @@ import 'dart:math' as math;
 
 import 'package:cloudplayer_flutter/bridge/cloudplayer_api.dart';
 import 'package:cloudplayer_flutter/models/app_models.dart';
+import 'package:cloudplayer_flutter/services/android_app_host_channel.dart';
+import 'package:cloudplayer_flutter/services/cloudplayer_audio_session.dart';
 import 'package:cloudplayer_flutter/services/android_system_volume_service.dart';
 import 'package:cloudplayer_flutter/services/desktop_lyrics_channel.dart';
 import 'package:cloudplayer_flutter/services/desktop_lyrics_projection.dart';
@@ -24,14 +26,21 @@ part 'app_controller_playback.dart';
 part 'app_controller_playlist_ops.dart';
 part 'app_controller_search.dart';
 part 'app_controller_favorites_sync.dart';
+part 'app_controller_media_session.dart';
 part 'app_controller_theme.dart';
 part 'app_controller_tray.dart';
 part 'app_controller_lyrics.dart';
 
 class AppController extends ChangeNotifier {
-  AppController(this.api) : _player = Player();
+  AppController(this.api, this._audioSession)
+    : _player = Player(
+        configuration: const PlayerConfiguration(
+          title: 'CloudPlayer',
+        ),
+      );
 
   final CloudPlayerApi api;
+  final CloudPlayerAudioSession _audioSession;
   final Player _player;
 
   bool booting = true;
@@ -90,6 +99,7 @@ class AppController extends ChangeNotifier {
 
   Future<void> initialize() async {
     _wirePlayer();
+    _bindAudioSession();
     try {
       settings = await api.getSettings();
       bridgeLibraryPath = api.libraryPath;
@@ -99,6 +109,7 @@ class AppController extends ChangeNotifier {
       if (usesPlatformSystemVolume) {
         await _bindAndroidSystemVolume();
       }
+      await _configureAndroidAudioOutput();
       await refreshAll();
       _syncFavoritesPlaylistAutoRefresh();
       await restorePersistedPlayback();
@@ -112,6 +123,7 @@ class AppController extends ChangeNotifier {
     } catch (error) {
       bootError = error.toString();
     } finally {
+      _syncAudioSession();
       booting = false;
       notifyListeners();
     }

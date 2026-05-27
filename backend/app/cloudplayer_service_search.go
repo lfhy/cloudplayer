@@ -236,7 +236,12 @@ func searchProviderFailoverOrder(primaryProviderKey, rawFallbackChain string) []
 	for offset := 0; offset < len(baseOrder); offset++ {
 		appendKey(baseOrder[(startIndex+offset)%len(baseOrder)])
 	}
-	for _, key := range []string{musicsource.ProviderKugou, musicsource.ProviderPJMP3, musicsource.ProviderNetease} {
+	for _, key := range []string{
+		musicsource.ProviderKugou,
+		musicsource.ProviderPJMP3,
+		musicsource.ProviderGequhai,
+		musicsource.ProviderNetease,
+	} {
 		appendKey(key)
 	}
 	return result
@@ -248,6 +253,8 @@ func searchProviderLabel(providerKey string) string {
 		return "Kugou"
 	case musicsource.ProviderPJMP3:
 		return "PJMP3"
+	case musicsource.ProviderGequhai:
+		return "Gequhai"
 	case musicsource.ProviderNetease:
 		return "Netease"
 	default:

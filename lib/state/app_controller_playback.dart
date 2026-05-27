@@ -20,6 +20,7 @@ extension AppControllerPlayback on AppController {
     if (playIndex < 0) {
       playIndex = 0;
     }
+    _syncAudioSession();
     _notifyStateChanged();
     unawaited(_persistPlaybackSnapshot(force: true));
     await _openCurrentTrack();
@@ -42,6 +43,7 @@ extension AppControllerPlayback on AppController {
     if (playQueue.isEmpty) return;
     final nextIndex = index.clamp(0, playQueue.length - 1);
     playIndex = nextIndex;
+    _syncAudioSession();
     _notifyStateChanged();
     unawaited(_persistPlaybackSnapshot(force: true));
     await _openCurrentTrack();
@@ -130,6 +132,7 @@ extension AppControllerPlayback on AppController {
     final current = settings;
     if (current == null) return;
     settings = current.copyWith(playMode: mode);
+    _syncAudioSession();
     _notifyStateChanged();
     await api.saveSettings(settings!);
   }
@@ -148,12 +151,14 @@ extension AppControllerPlayback on AppController {
       await _clearPersistedPlaybackSnapshot();
       unawaited(syncDesktopLyricsWindow(immediate: true));
       unawaited(syncTrayState());
+      _syncAudioSession();
       return;
     }
     playQueue = nextQueue;
     if (playIndex >= playQueue.length) {
       playIndex = playQueue.length - 1;
     }
+    _syncAudioSession();
     _notifyStateChanged();
     unawaited(_persistPlaybackSnapshot(force: true));
     await _openCurrentTrack();
@@ -205,6 +210,7 @@ extension AppControllerPlayback on AppController {
         ? current.playbackDurationMs
         : restoredQueue[restoredIndex].durationMs;
     duration = Duration(milliseconds: seededDurationMs);
+    _syncAudioSession();
     _notifyStateChanged();
     _restoringPlaybackSnapshot = true;
     try {
@@ -256,9 +262,11 @@ extension AppControllerPlayback on AppController {
       if (showStatus) {
         statusMessage = autoplay ? '正在播放 ${track.title}' : '已加载 ${track.title}';
       }
+      _syncAudioSession();
       _notifyStateChanged();
     } catch (error) {
       statusMessage = error.toString();
+      _syncAudioSession();
       _notifyStateChanged();
     }
   }
@@ -280,6 +288,7 @@ extension AppControllerPlayback on AppController {
   void _wirePlayer() {
     _player.stream.playing.listen((value) {
       isPlaying = value;
+      _syncAudioSession();
       _notifyStateChanged();
       unawaited(_persistPlaybackSnapshot(force: true));
       if (desktopLyricsOpen) {
@@ -289,6 +298,7 @@ extension AppControllerPlayback on AppController {
     });
     _player.stream.position.listen((value) {
       position = value;
+      _syncAudioSession();
       _notifyStateChanged();
       unawaited(_persistPlaybackSnapshot());
       if (desktopLyricsOpen) {
@@ -298,6 +308,7 @@ extension AppControllerPlayback on AppController {
     });
     _player.stream.duration.listen((value) {
       duration = value;
+      _syncAudioSession();
       _notifyStateChanged();
       unawaited(_persistPlaybackSnapshot(force: true));
       if (desktopLyricsOpen) {

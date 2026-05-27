@@ -27,6 +27,23 @@ extension AppControllerAndroidVolume on AppController {
         .listen((next) => _applyAndroidSystemVolume(next));
   }
 
+  Future<void> _configureAndroidAudioOutput() async {
+    if (!usesPlatformSystemVolume) return;
+    if (!await AndroidAppHostChannel.instance.isProbablyEmulator()) {
+      return;
+    }
+    final platform = _player.platform;
+    if (platform is! NativePlayer) {
+      return;
+    }
+    try {
+      await platform.setProperty('ao', 'audiotrack');
+      await platform.setProperty('audio-channels', 'stereo');
+    } catch (_) {
+      // Keep the default backend if this media_kit build does not expose the override.
+    }
+  }
+
   Future<void> setSystemVolumeFraction(double value) async {
     if (!usesPlatformSystemVolume) return;
     final snapshot = await AndroidSystemVolumeService.instance.setFraction(

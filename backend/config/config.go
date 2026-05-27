@@ -114,7 +114,7 @@ func DefaultSettings() Settings {
 
 func NormalizeMusicSourceProvider(value string) string {
 	switch strings.ToLower(strings.TrimSpace(value)) {
-	case "pjmp3", "kugou", "netease":
+	case "pjmp3", "gequhai", "kugou", "netease":
 		return strings.ToLower(strings.TrimSpace(value))
 	default:
 		return "kugou"
@@ -137,7 +137,7 @@ func NormalizePlaybackFallbackChain(raw string) string {
 	for _, part := range parts {
 		key := strings.TrimSpace(part)
 		switch key {
-		case "kugou", "pjmp3", "netease":
+		case "kugou", "pjmp3", "gequhai", "netease":
 		default:
 			continue
 		}

@@ -177,6 +177,7 @@ class _SourcePanel extends StatelessWidget {
           children: <Widget>[
             for (final item in const <(String, String)>[
               ('pjmp3', '泡椒音乐源'),
+              ('gequhai', '歌曲海源'),
               ('kugou', '酷狗概念版'),
               ('netease', '网易云'),
             ])

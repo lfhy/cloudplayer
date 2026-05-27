@@ -6,6 +6,7 @@ import 'dart:io';
 import 'package:cloudplayer_flutter/app/app.dart';
 import 'package:cloudplayer_flutter/bridge/cloudplayer_api.dart';
 import 'package:cloudplayer_flutter/bridge/cloudplayer_bridge.dart';
+import 'package:cloudplayer_flutter/services/cloudplayer_audio_session.dart';
 import 'package:cloudplayer_flutter/state/app_controller.dart';
 import 'package:cloudplayer_flutter/utils/platform_environment.dart';
 import 'package:fluent_ui/fluent_ui.dart';
@@ -25,8 +26,9 @@ Future<void> main() async {
     final supportDir = await getApplicationSupportDirectory();
     CloudPlayerBridge.mobileConfigDirPath = supportDir.path;
   }
+  await CloudPlayerAudioSession.instance.initialize();
   final api = await CloudPlayerApi.bootstrap();
-  final controller = AppController(api);
+  final controller = AppController(api, CloudPlayerAudioSession.instance);
   unawaited(controller.initialize());
 
   if (isDesktopHost) {

@@ -58,6 +58,7 @@ String sourceProviderKeyForSourceId(String sourceId) {
   if (sourceId.startsWith('kugou:')) return 'kugou';
   if (sourceId.startsWith('netease:')) return 'netease';
   if (sourceId.startsWith('pjmp3:')) return 'pjmp3';
+  if (sourceId.startsWith('gequhai:')) return 'gequhai';
   return '';
 }
 

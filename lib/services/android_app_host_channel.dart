@@ -19,4 +19,11 @@ class AndroidAppHostChannel {
     }
     await _channel.invokeMethod<bool>('moveTaskToBack');
   }
+
+  Future<bool> isProbablyEmulator() async {
+    if (!Platform.isAndroid) {
+      return false;
+    }
+    return await _channel.invokeMethod<bool>('isProbablyEmulator') ?? false;
+  }
 }

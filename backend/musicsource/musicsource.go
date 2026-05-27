@@ -12,6 +12,7 @@ import (
 // Source adapters translate the configured provider name into a concrete search implementation.
 const (
 	ProviderPJMP3      = "pjmp3"
+	ProviderGequhai    = "gequhai"
 	ProviderKugou      = "kugou"
 	ProviderNetease    = "netease"
 	DefaultProviderKey = ProviderKugou
@@ -48,6 +49,7 @@ type SourceRef struct {
 
 var providers = map[string]Provider{
 	ProviderPJMP3:   pjmp3Provider{},
+	ProviderGequhai: gequhaiProvider{},
 	ProviderKugou:   kugouProvider{},
 	ProviderNetease: neteaseProvider{},
 }

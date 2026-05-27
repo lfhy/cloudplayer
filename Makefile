@@ -14,13 +14,14 @@ ANDROID_BRIDGE_OUT := $(ANDROID_BRIDGE_DIR)/libcloudplayer_bridge.so
 ANDROID_JNILIBS_DIR := $(ANDROID_BRIDGE_DIR)/jniLibs/arm64-v8a
 ANDROID_JNILIBS_OUT := $(ANDROID_JNILIBS_DIR)/libcloudplayer_bridge.so
 ANDROID_NDK_VERSION ?= 28.2.13676358
-ANDROID_NDK_HOST_TAG ?= $(shell sh -c 'case "$$(uname -s)" in Darwin) echo darwin-x86_64 ;; Linux) echo linux-x86_64 ;; MINGW*|MSYS*|CYGWIN*) echo windows-x86_64 ;; *) echo unsupported ;; esac')
+ANDROID_NDK_HOST_TAG ?=
 BRIDGE_MIN_VERSION_FLAG := -mmacosx-version-min=$(MACOSX_DEPLOYMENT_TARGET)
 BRIDGE_SDKROOT := $(shell DEVELOPER_DIR=$(DEVELOPER_DIR) xcrun --sdk macosx --show-sdk-path)
 BRIDGE_CGO_CFLAGS := $(BRIDGE_MIN_VERSION_FLAG)
 BRIDGE_CGO_CXXFLAGS := $(BRIDGE_MIN_VERSION_FLAG)
 BRIDGE_CGO_LDFLAGS := $(BRIDGE_MIN_VERSION_FLAG) -Wl,-no_warn_duplicate_libraries
 LOCAL_ENV_ZSH := source ~/.zshrc; if [[ -f "$(ENV_LOCAL)" ]]; then set -a; source "$(ENV_LOCAL)"; set +a; fi
+ANDROID_LOCAL_ENV_ZSH := $(LOCAL_ENV_ZSH); sdk_root="$${ANDROID_HOME:-$${ANDROID_SDK_ROOT}}"; if [[ -z "$$sdk_root" ]]; then echo "ANDROID_HOME or ANDROID_SDK_ROOT is required" >&2; exit 1; fi
 
 .PHONY: bridge bridge-arm64 bridge-amd64 bridge-universal android-bridge android-bridge-sync smoke analyze test run android-emulator android-run
 
@@ -61,8 +62,23 @@ bridge-universal: bridge-arm64 bridge-amd64
 
 android-bridge:
 	@mkdir -p $(ANDROID_BRIDGE_DIR)
-	zsh -lc '$(LOCAL_ENV_ZSH); \
-		ndk_bin="$$ANDROID_HOME/ndk/$(ANDROID_NDK_VERSION)/toolchains/llvm/prebuilt/$(ANDROID_NDK_HOST_TAG)/bin"; \
+	zsh -lc '$(ANDROID_LOCAL_ENV_ZSH); \
+		ndk_root="$$sdk_root/ndk/$(ANDROID_NDK_VERSION)"; \
+		candidate_tags=("$(ANDROID_NDK_HOST_TAG)" darwin-arm64 darwin-x86_64 linux-x86_64 windows-x86_64); \
+		host_tag=""; \
+		for candidate in $${candidate_tags[@]}; do \
+			[[ -n "$$candidate" ]] || continue; \
+			if [[ -d "$$ndk_root/toolchains/llvm/prebuilt/$$candidate/bin" ]]; then \
+				host_tag="$$candidate"; \
+				break; \
+			fi; \
+		done; \
+		if [[ -z "$$host_tag" ]]; then \
+			echo "Missing Android NDK prebuilt toolchain under $$ndk_root/toolchains/llvm/prebuilt" >&2; \
+			find "$$ndk_root/toolchains/llvm/prebuilt" -maxdepth 1 -mindepth 1 -type d -print >&2; \
+			exit 1; \
+		fi; \
+		ndk_bin="$$ndk_root/toolchains/llvm/prebuilt/$$host_tag/bin"; \
 		test -d "$$ndk_bin" || { echo "Missing Android NDK toolchain: $$ndk_bin" >&2; exit 1; }; \
 		env CGO_ENABLED=1 GOOS=android GOARCH=arm64 \
 		CC="$$ndk_bin/aarch64-linux-android24-clang" \
@@ -87,7 +103,31 @@ run: bridge
 	DEVELOPER_DIR=$(DEVELOPER_DIR) flutter run -d $(FLUTTER_DEVICE)
 
 android-emulator:
-	zsh -lc '$(LOCAL_ENV_ZSH); flutter emulators --launch "$(ANDROID_EMULATOR)"'
+	zsh -lc '$(ANDROID_LOCAL_ENV_ZSH); \
+		device_serial="$$(adb devices | awk "/^emulator-/{print \$$1; exit}")"; \
+		if [[ -z "$$device_serial" ]]; then \
+			flutter emulators --launch "$(ANDROID_EMULATOR)"; \
+			adb wait-for-device; \
+			until [[ "$$(adb shell getprop sys.boot_completed 2>/dev/null | tr -d "\r")" == "1" ]]; do sleep 2; done; \
+			device_serial="$$(adb devices | awk "/^emulator-/{print \$$1; exit}")"; \
+		fi; \
+		if [[ -z "$$device_serial" ]]; then \
+			echo "Android emulator $(ANDROID_EMULATOR) did not become available" >&2; \
+			exit 1; \
+		fi; \
+		echo "Using Android emulator $$device_serial"; \
+		flutter devices'
 
 android-run: android-bridge-sync
-	zsh -lc '$(LOCAL_ENV_ZSH); flutter run -d "$(ANDROID_DEVICE)" --debug'
+	zsh -lc '$(ANDROID_LOCAL_ENV_ZSH); \
+		device_serial="$$(adb devices | awk "/^emulator-/{print \$$1; exit}")"; \
+		if [[ -z "$$device_serial" ]]; then \
+			$(MAKE) android-emulator; \
+			device_serial="$$(adb devices | awk "/^emulator-/{print \$$1; exit}")"; \
+		fi; \
+		if [[ -z "$$device_serial" ]]; then \
+			echo "No Android emulator is available for flutter run" >&2; \
+			exit 1; \
+		fi; \
+		echo "Starting Flutter on $$device_serial"; \
+		flutter run -d "$$device_serial" --debug'

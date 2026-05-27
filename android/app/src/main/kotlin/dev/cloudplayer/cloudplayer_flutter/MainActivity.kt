@@ -2,15 +2,16 @@ package dev.cloudplayer.cloudplayer_flutter
 
 import android.content.Context
 import android.media.AudioManager
+import android.os.Build
 import android.os.Bundle
+import com.ryanheise.audioservice.AudioServiceActivity
 import io.flutter.embedding.engine.FlutterEngine
-import io.flutter.embedding.android.FlutterActivity
 import io.flutter.plugin.common.EventChannel
 import io.flutter.plugin.common.MethodChannel
 
 // MainActivity keeps Android embedding minimal while the mobile bridge is
 // still being migrated from the desktop-first Flutter shell.
-class MainActivity : FlutterActivity() {
+class MainActivity : AudioServiceActivity() {
     private lateinit var audioManager: AudioManager
     private var volumeSink: EventChannel.EventSink? = null
 
@@ -48,6 +49,9 @@ class MainActivity : FlutterActivity() {
             when (call.method) {
                 "moveTaskToBack" -> {
                     result.success(moveTaskToBack(true))
+                }
+                "isProbablyEmulator" -> {
+                    result.success(isProbablyEmulator())
                 }
                 else -> result.notImplemented()
             }
@@ -95,5 +99,14 @@ class MainActivity : FlutterActivity() {
             "current" to audioManager.getStreamVolume(AudioManager.STREAM_MUSIC),
             "max" to audioManager.getStreamMaxVolume(AudioManager.STREAM_MUSIC),
         )
+    }
+
+    private fun isProbablyEmulator(): Boolean {
+        return Build.FINGERPRINT.startsWith("generic") ||
+            Build.FINGERPRINT.contains("emulator", ignoreCase = true) ||
+            Build.MODEL.contains("Emulator", ignoreCase = true) ||
+            Build.MODEL.contains("Android SDK built for", ignoreCase = true) ||
+            Build.BRAND.startsWith("generic") && Build.DEVICE.startsWith("generic") ||
+            Build.PRODUCT.contains("sdk", ignoreCase = true)
     }
 }
