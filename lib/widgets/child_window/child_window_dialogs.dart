@@ -119,6 +119,8 @@ Future<String?> showChildTextPromptDialog({
 Future<MainWindowCloseChoice> showMainWindowCloseDialog({
   required BuildContext context,
   required AppPalette palette,
+  String title = '关闭主窗口？',
+  String minimizeLabel = '最小化到托盘',
 }) async {
   var result = MainWindowCloseChoice.cancel;
   await _showChildDialog<void>(
@@ -126,13 +128,13 @@ Future<MainWindowCloseChoice> showMainWindowCloseDialog({
     builder: (dialogContext) {
       return ChildWindowDialog(
         palette: palette,
-        title: '关闭主窗口？',
+        title: title,
         body: Row(
           children: <Widget>[
             Expanded(
               child: ChildDialogChoiceButton(
                 palette: palette,
-                label: '最小化到托盘',
+                label: minimizeLabel,
                 onPressed: () {
                   result = MainWindowCloseChoice.tray;
                   Navigator.pop(dialogContext);
@@ -165,6 +167,18 @@ Future<MainWindowCloseChoice> showMainWindowCloseDialog({
     },
   );
   return result;
+}
+
+Future<MainWindowCloseChoice> showMobileExitDialog({
+  required BuildContext context,
+  required AppPalette palette,
+}) {
+  return showMainWindowCloseDialog(
+    context: context,
+    palette: palette,
+    title: '退出 CloudPlayer？',
+    minimizeLabel: '最小化到后台',
+  );
 }
 
 Future<bool> showOnlineModeConfirmDialog({

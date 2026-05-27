@@ -41,6 +41,18 @@ class MainActivity : FlutterActivity() {
             }
         }
 
+        MethodChannel(
+            flutterEngine.dartExecutor.binaryMessenger,
+            "cloudplayer/android_app_host",
+        ).setMethodCallHandler { call, result ->
+            when (call.method) {
+                "moveTaskToBack" -> {
+                    result.success(moveTaskToBack(true))
+                }
+                else -> result.notImplemented()
+            }
+        }
+
         EventChannel(
             flutterEngine.dartExecutor.binaryMessenger,
             "cloudplayer/android_system_volume_events",

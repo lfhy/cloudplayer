@@ -2,6 +2,7 @@
 
 import 'dart:async';
 
+import 'package:cloudplayer_flutter/services/android_app_host_channel.dart';
 import 'package:flutter/foundation.dart';
 import 'package:cloudplayer_flutter/models/app_models.dart';
 import 'package:cloudplayer_flutter/pages/daily_page.dart';
@@ -25,6 +26,7 @@ import 'package:cloudplayer_flutter/widgets/sidebar_color_icon.dart';
 import 'package:cloudplayer_flutter/widgets/sidebar_account_menu.dart';
 import 'package:cloudplayer_flutter/widgets/sidebar_playlist_item.dart';
 import 'package:fluent_ui/fluent_ui.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 
 class AppShell extends StatelessWidget {
@@ -43,11 +45,15 @@ class AppShell extends StatelessWidget {
       return NavigationView(content: Center(child: Text(controller.bootError)));
     }
     return PopScope(
-      canPop:
-          !mobileHost ||
-          (!controller.immersiveOpen && controller.currentPage == AppPage.home),
+      canPop: !mobileHost,
       onPopInvokedWithResult: (didPop, _) {
         if (!didPop) {
+          if (mobileHost &&
+              !controller.immersiveOpen &&
+              controller.currentPage == AppPage.home) {
+            unawaited(_handleMobileRootBack(context, controller));
+            return;
+          }
           unawaited(controller.handleSystemBack());
         }
       },
@@ -136,6 +142,29 @@ class AppShell extends StatelessWidget {
       AppPage.settings => SettingsPage(palette: palette),
       _ => HomePage(palette: palette),
     };
+  }
+
+  Future<void> _handleMobileRootBack(
+    BuildContext context,
+    AppController controller,
+  ) async {
+    final choice = await showMobileExitDialog(
+      context: context,
+      palette: palette,
+    );
+    if (!context.mounted) {
+      return;
+    }
+    switch (choice) {
+      case MainWindowCloseChoice.tray:
+        await AndroidAppHostChannel.instance.moveTaskToBack();
+        return;
+      case MainWindowCloseChoice.quit:
+        await SystemNavigator.pop();
+        return;
+      case MainWindowCloseChoice.cancel:
+        return;
+    }
   }
 }
 

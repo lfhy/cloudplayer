@@ -28,6 +28,7 @@ class _ImmersivePlayerState extends State<ImmersivePlayer> {
     final controller = context.watch<AppController>();
     final track = controller.currentTrack;
     final visible = controller.immersiveOpen;
+    final viewPadding = MediaQuery.viewPaddingOf(context);
     final totalMs = _totalDurationMs(controller);
     final currentMs = _draggingSeek
         ? _seekPreviewMs
@@ -112,9 +113,9 @@ class _ImmersivePlayerState extends State<ImmersivePlayer> {
                       child: Padding(
                         padding: EdgeInsets.fromLTRB(
                           isMobileHost ? 18 : 64,
-                          isMobileHost ? 28 : 48,
+                          isMobileHost ? viewPadding.top + 16 : 48,
                           isMobileHost ? 18 : 64,
-                          isMobileHost ? 12 : 40,
+                          isMobileHost ? viewPadding.bottom + 28 : 40,
                         ),
                         child: LayoutBuilder(
                           builder: (context, constraints) => _buildLayout(
