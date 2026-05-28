@@ -4,6 +4,16 @@ plugins {
     id("dev.flutter.flutter-gradle-plugin")
 }
 
+val releaseKeystorePath = System.getenv("CP_ANDROID_KEYSTORE_PATH")
+val releaseKeystorePassword = System.getenv("CP_ANDROID_KEYSTORE_PASSWORD")
+val releaseKeyAlias = System.getenv("CP_ANDROID_KEY_ALIAS")
+val releaseKeyPassword = System.getenv("CP_ANDROID_KEY_PASSWORD")
+val hasReleaseSigning =
+    !releaseKeystorePath.isNullOrBlank() &&
+    !releaseKeystorePassword.isNullOrBlank() &&
+    !releaseKeyAlias.isNullOrBlank() &&
+    !releaseKeyPassword.isNullOrBlank()
+
 android {
     namespace = "dev.cloudplayer.cloudplayer_flutter"
     compileSdk = flutter.compileSdkVersion
@@ -27,11 +37,26 @@ android {
         versionName = flutter.versionName
     }
 
+    signingConfigs {
+        if (hasReleaseSigning) {
+            create("release") {
+                storeFile = file(releaseKeystorePath!!)
+                storePassword = releaseKeystorePassword
+                keyAlias = releaseKeyAlias
+                keyPassword = releaseKeyPassword
+            }
+        }
+    }
+
     buildTypes {
         release {
-            // TODO: Add your own signing config for the release build.
-            // Signing with the debug keys for now, so `flutter run --release` works.
-            signingConfig = signingConfigs.getByName("debug")
+            // CI release builds should inject a stable signing key via env vars so
+            // Android upgrades can install over previous workflow releases.
+            signingConfig = if (hasReleaseSigning) {
+                signingConfigs.getByName("release")
+            } else {
+                signingConfigs.getByName("debug")
+            }
         }
     }
 }

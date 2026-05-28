@@ -11,6 +11,7 @@ BUILD_NUMBER="1"
 NDK_VERSION="${ANDROID_NDK_VERSION:-28.2.13676358}"
 APP_NAME="${APP_NAME:-cloudplayer}"
 ARTIFACT_PREFIX="${ARTIFACT_PREFIX:-cloudplayer}"
+TEMP_SIGNING_DIR=""
 
 usage() {
   cat <<'EOF'
@@ -92,8 +93,27 @@ build_android_bridge() {
   cp "$bridge_out" "$jni_dir/libcloudplayer_bridge.so"
 }
 
+prepare_android_release_signing() {
+  if [[ -z "${CP_ANDROID_KEYSTORE_PATH:-}" && -n "${CP_ANDROID_KEYSTORE_BASE64:-}" ]]; then
+    TEMP_SIGNING_DIR="$(mktemp -d)"
+    CP_ANDROID_KEYSTORE_PATH="$TEMP_SIGNING_DIR/cloudplayer-release.keystore"
+    export CP_ANDROID_KEYSTORE_PATH
+    printf '%s' "$CP_ANDROID_KEYSTORE_BASE64" | base64 --decode > "$CP_ANDROID_KEYSTORE_PATH"
+  fi
+
+  if [[ "${REQUIRE_ANDROID_RELEASE_SIGNING:-0}" != "1" ]]; then
+    return
+  fi
+
+  [[ -n "${CP_ANDROID_KEYSTORE_PATH:-}" ]] || fail "CP_ANDROID_KEYSTORE_PATH or CP_ANDROID_KEYSTORE_BASE64 is required for release signing"
+  [[ -n "${CP_ANDROID_KEYSTORE_PASSWORD:-}" ]] || fail "CP_ANDROID_KEYSTORE_PASSWORD is required for release signing"
+  [[ -n "${CP_ANDROID_KEY_ALIAS:-}" ]] || fail "CP_ANDROID_KEY_ALIAS is required for release signing"
+  [[ -n "${CP_ANDROID_KEY_PASSWORD:-}" ]] || fail "CP_ANDROID_KEY_PASSWORD is required for release signing"
+}
+
 build_android_release() {
   require_cmd flutter
+  prepare_android_release_signing
   build_android_bridge
 
   mkdir -p "$OUTPUT_DIR"
@@ -113,6 +133,14 @@ build_android_release() {
   [[ -f "$source_apk" ]] || fail "Android APK was not created: $source_apk"
   cp "$source_apk" "$target_apk"
 }
+
+cleanup() {
+  if [[ -n "$TEMP_SIGNING_DIR" && -d "$TEMP_SIGNING_DIR" ]]; then
+    rm -rf "$TEMP_SIGNING_DIR"
+  fi
+}
+
+trap cleanup EXIT
 
 while [[ $# -gt 0 ]]; do
   case "$1" in

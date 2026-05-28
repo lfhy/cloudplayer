@@ -3,6 +3,8 @@
 import 'dart:async';
 import 'dart:io';
 
+import 'package:cloudplayer_flutter/models/app_models.dart';
+import 'package:cloudplayer_flutter/services/android_app_host_channel.dart';
 import 'package:cloudplayer_flutter/services/macos_tray_channel.dart';
 import 'package:cloudplayer_flutter/services/windows_window_theme_channel.dart';
 import 'package:cloudplayer_flutter/state/app_controller.dart';
@@ -32,6 +34,9 @@ class _CloudPlayerAppState extends State<CloudPlayerApp> with WindowListener {
   @override
   void initState() {
     super.initState();
+    if (Platform.isAndroid) {
+      AndroidAppHostChannel.instance.setSystemBackHandler(_handleAndroidBack);
+    }
     if (!isDesktopHost) return;
     windowManager.addListener(this);
     unawaited(windowManager.setPreventClose(true));
@@ -39,6 +44,9 @@ class _CloudPlayerAppState extends State<CloudPlayerApp> with WindowListener {
 
   @override
   void dispose() {
+    if (Platform.isAndroid) {
+      AndroidAppHostChannel.instance.setSystemBackHandler(null);
+    }
     if (isDesktopHost) {
       windowManager.removeListener(this);
     }
@@ -109,6 +117,39 @@ class _CloudPlayerAppState extends State<CloudPlayerApp> with WindowListener {
         await windowManager.setPreventClose(true);
       }
       rethrow;
+    }
+  }
+
+  Future<void> _handleAndroidBack() async {
+    final handled = await _rootNavigatorKey.currentState?.maybePop() ?? false;
+    if (handled || !mounted) {
+      return;
+    }
+    final controller = context.read<AppController>();
+    if (controller.immersiveOpen || controller.currentPage != AppPage.home) {
+      await controller.handleSystemBack();
+      return;
+    }
+    final dialogContext = _rootNavigatorKey.currentContext;
+    if (dialogContext == null || !dialogContext.mounted) {
+      return;
+    }
+    final choice = await showMobileExitDialog(
+      context: dialogContext,
+      palette: paletteForSettings(controller.settings),
+    );
+    if (!mounted) {
+      return;
+    }
+    switch (choice) {
+      case MainWindowCloseChoice.tray:
+        await AndroidAppHostChannel.instance.moveTaskToBack();
+        return;
+      case MainWindowCloseChoice.quit:
+        await SystemNavigator.pop();
+        return;
+      case MainWindowCloseChoice.cancel:
+        return;
     }
   }
 

@@ -336,7 +336,10 @@ class AppController extends ChangeNotifier {
     final playlistId = await api.createPlaylist(
       trimmed.isEmpty ? '导入歌单' : trimmed,
     );
-    await api.replacePlaylistItems(playlistId, importTracks);
+    await api.replacePlaylistItems(
+      playlistId,
+      importTracks.reversed.toList(growable: false),
+    );
     await refreshPlaylists();
     final playlist = playlists
         .where((item) => item.id == playlistId)
@@ -362,7 +365,10 @@ class AppController extends ChangeNotifier {
 
   Future<void> mergeImportIntoPlaylist(int playlistId) async {
     if (importTracks.isEmpty) return;
-    await api.appendPlaylistItems(playlistId, importTracks);
+    await api.appendPlaylistItems(
+      playlistId,
+      importTracks.reversed.toList(growable: false),
+    );
     await refreshPlaylists();
     final playlist = playlists
         .where((item) => item.id == playlistId)

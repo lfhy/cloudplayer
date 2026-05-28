@@ -255,6 +255,11 @@ jobs:
       - name: Build Android arm64 release APK
         env:
           RAW_TAG: ${{ github.event.inputs.tag_name || github.ref_name }}
+          REQUIRE_ANDROID_RELEASE_SIGNING: "1"
+          CP_ANDROID_KEYSTORE_BASE64: ${{ secrets.CP_ANDROID_KEYSTORE_BASE64 }}
+          CP_ANDROID_KEYSTORE_PASSWORD: ${{ secrets.CP_ANDROID_KEYSTORE_PASSWORD }}
+          CP_ANDROID_KEY_ALIAS: ${{ secrets.CP_ANDROID_KEY_ALIAS }}
+          CP_ANDROID_KEY_PASSWORD: ${{ secrets.CP_ANDROID_KEY_PASSWORD }}
         run: |
           VERSION_NAME="${RAW_TAG#v}"
           ./scripts/build_android_release.sh \

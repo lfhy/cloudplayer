@@ -77,6 +77,7 @@ class AppShell extends StatelessWidget {
                             child: mobileHost
                                 ? MobilePageStage(
                                     palette: palette,
+                                    pageKey: controller.currentPage,
                                     page: _pageFor(controller.currentPage),
                                   )
                                 : Column(

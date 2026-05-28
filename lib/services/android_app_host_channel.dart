@@ -12,6 +12,29 @@ class AndroidAppHostChannel {
   static const MethodChannel _channel = MethodChannel(
     'cloudplayer/android_app_host',
   );
+  Future<void> Function()? _systemBackHandler;
+
+  void setSystemBackHandler(Future<void> Function()? handler) {
+    _systemBackHandler = handler;
+    if (!Platform.isAndroid) {
+      return;
+    }
+    if (handler == null) {
+      _channel.setMethodCallHandler(null);
+      return;
+    }
+    _channel.setMethodCallHandler((call) async {
+      switch (call.method) {
+        case 'systemBack':
+          await _systemBackHandler?.call();
+          return null;
+        default:
+          throw MissingPluginException(
+            'Unhandled android_app_host call: ${call.method}',
+          );
+      }
+    });
+  }
 
   Future<void> moveTaskToBack() async {
     if (!Platform.isAndroid) {

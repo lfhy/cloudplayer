@@ -4,6 +4,7 @@ import android.content.Context
 import android.media.AudioManager
 import android.os.Build
 import android.os.Bundle
+import androidx.activity.OnBackPressedCallback
 import com.ryanheise.audioservice.AudioServiceActivity
 import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.plugin.common.EventChannel
@@ -13,12 +14,21 @@ import io.flutter.plugin.common.MethodChannel
 // still being migrated from the desktop-first Flutter shell.
 class MainActivity : AudioServiceActivity() {
     private lateinit var audioManager: AudioManager
+    private var appHostChannel: MethodChannel? = null
     private var volumeSink: EventChannel.EventSink? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         audioManager = getSystemService(Context.AUDIO_SERVICE) as AudioManager
         volumeControlStream = AudioManager.STREAM_MUSIC
+        onBackPressedDispatcher.addCallback(
+            this,
+            object : OnBackPressedCallback(true) {
+                override fun handleOnBackPressed() {
+                    appHostChannel?.invokeMethod("systemBack", null)
+                }
+            },
+        )
     }
 
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
@@ -42,10 +52,11 @@ class MainActivity : AudioServiceActivity() {
             }
         }
 
-        MethodChannel(
+        appHostChannel = MethodChannel(
             flutterEngine.dartExecutor.binaryMessenger,
             "cloudplayer/android_app_host",
-        ).setMethodCallHandler { call, result ->
+        )
+        appHostChannel?.setMethodCallHandler { call, result ->
             when (call.method) {
                 "moveTaskToBack" -> {
                     result.success(moveTaskToBack(true))
