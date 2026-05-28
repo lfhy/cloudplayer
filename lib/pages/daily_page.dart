@@ -2,6 +2,7 @@
 
 import 'package:cloudplayer_flutter/state/app_controller.dart';
 import 'package:cloudplayer_flutter/theme/app_theme.dart';
+import 'package:cloudplayer_flutter/widgets/child_window/child_window_dialogs.dart';
 import 'package:cloudplayer_flutter/widgets/legacy_action_button.dart';
 import 'package:cloudplayer_flutter/widgets/track_list.dart';
 import 'package:fluent_ui/fluent_ui.dart';
@@ -11,6 +12,43 @@ class DailyPage extends StatelessWidget {
   const DailyPage({super.key, required this.palette});
 
   final AppPalette palette;
+
+  Future<void> _saveAsPlaylist(
+    BuildContext context,
+    AppController controller,
+  ) async {
+    final rows = controller.dailyRecommendation?.rows ?? const [];
+    if (rows.isEmpty) return;
+    final suggestedName = '每日推荐 ${controller.dailyRecommendation?.date ?? ''}'
+        .trim();
+    final playlistName = await showChildTextPromptDialog(
+      context: context,
+      palette: palette,
+      title: '保存为歌单',
+      confirmText: '开始保存',
+      placeholder: '歌单名称',
+      initialValue: suggestedName,
+      emptyErrorText: '歌单名称不能为空。',
+    );
+    if (playlistName == null || !context.mounted) return;
+    try {
+      await runWithChildLoadingDialog<void>(
+        context: context,
+        palette: palette,
+        title: '正在保存歌单…',
+        message: '请稍等，正在写入歌单和歌曲列表。',
+        task: () => controller.saveDailyAsPlaylist(playlistName),
+      );
+    } catch (error) {
+      if (!context.mounted) return;
+      await showChildMessageDialog(
+        context: context,
+        palette: palette,
+        title: '保存失败',
+        message: error.toString(),
+      );
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -37,7 +75,9 @@ class DailyPage extends StatelessWidget {
             const SizedBox(width: 8),
             LegacyActionButton(
               palette: palette,
-              onPressed: rows.isEmpty ? null : controller.saveDailyAsPlaylist,
+              onPressed: rows.isEmpty
+                  ? null
+                  : () => _saveAsPlaylist(context, controller),
               label: '保存为歌单',
             ),
             const SizedBox(width: 8),

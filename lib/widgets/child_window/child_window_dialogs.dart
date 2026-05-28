@@ -1,5 +1,7 @@
 // Shared child-window dialog flows mirror the compact Wails child windows used for close-confirm, message, and repair prompts.
 
+import 'dart:async';
+
 import 'package:cloudplayer_flutter/theme/app_theme.dart';
 import 'package:fluent_ui/fluent_ui.dart';
 import 'package:cloudplayer_flutter/models/app_models.dart';
@@ -402,6 +404,39 @@ Future<int?> showPlaylistTargetDialog({
   return result;
 }
 
+Future<T> runWithChildLoadingDialog<T>({
+  required BuildContext context,
+  required AppPalette palette,
+  required String title,
+  required String message,
+  required Future<T> Function() task,
+}) async {
+  final navigator = Navigator.of(context, rootNavigator: true);
+  unawaited(
+    _showChildDialog<void>(
+      context: context,
+      builder: (_) {
+        return ChildWindowDialog(
+          palette: palette,
+          title: title,
+          width: 432,
+          centerFooter: true,
+          body: _ChildDialogLoadingBody(palette: palette, message: message),
+          footer: const <Widget>[],
+        );
+      },
+    ),
+  );
+  await Future<void>.delayed(Duration.zero);
+  try {
+    return await task();
+  } finally {
+    if (navigator.mounted && navigator.canPop()) {
+      navigator.pop();
+    }
+  }
+}
+
 Future<T?> _showChildDialog<T>({
   required BuildContext context,
   required WidgetBuilder builder,
@@ -420,6 +455,21 @@ class _DatabaseRepairLoading extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    return _ChildDialogLoadingBody(
+      palette: palette,
+      message: '正在整理数据库并清理本地云歌单…',
+    );
+  }
+}
+
+class _ChildDialogLoadingBody extends StatelessWidget {
+  const _ChildDialogLoadingBody({required this.palette, required this.message});
+
+  final AppPalette palette;
+  final String message;
+
+  @override
+  Widget build(BuildContext context) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
       children: <Widget>[
@@ -432,9 +482,11 @@ class _DatabaseRepairLoading extends StatelessWidget {
           ),
         ),
         const SizedBox(width: 10),
-        Text(
-          '正在整理数据库并清理本地云歌单…',
-          style: TextStyle(fontSize: 11, color: palette.strongForeground),
+        Expanded(
+          child: Text(
+            message,
+            style: TextStyle(fontSize: 11, color: palette.strongForeground),
+          ),
         ),
       ],
     );

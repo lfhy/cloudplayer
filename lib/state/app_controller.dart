@@ -34,9 +34,7 @@ part 'app_controller_lyrics.dart';
 class AppController extends ChangeNotifier {
   AppController(this.api, this._audioSession)
     : _player = Player(
-        configuration: const PlayerConfiguration(
-          title: 'CloudPlayer',
-        ),
+        configuration: const PlayerConfiguration(title: 'CloudPlayer'),
       );
 
   final CloudPlayerApi api;
@@ -351,7 +349,7 @@ class AppController extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> saveDailyAsPlaylist() async {
+  Future<void> saveDailyAsPlaylist(String playlistName) async {
     final rows = dailyRecommendation?.rows ?? <TrackRow>[];
     if (rows.isEmpty) return;
     _applyImportDraft(
@@ -359,7 +357,7 @@ class AppController extends ChangeNotifier {
       suggestedName: '每日推荐 ${dailyRecommendation?.date ?? ''}'.trim(),
       method: 'daily',
     );
-    await saveImportAsNewPlaylist(importSuggestedName);
+    await saveImportAsNewPlaylist(playlistName);
   }
 
   Future<void> mergeImportIntoPlaylist(int playlistId) async {
