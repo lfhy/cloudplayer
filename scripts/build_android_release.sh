@@ -95,20 +95,56 @@ build_android_bridge() {
 
 prepare_android_release_signing() {
   if [[ -z "${CP_ANDROID_KEYSTORE_PATH:-}" && -n "${CP_ANDROID_KEYSTORE_BASE64:-}" ]]; then
+    require_cmd python3
     TEMP_SIGNING_DIR="$(mktemp -d)"
     CP_ANDROID_KEYSTORE_PATH="$TEMP_SIGNING_DIR/cloudplayer-release.keystore"
     export CP_ANDROID_KEYSTORE_PATH
-    printf '%s' "$CP_ANDROID_KEYSTORE_BASE64" | base64 --decode > "$CP_ANDROID_KEYSTORE_PATH"
+    CP_ANDROID_KEYSTORE_BASE64="$CP_ANDROID_KEYSTORE_BASE64" \
+      CP_ANDROID_KEYSTORE_PATH="$CP_ANDROID_KEYSTORE_PATH" \
+      python3 <<'PY'
+import base64
+import os
+import pathlib
+import sys
+
+raw = os.environ.get("CP_ANDROID_KEYSTORE_BASE64", "")
+normalized = "".join(raw.split())
+if not normalized:
+    print("Error: CP_ANDROID_KEYSTORE_BASE64 is empty after trimming whitespace", file=sys.stderr)
+    sys.exit(1)
+
+try:
+    payload = base64.b64decode(normalized, validate=True)
+except Exception as exc:  # noqa: BLE001
+    print(f"Error: CP_ANDROID_KEYSTORE_BASE64 is not valid base64: {exc}", file=sys.stderr)
+    sys.exit(1)
+
+target = pathlib.Path(os.environ["CP_ANDROID_KEYSTORE_PATH"])
+target.write_bytes(payload)
+PY
   fi
 
   if [[ "${REQUIRE_ANDROID_RELEASE_SIGNING:-0}" != "1" ]]; then
     return
   fi
 
+  require_cmd keytool
   [[ -n "${CP_ANDROID_KEYSTORE_PATH:-}" ]] || fail "CP_ANDROID_KEYSTORE_PATH or CP_ANDROID_KEYSTORE_BASE64 is required for release signing"
   [[ -n "${CP_ANDROID_KEYSTORE_PASSWORD:-}" ]] || fail "CP_ANDROID_KEYSTORE_PASSWORD is required for release signing"
   [[ -n "${CP_ANDROID_KEY_ALIAS:-}" ]] || fail "CP_ANDROID_KEY_ALIAS is required for release signing"
   [[ -n "${CP_ANDROID_KEY_PASSWORD:-}" ]] || fail "CP_ANDROID_KEY_PASSWORD is required for release signing"
+  [[ -f "${CP_ANDROID_KEYSTORE_PATH}" ]] || fail "Release keystore not found: ${CP_ANDROID_KEYSTORE_PATH}"
+
+  keytool -list \
+    -keystore "${CP_ANDROID_KEYSTORE_PATH}" \
+    -storepass "${CP_ANDROID_KEYSTORE_PASSWORD}" >/dev/null 2>&1 ||
+    fail "Release keystore cannot be opened with CP_ANDROID_KEYSTORE_PASSWORD"
+
+  keytool -list \
+    -keystore "${CP_ANDROID_KEYSTORE_PATH}" \
+    -storepass "${CP_ANDROID_KEYSTORE_PASSWORD}" \
+    -alias "${CP_ANDROID_KEY_ALIAS}" >/dev/null 2>&1 ||
+    fail "Release keystore does not contain alias: ${CP_ANDROID_KEY_ALIAS}"
 }
 
 build_android_release() {

@@ -82,6 +82,7 @@ DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer flutter run -d macos
 - `make android-emulator` 会加载 `~/.zshrc` 和仓库根目录 `.env.local`，必要时自动启动并等待 `CloudPlayer_API_36` 模拟器可用。
 - `make android-run` 会加载 `~/.zshrc` 和仓库根目录 `.env.local`，先构建并同步 Android bridge `.so`，再自动复用已启动的 Android 模拟器或拉起默认模拟器进入 debug 会话。
 - `scripts/build_android_release.sh` 会在无交互环境下构建 Android `arm64-v8a` bridge，并输出 release `apk`，供 GitHub Actions 发布流使用；当设置 `REQUIRE_ANDROID_RELEASE_SIGNING=1` 时，会要求提供稳定签名参数。
+- release 签名脚本会先校验 base64 keystore、store password 和 alias，再进入 Flutter/Gradle 构建；如果 secrets 内容有误，会在构建前直接给出明确报错。
 - Android release 签名环境变量：
   `CP_ANDROID_KEYSTORE_PATH` 或 `CP_ANDROID_KEYSTORE_BASE64`、
   `CP_ANDROID_KEYSTORE_PASSWORD`、

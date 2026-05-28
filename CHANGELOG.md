@@ -17,6 +17,7 @@
 - 将播放故障转移配置改为可视化顺序编辑，并在旧配置升级或新增音源时自动把缺失 provider 追加到链尾。
 - 修正“每日推荐 -> 保存为歌单”会直接自动保存的问题；现在会先提示输入歌单名称，并在实际保存时显示 loading。
 - Android release workflow 改为支持稳定 keystore 签名注入，避免每次 CI 使用临时 debug 证书，导致新 APK 必须先卸载旧版才能安装。
+- Android release 签名脚本现在会在构建前校验 base64 keystore、store password 和 alias，避免 secrets 配置错误时只在 Gradle 阶段黑盒失败。
 - Android 宿主现在会显式把系统返回键转发回 Flutter 的页面返回链路，补强 `AudioServiceActivity` 场景下的返回事件分发。
 - Android 移动端页面切换补上横向淡入滑动过渡，减轻当前页面直接硬切带来的卡顿感。
 - 修正 Android 返回键无效的问题，移动端现在会按层级返回搜索结果、歌单详情和沉浸播放器，而不是直接失效。
