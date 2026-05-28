@@ -2,6 +2,20 @@
 
 import 'dart:convert';
 
+const List<String> musicSourceProviderChoiceOrder = <String>[
+  'pjmp3',
+  'gequhai',
+  'kugou',
+  'netease',
+];
+
+const List<String> playbackFallbackProviderDefaultOrder = <String>[
+  'kugou',
+  'pjmp3',
+  'netease',
+  'gequhai',
+];
+
 String readModelString(
   Map<String, dynamic> json,
   String key, {
@@ -60,6 +74,43 @@ String sourceProviderKeyForSourceId(String sourceId) {
   if (sourceId.startsWith('pjmp3:')) return 'pjmp3';
   if (sourceId.startsWith('gequhai:')) return 'gequhai';
   return '';
+}
+
+String musicSourceProviderLabel(String providerKey) {
+  switch (providerKey.trim().toLowerCase()) {
+    case 'pjmp3':
+      return '泡椒音乐源';
+    case 'gequhai':
+      return '歌曲海源';
+    case 'kugou':
+      return '酷狗概念版';
+    case 'netease':
+      return '网易云';
+    default:
+      return providerKey;
+  }
+}
+
+List<String> normalizedPlaybackFallbackProviders(String raw) {
+  final seen = <String>{};
+  final ordered = <String>[];
+  for (final part in raw.split(',')) {
+    final key = part.trim().toLowerCase();
+    if (!playbackFallbackProviderDefaultOrder.contains(key) || !seen.add(key)) {
+      continue;
+    }
+    ordered.add(key);
+  }
+  for (final key in playbackFallbackProviderDefaultOrder) {
+    if (seen.add(key)) {
+      ordered.add(key);
+    }
+  }
+  return ordered;
+}
+
+String normalizedPlaybackFallbackChain(String raw) {
+  return normalizedPlaybackFallbackProviders(raw).join(',');
 }
 
 String prettyJson(Map<String, dynamic> value) {

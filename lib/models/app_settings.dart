@@ -129,10 +129,12 @@ class AppSettings {
         'music_source_provider',
         fallback: 'kugou',
       ),
-      playbackFallbackChain: readModelString(
-        json,
-        'playback_fallback_chain',
-        fallback: 'kugou,pjmp3,netease',
+      playbackFallbackChain: normalizedPlaybackFallbackChain(
+        readModelString(
+          json,
+          'playback_fallback_chain',
+          fallback: 'kugou,pjmp3,netease,gequhai',
+        ),
       ),
       searchCacheTtlHours: readModelInt(
         json,
@@ -220,7 +222,9 @@ class AppSettings {
       'desktop_lyrics_height': desktopLyricsHeight,
       'music_collection_mode': musicCollectionMode,
       'music_source_provider': musicSourceProvider,
-      'playback_fallback_chain': playbackFallbackChain,
+      'playback_fallback_chain': normalizedPlaybackFallbackChain(
+        playbackFallbackChain,
+      ),
       'search_cache_ttl_hours': searchCacheTtlHours,
       'mini_player_always_on_top': miniPlayerAlwaysOnTop,
       'auto_cache_on_play': autoCacheOnPlay,
@@ -315,8 +319,9 @@ class AppSettings {
       desktopLyricsHeight: desktopLyricsHeight ?? this.desktopLyricsHeight,
       musicCollectionMode: musicCollectionMode ?? this.musicCollectionMode,
       musicSourceProvider: musicSourceProvider ?? this.musicSourceProvider,
-      playbackFallbackChain:
-          playbackFallbackChain ?? this.playbackFallbackChain,
+      playbackFallbackChain: normalizedPlaybackFallbackChain(
+        playbackFallbackChain ?? this.playbackFallbackChain,
+      ),
       searchCacheTtlHours: searchCacheTtlHours ?? this.searchCacheTtlHours,
       miniPlayerAlwaysOnTopState:
           miniPlayerAlwaysOnTop ?? this.miniPlayerAlwaysOnTop,

@@ -137,6 +137,35 @@ class _SourcePanel extends StatelessWidget {
   final AppPalette palette;
   final AppSettings settings;
 
+  List<String> get _fallbackProviders =>
+      normalizedPlaybackFallbackProviders(settings.playbackFallbackChain);
+
+  void _updateFallbackProviders(
+    AppController controller,
+    List<String> providers,
+  ) {
+    controller.updateSettings(
+      settings.copyWith(
+        playbackFallbackChain: normalizedPlaybackFallbackChain(
+          providers.join(','),
+        ),
+      ),
+    );
+  }
+
+  void _moveFallbackProvider(
+    AppController controller,
+    int index,
+    int direction,
+  ) {
+    final providers = List<String>.from(_fallbackProviders);
+    final targetIndex = index + direction;
+    if (targetIndex < 0 || targetIndex >= providers.length) return;
+    final item = providers.removeAt(index);
+    providers.insert(targetIndex, item);
+    _updateFallbackProviders(controller, providers);
+  }
+
   Future<void> _changeCollectionMode(
     BuildContext context,
     AppController controller,
@@ -167,6 +196,7 @@ class _SourcePanel extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final controller = context.read<AppController>();
+    final fallbackProviders = _fallbackProviders;
     return _SettingsPanel(
       palette: palette,
       children: <Widget>[
@@ -175,18 +205,13 @@ class _SourcePanel extends StatelessWidget {
           spacing: 8,
           runSpacing: 8,
           children: <Widget>[
-            for (final item in const <(String, String)>[
-              ('pjmp3', '泡椒音乐源'),
-              ('gequhai', '歌曲海源'),
-              ('kugou', '酷狗概念版'),
-              ('netease', '网易云'),
-            ])
+            for (final providerKey in musicSourceProviderChoiceOrder)
               _ChoiceChip(
-                label: item.$2,
-                active: settings.musicSourceProvider == item.$1,
+                label: musicSourceProviderLabel(providerKey),
+                active: settings.musicSourceProvider == providerKey,
                 palette: palette,
                 onPressed: () => controller.updateSettings(
-                  settings.copyWith(musicSourceProvider: item.$1),
+                  settings.copyWith(musicSourceProvider: providerKey),
                 ),
               ),
           ],
@@ -223,15 +248,40 @@ class _SourcePanel extends StatelessWidget {
         ),
         _HintText('开启后，播放在线歌曲时会自动加入下载缓存队列，可在“下载管理”查看。'),
         const SizedBox(height: 18),
-        _LabeledTextBox(
-          label: '播放故障转移链',
-          controller: TextEditingController(
-            text: settings.playbackFallbackChain,
-          ),
-          onSubmitted: (value) => controller.updateSettings(
-            settings.copyWith(playbackFallbackChain: value),
-          ),
+        Row(
+          children: <Widget>[
+            const Expanded(child: _FieldLabel('播放故障转移顺序')),
+            Button(
+              onPressed: () => _updateFallbackProviders(
+                controller,
+                List<String>.from(playbackFallbackProviderDefaultOrder),
+              ),
+              child: const Text('恢复默认'),
+            ),
+          ],
         ),
+        const SizedBox(height: 10),
+        for (
+          var index = 0;
+          index < fallbackProviders.length;
+          index++
+        ) ...<Widget>[
+          _FallbackProviderRow(
+            palette: palette,
+            index: index,
+            total: fallbackProviders.length,
+            title: musicSourceProviderLabel(fallbackProviders[index]),
+            active: fallbackProviders[index] == settings.musicSourceProvider,
+            onMoveUp: index == 0
+                ? null
+                : () => _moveFallbackProvider(controller, index, -1),
+            onMoveDown: index == fallbackProviders.length - 1
+                ? null
+                : () => _moveFallbackProvider(controller, index, 1),
+          ),
+          if (index != fallbackProviders.length - 1) const SizedBox(height: 8),
+        ],
+        _HintText('主音源播放失败后会按这里的顺序依次切换。旧配置和后续新接入的音源都会自动补到链尾，不需要手填逗号字符串。'),
         const SizedBox(height: 18),
         Row(
           children: <Widget>[

@@ -23,6 +23,8 @@ const (
 	MusicCollectionModeHybrid  = "hybrid"
 )
 
+var playbackFallbackDefaultOrder = []string{"kugou", "pjmp3", "netease", "gequhai"}
+
 type Settings struct {
 	WindowGeometryB64           *string             `json:"window_geometry_b64,omitempty"`
 	WindowStateB64              *string             `json:"window_state_b64,omitempty"`
@@ -107,7 +109,7 @@ func DefaultSettings() Settings {
 		MusicCollectionMode:         MusicCollectionModeOffline,
 		AutoCacheOnPlay:             false,
 		MusicSourceProvider:         "kugou",
-		PlaybackFallbackChain:       "kugou,pjmp3,netease",
+		PlaybackFallbackChain:       strings.Join(playbackFallbackDefaultOrder, ","),
 		SearchCacheTTLHours:         24,
 	}
 }
@@ -133,7 +135,7 @@ func NormalizeMusicCollectionMode(value string) string {
 func NormalizePlaybackFallbackChain(raw string) string {
 	parts := strings.Split(strings.ToLower(strings.TrimSpace(raw)), ",")
 	seen := map[string]struct{}{}
-	ordered := make([]string, 0, 3)
+	ordered := make([]string, 0, len(playbackFallbackDefaultOrder))
 	for _, part := range parts {
 		key := strings.TrimSpace(part)
 		switch key {
@@ -147,8 +149,12 @@ func NormalizePlaybackFallbackChain(raw string) string {
 		seen[key] = struct{}{}
 		ordered = append(ordered, key)
 	}
-	if len(ordered) == 0 {
-		return "kugou,pjmp3,netease"
+	for _, key := range playbackFallbackDefaultOrder {
+		if _, ok := seen[key]; ok {
+			continue
+		}
+		seen[key] = struct{}{}
+		ordered = append(ordered, key)
 	}
 	return strings.Join(ordered, ",")
 }

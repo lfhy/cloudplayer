@@ -325,6 +325,63 @@ class _HintText extends StatelessWidget {
   }
 }
 
+class _FallbackProviderRow extends StatelessWidget {
+  const _FallbackProviderRow({
+    required this.palette,
+    required this.index,
+    required this.total,
+    required this.title,
+    required this.active,
+    this.onMoveUp,
+    this.onMoveDown,
+  });
+
+  final AppPalette palette;
+  final int index;
+  final int total;
+  final String title;
+  final bool active;
+  final VoidCallback? onMoveUp;
+  final VoidCallback? onMoveDown;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        color: palette.cardBackground,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(
+          color: active
+              ? palette.accent.normal.withValues(alpha: 0.35)
+              : palette.borderColor,
+        ),
+      ),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      child: Row(
+        children: <Widget>[
+          Text(
+            '${index + 1}/$total',
+            style: TextStyle(color: palette.mutedForeground),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text(
+              active ? '$title · 当前主音源' : title,
+              style: TextStyle(
+                fontWeight: active ? FontWeight.w600 : FontWeight.w500,
+                color: active ? palette.accent.normal : null,
+              ),
+            ),
+          ),
+          Button(onPressed: onMoveUp, child: const Text('上移')),
+          const SizedBox(width: 8),
+          Button(onPressed: onMoveDown, child: const Text('下移')),
+        ],
+      ),
+    );
+  }
+}
+
 class _CardText extends StatelessWidget {
   const _CardText({required this.title, required this.desc});
 

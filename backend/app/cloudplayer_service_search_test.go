@@ -96,8 +96,8 @@ func TestSearchProviderFailoverOrderRotatesFromPrimary(t *testing.T) {
 	expected := []string{
 		musicsource.ProviderPJMP3,
 		musicsource.ProviderNetease,
-		musicsource.ProviderKugou,
 		musicsource.ProviderGequhai,
+		musicsource.ProviderKugou,
 	}
 	if len(order) != len(expected) {
 		t.Fatalf("searchProviderFailoverOrder() len = %d want %d", len(order), len(expected))
