@@ -4,7 +4,6 @@ import android.content.Context
 import android.media.AudioManager
 import android.os.Build
 import android.os.Bundle
-import androidx.activity.OnBackPressedCallback
 import com.ryanheise.audioservice.AudioServiceActivity
 import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.plugin.common.EventChannel
@@ -21,14 +20,6 @@ class MainActivity : AudioServiceActivity() {
         super.onCreate(savedInstanceState)
         audioManager = getSystemService(Context.AUDIO_SERVICE) as AudioManager
         volumeControlStream = AudioManager.STREAM_MUSIC
-        onBackPressedDispatcher.addCallback(
-            this,
-            object : OnBackPressedCallback(true) {
-                override fun handleOnBackPressed() {
-                    appHostChannel?.invokeMethod("systemBack", null)
-                }
-            },
-        )
     }
 
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
@@ -88,6 +79,15 @@ class MainActivity : AudioServiceActivity() {
     override fun onResume() {
         super.onResume()
         publishVolume()
+    }
+
+    @Deprecated("Deprecated in Java")
+    override fun onBackPressed() {
+        if (appHostChannel != null) {
+            appHostChannel?.invokeMethod("systemBack", null)
+            return
+        }
+        super.onBackPressed()
     }
 
     override fun onKeyUp(keyCode: Int, event: android.view.KeyEvent?): Boolean {
