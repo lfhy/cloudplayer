@@ -13,7 +13,7 @@
 - 修正 `make android-bridge` / `make android-run` 的 Android NDK host tag 与 shell 展开问题，脚本现在会自动加载 `.env.local`、探测本机 NDK toolchain，并在需要时拉起 `CloudPlayer_API_36` 模拟器。
 - Android 已接入 `audio_service` media session / notification / 媒体按键链路，最小化到后台后可继续播放，并支持通知栏与系统媒体按钮控制。
 - 为 Android 模拟器补上 `media_kit` 音频输出绕过：检测到 emulator 时改用 `AudioTrack`，规避默认 `OpenSLES` 链路下的 `SL_RESULT_PARAMETER_INVALID` / 电流音风险。
-- 新增 `歌曲海源` provider 选择项、`gequhai:` sourceId 前缀映射和后端 provider 占位，为后续搜索 / 解析 / 歌词接入预留结构。
+- `歌曲海源` 已接通真实抓取链路，支持搜索结果抓取、播放页解析、歌词抓取和 `gequhai:` sourceId 播放回退。
 - 修正 Android 返回键无效的问题，移动端现在会按层级返回搜索结果、歌单详情和沉浸播放器，而不是直接失效。
 - 对齐移动端首页与沉浸播放器体验：去掉重复首页入口、收紧底部浮岛导航、恢复沉浸歌词 / 播放链路，并接通 Android 系统音量控制。
 - 修正沉浸歌词自动换成两行时整段同时高亮的问题，改为按视觉换行后的每一行顺序推进播放高亮。

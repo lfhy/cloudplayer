@@ -90,6 +90,12 @@ func (s *CloudPlayerService) resolveFallbackSourceRef(providerKey, title, artist
 			return musicsource.SourceRef{}, false, err
 		}
 		return ref, true, nil
+	case musicsource.ProviderGequhai:
+		ref, err := s.findBestGequhaiFallback(strings.TrimSpace(title), strings.TrimSpace(artist))
+		if err != nil {
+			return musicsource.SourceRef{}, false, err
+		}
+		return ref, true, nil
 	case musicsource.ProviderNetease:
 		ref, err := s.findBestNeteaseFallback(strings.TrimSpace(title), strings.TrimSpace(artist))
 		if err != nil {
@@ -109,6 +115,10 @@ func (s *CloudPlayerService) resolveFallbackSourceRef(providerKey, title, artist
 
 func (s *CloudPlayerService) findBestNeteaseFallback(title, artist string) (musicsource.SourceRef, error) {
 	return s.findBestProviderFallback(musicsource.ProviderNetease, title, artist, 2)
+}
+
+func (s *CloudPlayerService) findBestGequhaiFallback(title, artist string) (musicsource.SourceRef, error) {
+	return s.findBestProviderFallback(musicsource.ProviderGequhai, title, artist, 2)
 }
 
 func (s *CloudPlayerService) findBestKugouFallback(title, artist string) (musicsource.SourceRef, error) {
@@ -159,7 +169,7 @@ func playbackFallbackChainForProvider(currentProvider string) []string {
 			continue
 		}
 		switch key {
-		case musicsource.ProviderKugou, musicsource.ProviderPJMP3, musicsource.ProviderNetease:
+		case musicsource.ProviderKugou, musicsource.ProviderPJMP3, musicsource.ProviderGequhai, musicsource.ProviderNetease:
 			seen[key] = struct{}{}
 			chain = append(chain, key)
 		}
@@ -193,6 +203,8 @@ func playbackProviderLabel(providerKey string) string {
 		return "酷狗"
 	case musicsource.ProviderPJMP3:
 		return "PJMP3"
+	case musicsource.ProviderGequhai:
+		return "歌曲海"
 	case musicsource.ProviderNetease:
 		return "网易云"
 	default:
